@@ -1,0 +1,48 @@
+parameters:
+    reportUnmatchedIgnoredErrors: false
+
+    bootstrapFiles:
+        # The framework is a composer dependency now, pulled in via this
+        # app's own autoloader (path-repo link to ../../garnet-framework).
+        - vendor/autoload.php
+
+    paths:
+        - Common
+        - Dashboard
+        - Foreground
+        - Migrations
+        - IRabi.php
+
+    excludePaths:
+        - */Spec/*
+        - */vendor/*
+
+    level: 5
+
+    ignoreErrors:
+        # Framework architectural patterns
+        - '#PHPDoc tag @var#'
+        - '#Unsafe usage of new static#'
+        - '#Unsafe call to private method .* through static#'
+        - '#Unsafe access to private (property|constant) .* through static#'
+        - '#Access to an undefined static property#'
+
+        # I18n magic methods — dispatched dynamically via II18n::__call()
+        - '#Call to an undefined method PHPCraftdream\\Garnet\\Kernel\\Interfaces\\II18n::#'
+
+        # PHPStan type resolution limitations
+        - '#contains unresolvable type#'
+        - '#has unresolvable native type#'
+        - '#does not accept list#'
+        - '#is already a list, call has no effect#'
+
+        # DevSeedService uses touchAccount() which always returns Account — guards are defensive
+        -
+            message: '#Negated boolean expression is always false#'
+            path: Common/Services/DevSeedService.php
+        -
+            message: '#Ternary operator condition is always true#'
+            path: Common/Services/DevSeedService.php
+        -
+            message: '#Result of .* is always false#'
+            path: Common/Services/DevSeedService.php

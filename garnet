@@ -1,0 +1,10 @@
+#!/usr/bin/env php
+<?php declare(strict_types=1);
+// Local Garnet CLI entry for this app. All real logic lives in the Framework
+// package (vendor/phpcraftdream/garnet-framework/); this file's only job is to
+// load composer autoload and hand off to GarnetRunner with our app dir.
+require_once __DIR__ . '/vendor/autoload.php';
+// Signal app-mode to GarnetEnv so it reads APP_NAME / overrides from this
+// dir's .env instead of the (non-existent) monorepo .env.
+putenv('GARNET_APP_DIR=' . __DIR__);
+\PHPCraftdream\Garnet\Kernel\Io\GarnetCli\GarnetRunner::main(__DIR__, $argv);

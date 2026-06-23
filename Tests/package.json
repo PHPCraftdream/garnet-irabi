@@ -1,0 +1,27 @@
+{
+  "name": "garnet-playwright-tests",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:video": "node scripts/run-with-video.js",
+    "test:report": "node scripts/run-with-report.js",
+    "test:docker": "BASE_URL=http://localhost:18080 playwright test",
+    "stack:up": "docker compose -f docker-compose.test.yml up -d --build",
+    "stack:down": "docker compose -f docker-compose.test.yml down",
+    "stack:logs": "docker compose -f docker-compose.test.yml logs -f",
+    "report": "playwright show-report",
+    "codegen": "playwright codegen",
+    "db:dump": "bash scripts/db-dump.sh",
+    "db:restore": "bash scripts/db-restore.sh",
+    "generate:fixture": "ts-node scripts/generate-hebcal-fixture.ts"
+  },
+  "devDependencies": {
+    "@hebcal/core": "^5.9.1",
+    "@playwright/test": "^1.50.0",
+    "@types/node": "^22.0.0",
+    "mysql2": "^3.18.2"
+  }
+}

@@ -1,0 +1,44 @@
+# GARNET_APP_NAME picks which app under Apps/ the test stack boots. Defaults
+# to IRabi in the current monorepo; override per-invocation:
+#   GARNET_APP_NAME=Names72 docker compose -f docker-compose.test.yml up
+services:
+  garnet-fpm:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile.php-fpm
+    image: garnet-team-fpm:test
+    environment:
+      GARNET_APP_NAME: ${GARNET_APP_NAME:-IRabi}
+    volumes:
+      # Whole repo so PHP can autoload through Framework/vendor + Apps/<App>.
+      - ../:/var/www/garnet-team:cached
+      # Override the dev DB ini with one pointing at host.docker.internal —
+      # the host's MySQL is the source of truth, the container just talks to it.
+      - ./docker/ConfigDev/db.ini:/var/www/garnet-team/Apps/${GARNET_APP_NAME:-IRabi}/WorkDir/ConfigDev/db.ini:ro
+      - ./docker/ConfigDev/app.ini:/var/www/garnet-team/Apps/${GARNET_APP_NAME:-IRabi}/WorkDir/ConfigDev/app.ini:ro
+    extra_hosts:
+      # docker-desktop forwards host.docker.internal automatically on Win/Mac;
+      # on linux this line provides the same name.
+      - "host.docker.internal:host-gateway"
+    expose:
+      - "9000"
+
+  garnet-nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      - garnet-fpm
+    environment:
+      # The nginx image's docker-entrypoint runs envsubst over every
+      # file in /etc/nginx/templates/ and writes the result into
+      # /etc/nginx/conf.d/ before launching nginx. Drop our template
+      # in there and it expands ${GARNET_APP_NAME} at boot.
+      GARNET_APP_NAME: ${GARNET_APP_NAME:-IRabi}
+      # Tell the image to write the expanded file as the full nginx.conf,
+      # not under conf.d/ (we want it to replace the default config).
+      NGINX_ENVSUBST_OUTPUT_DIR: /etc/nginx
+    volumes:
+      - ../:/var/www/garnet-team:cached
+      - ./docker/nginx.conf.template:/etc/nginx/templates/nginx.conf.template:ro
+    ports:
+      # Picked to not collide with the developer's `php -S 0.0.0.0:8001`.
+      - "18080:80"

@@ -1,0 +1,54 @@
+# nginx in front of php-fpm for the Playwright test stack.
+#
+# Mirrors the routing of `php -S` (everything that doesn't exist on disk
+# falls through to index.php) so test behaviour stays identical whether
+# the suite runs on the dev `php -S` server or this container.
+#
+# This file is a TEMPLATE — the official nginx image expands ${VARS}
+# from the environment at boot via envsubst (mount under
+# /etc/nginx/templates/nginx.conf.template). GARNET_APP_NAME picks the
+# app's docroot; docker-compose.test.yml defaults it to IRabi.
+
+worker_processes auto;
+events { worker_connections 1024; }
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    sendfile on;
+    keepalive_timeout 30;
+    client_max_body_size 64m;
+
+    # Resolver for the docker-compose service network so php-fpm can be
+    # named instead of hard-IP'd.
+    resolver 127.0.0.11 valid=30s ipv6=off;
+
+    server {
+        listen 80 default_server;
+        server_name _;
+        root /var/www/garnet-team/Apps/${GARNET_APP_NAME}/Public;
+        index index.php;
+
+        # Static assets pass straight through.
+        location / {
+            try_files $uri $uri/ /index.php?$query_string;
+        }
+
+        # Hand .php requests off to FPM — same routing /index.php for
+        # the framework's front controller.
+        location ~ \.php$ {
+            try_files $uri =404;
+            fastcgi_pass garnet-fpm:9000;
+            fastcgi_index index.php;
+            fastcgi_split_path_info ^(.+\.php)(/.+)$;
+
+            include fastcgi_params;
+            fastcgi_param SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+            fastcgi_param PATH_INFO        $fastcgi_path_info;
+            fastcgi_param HTTPS            off;
+            fastcgi_param REQUEST_SCHEME   http;
+            fastcgi_read_timeout 60;
+        }
+    }
+}

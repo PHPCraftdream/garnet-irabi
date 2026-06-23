@@ -1,0 +1,54 @@
+# ── Dependencies (regenerable) ───────────────────────────────────────────
+/vendor/
+/node_modules/
+**/node_modules/
+
+# ── Runtime / per-environment state ──────────────────────────────────────
+# Everything under WorkDir is runtime or per-developer — EXCEPT the
+# ConfigExample templates (safe, no secrets). ConfigDev holds REAL prod
+# credentials (db, ssh identity key, deploy); Backups/Snapshots hold prod
+# DB dumps. None of it must ever be committed.
+/WorkDir/*
+!/WorkDir/ConfigExample/
+!/WorkDir/.keep
+
+# Belt-and-suspenders: never track secret config or DB dumps anywhere.
+**/ConfigDev/
+**/Backups/
+**/Snapshots/
+**/*.ini
+!**/ConfigExample/*.ini
+
+# Per-environment app identity (commit .env.example instead).
+/.env
+
+# ── Generated assets ─────────────────────────────────────────────────────
+/Public/assets/
+/Public/upload/
+**/Public/upload/
+*.gen.js
+*.gen.css
+*.gen.php
+*Gen.php
+
+# ── Logs / caches ────────────────────────────────────────────────────────
+errors.log
+**/errors.log
+.php-cs-fixer.cache
+*.cache
+
+# ── Test-scope markers (never commit — they open prod test gates) ─────────
+**/.allow_tests
+**/.test-mode
+
+# ── Playwright (Tests/) ──────────────────────────────────────────────────
+/Tests/node_modules/
+/Tests/test-results/
+/Tests/playwright-report/
+/Tests/.auth/
+/Tests/playwright/.cache/
+
+# ── IDE / OS ─────────────────────────────────────────────────────────────
+/.idea/
+/.vscode/
+.DS_Store
