@@ -35,24 +35,6 @@ interface Props {
     initialUnreadCount: number;
 }
 
-const EVENT_ICONS: Record<string, string> = {
-    new_slot: 'bi-calendar-plus',
-    slot_booked: 'bi-calendar-check',
-    booking_confirmed: 'bi-check-circle',
-    booking_rejected: 'bi-x-circle',
-    support_reply: 'bi-headset',
-    new_message: 'bi-chat-dots',
-};
-
-const EVENT_COLORS: Record<string, string> = {
-    new_slot: 'text-accent',
-    slot_booked: 'text-success',
-    booking_confirmed: 'text-success',
-    booking_rejected: 'text-danger',
-    support_reply: 'text-warning',
-    new_message: 'text-accent',
-};
-
 const linkCls = 'text-accent hover:underline font-medium';
 
 function PersonLink({id, name, isExpert}: {id?: number; name: string; isExpert?: boolean}) {

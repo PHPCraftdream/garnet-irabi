@@ -30,7 +30,7 @@ interface Props {
     csrf: string;
 }
 
-export const SupportPageIsland: React.FC<Props> = ({ticketsPagination, ticketPageUrl, messagesUrl, createUrl, replyUrl, downloadUrl, csrf}) => {
+export const SupportPageIsland: React.FC<Props> = ({ticketsPagination, ticketPageUrl, messagesUrl, createUrl, replyUrl, downloadUrl: _downloadUrl, csrf: _csrf}) => {
     const {
         items: tickets, page: ticketPage, totalPages: ticketTotalPages,
         total: ticketTotal, loading: ticketsLoading, goToPage: ticketGoToPage, refresh: ticketRefresh,

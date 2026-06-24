@@ -14,7 +14,7 @@ import {IrabiPreviewProvider} from '../../Common/IrabiPreviewProvider';
 import {TimezoneNotice} from '@common/Components/TimezoneNotice';
 import {PageHeader} from '@common/Components/PageHeader';
 import {CalendarDays} from 'lucide-react';
-import {weekStartTs, addDaysTs, tsToInputDate, tsToDow, tsToHour} from '@common/Utils/DateUtils';
+import {weekStartTs, addDaysTs, tsToInputDate, tsToHour} from '@common/Utils/DateUtils';
 
 function buildWeekDays(weekStartUnix: number, nowSec: number): DayInfo[] {
     const todayStr = tsToInputDate(nowSec);
@@ -50,8 +50,8 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots, experts,
     const [detailSlot, setDetailSlot] = useState<SlotItem | null>(null);
     const [bookedIds, setBookedIds] = useState<Set<number>>(() => new Set(bookedSlotIds));
     const [slotStatuses, setSlotStatuses] = useState<Record<string, string>>(() => ({...bookedSlotStatuses}));
-    const [bookingIds, setBookingIds] = useState<Record<string, number>>(() => ({...bookedSlotBookingIds}));
-    const [currentBalance, setCurrentBalance] = useState(balance);
+    const [bookingIds, _setBookingIds] = useState<Record<string, number>>(() => ({...bookedSlotBookingIds}));
+    const [currentBalance, _setCurrentBalance] = useState(balance);
     const [weekOffset, setWeekOffset] = useState(0);
     // Everyone defaults to "all" (free slots of others + the viewer's own bookings).
     const [statusFilter, setStatusFilter] = useState<SlotStatusFilter>('all');

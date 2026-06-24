@@ -45,7 +45,7 @@ function statusText(status: string): string {
 }
 
 export default function SlotDetailModal({
-    slot, experts, bookingStatus, bookingId, csrf, cancelReason,
+    slot, experts, bookingStatus, bookingId, csrf: _csrf, cancelReason,
     quickChatUrl, sendUrl, currentAccountId,
     onClose, onCancelled,
 }: Props) {

@@ -168,7 +168,7 @@ export const AdminUserDualLink: React.FC<{
     );
 };
 
-export function ticketLinks(ticketId: number) {
+export function ticketLinks(_ticketId: number) {
     return {
         publicUrl: appUrl(`/support/`),
         adminUrl: appUrl(`/admin/support/`),

@@ -25,7 +25,7 @@ interface Props {
 
 export default function QuickChat({partnerId, quickChatUrl, sendUrl, currentAccountId, maxMessages = 10}: Props) {
     const [messages, setMessages] = useState<QuickMessage[]>([]);
-    const [conversationId, setConversationId] = useState<number | null>(null);
+    const [_conversationId, setConversationId] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [replyText, setReplyText] = useState('');

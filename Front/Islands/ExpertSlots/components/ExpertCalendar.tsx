@@ -49,7 +49,7 @@ const pagerItems = (counts: Record<PagerKind, number>): PagerCountItem[] =>
 
 const PAGE_WEEKS = 4;
 
-export const ExpertCalendar: React.FC<Props> = ({slots, onCancel, onEdit, onCancelBooking, onConfirmBooking, onDelete, onUserClick, onSlotDrop}) => {
+export const ExpertCalendar: React.FC<Props> = ({slots, onCancel: _onCancel, onEdit, onCancelBooking, onConfirmBooking, onDelete, onUserClick, onSlotDrop}) => {
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
     // Window offset in weeks (multiples of PAGE_WEEKS). Lets the expert page back
     // to past weeks / forward beyond the default window so EVERY slot — including

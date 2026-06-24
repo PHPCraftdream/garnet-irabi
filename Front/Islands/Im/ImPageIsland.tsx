@@ -44,7 +44,7 @@ const ImPageIslandInner: React.FC<Props> = ({
     messagesUrl,
     sendUrl,
     conversationsUrl,
-    downloadUrl,
+    downloadUrl: _downloadUrl,
     searchRecipientsUrl,
     currentAccountId,
     isModerator = false,

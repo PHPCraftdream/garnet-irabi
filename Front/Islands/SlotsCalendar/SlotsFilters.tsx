@@ -16,7 +16,7 @@ export const SlotsFilters: React.FC<SlotsFiltersProps> = ({filters, experts, onC
         onChange({...filters, [key]: value});
     };
 
-    const toggleExpert = (id: string) => {
+    const _toggleExpert = (id: string) => {
         const next = new Set(filters.expertIds);
         if (next.has(id)) {
             next.delete(id);

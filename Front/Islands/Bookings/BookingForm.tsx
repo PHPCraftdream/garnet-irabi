@@ -40,7 +40,7 @@ interface BookingResponse {
 }
 
 
-const BookingFormIslandInner: React.FC<BookingFormProps> = ({slot, expert, csrf, isModerator = false}) => {
+const BookingFormIslandInner: React.FC<BookingFormProps> = ({slot, expert, csrf: _csrf, isModerator = false}) => {
     const [error, setError] = useState<string | null>(null);
     const {sending, withSending} = useSending();
 

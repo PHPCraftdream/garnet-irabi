@@ -32,7 +32,7 @@ interface Props {
     imPageUrl?: string;
 }
 
-export const SupportWidgetIsland: React.FC<Props> = ({unreadCount, unreadSupport = 0, unreadIm = 0, ticketsUrl, messagesUrl, createUrl, replyUrl, pageUrl, imPageUrl = '/im/'}) => {
+export const SupportWidgetIsland: React.FC<Props> = ({unreadCount, unreadSupport: _unreadSupport = 0, unreadIm = 0, ticketsUrl, messagesUrl, createUrl, replyUrl, pageUrl, imPageUrl = '/im/'}) => {
     const [isOpen, setIsOpen]           = useState(false);
     const [view, setView]               = useState<WidgetView>('list');
     const [tickets, setTickets]         = useState<SupportTicket[]>([]);

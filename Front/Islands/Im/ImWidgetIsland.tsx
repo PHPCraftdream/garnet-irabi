@@ -13,7 +13,7 @@ interface Props {
  * Click navigates to the IM page.
  */
 export const ImWidgetIsland: React.FC<Props> = ({unreadCount, pageUrl}) => {
-    const [badge, setBadge] = useState(unreadCount);
+    const [badge, _setBadge] = useState(unreadCount);
 
     useEffect(() => {
         D('im.widget', {unreadCount});
