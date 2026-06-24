@@ -71,6 +71,10 @@ $finder = PhpCsFixer\Finder::create()
     ->exclude('vendor')
     ->exclude('WorkDir')
     ->exclude('TestsInit')
-    ->exclude('Spec');
+    ->exclude('Spec')
+    // *Gen.php are gitignored build artifacts emitted by `garnet build`
+    // (Foreground{Js,Css}Gen). Linting them makes cs:check flaky — green on a
+    // clean tree, red right after a build.
+    ->notName('*Gen.php');
 
 return $config->setRules($rules)->setFinder($finder);

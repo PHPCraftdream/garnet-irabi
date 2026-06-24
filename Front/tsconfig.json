@@ -12,8 +12,8 @@
         "types": ["web"],
         "noImplicitAny": false,
         "paths": {
-            "@common/*": ["../../../Framework/Bundle/Front/Common/*"],
-            "@framework/*": ["../../../Framework/Bundle/Front/*"]
+            "@common/*": ["../vendor/phpcraftdream/garnet-framework/Bundle/Front/Common/*"],
+            "@framework/*": ["../vendor/phpcraftdream/garnet-framework/Bundle/Front/*"]
         },
         "target": "esnext"
     },

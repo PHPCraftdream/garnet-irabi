@@ -1,8 +1,13 @@
 name: CI
 
-# Active once Apps/IRabi is extracted to its own repository. In the monorepo
-# the root-level .github/workflows/ci.yml is what actually runs.
-
+# This workflow ships inside every scaffolded Garnet app, so a new app
+# repo gets CI automatically on its first push.
+#
+# A scaffolded app is a STANDALONE repo. The framework
+# (PHPCraftdream/garnet-framework) is a SEPARATE, PRIVATE repo that is
+# NOT on Packagist — the app depends on it via a composer PATH repository.
+# In CI the committed path-repo target is absent, so we check the
+# framework out as a sibling and override the repository to point at it.
 on:
   push:
     branches: ['*']
@@ -10,36 +15,203 @@ on:
     branches: ['*']
 
 jobs:
-  php:
-    name: PHP ${{ matrix.php }} — static analysis + code style
+  quality:
+    name: App — composer ci (cs-fixer + phpstan + build)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        php: ['8.1', '8.2', '8.3']
+    # ubuntu-latest ships npm; keep the post-install hook from npm-installing
+    # on this PHP-only job. The frontend job runs the node half deliberately.
+    env:
+      GARNET_SKIP_NODE_SETUP: '1'
     steps:
-      - uses: actions/checkout@v4
+      # 1. The app itself.
+      - name: Checkout app
+        uses: actions/checkout@v4
+        with:
+          path: app
+
+      # 2. The framework, as a sibling of the app.
+      #    The repo owner MUST create a `GARNET_FRAMEWORK_TOKEN` secret — a
+      #    PAT or fine-grained token with read access to the private
+      #    PHPCraftdream/garnet-framework repo. Without it this checkout
+      #    fails with a 404 (private repo not visible to GITHUB_TOKEN).
+      - name: Checkout framework (private)
+        uses: actions/checkout@v4
+        with:
+          repository: PHPCraftdream/garnet-framework
+          path: garnet-framework
+          token: ${{ secrets.GARNET_FRAMEWORK_TOKEN }}
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php }}
+          php-version: '8.3'
           extensions: mbstring, json, pdo, mysqli, intl
           coverage: none
           tools: composer:v2
 
-      - name: Cache Composer
-        uses: actions/cache@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          path: vendor
-          key: composer-${{ matrix.php }}-${{ hashFiles('composer.lock') }}
-          restore-keys: composer-${{ matrix.php }}-
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: garnet-framework/FrontBuilder/package-lock.json
 
-      - name: Install dependencies
-        run: composer install --no-progress --prefer-dist --no-interaction
+      # `composer ci` runs `garnet build`, which needs the framework's
+      # FrontBuilder node deps + the node_modules junction the build reads
+      # through. Set those up before touching the app.
+      - name: Framework frontend toolchain
+        working-directory: garnet-framework
+        run: |
+          composer install --no-progress --prefer-dist --no-interaction
+          php bin/garnet setup --skip-composer
 
-      - name: Code style (php-cs-fixer)
-        run: composer cs:check
+      # Override the app's committed path-repo to the sibling checkout, then
+      # install. `../garnet-framework` from `app/` resolves to the sibling;
+      # Composer 2 just skips the stale committed path-repo whose path is
+      # absent.
+      - name: Install app dependencies
+        working-directory: app
+        run: |
+          composer config repositories.0 '{"type":"path","url":"../garnet-framework","options":{"symlink":true}}'
+          GARNET_SKIP_NODE_SETUP=1 composer install --no-progress --prefer-dist --no-interaction
 
-      - name: Static analysis (phpstan)
-        run: composer phpstan
+      - name: App quality gate (cs-fixer + phpstan + build + build:check)
+        working-directory: app
+        run: composer ci
+
+  frontend:
+    name: App Frontend — oxlint + tsgo
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout app
+        uses: actions/checkout@v4
+        with:
+          path: app
+
+      # See the `quality` job for the token requirement.
+      - name: Checkout framework (private)
+        uses: actions/checkout@v4
+        with:
+          repository: PHPCraftdream/garnet-framework
+          path: garnet-framework
+          token: ${{ secrets.GARNET_FRAMEWORK_TOKEN }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: garnet-framework/FrontBuilder/package-lock.json
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, json, pdo, mysqli, intl
+          coverage: none
+          tools: composer:v2
+
+      # The app's tsgo resolves `react` etc. through the framework's
+      # FrontBuilder node_modules junction, so set the framework up first.
+      - name: Framework frontend toolchain
+        working-directory: garnet-framework
+        run: |
+          composer install --no-progress --prefer-dist --no-interaction
+          php bin/garnet setup --skip-composer
+
+      - name: Install app dependencies
+        working-directory: app
+        run: |
+          composer config repositories.0 '{"type":"path","url":"../garnet-framework","options":{"symlink":true}}'
+          GARNET_SKIP_NODE_SETUP=1 composer install --no-progress --prefer-dist --no-interaction
+
+      # App node deps (no Playwright browsers in CI).
+      - name: App node deps
+        working-directory: app
+        run: php garnet setup --skip-composer --skip-playwright
+
+      - name: oxlint + tsgo
+        working-directory: app
+        run: npm run check
+
+  e2e:
+    name: App E2E — Playwright smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout app
+        uses: actions/checkout@v4
+        with:
+          path: app
+
+      # See the `quality` job for the token requirement.
+      - name: Checkout framework (private)
+        uses: actions/checkout@v4
+        with:
+          repository: PHPCraftdream/garnet-framework
+          path: garnet-framework
+          token: ${{ secrets.GARNET_FRAMEWORK_TOKEN }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: garnet-framework/FrontBuilder/package-lock.json
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, json, pdo, mysqli, intl
+          coverage: none
+          tools: composer:v2
+
+      # The asset build reads through the framework's FrontBuilder
+      # node_modules junction, so set that up first.
+      - name: Framework frontend toolchain
+        working-directory: garnet-framework
+        run: |
+          composer install --no-progress --prefer-dist --no-interaction
+          php bin/garnet setup --skip-composer
+
+      - name: Install app dependencies
+        working-directory: app
+        run: |
+          composer config repositories.0 '{"type":"path","url":"../garnet-framework","options":{"symlink":true}}'
+          GARNET_SKIP_NODE_SETUP=1 composer install --no-progress --prefer-dist --no-interaction
+
+      # App node deps AND Playwright browsers — e2e needs the browsers,
+      # so we deliberately do NOT pass --skip-playwright here.
+      - name: App node deps + Playwright browsers
+        working-directory: app
+        run: php garnet setup --skip-composer
+
+      - name: Build assets
+        working-directory: app
+        run: php garnet build
+
+      # Serve + test in ONE step. A background process started in a separate
+      # step does not survive into the next one on GitHub-hosted runners, so
+      # the server, the readiness wait, and the Playwright run must share a
+      # step. The smoke specs are DB-free (db.ini has enabled = 0), so no
+      # MySQL service and no config:init / migration is needed.
+      - name: Serve + Playwright smoke suite
+        working-directory: app
+        run: |
+          php garnet serve &
+          SERVER_PID=$!
+          up=0
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://localhost:8001/ > /dev/null; then up=1; break; fi
+            sleep 2
+          done
+          if [ "$up" != "1" ]; then
+            echo "Server did not come up in time." >&2
+            kill "$SERVER_PID" 2>/dev/null || true
+            exit 1
+          fi
+          echo "Server is up — running Playwright."
+          npm --prefix Tests test
+          status=$?
+          kill "$SERVER_PID" 2>/dev/null || true
+          exit $status

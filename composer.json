@@ -15,17 +15,23 @@
         "zachweix/php-zmanim": "^2.0"
     },
     "scripts": {
+        "setup": "@php garnet setup --skip-composer",
+        "post-install-cmd": "@php garnet setup --skip-composer --soft",
         "phpstan": "phpstan analyse --configuration=phpstan.neon",
         "cs:check": "php-cs-fixer fix --dry-run --allow-risky=yes",
         "cs:fix": "php-cs-fixer fix --allow-risky=yes",
         "test:e2e": "npm --prefix Tests test",
+        "build": "@php garnet build",
+        "build:check": "@php garnet build:check",
         "check": [
             "@phpstan",
             "@cs:check"
         ],
         "ci": [
             "@cs:check",
-            "@phpstan"
+            "@build",
+            "@phpstan",
+            "@build:check"
         ]
     },
     "require-dev": {
