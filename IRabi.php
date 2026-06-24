@@ -605,10 +605,10 @@ namespace PHPCraftdream\IRabi {
                         // app-specific button skins fall back to browser defaults.
                         ForegroundCssGen::common(),
                     ]),
-                    'vendor_js_assets' => [
+                    'vendor_js_assets' => array_filter([
                         FrameworkJsGen::vendor_react(),
                         FrameworkJsGen::vendor_other(),
-                    ],
+                    ]),
                     'js_assets' => array_filter([
                         FrameworkJsGen::framework(),
                         ForegroundJsGen::foreground(),
