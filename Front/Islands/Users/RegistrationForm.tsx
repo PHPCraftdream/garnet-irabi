@@ -50,7 +50,7 @@ const NotificationPrefs: React.FC<NotificationPrefsProps> = ({initialPrefs, save
 			await sendPost(saveUrl, next as unknown as Record<string, unknown>);
 			showToast(tf.NotifPrefs_Saved(), 'success');
 		} catch {
-			showToast(I18n.General_Error ? I18n.General_Error() : 'Error saving preferences', 'error');
+			showToast(tf.General_Error(), 'danger');
 		}
 	};
 
