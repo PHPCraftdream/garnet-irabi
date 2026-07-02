@@ -1,0 +1,31 @@
+{
+  "mcpServers": {
+    "garnet-browser": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "--experimental-strip-types",
+        "--no-warnings=ExperimentalWarning",
+        "./vendor/phpcraftdream/garnet-framework/tooling/mcp/browser/src/server.ts"
+      ],
+      "env": {
+        "BASE_URL": "http://localhost:8001",
+        "AUTH_DIR": "./Tests/.auth",
+        "GARNET_APP_DIR": ".",
+        "PHP_ERROR_LOG": "./WorkDir/LogJournal/Errors/"
+      }
+    },
+    "garnet-mysql-mcp": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "--experimental-strip-types",
+        "--no-warnings=ExperimentalWarning",
+        "./vendor/phpcraftdream/garnet-framework/tooling/mcp/mysql/src/server.ts"
+      ],
+      "env": {
+        "GARNET_APP_DIR": "."
+      }
+    }
+  }
+}
