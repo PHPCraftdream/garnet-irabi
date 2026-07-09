@@ -62,18 +62,22 @@ jobs:
           php bin/garnet setup --skip-composer
 
       # Override the app's committed path-repo to the sibling checkout.
-      # `composer.lock` is committed with the LOCAL dev path
-      # (`../../garnet-framework`, since IRabi lives under `Apps/IRabi/`
-      # locally) and `--prefer-dist` resolves path packages from the
-      # LOCKED dist.url, not from composer.json — so overriding
-      # repositories.0 alone is not enough; the stale lock entry still
-      # wins and `install` fails with "Source path ... is not found".
-      # Deleting the lock forces a fresh resolve against the live
-      # composer.json repositories config.
+      # Two gotchas, both found by watching real CI runs fail:
+      #   1. `composer.lock` is committed with the LOCAL dev path
+      #      (`../../garnet-framework`, since IRabi lives under
+      #      `Apps/IRabi/` locally) and `--prefer-dist` resolves path
+      #      packages from the LOCKED dist.url, not from composer.json
+      #      — so overriding the repo alone isn't enough; delete the
+      #      lock to force a fresh resolve.
+      #   2. `composer config repositories.0 '<json>'` eagerly validates
+      #      the path repository BEFORE we get to overwrite it (fails
+      #      on the still-present, not-yet-overridden stale entry) — so
+      #      patch composer.json directly with `jq` instead of going
+      #      through `composer config`.
       - name: Install app dependencies
         working-directory: app
         run: |
-          composer config repositories.0 '{"type":"path","url":"../garnet-framework","options":{"symlink":true}}'
+          jq '.repositories[0].url = "../garnet-framework"' composer.json > composer.json.tmp && mv composer.json.tmp composer.json
           rm -f composer.lock
           GARNET_SKIP_NODE_SETUP=1 composer install --no-progress --prefer-dist --no-interaction
 
@@ -123,7 +127,7 @@ jobs:
       - name: Install app dependencies
         working-directory: app
         run: |
-          composer config repositories.0 '{"type":"path","url":"../garnet-framework","options":{"symlink":true}}'
+          jq '.repositories[0].url = "../garnet-framework"' composer.json > composer.json.tmp && mv composer.json.tmp composer.json
           rm -f composer.lock
           GARNET_SKIP_NODE_SETUP=1 composer install --no-progress --prefer-dist --no-interaction
 
@@ -178,7 +182,7 @@ jobs:
       - name: Install app dependencies
         working-directory: app
         run: |
-          composer config repositories.0 '{"type":"path","url":"../garnet-framework","options":{"symlink":true}}'
+          jq '.repositories[0].url = "../garnet-framework"' composer.json > composer.json.tmp && mv composer.json.tmp composer.json
           rm -f composer.lock
           GARNET_SKIP_NODE_SETUP=1 composer install --no-progress --prefer-dist --no-interaction
 
