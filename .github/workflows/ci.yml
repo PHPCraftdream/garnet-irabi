@@ -90,6 +90,14 @@ jobs:
           rm -f composer.lock
           GARNET_SKIP_NODE_SETUP=1 composer install --no-progress --prefer-dist --no-interaction
 
+      # `composer ci`'s `@build` step needs the app's own `rspack` binary
+      # (app/node_modules/.bin/rspack) — GARNET_SKIP_NODE_SETUP above
+      # only skipped the post-install hook, so install explicitly here.
+      # No Playwright browsers needed for this PHP-focused job.
+      - name: App node deps
+        working-directory: app
+        run: php garnet setup --skip-composer --skip-playwright
+
       - name: App quality gate (cs-fixer + phpstan + build + build:check)
         working-directory: app
         run: composer ci

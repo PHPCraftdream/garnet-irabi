@@ -27,5 +27,8 @@
   "include": [
     "Front/**/*.ts",
     "Front/**/*.tsx"
+  ],
+  "files": [
+    "vendor/phpcraftdream/garnet-framework/FrontBuilder/global.d.ts"
   ]
 }
