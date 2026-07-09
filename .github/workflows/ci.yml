@@ -18,10 +18,6 @@ jobs:
   quality:
     name: App — composer ci (cs-fixer + phpstan + build)
     runs-on: ubuntu-latest
-    # ubuntu-latest ships npm; keep the post-install hook from npm-installing
-    # on this PHP-only job. The frontend job runs the node half deliberately.
-    env:
-      GARNET_SKIP_NODE_SETUP: '1'
     steps:
       # 1. The app itself.
       - name: Checkout app
@@ -63,7 +59,12 @@ jobs:
 
       # `composer ci` runs `garnet build`, which needs the framework's
       # FrontBuilder node deps + the node_modules junction the build reads
-      # through. Set those up before touching the app.
+      # through. Set those up before touching the app. IMPORTANT: don't set
+      # GARNET_SKIP_NODE_SETUP at the job level — it applies to every step,
+      # including this one's own explicit `garnet setup` call, silently
+      # skipping the npm install and leaving `rspack` missing later
+      # ("spawn rspack ENOENT" in the build step below). Found by watching
+      # a real CI run fail this exact way.
       - name: Framework frontend toolchain
         working-directory: garnet-framework
         run: |
@@ -251,9 +252,14 @@ jobs:
       # Seed WorkDir/Config/*.ini from WorkDir/ConfigExample/*.ini (gitignored
       # dir, never in a fresh checkout) and apply the DB schema. `migration`
       # bootstraps its own tracker table now, so no separate `init` needed.
+      # run_cmd.php hardcodes WorkDir/public/ as the CLI public-dir stub
+      # (BaseAppInit::getPublicDir()'s CLI fallback is otherwise dir-agnostic,
+      # but this app pins one explicitly) — that dir is gitignored too, so
+      # create it here or every `php garnet <cli-command>` throws.
       - name: Configure app + run migrations
         working-directory: app
         run: |
+          mkdir -p WorkDir/public
           php garnet config:init
           php garnet migration
 
