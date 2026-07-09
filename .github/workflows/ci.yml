@@ -4,8 +4,8 @@ name: CI
 # repo gets CI automatically on its first push.
 #
 # A scaffolded app is a STANDALONE repo. The framework
-# (PHPCraftdream/garnet-framework) is a SEPARATE, PRIVATE repo that is
-# NOT on Packagist — the app depends on it via a composer PATH repository.
+# (PHPCraftdream/garnet-framework) is a SEPARATE, PUBLIC repo that is
+# NOT on Packagist yet — the app depends on it via a composer PATH repository.
 # In CI the committed path-repo target is absent, so we check the
 # framework out as a sibling and override the repository to point at it.
 on:
@@ -29,17 +29,13 @@ jobs:
         with:
           path: app
 
-      # 2. The framework, as a sibling of the app.
-      #    The repo owner MUST create a `GARNET_FRAMEWORK_TOKEN` secret — a
-      #    PAT or fine-grained token with read access to the private
-      #    PHPCraftdream/garnet-framework repo. Without it this checkout
-      #    fails with a 404 (private repo not visible to GITHUB_TOKEN).
-      - name: Checkout framework (private)
+      # 2. The framework, as a sibling of the app. Public repo — no token
+      #    needed, the default GITHUB_TOKEN can read it.
+      - name: Checkout framework
         uses: actions/checkout@v4
         with:
           repository: PHPCraftdream/garnet-framework
           path: garnet-framework
-          token: ${{ secrets.GARNET_FRAMEWORK_TOKEN }}
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -88,13 +84,12 @@ jobs:
         with:
           path: app
 
-      # See the `quality` job for the token requirement.
-      - name: Checkout framework (private)
+      # Public repo — no token needed, see the `quality` job.
+      - name: Checkout framework
         uses: actions/checkout@v4
         with:
           repository: PHPCraftdream/garnet-framework
           path: garnet-framework
-          token: ${{ secrets.GARNET_FRAMEWORK_TOKEN }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -143,13 +138,12 @@ jobs:
         with:
           path: app
 
-      # See the `quality` job for the token requirement.
-      - name: Checkout framework (private)
+      # Public repo — no token needed, see the `quality` job.
+      - name: Checkout framework
         uses: actions/checkout@v4
         with:
           repository: PHPCraftdream/garnet-framework
           path: garnet-framework
-          token: ${{ secrets.GARNET_FRAMEWORK_TOKEN }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
