@@ -165,6 +165,21 @@ jobs:
   e2e:
     name: App E2E — Playwright smoke
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: app_db
+          MYSQL_USER: app_db
+          MYSQL_PASSWORD: app_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -proot"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=10
     steps:
       - name: Checkout app
         uses: actions/checkout@v4
@@ -175,6 +190,20 @@ jobs:
       - name: Bootstrap .env
         working-directory: app
         run: cp .env.example .env
+
+      # WorkDir/ConfigExample/db.ini already targets host=127.0.0.1,
+      # port=3306, user/password=app_db, dbname=app_db — matches the
+      # service container above exactly, so `config:init` (which seeds
+      # WorkDir/Config/*.ini from ConfigExample) needs no override.
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -P 3306 -u app_db -papp_db --silent; then
+              echo "MySQL up"; exit 0
+            fi
+            sleep 2
+          done
+          echo "MySQL never came up"; exit 1
 
       # Public repo — no token needed, see the `quality` job.
       - name: Checkout framework
@@ -219,6 +248,15 @@ jobs:
         working-directory: app
         run: php garnet setup --skip-composer
 
+      # Seed WorkDir/Config/*.ini from WorkDir/ConfigExample/*.ini (gitignored
+      # dir, never in a fresh checkout) and apply the DB schema. `migration`
+      # bootstraps its own tracker table now, so no separate `init` needed.
+      - name: Configure app + run migrations
+        working-directory: app
+        run: |
+          php garnet config:init
+          php garnet migration
+
       - name: Build assets
         working-directory: app
         run: php garnet build
@@ -226,8 +264,9 @@ jobs:
       # Serve + test in ONE step. A background process started in a separate
       # step does not survive into the next one on GitHub-hosted runners, so
       # the server, the readiness wait, and the Playwright run must share a
-      # step. The smoke specs are DB-free (db.ini has enabled = 0), so no
-      # MySQL service and no config:init / migration is needed.
+      # step. Unlike the framework's own DB-free e2e job, IRabi is a real
+      # app with a real DB (mysql service above + config:init + migration),
+      # so its full Playwright suite (not just a DB-free subset) runs here.
       - name: Serve + Playwright smoke suite
         working-directory: app
         run: |
