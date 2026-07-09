@@ -61,14 +61,20 @@ jobs:
           composer install --no-progress --prefer-dist --no-interaction
           php bin/garnet setup --skip-composer
 
-      # Override the app's committed path-repo to the sibling checkout, then
-      # install. `../garnet-framework` from `app/` resolves to the sibling;
-      # Composer 2 just skips the stale committed path-repo whose path is
-      # absent.
+      # Override the app's committed path-repo to the sibling checkout.
+      # `composer.lock` is committed with the LOCAL dev path
+      # (`../../garnet-framework`, since IRabi lives under `Apps/IRabi/`
+      # locally) and `--prefer-dist` resolves path packages from the
+      # LOCKED dist.url, not from composer.json — so overriding
+      # repositories.0 alone is not enough; the stale lock entry still
+      # wins and `install` fails with "Source path ... is not found".
+      # Deleting the lock forces a fresh resolve against the live
+      # composer.json repositories config.
       - name: Install app dependencies
         working-directory: app
         run: |
           composer config repositories.0 '{"type":"path","url":"../garnet-framework","options":{"symlink":true}}'
+          rm -f composer.lock
           GARNET_SKIP_NODE_SETUP=1 composer install --no-progress --prefer-dist --no-interaction
 
       - name: App quality gate (cs-fixer + phpstan + build + build:check)
@@ -118,6 +124,7 @@ jobs:
         working-directory: app
         run: |
           composer config repositories.0 '{"type":"path","url":"../garnet-framework","options":{"symlink":true}}'
+          rm -f composer.lock
           GARNET_SKIP_NODE_SETUP=1 composer install --no-progress --prefer-dist --no-interaction
 
       # App node deps (no Playwright browsers in CI).
@@ -172,6 +179,7 @@ jobs:
         working-directory: app
         run: |
           composer config repositories.0 '{"type":"path","url":"../garnet-framework","options":{"symlink":true}}'
+          rm -f composer.lock
           GARNET_SKIP_NODE_SETUP=1 composer install --no-progress --prefer-dist --no-interaction
 
       # App node deps AND Playwright browsers — e2e needs the browsers,
