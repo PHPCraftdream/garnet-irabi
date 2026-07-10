@@ -1,0 +1,52 @@
+# PHP-FPM image for the Playwright test stack.
+#
+# Built once locally; nginx fastcgi-proxies to this container so multiple
+# concurrent HTTP requests run in true parallel — `php -S` cannot do that.
+#
+# Extensions match what `php -m` reports on the developer Windows machine
+# so behaviour stays consistent between the dev `php -S` flow and the
+# containerised test flow.
+
+FROM php:8.1-fpm-alpine
+
+RUN apk add --no-cache \
+        $PHPIZE_DEPS \
+        icu-dev \
+        libpng-dev \
+        libjpeg-turbo-dev \
+        freetype-dev \
+        oniguruma-dev \
+        libzip-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" \
+        mysqli \
+        pdo_mysql \
+        intl \
+        gd \
+        mbstring \
+        opcache \
+        zip \
+        bcmath
+
+# Disable opcache file timestamp validation tweaks — for tests we want the
+# code change to take effect on the next request without an FPM restart.
+RUN { \
+        echo 'opcache.enable=0'; \
+        echo 'opcache.enable_cli=0'; \
+        echo 'memory_limit=512M'; \
+        echo 'post_max_size=64M'; \
+        echo 'upload_max_filesize=64M'; \
+        echo 'date.timezone=Europe/Moscow'; \
+    } > /usr/local/etc/php/conf.d/zz-test-overrides.ini
+
+# Tighten the FPM worker pool for parallel test workers. 16 children comfortably
+# saturates 4 playwright workers without exhausting the host.
+RUN sed -i \
+        -e 's/^pm = .*/pm = dynamic/' \
+        -e 's/^pm.max_children = .*/pm.max_children = 16/' \
+        -e 's/^pm.start_servers = .*/pm.start_servers = 4/' \
+        -e 's/^pm.min_spare_servers = .*/pm.min_spare_servers = 2/' \
+        -e 's/^pm.max_spare_servers = .*/pm.max_spare_servers = 8/' \
+        /usr/local/etc/php-fpm.d/www.conf
+
+WORKDIR /var/www/garnet-team

@@ -1,0 +1,27 @@
+{
+    "compilerOptions": {
+        "skipLibCheck": true,
+        "skipDefaultLibCheck": true,
+        "allowJs": true,
+        "baseUrl": ".",
+        "esModuleInterop": true,
+        "jsx": "react-jsx",
+        "lib": ["dom", "dom.iterable", "esnext"],
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "types": ["web"],
+        "noImplicitAny": false,
+        "paths": {
+            "@common/*": ["../vendor/phpcraftdream/garnet-framework/Bundle/Front/Common/*"],
+            "@framework/*": ["../vendor/phpcraftdream/garnet-framework/Bundle/Front/*"]
+        },
+        "target": "esnext"
+    },
+    "exclude": [
+        "node_modules"
+    ],
+    "include": [
+        "**/*.ts",
+        "**/*.tsx"
+    ]
+}

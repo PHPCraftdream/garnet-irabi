@@ -1,0 +1,40 @@
+{
+  "$schema": "./vendor/phpcraftdream/garnet-framework/FrontBuilder/node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "unicorn", "import"],
+  "env": {
+    "browser": true,
+    "es2024": true
+  },
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn"
+  },
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/*.gen.js",
+    "**/*.gen.css",
+    "**/I18nGen/**",
+    "vendor/**"
+  ],
+  "rules": {
+    "no-unused-vars": "warn",
+    "no-console": "off",
+    "no-underscore-dangle": "off",
+
+    "react-hooks/exhaustive-deps": "warn",
+
+    "unicorn/no-thenable": "off",
+
+    "unicorn/no-empty-file": "warn",
+
+    "no-async-promise-executor": "warn",
+    "no-shadow-restricted-names": "warn",
+    "no-unused-expressions": "warn",
+    "no-extra-boolean-cast": "warn",
+    "no-cond-assign": "warn",
+    "typescript/no-this-alias": "warn"
+  }
+}

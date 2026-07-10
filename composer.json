@@ -1,0 +1,41 @@
+{
+    "name": "phpcraftdream/app",
+    "type": "project",
+    "license": "MIT",
+    "repositories": [
+        {"type": "path", "url": "../../garnet-framework", "options": {"symlink": true}}
+    ],
+    "autoload": {
+        "psr-4": {
+            "PHPCraftdream\\IRabi\\": "./"
+        }
+    },
+    "require": {
+        "phpcraftdream/garnet-framework": "@dev",
+        "zachweix/php-zmanim": "^2.0"
+    },
+    "scripts": {
+        "setup": "@php garnet setup --skip-composer",
+        "post-install-cmd": "@php garnet setup --skip-composer --soft",
+        "phpstan": "phpstan analyse --configuration=phpstan.neon",
+        "cs:check": "php-cs-fixer fix --dry-run --allow-risky=yes",
+        "cs:fix": "php-cs-fixer fix --allow-risky=yes",
+        "test:e2e": "npm --prefix Tests test",
+        "build": "@php garnet build",
+        "build:check": "@php garnet build:check",
+        "check": [
+            "@phpstan",
+            "@cs:check"
+        ],
+        "ci": [
+            "@cs:check",
+            "@build",
+            "@phpstan",
+            "@build:check"
+        ]
+    },
+    "require-dev": {
+        "phpstan/phpstan": "2.1.38",
+        "friendsofphp/php-cs-fixer": "~3.93.0"
+    }
+}

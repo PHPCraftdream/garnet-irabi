@@ -1,0 +1,33 @@
+{# Interstitial gateway for outbound links. Renders either an "invalid URL"
+   message or the confirmation panel with host + full URL + continue
+   button. Surrounding layout (head, menus, scripts) is provided by
+   HtmlLayout — this template emits only the page body.
+
+   No React island here on purpose: the page itself sets
+   meta referrer=no-referrer, the continue link adds
+   rel="noopener noreferrer nofollow", and the destination URL was
+   already validated server-side. #}
+<div class="page-narrow space-y-4 mt-6" data-test-id="external-redirect">
+    <h1 class="section-heading">{{ title }}</h1>
+
+    {% if target_url is null %}
+        <p class="text-danger">{{ invalid_label }}</p>
+        <a href="/" class="btn btn-secondary btn-sm">{{ cancel_label }}</a>
+    {% else %}
+        <p class="text-muted">{{ description }}</p>
+        <dl class="text-sm space-y-1">
+            <div><dt class="inline text-muted">{{ host_label }}:</dt> <dd class="inline font-medium">{{ host_text }}</dd></div>
+            <div><dt class="inline text-muted">{{ full_label }}:</dt> <dd class="inline break-all">{{ target_url }}</dd></div>
+        </dl>
+        <div class="flex gap-2">
+            <a
+                href="{{ target_url }}"
+                rel="noopener noreferrer nofollow"
+                referrerpolicy="no-referrer"
+                class="btn btn-primary btn-sm"
+                data-test-id="external-continue"
+            >{{ continue_label }}</a>
+            <a href="/" class="btn btn-secondary btn-sm" data-test-id="external-cancel">{{ cancel_label }}</a>
+        </div>
+    {% endif %}
+</div>

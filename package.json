@@ -1,0 +1,35 @@
+{
+    "name": "irabi",
+    "private": true,
+    "description": "Type dependencies for IDE support. Build is done via FrontBuilder/rspack.config.ts.",
+    "scripts": {
+        "lint": "oxlint Front",
+        "typecheck": "tsgo --noEmit -p tsconfig.tsgo.json",
+        "check": "npm run lint && npm run typecheck"
+    },
+    "devDependencies": {
+        "@hookform/resolvers": "^5.2.2",
+        "@typescript/native-preview": "latest",
+        "oxlint": "^1.0.0",
+        "@radix-ui/react-dialog": "^1.1.15",
+        "@radix-ui/react-popover": "^1.1.15",
+        "@radix-ui/react-select": "^2.2.6",
+        "@radix-ui/react-tooltip": "^1.2.8",
+        "@types/dompurify": "^3.0.5",
+        "@types/react": "^18.3.3",
+        "@types/react-dom": "^18.3.0",
+        "@types/web": "^0.0.151",
+        "class-variance-authority": "^0.7.1",
+        "clsx": "^2.1.1",
+        "cmdk": "^1.1.1",
+        "dompurify": "^3.3.3",
+        "html-to-image": "^1.11.13",
+        "lucide-react": "^0.576.0",
+        "marked": "^17.0.4",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
+        "react-hook-form": "^7.71.2",
+        "tailwind-merge": "^3.5.0",
+        "zod": "^4.3.6"
+    }
+}
