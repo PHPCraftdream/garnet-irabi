@@ -262,18 +262,25 @@ jobs:
         working-directory: app
         run: php garnet setup --skip-composer
 
-      # Seed WorkDir/Config/*.ini from WorkDir/ConfigExample/*.ini (gitignored
-      # dir, never in a fresh checkout) and apply the DB schema. `migration`
-      # bootstraps its own tracker table now, so no separate `init` needed.
-      # run_cmd.php hardcodes WorkDir/public/ as the CLI public-dir stub
-      # (BaseAppInit::getPublicDir()'s CLI fallback is otherwise dir-agnostic,
-      # but this app pins one explicitly) — that dir is gitignored too, so
-      # create it here or every `php garnet <cli-command>` throws.
+      # Seed WorkDir/Config/*.ini AND WorkDir/ConfigDev/*.ini from
+      # WorkDir/ConfigExample/*.ini (gitignored dir, never in a fresh
+      # checkout) and apply the DB schema. `--all` writes both dirs
+      # identically: the "Mark framework checkout as a dev directory" step
+      # above makes Env::isDevDir() true (needed for the E2E isolation
+      # script's DB_PREFIX_OVERRIDE), which makes every `php garnet`
+      # invocation here read ConfigDev/ instead of Config/ — without --all
+      # that dir would stay empty and every command would 500/fail instead.
+      # `migration` bootstraps its own tracker table now, so no separate
+      # `init` needed. run_cmd.php hardcodes WorkDir/public/ as the CLI
+      # public-dir stub (BaseAppInit::getPublicDir()'s CLI fallback is
+      # otherwise dir-agnostic, but this app pins one explicitly) — that dir
+      # is gitignored too, so create it here or every `php garnet
+      # <cli-command>` throws.
       - name: Configure app + run migrations
         working-directory: app
         run: |
           mkdir -p WorkDir/public
-          php garnet config:init
+          php garnet config:init --all
           php garnet migration
 
       - name: Build assets
