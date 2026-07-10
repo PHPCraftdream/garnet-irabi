@@ -104,10 +104,12 @@ namespace PHPCraftdream\IRabi\Migrations\Items {
             NewsArchived::init()->ex();
 
             // ── Mail log + queue ──
+            // FwMailLog::init() already declares the `meta` column directly
+            // (added there after this migration was first written) — the
+            // ALTER TABLE that used to backfill it here is redundant now and
+            // fails with "Duplicate column name" on any fresh database.
             MailLog::get()->init()->ex();
             MailLogRecipients::get()->init()->ex();
-            $mailLogTable = MailLog::get()->getTableName();
-            $pool->query("ALTER TABLE {$mailLogTable} ADD COLUMN meta TEXT NULL AFTER body_html");
             EmailQueue::get()->init()->ex();
             EmailAttempts::get()->init()->ex();
 
