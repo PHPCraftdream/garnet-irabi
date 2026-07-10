@@ -50,6 +50,6 @@ Apps/IRabi/
 - [Architecture](architecture.md) — Application structure
 - [Roles & Permissions](roles.md) — Role hierarchy and access matrix
 - [Development Guide](development.md) — Setup and development instructions
-- [Expert API](teaching-api.md) — Expert panel API endpoints
+- [Expert API](expert-api.md) — Expert panel API endpoints
 
-Playwright testing guide now lives in [`tests/TESTING.md`](../../../Framework/tests/TESTING.md).
+Playwright testing guide lives in [`Tests/TESTING.md`](../Tests/TESTING.md).

@@ -112,7 +112,7 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
                 'seoOgImageRemove' => 'Удалить изображение',
                 'seoOgImageRemoveConfirm' => 'Удалить загруженное изображение?',
                 'seoTwitterSite' => 'Twitter / X аккаунт',
-                'seoTwitterSitePlaceholder' => '@slotbook',
+                'seoTwitterSitePlaceholder' => '@irabi',
                 'historyTab' => $t->Admin_SystemSettings_History_Tab(),
                 'historyTitle' => $t->Admin_SystemSettings_History_Title(),
                 'historyHint' => $t->Admin_SystemSettings_History_Hint(),

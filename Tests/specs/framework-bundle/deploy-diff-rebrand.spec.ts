@@ -45,19 +45,19 @@ test.describe('PublicPathRebrander — PHP unit', () => {
 
     test('rewritePairs returns correct from→to mappings', async () => {
         const out = await phpEval(`
-$pairs = PublicPathRebrander::rewritePairs('IRabi', 'slotbook');
+$pairs = PublicPathRebrander::rewritePairs('IRabi', 'rebranded');
 echo json_encode($pairs);
 `);
         const pairs = JSON.parse(out);
-        expect(pairs['/assets/IRabi/']).toBe('/assets/slotbook/');
-        expect(pairs['/upload/IRabi/']).toBe('/upload/slotbook/');
-        expect(pairs['/assets/irabi/']).toBe('/assets/slotbook/');
-        expect(pairs['/upload/irabi/']).toBe('/upload/slotbook/');
+        expect(pairs['/assets/IRabi/']).toBe('/assets/rebranded/');
+        expect(pairs['/upload/IRabi/']).toBe('/upload/rebranded/');
+        expect(pairs['/assets/irabi/']).toBe('/assets/rebranded/');
+        expect(pairs['/upload/irabi/']).toBe('/upload/rebranded/');
     });
 
     test('rewriteContent replaces asset URLs and is idempotent', async () => {
         const out = await phpEval(`
-$pairs = PublicPathRebrander::rewritePairs('IRabi', 'slotbook');
+$pairs = PublicPathRebrander::rewritePairs('IRabi', 'rebranded');
 $in = "return '/assets/IRabi/gen/js/foreground.abc123.gen.js';";
 $out = PublicPathRebrander::rewriteContent($in, $pairs);
 $out2 = PublicPathRebrander::rewriteContent($out, $pairs);
@@ -65,7 +65,7 @@ echo $out . PHP_EOL . $out2;
 `);
         // Normalize CRLF from PHP on Windows
         const lines = out.replace(/\r\n/g, '\n').split('\n');
-        expect(lines[0]).toContain('/assets/slotbook/');
+        expect(lines[0]).toContain('/assets/rebranded/');
         expect(lines[0]).not.toContain('/assets/IRabi/');
         expect(lines[0]).toBe(lines[1]);
     });

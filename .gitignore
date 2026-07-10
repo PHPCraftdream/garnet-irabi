@@ -41,6 +41,9 @@ errors.log
 **/.allow_tests
 **/.test-mode
 
+# ── Admin console auth token (runtime state, opens the /__garnet/ console) ──
+/.garnet_admin
+
 # ── Playwright (Tests/) ──────────────────────────────────────────────────
 /Tests/node_modules/
 /Tests/test-results/

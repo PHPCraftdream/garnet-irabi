@@ -1,7 +1,7 @@
 {
     "name": "phpcraftdream/app",
     "type": "project",
-    "license": "private",
+    "license": "MIT",
     "repositories": [
         {"type": "path", "url": "../../garnet-framework", "options": {"symlink": true}}
     ],

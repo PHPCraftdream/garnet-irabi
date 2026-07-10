@@ -1,6 +1,6 @@
 # GARNET_APP_NAME picks which app under Apps/ the test stack boots. Defaults
 # to IRabi in the current monorepo; override per-invocation:
-#   GARNET_APP_NAME=Names72 docker compose -f docker-compose.test.yml up
+#   GARNET_APP_NAME=OtherApp docker compose -f docker-compose.test.yml up
 services:
   garnet-fpm:
     build:

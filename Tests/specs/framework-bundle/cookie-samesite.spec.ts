@@ -1,6 +1,6 @@
 /**
  * Regression: auth cookies must be SameSite=Lax so they survive the cross-site
- * top-level navigation from a webmail magic-link click (gmail.com → slotbook.ru).
+ * top-level navigation from a webmail magic-link click (gmail.com → example.com).
  *
  * The Cookie class defaults to SameSite=Strict. The session cookie overrode that
  * to Lax long ago, but the CSRF_TOKEN cookie did NOT — so on an email-link click

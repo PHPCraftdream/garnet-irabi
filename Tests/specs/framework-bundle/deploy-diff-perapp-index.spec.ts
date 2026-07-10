@@ -45,10 +45,10 @@ async function runGarnet(args: string[]): Promise<{ stdout: string; stderr: stri
 test.describe('deploy:diff per-app index.php shim rewrite', () => {
     test('perAppIndexContent returns correct shim', async () => {
         const { stdout } = await execAsync(PHP, ['-r', phpBoot(`
-echo PublicPathRebrander::perAppIndexContent('garnet-runtime-slotbook');
+echo PublicPathRebrander::perAppIndexContent('garnet-runtime-example');
 `)], { cwd: GARNET_ROOT, env: { ...process.env } });
         const out = stdout.trim().replace(/\r\n/g, '\n');
-        expect(out).toContain("require __DIR__ . '/../garnet-runtime-slotbook/_shared_index.php';");
+        expect(out).toContain("require __DIR__ . '/../garnet-runtime-example/_shared_index.php';");
     });
 
     test('--file=Apps/<App>/Public/index.php --dry-run shows shim rewrite hint', async () => {

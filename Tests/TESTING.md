@@ -87,7 +87,7 @@ shared seed accounts (admin flag flips, approval toggles) are
 physically impossible.
 
 Note on the prefix: in legacy (`PW_WORKER_ISOLATION=0`) the base
-prefix from `db.ini` is `db_ir` for IRabi (`db_n72` for Names72, …) —
+prefix from `db.ini` is `db_ir` for IRabi (a different prefix per app) —
 the bundle infix lives **inside** the prefix, not in the table name.
 Isolation mode replaces the entire base prefix with `test_worker_N`
 (no `_ir` suffix preserved), so isolated tables are
@@ -247,9 +247,9 @@ shipping `/dev-login` to prod. One command drives the whole lifecycle from
 your local machine:
 
 ```bash
-php garnet test:remote --base-url=https://slotbook.ru
-php garnet test:remote --base-url=https://slotbook.ru --project=admin-tests
-php garnet test:remote --base-url=https://slotbook.ru --keep   # skip teardown
+php garnet test:remote --base-url=https://example.com
+php garnet test:remote --base-url=https://example.com --project=admin-tests
+php garnet test:remote --base-url=https://example.com --keep   # skip teardown
 ```
 
 What happens:
