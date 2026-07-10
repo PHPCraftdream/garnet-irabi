@@ -19,6 +19,7 @@ interface Props {
     balancesGridConfig: GridConfig;
     userDetailUrl: string;
     adjustUrl: string;
+    canAdjust: boolean;
     initialTab: 'finance' | 'balances';
 }
 
@@ -43,7 +44,7 @@ function writeTabToUrl(tab: FinanceTabId): void {
 }
 
 export const AdminFinanceIsland: React.FC<Props> = ({
-    ledger, balances, ledgerGridConfig, balancesGridConfig, userDetailUrl, adjustUrl, initialTab,
+    ledger, balances, ledgerGridConfig, balancesGridConfig, userDetailUrl, adjustUrl, canAdjust, initialTab,
 }) => {
     const [activeMainTab, setActiveMainTab] = useState<FinanceTabId>(initialTab);
 
@@ -117,7 +118,7 @@ export const AdminFinanceIsland: React.FC<Props> = ({
                 <LedgerSection ledger={ledger} config={ledgerGridConfig} />
             )}
             {showBalances && (
-                <BalancesSection balances={balances} config={balancesGridConfig} adjustUrl={adjustUrl} />
+                <BalancesSection balances={balances} config={balancesGridConfig} adjustUrl={adjustUrl} canAdjust={canAdjust} />
             )}
             {activeUserTab && (
                 <UserDetailTab

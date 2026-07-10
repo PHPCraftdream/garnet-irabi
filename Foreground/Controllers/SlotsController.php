@@ -195,6 +195,13 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 return ControllerTools::JSON(['error' => 'slot_in_past', 'redirectUrl' => IRabi::url('/slots')], status: 409);
             }
 
+            // Enforce the approval gate inside the transaction: a slot owned by an
+            // unapproved/disabled expert is filtered out of the public listing but
+            // must also be unbookable via a direct slot_id — see security audit.
+            if (!UserEntityConfig::isApprovedActiveExpert((int)$slot['expert_id'])) {
+                return ControllerTools::JSON(['error' => 'slot_unavailable', 'redirectUrl' => IRabi::url('/slots')], status: 409);
+            }
+
             $expertId = (int)$slot['expert_id'];
             $expertProfile = ExpertProfiles::get()->selectOneByField('account_id', $expertId);
             $expertDisplayName = $expertProfile['display_name'] ?? '';
@@ -269,6 +276,11 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 }
                 if ((int)$slot['start_at'] <= $now) {
                     return ControllerTools::JSON(['error' => 'slot_in_past', 'redirectUrl' => IRabi::url('/slots')], status: 409);
+                }
+                // Approval gate inside the transaction: reject slots owned by an
+                // unapproved/disabled expert even when reached via a direct id.
+                if (!UserEntityConfig::isApprovedActiveExpert((int)($slot['expert_id'] ?? 0))) {
+                    return ControllerTools::JSON(['error' => "Slot #{$slotId} is not available"], status: 400);
                 }
                 // Concurrency guard: check id+uid pair
                 $expectedUid = (string)($slotUids[(string)$slotId] ?? '');

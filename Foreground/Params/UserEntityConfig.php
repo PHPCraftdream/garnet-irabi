@@ -198,5 +198,110 @@ namespace PHPCraftdream\IRabi\Foreground\Params {
 
             return $account->isAdmin();
         }
+
+        /**
+         * Staff-rank ladder as a comparable integer (higher = more privileged).
+         * Used by admin actions to enforce that an actor may only act on
+         * accounts strictly below their own rank (no lateral / upward moves,
+         * no self-targeting on destructive flags).
+         */
+        public const RANK_USER = 0;
+        public const RANK_MODERATOR = 1;
+        public const RANK_OWNER = 2;
+        public const RANK_ADMIN = 3;
+
+        /** Map raw staff-flag truthiness to a rank level. */
+        public static function rankLevel(bool $isAdmin, bool $isOwner, bool $isModerator): int {
+            if ($isAdmin) {
+                return self::RANK_ADMIN;
+            }
+            if ($isOwner) {
+                return self::RANK_OWNER;
+            }
+            if ($isModerator) {
+                return self::RANK_MODERATOR;
+            }
+            return self::RANK_USER;
+        }
+
+        /** Rank level of the current session account. */
+        public static function actorRankLevel(): int {
+            $account = Account::fromSession();
+            if (!$account) {
+                return self::RANK_USER;
+            }
+            return self::rankLevel($account->isAdmin(), $account->isOwner(), $account->isModerator());
+        }
+
+        /** Rank level of an arbitrary account id (loads its staff flags). */
+        public static function accountRankLevel(int $accountId): int {
+            if ($accountId <= 0) {
+                return self::RANK_USER;
+            }
+            $accounts = Account::getAccounts(
+                selectCallback: static function (SelectInterface $select) use ($accountId): void {
+                    $select->resetCols();
+                    $select->cols(['id']);
+                    $select->where('id = ?', [$accountId]);
+                },
+                accountDataFields: [Account::IS_ADMIN, Account::IS_OWNER, Account::IS_MODERATOR],
+            );
+            if (empty($accounts)) {
+                return self::RANK_USER;
+            }
+            $a = $accounts[0];
+            return self::rankLevel(
+                intval($a[Account::IS_ADMIN] ?? 0) > 0,
+                intval($a[Account::IS_OWNER] ?? 0) > 0,
+                intval($a[Account::IS_MODERATOR] ?? 0) > 0,
+            );
+        }
+
+        /**
+         * Authorization rule for staff actions that mutate another account
+         * (flag / type / balance changes): the actor may act only when the
+         * target does NOT outrank them and is not the actor themselves.
+         * Equal-rank peers may manage each other (e.g. admin↔admin), but
+         * upward moves (moderator→owner/admin) and self-targeting on
+         * destructive operations are refused — see security audit H-2.
+         */
+        public static function actorMayActOn(int $targetId): bool {
+            $account = Account::fromSession();
+            if (!$account) {
+                return false;
+            }
+            if ($targetId <= 0 || (int)$account->id() === $targetId) {
+                return false;
+            }
+            return self::accountRankLevel($targetId) <= self::actorRankLevel();
+        }
+
+        /**
+         * True only when the account is an approved, non-disabled expert —
+         * i.e. eligible to receive bookings and payments. Enforces in the
+         * booking transaction the same gate the public listing applies, so a
+         * slot from an unapproved/disabled expert cannot be booked via a
+         * direct link. Mirrors getApprovedExpertIds() for a single id.
+         */
+        public static function isApprovedActiveExpert(int $expertId): bool {
+            if ($expertId <= 0) {
+                return false;
+            }
+            $accounts = Account::getAccounts(
+                selectCallback: static function (SelectInterface $select) use ($expertId): void {
+                    $select->resetCols();
+                    $select->cols(['id', 'type']);
+                    $select->where('id = ?', [$expertId]);
+                },
+                accountDataFields: [Account::IS_APPROVED, Account::IS_DISABLED],
+            );
+            if (empty($accounts)) {
+                return false;
+            }
+            $a = $accounts[0];
+            return ($a['type'] ?? '') === 'expert'
+                && intval($a[Account::IS_APPROVED] ?? 0) > 0
+                && intval($a[Account::IS_DISABLED] ?? 0) < 1;
+        }
     }
 }

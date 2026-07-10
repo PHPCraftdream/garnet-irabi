@@ -13,9 +13,10 @@ interface Props {
     balances: AccountBalanceRow[];
     config: GridConfig;
     adjustUrl: string;
+    canAdjust: boolean;
 }
 
-export const BalancesSection: React.FC<Props> = ({balances: initialBalances, config, adjustUrl}) => {
+export const BalancesSection: React.FC<Props> = ({balances: initialBalances, config, adjustUrl, canAdjust}) => {
     const [balances, setBalances] = useState<AccountBalanceRow[]>(initialBalances);
     const [accountId, setAccountId] = useState<string>('');
     const [dateFrom, setDateFrom] = useState<string>('');
@@ -61,14 +62,16 @@ export const BalancesSection: React.FC<Props> = ({balances: initialBalances, con
         ));
     };
 
-    // Append a synthetic "actions" column on top of the PHP-supplied config
-    const configWithActions = useMemo<GridConfig>(() => ({
+    // Append a synthetic "actions" column on top of the PHP-supplied config —
+    // only when the viewer may adjust (owner/admin). Moderators get a read-only
+    // grid, matching the server-side owner-only gate on ~adjustBalance.
+    const configWithActions = useMemo<GridConfig>(() => (canAdjust ? {
         ...config,
         columns: [
             ...config.columns,
             {key: 'actions', label: '', shrink: true},
         ],
-    }), [config]);
+    } : config), [config, canAdjust]);
 
     return (
         <div>
@@ -132,16 +135,18 @@ export const BalancesSection: React.FC<Props> = ({balances: initialBalances, con
                     ),
                     updated_at: r => <span className="text-muted text-xs">{formatTs(r.updated_at)}</span>,
                     actions:    r => (
-                        <button
-                            type="button"
-                            className="btn btn-sm btn-outline-primary"
-                            onClick={() => setAdjusting(r)}
-                            data-test-id={`balance-adjust-${r.account_id}`}
-                            title={t.Admin_Balance_Adjust()}
-                            aria-label={t.Admin_Balance_Adjust()}
-                        >
-                            {t.Admin_Balance_Adjust()}
-                        </button>
+                        canAdjust ? (
+                            <button
+                                type="button"
+                                className="btn btn-sm btn-outline-primary"
+                                onClick={() => setAdjusting(r)}
+                                data-test-id={`balance-adjust-${r.account_id}`}
+                                title={t.Admin_Balance_Adjust()}
+                                aria-label={t.Admin_Balance_Adjust()}
+                            >
+                                {t.Admin_Balance_Adjust()}
+                            </button>
+                        ) : null
                     ),
                 }}
             />

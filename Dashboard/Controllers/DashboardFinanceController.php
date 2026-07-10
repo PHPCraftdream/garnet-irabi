@@ -5,6 +5,7 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use PHPCraftdream\Garnet\Bundle\Utils\HtmlLayout;
     use PHPCraftdream\Garnet\Bundle\Utils\RenderIsland;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
+    use PHPCraftdream\Garnet\Kernel\Db\Link\CasUpdate;
     use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
@@ -17,10 +18,17 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
     use PHPCraftdream\IRabi\Dashboard\GridConfig;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
+    use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;
     use PHPCraftdream\IRabi\IRabi;
 
     class DashboardFinanceController extends DashboardController {
         public const URL = '/admin/finance/';
+
+        /**
+         * Ceiling for a single manual balance adjustment. Guards against a
+         * fat-fingered / abusive owner minting an unbounded amount in one call.
+         */
+        private const MAX_ADJUST_AMOUNT = 1_000_000;
 
         private static function fetchLedger(): array {
             $rows = BalanceLedger::get()->selectAll(function (SelectInterface $q): void {
@@ -313,6 +321,10 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
                 'balancesGridConfig' => $balancesGridConfig,
                 'userDetailUrl' => IRabi::url('/admin/~userDetail'),
                 'adjustUrl' => IRabi::url(self::URL . '~adjustBalance'),
+                // Manual adjustment is owner/admin-only (enforced server-side in
+                // post__adjustBalance). Hide the button for moderators so they
+                // don't see an action that would 403.
+                'canAdjust' => static::isOwner(),
                 'initialTab' => $initialTab,
             ]);
 
@@ -326,7 +338,9 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
         }
 
         public static function post__adjustBalance(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
-            if (!static::isModerator()) {
+            // Money movement is owner/admin-only. A moderator (lowest staff rank)
+            // must never be able to mint or drain funds — see security audit H-1.
+            if (!static::isOwner()) {
                 return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
             }
 
@@ -338,11 +352,17 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
             if ($accountId <= 0) {
                 return ControllerTools::JSON(['error' => 'Invalid account_id'], status: 400);
             }
-            if ($amount <= 0) {
+            if ($amount <= 0 || $amount > self::MAX_ADJUST_AMOUNT) {
                 return ControllerTools::JSON(['error' => 'Invalid amount'], status: 400);
             }
             if (mb_strlen($note) < 3 || mb_strlen($note) > 500) {
                 return ControllerTools::JSON(['error' => 'Invalid note'], status: 400);
+            }
+
+            // Target-rank guard: block adjusting an account that outranks the
+            // actor (e.g. owner touching an admin) and block self-adjustment.
+            if (!UserEntityConfig::actorMayActOn($accountId)) {
+                return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
             }
 
             // Verify account exists
@@ -360,6 +380,24 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
             $targetLogin = (string)($target['login'] ?? '');
 
             $oldBalance = AccountBalance::getBalance($accountId);
+
+            // Overdraft guard for debits: atomically ensure sufficient funds
+            // before recording the ledger entry. The framework replaces SQL
+            // transactions with idempotent CAS updates (see CasUpdate), so we
+            // mirror the booking flow — a debit that would drive the balance
+            // below zero affects 0 rows and is refused. Credits need no guard;
+            // recalculate() below rebuilds the authoritative balance from the
+            // ledger in both cases.
+            if (!$isCredit) {
+                $balanceTbl = AccountBalance::get()->getTableName();
+                $affected = CasUpdate::exec(
+                    "UPDATE {$balanceTbl} SET balance = balance - ?, updated_at = ? WHERE account_id = ? AND balance >= ?",
+                    [$amount, time(), $accountId, $amount]
+                );
+                if ($affected === 0) {
+                    return ControllerTools::JSON(['error' => 'Insufficient balance'], status: 400);
+                }
+            }
 
             $actor = Account::fromSession();
             $actorId = $actor !== null ? (int)$actor->readParam('id') : null;

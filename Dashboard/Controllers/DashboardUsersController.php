@@ -79,6 +79,13 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
                 return ControllerTools::JSON(['error' => 'Invalid params'], status: 400);
             }
 
+            // Target-rank guard: stop a moderator from disabling/demoting an
+            // owner/admin (upward move) and block self-targeting — see audit H-2.
+            // Equal-rank peers (e.g. admin↔admin) may still manage each other.
+            if (!UserEntityConfig::actorMayActOn($userId)) {
+                return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
+            }
+
             $account = Account::get((string)$userId);
             $account->readDbAsync();
             $account->readDataAsyncPollFinishAll();
@@ -161,6 +168,12 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
 
             if (!$userId || !in_array($newType, ['user', 'expert'], true)) {
                 return ControllerTools::JSON(['error' => 'Invalid params'], status: 400);
+            }
+
+            // Target-rank guard — a moderator must not flip the account type of an
+            // owner/admin, nor their own. Same rule as post__setUserFlag (audit H-2).
+            if (!UserEntityConfig::actorMayActOn($userId)) {
+                return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
             }
 
             $account = Account::get((string)$userId);

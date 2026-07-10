@@ -331,6 +331,13 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 return ControllerTools::JSON(['error' => 'Cannot book your own slot'], status: 400);
             }
 
+            // Approval gate inside the transaction: a slot from an unapproved/
+            // disabled expert is hidden from the public listing but must also be
+            // unbookable via a direct slot id — see security audit.
+            if (!UserEntityConfig::isApprovedActiveExpert($expertId)) {
+                return ControllerTools::JSON(['error' => 'Slot not found or not available'], status: 404);
+            }
+
             // 1) INSERT booking — UNIQUE(active_dup_key) handles duplicates atomically.
             try {
                 $bookingId = (int)Bookings::get()->insert([
