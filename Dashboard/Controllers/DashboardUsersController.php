@@ -2,7 +2,6 @@
 
 namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use Aura\SqlQuery\Common\SelectInterface;
-    use PHPCraftdream\Garnet\Bundle\FrameworkAssetsGen;
     use PHPCraftdream\Garnet\Bundle\FrameworkJsGen;
     use PHPCraftdream\Garnet\Bundle\Modules\EntityHistory\EntityHistoryService;
     use PHPCraftdream\Garnet\Bundle\Utils\HtmlLayout;
@@ -16,6 +15,7 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use PHPCraftdream\IRabi\Common\PaginationHelper;
     use PHPCraftdream\IRabi\Common\Services\EmailNotifications;
     use PHPCraftdream\IRabi\Common\Services\NewsService;
+    use PHPCraftdream\IRabi\Common\System\ThirdPartyAssets;
     use PHPCraftdream\IRabi\Common\Tables\AccountBalance;
     use PHPCraftdream\IRabi\Common\Tables\AdminActionLog;
     use PHPCraftdream\IRabi\Common\Tables\BalanceLedger;
@@ -680,14 +680,14 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
                     'content' => $content,
                     'top_menu_items' => static::getMainMenu($url),
                     'side_menu_items' => static::getSideMenu($url),
-                    'styles_assets' => [
-                        FrameworkAssetsGen::gridjs_mermaid_min_css(),
-                        FrameworkAssetsGen::cropper_cropper_styles_css(),
-                    ],
-                    'js_assets' => [
+                    'styles_assets' => array_filter([
+                        ThirdPartyAssets::gridjsMermaidCss(),
+                        ThirdPartyAssets::cropperStylesCss(),
+                    ]),
+                    'js_assets' => array_filter([
                         FrameworkJsGen::gridtable(),
-                        FrameworkAssetsGen::cropper_cropper_min_js(),
-                    ],
+                        ThirdPartyAssets::cropperJs(),
+                    ]),
                 ])
             );
 

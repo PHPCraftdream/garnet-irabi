@@ -5,6 +5,9 @@ parameters:
         # The framework is a composer dependency now, pulled in via this
         # app's own autoloader (path-repo link to ../../garnet-framework).
         - vendor/autoload.php
+        # PUBLIC_DIR only exists at real request bootstrap — declare it for
+        # analysis, see phpstan-bootstrap.php.
+        - phpstan-bootstrap.php
 
     paths:
         - Common

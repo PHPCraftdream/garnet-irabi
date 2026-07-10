@@ -2,7 +2,6 @@
 
 namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use Aura\SqlQuery\Common\SelectInterface;
-    use PHPCraftdream\Garnet\Bundle\FrameworkAssetsGen;
     use PHPCraftdream\Garnet\Bundle\I18n\FwI18n;
     use PHPCraftdream\Garnet\Bundle\Utils\HtmlLayout;
     use PHPCraftdream\Garnet\Bundle\Utils\RenderIsland;
@@ -16,6 +15,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\IRabi\Common\Services\AccountDisplay;
     use PHPCraftdream\IRabi\Common\Services\NewsService;
     use PHPCraftdream\IRabi\Common\System\DateUtils;
+    use PHPCraftdream\IRabi\Common\System\ThirdPartyAssets;
     use PHPCraftdream\IRabi\Common\Tables\AccountBalance;
     use PHPCraftdream\IRabi\Common\Tables\BalanceLedger;
     use PHPCraftdream\IRabi\Common\Tables\Bookings;
@@ -507,12 +507,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 ]),
                 'top_menu_items' => static::getMainMenu($url),
                 'side_menu_items' => static::getSideMenu($url),
-                'styles_assets' => [
-                    FrameworkAssetsGen::cropper_cropper_styles_css(),
-                ],
-                'js_assets' => [
-                    FrameworkAssetsGen::cropper_cropper_min_js(),
-                ]
+                'styles_assets' => array_filter([
+                    ThirdPartyAssets::cropperStylesCss(),
+                ]),
+                'js_assets' => array_filter([
+                    ThirdPartyAssets::cropperJs(),
+                ])
             ]);
 
             $render = HtmlLayout::render($params);
