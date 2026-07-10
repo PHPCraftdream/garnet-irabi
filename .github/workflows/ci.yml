@@ -213,6 +213,19 @@ jobs:
           repository: PHPCraftdream/garnet-framework
           path: garnet-framework
 
+      # Env::isDevDir() walks up from the framework's own Kernel/Core/Env/
+      # looking for an IDE marker dir — true on any real dev machine, false
+      # on this bare CI checkout. run_cmd.php's DB_PREFIX_OVERRIDE gate
+      # (used by Tests/helpers/isolation-setup.ts's per-worker DB isolation)
+      # requires $isDev (or TestScope::isActive(), which isn't provisioned
+      # here), so without this the override silently never applies and the
+      # isolation template migration runs against the default prefix instead
+      # of test_worker_template — see garnet-framework's own e2e job for the
+      # same fix applied to its own checkout.
+      - name: Mark framework checkout as a dev directory
+        working-directory: garnet-framework
+        run: mkdir -p .vscode
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
