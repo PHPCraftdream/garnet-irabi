@@ -33,7 +33,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
         }
 
         public static function post__main(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
-            if (!Env::isDevDir()) {
+            // Two independent positive signals are required, mirroring
+            // WorkerScopeMiddleware::isDevContext(): a stray .idea/.vscode
+            // directory leaking into a prod deploy artifact must NOT be
+            // enough on its own to grant this endpoint's no-password
+            // admin/owner login + DB wipe (security-audit finding #1).
+            if (!$globals->isDev() || !Env::isDevDir()) {
                 return ControllerTools::JSON(['error' => 'Not available'], status: 403);
             }
 
@@ -148,7 +153,8 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
         }
 
         public static function post__resetDb(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
-            if (!Env::isDevDir()) {
+            // See post__main() — same two-signal gate (security-audit finding #1).
+            if (!$globals->isDev() || !Env::isDevDir()) {
                 return ControllerTools::JSON(['error' => 'Not available'], status: 403);
             }
 

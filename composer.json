@@ -2,6 +2,9 @@
     "name": "phpcraftdream/app",
     "type": "project",
     "license": ["MIT", "Apache-2.0"],
+    "authors": [
+        {"name": "PHPCraftdream", "email": "phpcraftdream@gmail.com", "homepage": "https://github.com/PHPCraftdream"}
+    ],
     "autoload": {
         "psr-4": {
             "PHPCraftdream\\IRabi\\": "./"
