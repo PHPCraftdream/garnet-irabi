@@ -20,7 +20,7 @@ function phpBoot(code: string): string {
     const bootstrap = `
 define('GARNET_ROOT', ${JSON.stringify(GARNET_ROOT.replace(/\\/g, '/'))});
 if (!defined('DS')) define('DS', DIRECTORY_SEPARATOR);
-require ${JSON.stringify(GARNET_ROOT.replace(/\\/g, '/') + '/Framework/Kernel/Io/GarnetCli/PublicPathRebrander.php')};
+require ${JSON.stringify(GARNET_ROOT.replace(/\\/g, '/') + '/vendor/autoload.php')};
 use PHPCraftdream\\Garnet\\Kernel\\Io\\GarnetCli\\PublicPathRebrander;
 `;
     return bootstrap + code;
@@ -51,11 +51,10 @@ echo PublicPathRebrander::perAppIndexContent('garnet-runtime-example');
         expect(out).toContain("require __DIR__ . '/../garnet-runtime-example/_shared_index.php';");
     });
 
-    test('--file=Apps/<App>/Public/index.php --dry-run shows shim rewrite hint', async () => {
-        const appName = 'IRabi';
+    test('--file=Public/index.php --dry-run shows shim rewrite hint', async () => {
         const result = await runGarnet([
             'deploy:diff',
-            `--file=Apps/${appName}/Public/index.php`,
+            '--file=Public/index.php',
             '--dry-run',
         ]);
 

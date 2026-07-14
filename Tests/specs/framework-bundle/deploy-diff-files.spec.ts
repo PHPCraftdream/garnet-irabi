@@ -48,7 +48,7 @@ test.describe('deploy:diff --file (files mode)', () => {
     test('dry-run lists a single Framework PHP file without rspack rebuild', async () => {
         const result = await runGarnet([
             'deploy:diff',
-            '--file=Framework/Bundle/Modules/Auth/Middlewares/RegMiddleware.php',
+            '--file=vendor/phpcraftdream/garnet-framework/Bundle/Modules/Auth/Middlewares/RegMiddleware.php',
             '--dry-run',
         ]);
 
@@ -63,14 +63,14 @@ test.describe('deploy:diff --file (files mode)', () => {
         // Asset hashes change on every bundle. Pick the current
         // foreground.foreground.<hash>.gen.js so this test survives the next
         // FrontBuilder run without manual updates.
-        const assetDir = path.join(GARNET_ROOT, 'Apps', 'IRabi', 'Public', 'assets', 'irabi', 'gen', 'js');
+        const assetDir = path.join(GARNET_ROOT, 'Public', 'assets', 'irabi', 'gen', 'js');
         const assetFile = fs.readdirSync(assetDir)
             .find(f => /^foreground\.foreground\.[a-f0-9]+\.gen\.js$/.test(f));
         expect(assetFile, 'no foreground.foreground.<hash>.gen.js — rebuild first').toBeTruthy();
 
         const result = await runGarnet([
             'deploy:diff',
-            `--file=Apps/IRabi/Public/assets/irabi/gen/js/${assetFile}`,
+            `--file=Public/assets/irabi/gen/js/${assetFile}`,
             '--dry-run',
         ]);
 

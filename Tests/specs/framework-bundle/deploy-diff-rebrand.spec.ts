@@ -26,7 +26,7 @@ function phpBoot(code: string): string {
     const bootstrap = `
 define('GARNET_ROOT', ${JSON.stringify(GARNET_ROOT.replace(/\\/g, '/'))});
 if (!defined('DS')) define('DS', DIRECTORY_SEPARATOR);
-require ${JSON.stringify(GARNET_ROOT.replace(/\\/g, '/') + '/Framework/Kernel/Io/GarnetCli/PublicPathRebrander.php')};
+require ${JSON.stringify(GARNET_ROOT.replace(/\\/g, '/') + '/vendor/autoload.php')};
 use PHPCraftdream\\Garnet\\Kernel\\Io\\GarnetCli\\PublicPathRebrander;
 `;
     return bootstrap + code;
