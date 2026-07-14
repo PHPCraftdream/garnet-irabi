@@ -2,16 +2,13 @@
     "name": "phpcraftdream/app",
     "type": "project",
     "license": "MIT",
-    "repositories": [
-        {"type": "path", "url": "../../garnet-framework", "options": {"symlink": true}}
-    ],
     "autoload": {
         "psr-4": {
             "PHPCraftdream\\IRabi\\": "./"
         }
     },
     "require": {
-        "phpcraftdream/garnet-framework": "@dev",
+        "phpcraftdream/garnet-framework": "^0.1.0-alpha4",
         "zachweix/php-zmanim": "^2.0"
     },
     "scripts": {
