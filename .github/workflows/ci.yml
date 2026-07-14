@@ -1,13 +1,12 @@
 name: CI
 
-# This workflow ships inside every scaffolded Garnet app, so a new app
-# repo gets CI automatically on its first push.
+# IRabi installs phpcraftdream/garnet-framework as a normal Packagist
+# dependency (see composer.json — no `repositories` path override, no
+# framework sibling checkout needed). `composer install` pulls the
+# framework straight from Packagist, same as any other dependency.
 #
-# A scaffolded app is a STANDALONE repo. The framework
-# (PHPCraftdream/garnet-framework) is a SEPARATE, PUBLIC repo that is
-# NOT on Packagist yet — the app depends on it via a composer PATH repository.
-# In CI the committed path-repo target is absent, so we check the
-# framework out as a sibling and override the repository to point at it.
+# e2e (Playwright) is intentionally NOT run here to keep CI usage light —
+# run `composer test:e2e` locally / on demand instead.
 on:
   push:
     branches: ['*']
@@ -19,34 +18,20 @@ jobs:
     name: App — composer ci (cs-fixer + phpstan + build)
     runs-on: ubuntu-latest
     steps:
-      # 1. The app itself.
-      - name: Checkout app
-        uses: actions/checkout@v4
-        with:
-          path: app
+      - uses: actions/checkout@v4
 
       # `.env` is gitignored (may hold local secrets), so a fresh checkout
       # never has it — only `.env.example` ships in git. Without it
       # `GarnetEnv::readAppName()` finds no APP_NAME and every `php garnet`
-      # command fails with "No active app." Same bootstrap a human dev runs
-      # per docs/getting-started.md, just automated here.
+      # command fails with "No active app."
       - name: Bootstrap .env
-        working-directory: app
         run: cp .env.example .env
-
-      # 2. The framework, as a sibling of the app. Public repo — no token
-      #    needed, the default GITHUB_TOKEN can read it.
-      - name: Checkout framework
-        uses: actions/checkout@v4
-        with:
-          repository: PHPCraftdream/garnet-framework
-          path: garnet-framework
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: mbstring, json, pdo, mysqli, intl
+          extensions: mbstring, json, pdo, mysqli, fileinfo, intl
           coverage: none
           tools: composer:v2
 
@@ -54,111 +39,64 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: garnet-framework/FrontBuilder/package-lock.json
 
-      # `composer ci` runs `garnet build`, which needs the framework's
-      # FrontBuilder node deps + the node_modules junction the build reads
-      # through. Set those up before touching the app. IMPORTANT: don't set
-      # GARNET_SKIP_NODE_SETUP at the job level — it applies to every step,
-      # including this one's own explicit `garnet setup` call, silently
-      # skipping the npm install and leaving `rspack` missing later
-      # ("spawn rspack ENOENT" in the build step below). Found by watching
-      # a real CI run fail this exact way.
-      - name: Framework frontend toolchain
-        working-directory: garnet-framework
-        run: |
-          composer install --no-progress --prefer-dist --no-interaction
-          php bin/garnet setup --skip-composer
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
 
-      # Override the app's committed path-repo to the sibling checkout.
-      # Two gotchas, both found by watching real CI runs fail:
-      #   1. `composer.lock` is committed with the LOCAL dev path
-      #      (`../../garnet-framework`, since IRabi lives under
-      #      `Apps/IRabi/` locally) and `--prefer-dist` resolves path
-      #      packages from the LOCKED dist.url, not from composer.json
-      #      — so overriding the repo alone isn't enough; delete the
-      #      lock to force a fresh resolve.
-      #   2. `composer config repositories.0 '<json>'` eagerly validates
-      #      the path repository BEFORE we get to overwrite it (fails
-      #      on the still-present, not-yet-overridden stale entry) — so
-      #      patch composer.json directly with `jq` instead of going
-      #      through `composer config`.
-      - name: Install app dependencies
-        working-directory: app
-        run: |
-          jq '.repositories[0].url = "../garnet-framework"' composer.json > composer.json.tmp && mv composer.json.tmp composer.json
-          rm -f composer.lock
-          GARNET_SKIP_NODE_SETUP=1 composer install --no-progress --prefer-dist --no-interaction
+      # GARNET_SKIP_NODE_SETUP suppresses the post-install-cmd's own
+      # `garnet setup` call (it would otherwise duplicate the explicit
+      # step below and run before Node/npm caching is in place).
+      - name: Install PHP deps (pulls garnet-framework from Packagist)
+        run: GARNET_SKIP_NODE_SETUP=1 composer install --no-progress --prefer-dist --no-interaction
 
-      # `composer ci`'s `@build` step needs the app's own `rspack` binary
-      # (app/node_modules/.bin/rspack) — GARNET_SKIP_NODE_SETUP above
-      # only skipped the post-install hook, so install explicitly here.
-      # No Playwright browsers needed for this PHP-focused job.
-      - name: App node deps
-        working-directory: app
+      # npm install for the app + the framework's FrontBuilder (needed by
+      # `garnet build` below) + the node_modules junction. No Playwright
+      # browsers — this job doesn't run e2e.
+      - name: Set up frontend toolchain
         run: php garnet setup --skip-composer --skip-playwright
 
       - name: App quality gate (cs-fixer + phpstan + build + build:check)
-        working-directory: app
         run: composer ci
 
   frontend:
     name: App Frontend — oxlint + tsgo
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout app
-        uses: actions/checkout@v4
-        with:
-          path: app
+      - uses: actions/checkout@v4
 
-      # See the `quality` job for why this is needed.
       - name: Bootstrap .env
-        working-directory: app
         run: cp .env.example .env
-
-      # Public repo — no token needed, see the `quality` job.
-      - name: Checkout framework
-        uses: actions/checkout@v4
-        with:
-          repository: PHPCraftdream/garnet-framework
-          path: garnet-framework
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: garnet-framework/FrontBuilder/package-lock.json
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: mbstring, json, pdo, mysqli, intl
+          extensions: mbstring, json, pdo, mysqli, fileinfo, intl
           coverage: none
           tools: composer:v2
 
-      # The app's tsgo resolves `react` etc. through the framework's
-      # FrontBuilder node_modules junction, so set the framework up first.
-      - name: Framework frontend toolchain
-        working-directory: garnet-framework
-        run: |
-          composer install --no-progress --prefer-dist --no-interaction
-          php bin/garnet setup --skip-composer
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-      - name: Install app dependencies
-        working-directory: app
-        run: |
-          jq '.repositories[0].url = "../garnet-framework"' composer.json > composer.json.tmp && mv composer.json.tmp composer.json
-          rm -f composer.lock
-          GARNET_SKIP_NODE_SETUP=1 composer install --no-progress --prefer-dist --no-interaction
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
 
-      # App node deps (no Playwright browsers in CI).
-      - name: App node deps
-        working-directory: app
+      - name: Install PHP deps (pulls garnet-framework from Packagist)
+        run: GARNET_SKIP_NODE_SETUP=1 composer install --no-progress --prefer-dist --no-interaction
+
+      # tsgo/oxlint resolve `react` etc. through the framework's
+      # FrontBuilder node_modules junction, so this is needed even though
+      # this job never runs `garnet build` itself.
+      - name: Set up frontend toolchain
         run: php garnet setup --skip-composer --skip-playwright
 
       - name: oxlint + tsgo
-        working-directory: app
         run: npm run check
