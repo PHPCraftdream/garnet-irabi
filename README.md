@@ -38,4 +38,4 @@ Testing guide: [`Tests/TESTING.md`](Tests/TESTING.md).
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Dual-licensed under MIT or Apache-2.0, at your option — see [LICENSE](LICENSE).

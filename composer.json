@@ -1,7 +1,7 @@
 {
     "name": "phpcraftdream/app",
     "type": "project",
-    "license": "MIT",
+    "license": ["MIT", "Apache-2.0"],
     "autoload": {
         "psr-4": {
             "PHPCraftdream\\IRabi\\": "./"
