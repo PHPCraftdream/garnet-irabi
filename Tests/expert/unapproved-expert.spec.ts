@@ -13,6 +13,16 @@ import { DB } from '../helpers/db';
 
 test.describe.configure({ mode: 'serial' });
 
+async function withConnCount(sql: string, params: unknown[]): Promise<number> {
+    const conn = await mysql.createConnection(DB);
+    try {
+        const [rows] = await conn.execute<any[]>(sql, params);
+        return Number(rows[0]?.cnt ?? 0);
+    } finally {
+        await conn.end();
+    }
+}
+
 test.describe('Unapproved expert — banner & news suppression', () => {
     let expertId = 0;
     let initialApprovalState = 0;
@@ -88,55 +98,40 @@ test.describe('Unapproved expert — banner & news suppression', () => {
         ).toBeVisible({ timeout: 10000 });
     });
 
-    // ── TEST 3: creating a slot while unapproved creates no news ─────────
+    // ── TEST 3: unapproved expert cannot create a slot at all (A-02) ─────
 
-    test('creating a slot while unapproved creates no news event', async ({ page }) => {
+    test('creating a slot while unapproved is rejected server-side (403), no slot or news created', async ({ page }) => {
+        // Security audit A-02: server-side defense-in-depth — slot creation
+        // itself is now rejected for an unapproved expert (not just hidden
+        // from the public news feed). ExpertPanelController::post__slots()
+        // requires isApproved() (staff ranks bypass this — orthogonal axis).
         if (!expertId) { test.skip(); return; }
 
         const newsBefore = await getNewsCount();
+        const slotCountBefore = await withConnCount(`SELECT COUNT(*) as cnt FROM ${tn('time_slots')} WHERE expert_id = ?`, [expertId]);
 
         await page.goto('/system/expert/~slots');
         await page.waitForLoadState('domcontentloaded');
 
-        // Open create-slot modal
-        const openBtn = page.locator('[data-test-id="open-create-slot-modal"]');
-        await expect(openBtn).toBeVisible({ timeout: 10000 });
-        await openBtn.click();
-
-        // Fill form — date 12 days ahead
         const futureDate = new Date();
         futureDate.setDate(futureDate.getDate() + 12);
         const dateStr = `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`;
 
-        const dateInput = page.locator('[data-test-id="slot-date"]');
-        await dateInput.fill(dateStr);
+        const result = await page.evaluate(async ({ dateStr }) => {
+            const csrf = (window as any).__GARNET_CSRF__ || '';
+            const res = await fetch('/expert/~slots', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify({ date: dateStr, time: '10:00', duration: 60, cost: 500, CSRF_TOKEN: csrf }),
+            });
+            return { status: res.status };
+        }, { dateStr });
 
-        const timeInput = page.locator('[data-test-id="slot-time"]');
-        await timeInput.fill('10:00');
+        expect(result.status).toBe(403);
 
-        const costInput = page.locator('[data-test-id="slot-cost"]');
-        await costInput.fill('500');
+        const slotCountAfter = await withConnCount(`SELECT COUNT(*) as cnt FROM ${tn('time_slots')} WHERE expert_id = ?`, [expertId]);
+        expect(slotCountAfter).toBe(slotCountBefore);
 
-        // Submit the form
-        const submitBtn = page.locator('[data-test-id="create-slot-btn"]');
-        await submitBtn.click();
-
-        // Wait for the POST response
-        await page.waitForTimeout(3000);
-
-        // Capture the created slot id for cleanup
-        const conn = await mysql.createConnection(DB);
-        try {
-            const [rows] = await conn.execute<any[]>(
-                `SELECT id FROM ${tn('time_slots')} WHERE expert_id = ? ORDER BY id DESC LIMIT 1`,
-                [expertId]
-            );
-            if (rows.length > 0) {
-                createdSlotId = rows[0].id;
-            }
-        } finally { await conn.end(); }
-
-        // Assert no new news event was created
         const newsAfter = await getNewsCount();
         expect(newsAfter).toBe(newsBefore);
     });

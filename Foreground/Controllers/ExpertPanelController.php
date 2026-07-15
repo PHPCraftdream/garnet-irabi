@@ -12,6 +12,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel\ExpertBookingsService;
     use PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel\ExpertSlotsService;
     use PHPCraftdream\IRabi\Foreground\Params\Menu;
+    use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;
     use PHPCraftdream\IRabi\IRabi;
 
     /**
@@ -53,6 +54,29 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             return ControllerTools::JSON(['error' => 'Not authenticated'], status: 401);
         }
 
+        /**
+         * Security audit A-02: expertOnly() at the route level only checks
+         * business type (type=expert), not approval — matches the documented
+         * invariant (docs/roles.md §4: "эксперт получает доступ к /expert"
+         * only после IS_APPROVED). GET pages stay reachable for unapproved
+         * experts (the frontend shows a "pending approval" banner there, and
+         * slots created while unapproved are simply never surfaced publicly
+         * — see ExpertSlotsService/SlotsController), but every state-changing
+         * action requires approval as a defense-in-depth API-level guard.
+         *
+         * Staff rank (moderator/owner/admin) bypasses this business-role
+         * check entirely — approval is orthogonal to staff rank, same as
+         * everywhere else in this codebase (rank ladder admin ⊇ owner ⊇
+         * moderator).
+         */
+        private static function mayMutate(Account $account): bool {
+            return $account->isApproved() || UserEntityConfig::isModerator();
+        }
+
+        private static function deniedNotApproved(): mixed {
+            return ControllerTools::JSON(['error' => 'Expert not approved'], status: 403);
+        }
+
         // ── Дашборд ────────────────────────────────────────────────────
 
         public static function get__dashboard(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
@@ -86,6 +110,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             if (!$account) {
                 return static::denied();
             }
+            if (!static::mayMutate($account)) {
+                return static::deniedNotApproved();
+            }
             return ExpertSlotsService::createSlot($globals, $account);
         }
 
@@ -102,6 +129,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             if (!$account) {
                 return static::denied();
             }
+            if (!static::mayMutate($account)) {
+                return static::deniedNotApproved();
+            }
             return ExpertSlotsService::batchSlots($globals, $account);
         }
 
@@ -110,6 +140,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             if (!$account) {
                 return static::denied();
             }
+            if (!static::mayMutate($account)) {
+                return static::deniedNotApproved();
+            }
             return ExpertSlotsService::editSlot($globals, $account);
         }
 
@@ -117,6 +150,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             $account = static::account();
             if (!$account) {
                 return static::denied();
+            }
+            if (!static::mayMutate($account)) {
+                return static::deniedNotApproved();
             }
             return ExpertSlotsService::deleteSlot($globals, $account);
         }
@@ -136,6 +172,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             if (!$account) {
                 return static::denied();
             }
+            if (!static::mayMutate($account)) {
+                return static::deniedNotApproved();
+            }
             return ExpertBookingsService::confirmBooking($globals, $account);
         }
 
@@ -143,6 +182,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             $account = static::account();
             if (!$account) {
                 return static::denied();
+            }
+            if (!static::mayMutate($account)) {
+                return static::deniedNotApproved();
             }
             return ExpertBookingsService::cancelBooking($globals, $account);
         }
@@ -152,6 +194,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             if (!$account) {
                 return static::denied();
             }
+            if (!static::mayMutate($account)) {
+                return static::deniedNotApproved();
+            }
             return ExpertBookingsService::cancelBookedSlot($globals, $account);
         }
 
@@ -159,6 +204,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             $account = static::account();
             if (!$account) {
                 return static::denied();
+            }
+            if (!static::mayMutate($account)) {
+                return static::deniedNotApproved();
             }
             return ExpertBookingsService::cancelSlot($globals, $account);
         }
