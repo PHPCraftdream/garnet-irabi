@@ -171,6 +171,10 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
             );
 
             if ($affected === 1) {
+                // Release the seat this booking held — counterpart to reserveSeat()
+                // in BookingsController/SlotsController's post__book().
+                TimeSlots::releaseSeat((int)$slot['id']);
+
                 $slotCost = (int)$slot['cost'];
                 $userId = (int)$booking['user_id'];
                 $expertId = (int)$slot['expert_id'];
@@ -296,8 +300,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 }
             }
 
-            // Set slot status to cancelled
-            TimeSlots::get()->updateByField(['status' => 'cancelled'], 'id', $slotId);
+            // Set slot status to cancelled and release its capacity reservation —
+            // a cancelled slot is never bookable again, so booked_count resets to 0.
+            TimeSlots::get()->updateByField(['status' => 'cancelled', 'booked_count' => 0], 'id', $slotId);
 
             return ControllerTools::JSON(['success' => true]);
         }
@@ -373,7 +378,8 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 }
             }
 
-            TimeSlots::get()->updateByField(['status' => 'cancelled'], 'id', $slotId);
+            // A cancelled slot is never bookable again — reset its capacity reservation.
+            TimeSlots::get()->updateByField(['status' => 'cancelled', 'booked_count' => 0], 'id', $slotId);
 
             // Slot is gone — purge the new_slot announcement and any prior slot_booked events.
             // Per-user booking_cancelled events stay (they were just emitted above).

@@ -104,32 +104,45 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
 
             // Authenticated -- handle profile form submission
             if ($globals->readPostValue('action') === 'reg_user') {
+                $account = Account::fromSession();
+                if (!$account || !$account->id()) {
+                    return ControllerTools::JSON(['error' => 'Not authenticated'], status: 401);
+                }
+
+                // Atomically consume the invite BEFORE saving any profile data
+                // (security audit M-01): FwInviteTokenService::consume() is a
+                // CAS decrement that only succeeds while uses_left > 0. If two
+                // clients race on the same limited-use token, the loser must
+                // be rejected here — not silently let through after the
+                // consume() return value was previously ignored, which let
+                // registrations exceed the token's uses_left.
+                $tokenRow = $validation['token'];
+                $consumed = FwInviteTokenService::consume(
+                    (int)$tokenRow['id'],
+                    $account->id(),
+                    (string)$globals->ip(),
+                    (string)($globals->readServerValue('HTTP_USER_AGENT', '') ?? '')
+                );
+                if (!$consumed) {
+                    return ControllerTools::JSON([
+                        'error' => ForegroundI18n::t('Invite_Error_Title'),
+                    ], status: 409);
+                }
+
                 $result = UserDataMiddleware::processPost($globals);
 
-                $account = Account::fromSession();
-                if ($account && $account->id()) {
-                    // Consume the token after successful registration
-                    $tokenRow = $validation['token'];
-                    FwInviteTokenService::consume(
-                        (int)$tokenRow['id'],
-                        $account->id(),
-                        (string)$globals->ip(),
-                        (string)($globals->readServerValue('HTTP_USER_AGENT', '') ?? '')
-                    );
-
-                    // If the user did not opt into mailings at registration, start
-                    // their profile with every email-notification category off.
-                    $marketingConsent = (string)$globals->readPostValue('consent_marketing', '') === '1'
-                        || !empty($account->readParam('consent_marketing_at'));
-                    if (!$marketingConsent) {
-                        $account->setData('email_notif_prefs', json_encode([
-                            'messages' => 'off',
-                            'support' => 'off',
-                            'bookings' => 'off',
-                        ], JSON_UNESCAPED_UNICODE));
-                        $account->flush();
-                        $account->readDataAsyncPollFinishAll();
-                    }
+                // If the user did not opt into mailings at registration, start
+                // their profile with every email-notification category off.
+                $marketingConsent = (string)$globals->readPostValue('consent_marketing', '') === '1'
+                    || !empty($account->readParam('consent_marketing_at'));
+                if (!$marketingConsent) {
+                    $account->setData('email_notif_prefs', json_encode([
+                        'messages' => 'off',
+                        'support' => 'off',
+                        'bookings' => 'off',
+                    ], JSON_UNESCAPED_UNICODE));
+                    $account->flush();
+                    $account->readDataAsyncPollFinishAll();
                 }
 
                 return $result;

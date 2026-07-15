@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Common\Tables {
+    use PHPCraftdream\Garnet\Kernel\Db\Link\CasUpdate;
     use PHPCraftdream\Garnet\Kernel\Db\Tables\DbTable;
     use PHPCraftdream\Garnet\Kernel\Db\Tables\DbTableBuilderFactory;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Db\ITableBuilderDriver;
@@ -11,6 +12,38 @@ namespace PHPCraftdream\IRabi\Common\Tables {
 
         public static function generateUid(): string {
             return bin2hex(random_bytes(8));
+        }
+
+        /**
+         * Atomic capacity gate (security audit H-01): reserves one seat on
+         * the slot iff it has not yet reached max_users. The single UPDATE
+         * statement is the concurrency boundary — InnoDB serialises
+         * concurrent UPDATEs on the same row, so two parallel callers can
+         * never both observe `booked_count < max_users` as true for the
+         * last remaining seat. Must be called BEFORE inserting the booking
+         * row; on any subsequent failure (duplicate booking, insufficient
+         * balance, etc.) the caller MUST compensate with releaseSeat().
+         */
+        public static function reserveSeat(int $slotId): bool {
+            $table = static::get()->getTableName();
+            $affected = CasUpdate::exec(
+                "UPDATE {$table} SET booked_count = booked_count + 1 WHERE id = ? AND booked_count < max_users",
+                [$slotId]
+            );
+            return $affected === 1;
+        }
+
+        /**
+         * Releases a previously reserved seat (compensation on booking
+         * failure, or on cancellation/decline of an active booking).
+         * Clamped at 0 so a stray double-release can never go negative.
+         */
+        public static function releaseSeat(int $slotId): void {
+            $table = static::get()->getTableName();
+            CasUpdate::exec(
+                "UPDATE {$table} SET booked_count = GREATEST(booked_count - 1, 0) WHERE id = ?",
+                [$slotId]
+            );
         }
 
         public static function init(): ITableBuilderDriver {
@@ -24,6 +57,7 @@ namespace PHPCraftdream\IRabi\Common\Tables {
                 ->addColumn(column: 'is_online', type: 'TINYINT', length: '1')
                 ->addColumn(column: 'location', type: 'VARCHAR', length: '255')
                 ->addColumn(column: 'max_users', type: 'INT', length: '11')
+                ->addColumn(column: 'booked_count', type: 'INT', length: '11', null: false, default: '0')
                 ->addColumn(column: 'status', type: 'ENUM', length: "'free','booked','completed','cancelled'")
                 ->addColumn(column: 'uid', type: 'VARCHAR', length: '16', null: false, default: '')
                 ->addColumn(column: 'created_at', type: 'INT', length: '11', null: false, default: '0')

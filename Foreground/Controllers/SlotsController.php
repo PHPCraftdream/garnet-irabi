@@ -338,6 +338,14 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                     $slotCost = (int)$slot['cost'];
                     $expertId = (int)($slot['expert_id'] ?? 0);
 
+                    // Atomic capacity reservation (security audit H-01) — the real
+                    // concurrency boundary, must happen before the booking INSERT.
+                    if (!TimeSlots::reserveSeat($slotId)) {
+                        // Race-loss: slot filled up concurrently. Refund this slot's cost.
+                        $refundedTotal += $slotCost;
+                        continue;
+                    }
+
                     try {
                         $bookingId = (int)Bookings::get()->insert([
                             'user_id' => $accountId,
@@ -347,6 +355,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                             'created_at' => $now,
                         ]);
                     } catch (DbException $e) {
+                        TimeSlots::releaseSeat($slotId);
                         if (CasUpdate::isDuplicateKeyError($e)) {
                             // Race-loss: refund this slot's cost.
                             $refundedTotal += $slotCost;
@@ -395,18 +404,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                         }
                     }
 
-                    $maxUsers = max(1, (int)($slot['max_users'] ?? 1));
-                    $rowsCnt = Bookings::get()->selectAll(function (SelectInterface $q) use ($slotId): void {
-                        $q->where("bookable_type = 'time_slot'")
-                            ->where('bookable_id = ?', [$slotId])
-                            ->where("status IN ('pending', 'confirmed')");
-                    });
-                    if (count($rowsCnt) >= $maxUsers) {
-                        CasUpdate::exec(
-                            "UPDATE {$slotsTbl} SET status = 'booked' WHERE id = ? AND status = 'free'",
-                            [$slotId]
-                        );
-                    }
+                    // Gated on the real (post-reservation) booked_count rather than a
+                    // fresh COUNT(*) — always safe to attempt, idempotent/best-effort.
+                    CasUpdate::exec(
+                        "UPDATE {$slotsTbl} SET status = 'booked' WHERE id = ? AND status = 'free' AND booked_count >= max_users",
+                        [$slotId]
+                    );
 
                     if ($expertId > 0) {
                         $touchedExpertIds[$expertId] = true;

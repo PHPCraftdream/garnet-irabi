@@ -98,9 +98,13 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
         /**
          * Per-IP fixed-window rate check. Atomically bumps the caller's counter
          * for the current minute bucket and reports whether it now exceeds the
-         * cap. Fail-open by design: an empty/unknown IP or any DB error never
-         * blocks a legitimate breadcrumb — rate limiting is best-effort spam
-         * mitigation, not an auth gate.
+         * cap. An empty/unknown IP can't be rate-limited per-IP at all, so it
+         * is allowed through (no meaningful key to bucket on). Any DB error,
+         * however, fails CLOSED (security audit L-01): a public,
+         * unauthenticated endpoint must not turn a throttle-storage hiccup
+         * into unbounded log-spam capacity — better to drop a few legitimate
+         * breadcrumbs during a DB blip than to lose the only spam guard this
+         * endpoint has.
          */
         private static function isRateLimited(string $ip): bool {
             $ip = trim($ip);
@@ -127,7 +131,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 $row = SysLogThrottle::get()->selectOneByField('ip', $ip);
                 return $row !== null && (int)$row['cnt'] > self::RATE_MAX_PER_WINDOW;
             } catch (Throwable) {
-                return false;
+                return true;
             }
         }
     }

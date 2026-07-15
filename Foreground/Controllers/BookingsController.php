@@ -313,6 +313,10 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
 
             $maxUsers = max(1, (int)($slot['max_users'] ?? 1));
 
+            // Fast-fail UX check only — NOT the concurrency boundary. The real
+            // capacity guard is the atomic reserveSeat() CAS below (security
+            // audit H-01: two concurrent bookers could both pass this COUNT(*)
+            // check and both insert before either commits).
             $activeBookings = Bookings::get()->selectAll(function (SelectInterface $query) use ($slotId): void {
                 $query->where('bookable_type = :btype', ['btype' => 'time_slot'])
                     ->where('bookable_id = :bid', ['bid' => $slotId])
@@ -338,6 +342,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 return ControllerTools::JSON(['error' => 'Slot not found or not available'], status: 404);
             }
 
+            // 0) Atomic capacity reservation (security audit H-01) — the real
+            //    concurrency boundary. Must happen before the booking INSERT.
+            if (!TimeSlots::reserveSeat($slotId)) {
+                return ControllerTools::JSON(['error' => 'Slot is full'], status: 400);
+            }
+
             // 1) INSERT booking — UNIQUE(active_dup_key) handles duplicates atomically.
             try {
                 $bookingId = (int)Bookings::get()->insert([
@@ -348,6 +358,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                     'created_at' => $now,
                 ]);
             } catch (DbException $e) {
+                TimeSlots::releaseSeat($slotId);
                 if (CasUpdate::isDuplicateKeyError($e)) {
                     return ControllerTools::JSON(['error' => 'Already booked'], status: 400);
                 }
@@ -365,11 +376,13 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 } catch (DbException $e) {
                     // Exception-aware compensation: roll back the booking insert before re-throwing.
                     Bookings::get()->deleteByField('id', $bookingId);
+                    TimeSlots::releaseSeat($slotId);
                     throw $e;
                 }
                 if ($affected === 0) {
-                    // Compensate: roll back the booking insert.
+                    // Compensate: roll back the booking insert and the seat reservation.
                     Bookings::get()->deleteByField('id', $bookingId);
+                    TimeSlots::releaseSeat($slotId);
                     return ControllerTools::JSON(['error' => 'Insufficient balance'], status: 400);
                 }
 
@@ -410,15 +423,16 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 }
             }
 
-            // 3) CAS slot status update (only when capacity reached). No compensation needed
-            //    if this fails — booking and ledger are already correctly recorded; status
-            //    update is best-effort and idempotent.
+            // 3) CAS slot status update, gated on the real (post-reservation)
+            //    booked_count rather than the stale pre-reservation $activeBookings
+            //    count. Always safe to attempt — idempotent and best-effort; no
+            //    compensation needed if this fails, booking/ledger already committed.
+            $slotsTbl = TimeSlots::get()->getTableName();
+            CasUpdate::exec(
+                "UPDATE {$slotsTbl} SET status = 'booked' WHERE id = ? AND status = 'free' AND booked_count >= max_users",
+                [$slotId]
+            );
             if (count($activeBookings) + 1 >= $maxUsers) {
-                $slotsTbl = TimeSlots::get()->getTableName();
-                CasUpdate::exec(
-                    "UPDATE {$slotsTbl} SET status = 'booked' WHERE id = ? AND status = 'free'",
-                    [$slotId]
-                );
                 // Slot is now full — purge the public new_slot announcement for everyone.
                 NewsService::deleteByTargetKey(NewsService::slotKey($slotId), NewsService::TYPE_NEW_SLOT);
             }
@@ -510,6 +524,11 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             $expertId = 0;
             $bookingUserId = (int)$booking['user_id'];
             if ($booking['bookable_type'] === 'time_slot') {
+                // Release the seat this booking held — counterpart to reserveSeat()
+                // in post__book(). Must run for every cancellation that actually
+                // transitioned the booking (guarded by $affected===1 above).
+                TimeSlots::releaseSeat((int)$booking['bookable_id']);
+
                 $slot2 = TimeSlots::get()->selectById((int)$booking['bookable_id']);
                 $slotId = (int)$booking['bookable_id'];
                 $cost = (int)($slot2['cost'] ?? 0);

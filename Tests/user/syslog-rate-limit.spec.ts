@@ -88,4 +88,37 @@ test.describe('F-LOG-01: /sys/log per-IP rate limit', () => {
         // The final request of a 65-long burst is past the cap → throttled.
         expect(statuses[statuses.length - 1]).toBe(429);
     });
+
+    // ── L-01: fail-closed when throttle storage itself is unavailable ──
+
+    test('throttle storage failure fails CLOSED (429), not open (200)', async () => {
+        // Simulate the throttle table being unavailable (DB error inside
+        // isRateLimited()'s try/catch) by dropping it for this worker scope.
+        await withConnection(async (c) => {
+            await c.execute(`DROP TABLE ${tn('sys_log_throttle')}`);
+        });
+        try {
+            const status = await postLog(page, 'ratetest', 'throttle storage down');
+            // Before the L-01 fix this returned 200 (fail-open). The fix
+            // makes any DB error inside isRateLimited() fail closed (429) —
+            // a public unauthenticated endpoint must not turn a storage
+            // hiccup into unlimited log-spam capacity.
+            expect(status).toBe(429);
+        } finally {
+            // Recreate the table so isolation teardown (which expects it to
+            // exist) and any later test in this worker don't break.
+            await withConnection(async (c) => {
+                await c.execute(`
+                    CREATE TABLE IF NOT EXISTS ${tn('sys_log_throttle')} (
+                        id INT(11) NOT NULL AUTO_INCREMENT,
+                        ip VARCHAR(45) NOT NULL,
+                        window_start INT(11) NOT NULL DEFAULT 0,
+                        cnt INT(11) NOT NULL DEFAULT 0,
+                        PRIMARY KEY (id),
+                        UNIQUE KEY ip (ip)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                `);
+            });
+        }
+    });
 });
