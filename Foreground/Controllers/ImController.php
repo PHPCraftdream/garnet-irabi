@@ -7,6 +7,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\DbAccount;
     use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
+    use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
     use PHPCraftdream\IRabi\Common\Services\AccountDisplay;
     use PHPCraftdream\IRabi\Common\Services\EmailNotifications;
     use PHPCraftdream\IRabi\Common\Services\NewsService;
@@ -92,9 +93,112 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
         }
 
         /**
-         * Override send to add news event with 1-hour throttle.
+         * Check whether $senderId is allowed to message $recipientId.
+         *
+         * Rules (mirrors searchRecipients):
+         *  - moderators / owners / admins may message anyone;
+         *  - experts may message their students (via bookings), moderators, owners;
+         *  - regular users may message experts only;
+         *  - existing conversation partners are always allowed (so ongoing
+         *    conversations are never broken by subsequent business-rule changes).
+         */
+        protected static function canMessage(int $senderId, int $recipientId): bool {
+            // Moderators / owners / admins — no restriction
+            $senderAccount = Account::getAccounts(
+                selectCallback: static function (SelectInterface $select) use ($senderId): void {
+                    $select->resetCols();
+                    $select->cols(['id']);
+                    $select->where('id = ?', [$senderId]);
+                },
+                accountDataFields: [Account::IS_MODERATOR, Account::IS_OWNER, Account::IS_ADMIN],
+            );
+            $senderRow = $senderAccount[0] ?? null;
+            if ($senderRow) {
+                $isMod = intval($senderRow[Account::IS_MODERATOR] ?? 0) > 0;
+                $isOwner = intval($senderRow[Account::IS_OWNER] ?? 0) > 0;
+                $isAdmin = intval($senderRow[Account::IS_ADMIN] ?? 0) > 0;
+                if ($isMod || $isOwner || $isAdmin) {
+                    return true;
+                }
+            }
+
+            // Existing conversation — always allowed
+            $convs = ImConversations::get()->selectAll(function (SelectInterface $q) use ($senderId, $recipientId): void {
+                $q->where(
+                    '(participant_a = ? AND participant_b = ?) OR (participant_a = ? AND participant_b = ?)',
+                    [$senderId, $recipientId, $recipientId, $senderId],
+                );
+            });
+            if (!empty($convs)) {
+                return true;
+            }
+
+            // Is the sender an expert?
+            $senderExpert = ExpertProfiles::get()->selectOneByField('account_id', $senderId);
+
+            if (!empty($senderExpert)) {
+                // Expert may message: their students (via bookings), moderators, owners
+                $recipientAccount = Account::getAccounts(
+                    selectCallback: static function (SelectInterface $select) use ($recipientId): void {
+                        $select->resetCols();
+                        $select->cols(['id']);
+                        $select->where('id = ?', [$recipientId]);
+                    },
+                    accountDataFields: [Account::IS_MODERATOR, Account::IS_OWNER, Account::IS_ADMIN],
+                );
+                $recipRow = $recipientAccount[0] ?? null;
+                if ($recipRow) {
+                    $rMod = intval($recipRow[Account::IS_MODERATOR] ?? 0) > 0;
+                    $rOwner = intval($recipRow[Account::IS_OWNER] ?? 0) > 0;
+                    $rAdmin = intval($recipRow[Account::IS_ADMIN] ?? 0) > 0;
+                    if ($rMod || $rOwner || $rAdmin) {
+                        return true;
+                    }
+                }
+
+                // Check if recipient is one of the expert's students
+                $slots = TimeSlots::get()->selectAll(function (SelectInterface $q) use ($senderId): void {
+                    $q->resetCols();
+                    $q->cols(['id']);
+                    $q->where('expert_id = ?', [$senderId]);
+                });
+                $slotIds = array_map(fn ($s) => (int)$s['id'], $slots);
+
+                if (!empty($slotIds)) {
+                    $bookings = Bookings::get()->selectAll(function (SelectInterface $q) use ($slotIds, $recipientId): void {
+                        $q->resetCols();
+                        $q->cols(['user_id']);
+                        $q->where("bookable_type = 'time_slot'");
+                        $q->where('bookable_id IN (?)', [$slotIds]);
+                        $q->where('user_id = ?', [$recipientId]);
+                    });
+                    if (!empty($bookings)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            // Regular user — may message experts only
+            $recipientExpert = ExpertProfiles::get()->selectOneByField('account_id', $recipientId);
+
+            return !empty($recipientExpert);
+        }
+
+        /**
+         * Override send to enforce recipient allow-list and add news event.
          */
         public static function post__send(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
+            // Enforce recipient authorization before delegating to framework
+            $account = Account::fromSession();
+            if ($account) {
+                $recipientId = (int)$globals->readPostValue('recipient_id', '0');
+                if ($recipientId > 0 && !static::canMessage((int)$account->id(), $recipientId)) {
+                    return ControllerTools::JSON(['error' => 'You are not allowed to message this user'], status: 403);
+                }
+            }
+
             $result = parent::post__send($globals, $params);
 
             if ($result->getStatusCode() !== 200) {

@@ -329,6 +329,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             //    (slot already booked by this user — pre-flight check missed it due to race).
             //    Compensation: refund the proportional amount.
             $createdBookingIds = [];
+            $createdSlotIds = []; // slot IDs for which INSERT actually succeeded (not duplicate-key skipped)
             $refundedTotal = 0;
             $touchedExpertIds = [];
             try {
@@ -354,6 +355,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                         throw $e;
                     }
                     $createdBookingIds[] = $bookingId;
+                    $createdSlotIds[$slotId] = true;
 
                     if ($slotCost > 0) {
                         try {
@@ -438,8 +440,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
 
             $userName = $account->readParam('name') ?: ('#' . $account->id());
             foreach ($validSlots as $slot) {
-                $expertId = (int)($slot['expert_id'] ?? 0);
                 $slotId = (int)$slot['id'];
+                // Only notify/clean-up for bookings that were actually created (not duplicate-key skipped).
+                if (!isset($createdSlotIds[$slotId])) {
+                    continue;
+                }
+                $expertId = (int)($slot['expert_id'] ?? 0);
                 if ($expertId > 0) {
                     try {
                         NewsService::createPersonal(
@@ -464,7 +470,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
 
             return ControllerTools::JSON([
                 'success' => true,
-                'booked_count' => count($validSlots),
+                'booked_count' => count($createdBookingIds),
                 'total_cost' => $totalCost,
                 'new_balance' => \PHPCraftdream\IRabi\Common\Tables\AccountBalance::getBalance($accountId),
             ]);

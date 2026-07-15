@@ -228,6 +228,12 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
                 return ControllerTools::JSON(['error' => 'Invalid params'], status: 400);
             }
 
+            // Target-rank guard — a moderator must not remove the photo of an
+            // owner/admin, nor their own. Same rule as post__setUserFlag (audit F-08-03).
+            if (!UserEntityConfig::actorMayActOn($userId)) {
+                return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
+            }
+
             $account = Account::get((string)$userId);
             $account->readDbAsync();
             $account->readDataAsyncPollFinishAll();

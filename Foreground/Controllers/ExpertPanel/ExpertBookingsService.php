@@ -109,7 +109,15 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 return ControllerTools::JSON(['error' => 'Only pending bookings can be confirmed'], status: 400);
             }
 
-            Bookings::get()->updateByField(['status' => 'confirmed', 'confirmed_at' => time()], 'id', $bookingId);
+            $now = time();
+            $affected = CasUpdate::exec(
+                'UPDATE ' . Bookings::get()->getTableName() . " SET status = 'confirmed', confirmed_at = ? WHERE id = ? AND status = 'pending'",
+                [$now, $bookingId]
+            );
+
+            if ($affected === 0) {
+                return ControllerTools::JSON(['error' => 'Booking is no longer pending (cancelled or already confirmed)'], status: 409);
+            }
 
             try {
                 $expertProfile = ExpertProfiles::get()->selectOneByField('account_id', $account->id());

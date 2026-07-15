@@ -6,6 +6,7 @@
  *   (b) set flags (IS_DISABLED, IS_OWNER, IS_ADMIN) on an owner/admin (H-2)
  *   (c) change the account type of an owner/admin (H-2)
  *   (d) adjust balance at all (adjustBalance requires isOwner, not isModerator)
+ *   (e) remove profile photo of an owner/admin account (F-08-03)
  *
  * All requests are made as the moderator role via its storageState.
  * Expected response: 403 Access denied.
@@ -14,7 +15,7 @@
 import { test, expect, tn } from '../helpers/scoped-test';
 import mysql from 'mysql2/promise';
 import { DB } from '../helpers/db';
-import { OWNER_LOGIN, ADMIN_LOGIN } from '../helpers/logins';
+import { OWNER_LOGIN, ADMIN_LOGIN, USER_LOGIN } from '../helpers/logins';
 test.describe.configure({ mode: 'serial' });
 
 async function getAccountId(login: string): Promise<number> {
@@ -195,5 +196,77 @@ test.describe('H-1: balance unchanged after rejected adjustBalance', () => {
 
 		const balanceAfter = await getBalance(ownerId);
 		expect(balanceAfter).toBe(balanceBefore);
+	});
+});
+
+// ── F-08-03: moderator cannot remove photo of owner/admin ─────────────────
+
+async function getPhoto(accountId: number): Promise<string> {
+	const conn = await mysql.createConnection(DB);
+	try {
+		const [rows] = await conn.execute<any[]>(
+			`SELECT photo FROM ${tn('accounts')} WHERE id = ?`, [accountId]
+		);
+		return rows[0]?.photo ?? '';
+	} finally { await conn.end(); }
+}
+
+test.describe('F-08-03: moderator cannot remove photo of owner/admin', () => {
+	let ownerId = 0;
+	let adminId = 0;
+	let userId = 0;
+
+	test('entry: resolve ids', async () => {
+		ownerId = await getAccountId(OWNER_LOGIN);
+		adminId = await getAccountId(ADMIN_LOGIN);
+		userId = await getAccountId(USER_LOGIN);
+		expect(ownerId).toBeGreaterThan(0);
+		expect(adminId).toBeGreaterThan(0);
+		expect(userId).toBeGreaterThan(0);
+	});
+
+	test('removeUserPhoto on owner returns 403', async ({ page }) => {
+		if (!ownerId) { test.skip(); return; }
+
+		const photoBefore = await getPhoto(ownerId);
+
+		const resp = await page.request.post('/admin/~removeUserPhoto', {
+			form: { user_id: String(ownerId) },
+		});
+		expect(resp.status()).toBe(403);
+
+		// Photo field must remain unchanged after rejection.
+		const photoAfter = await getPhoto(ownerId);
+		expect(photoAfter).toBe(photoBefore);
+	});
+
+	test('removeUserPhoto on admin returns 403', async ({ page }) => {
+		if (!adminId) { test.skip(); return; }
+
+		const photoBefore = await getPhoto(adminId);
+
+		const resp = await page.request.post('/admin/~removeUserPhoto', {
+			form: { user_id: String(adminId) },
+		});
+		expect(resp.status()).toBe(403);
+
+		const photoAfter = await getPhoto(adminId);
+		expect(photoAfter).toBe(photoBefore);
+	});
+
+	test('removeUserPhoto on regular user is NOT rank-blocked', async ({ page }) => {
+		if (!userId) { test.skip(); return; }
+
+		const resp = await page.request.post('/admin/~removeUserPhoto', {
+			form: { user_id: String(userId) },
+		});
+		const body = await resp.json().catch(() => ({}));
+		// Without a CSRF token the request may still fail (403 + CSRF error),
+		// but the rank-guard itself must NOT be the reason. If it were, the
+		// body would contain "Access denied" — the rank-guard short-circuits
+		// before the CSRF middleware runs.
+		if (resp.status() === 403) {
+			expect(body.error, 'rank-guard must not block moderator→user').not.toBe('Access denied');
+		}
 	});
 });
