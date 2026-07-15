@@ -30,12 +30,12 @@
 | Поле | Тип | Описание |
 |------|-----|----------|
 | `id` | INT | Первичный ключ |
-| `login` | VARCHAR(255) | Логин |
-| `email` | VARCHAR(255) | Email |
-| `password` | VARCHAR(255) | Хеш пароля |
+| `login` | VARCHAR(255) | Логин; для email-auth это email |
+| `login_type` | VARCHAR(32) | Тип логина, обычно `email` |
+| `token16` / `token32` | VARCHAR | Auth/session tokens; парольная аутентификация не используется |
 | `type` | ENUM | `user`, `expert` |
-| `timezone` | VARCHAR(45) | Часовой пояс |
-| `created_ut` | INT | Unix timestamp создания |
+| `time_zone` | VARCHAR(45) | Часовой пояс |
+| `reg_time` | INT | Unix timestamp регистрации |
 
 ### 2.2 db_account_data — Данные аккаунта (EAV)
 

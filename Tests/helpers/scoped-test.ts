@@ -106,6 +106,10 @@ function recordCtxEvent(kind: string, project?: string): void {
  * AND by the `tn()` helper (for non-fixture helper functions).
  */
 const DB_INI_CANDIDATES = [
+    // __dirname = <app>/Tests/helpers → ../.. = <app>
+    path.resolve(__dirname, '..', '..', 'WorkDir', 'ConfigDev', 'db.ini'),
+    path.resolve(__dirname, '..', '..', 'WorkDir', 'Config', 'db.ini'),
+    // Legacy: if Tests/ lived at the repo root (monorepo layout)
     path.resolve(__dirname, '..', '..', 'Apps', 'IRabi', 'WorkDir', 'ConfigDev', 'db.ini'),
     path.resolve(__dirname, '..', '..', 'Apps', 'IRabi', 'WorkDir', 'Config', 'db.ini'),
 ];

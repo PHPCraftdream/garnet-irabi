@@ -2,8 +2,8 @@
 
 ## Контроллер
 
-**Класс:** `TeachingController`
-**URL:** `/expert/`
+**Класс:** `ExpertPanelController`
+**Логический URL:** `/expert/` (с текущим route prefix обычно `/system/expert/`)
 **Доступ:** только для экспертов (middleware `expertOnly`)
 
 ## Эндпоинты

@@ -10,17 +10,17 @@ Playwright end-to-end test suite.
 
 ## Quick start
 
-IRabi depends on the framework via a Composer path repository, so check it
-out as a sibling directory first:
+IRabi depends on the framework as a normal Composer package. A sibling
+checkout is useful only when developing Garnet itself.
 
 ```bash
-git clone https://github.com/PHPCraftdream/garnet-framework.git
 git clone https://github.com/PHPCraftdream/garnet-irabi.git IRabi
 cd IRabi
 
-cp .env.example .env
+copy .env.example .env         # PowerShell; use cp on Unix
 composer install
-php garnet config:init --dev    # seeds WorkDir/ConfigDev/ from templates
+php garnet setup --skip-composer
+php garnet config:init --dev   # seeds WorkDir/ConfigDev/ from templates
 # edit WorkDir/ConfigDev/{app,db,email,ssh}.ini with your local values
 php garnet migration
 php garnet build
@@ -35,6 +35,8 @@ Full documentation — architecture, data model, roles, workflows, API — lives
 under [`docs/`](docs/README.md) (also available [in English](docs/README.en.md)).
 
 Testing guide: [`Tests/TESTING.md`](Tests/TESTING.md).
+
+Customer handover and readiness verdict: [`docs/customer-handover.md`](docs/customer-handover.md).
 
 ## License
 

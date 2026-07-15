@@ -16,10 +16,13 @@
    cd Apps/IRabi
    composer install
    ```
-3. Установить JS-зависимости:
+3. Установить JS-зависимости приложения и тестов:
    ```bash
-   cd FrontBuilder
    npm install
+   cd Tests
+   npm install
+   npx playwright install
+   cd ..
    ```
 4. Инициализировать конфигурацию разработчика:
    ```bash
@@ -29,7 +32,7 @@
 5. Настроить `WorkDir/ConfigDev/db.ini` и `app.ini`
 6. Запустить миграции:
    ```bash
-   php run_cmd.php migrate
+   php garnet migration
    ```
 
 ## Разработка
@@ -37,30 +40,28 @@
 ### Запуск локального сервера
 
 ```bash
-cd Apps/IRabi/WorkDir
-php -S 127.0.0.1:8001 public/index.php
+php garnet serve
 ```
 
 ### Сборка frontend
 
 ```bash
-cd FrontBuilder
-npm run build      # Production сборка
-npm run dev        # Development с watch
+npm run check      # lint + typecheck
+php garnet build   # production сборка
+php garnet build:watch
 ```
 
 ### Проверка TypeScript
 
 ```bash
-cd FrontBuilder
-npx tsc --noEmit
+tsgo --noEmit -p tsconfig.tsgo.json
 ```
 
 ### Генерация I18n
 
 После изменения файлов `*I18nData*.php`:
 ```bash
-php PrepareParams.php
+php garnet prepare
 ```
 
 ## Структура кода
@@ -104,18 +105,17 @@ php PrepareParams.php
 
 ### Добавление переводов
 
-1. Добавить ключи в `CommonI18nDataEn.php` и `CommonI18nDataRu.php`
-2. Запустить `php PrepareParams.php`
+1. Добавить одинаковые ключи в соответствующие `*I18nDataEn.php` и `*I18nDataRu.php`
+2. Запустить `php garnet prepare`
 3. Использовать в PHP: `CommonI18n::MyKey()`
 4. Использовать в JS: `I18nCommon.MyKey()`
 
 ## Тестирование
 
-Тесты находятся в `tests/`:
+Тесты находятся в `Tests/`:
 
 ```bash
-cd tests
-npx playwright test
+composer test:e2e
 ```
 
 ### Создание тестового пользователя

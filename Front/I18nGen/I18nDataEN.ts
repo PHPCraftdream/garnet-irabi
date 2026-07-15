@@ -99,6 +99,16 @@ export class I18nDataEN {
     static Admin_Enable = 'Enable';
     static Admin_Grant = 'Grant';
     static Admin_Revoke = 'Revoke';
+    static Admin_Flag_Approve = 'Approve expert';
+    static Admin_Flag_RevokeApproval = 'Revoke approval';
+    static Admin_Flag_Disable = 'Disable account';
+    static Admin_Flag_Enable = 'Enable account';
+    static Admin_Flag_GrantModerator = 'Promote to moderator';
+    static Admin_Flag_RevokeModerator = 'Demote from moderator';
+    static Admin_Flag_GrantOwner = 'Promote to owner';
+    static Admin_Flag_RevokeOwner = 'Demote from owner';
+    static Admin_Flag_GrantAdmin = 'Promote to admin';
+    static Admin_Flag_RevokeAdmin = 'Demote from admin';
     static Admin_Flag_GrantExpert = 'Promote to expert';
     static Admin_Flag_RevokeExpert = 'Demote to user';
     static Admin_Role_Owner = 'Owner';
@@ -256,6 +266,7 @@ export class I18nDataEN {
     static Slot_Cancel = 'Cancel';
     static Slot_Delete = 'Delete';
     static Slot_Complete = 'Complete';
+    static Slot_Save = 'Save';
     static Slot_EditTitle = 'Edit Slot';
     static Slot_CancelConfirm = 'Are you sure you want to cancel this slot?';
     static Slot_DeleteConfirm = 'Are you sure you want to delete this slot?';

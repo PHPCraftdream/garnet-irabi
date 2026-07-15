@@ -51,5 +51,9 @@ Apps/IRabi/
 - [Roles & Permissions](roles.md) — Role hierarchy and access matrix
 - [Development Guide](development.md) — Setup and development instructions
 - [Expert API](expert-api.md) — Expert panel API endpoints
+- [Framework selection](framework-selection.md) — decision criteria and Garnet limitations
+- [i18n](i18n.md) — shared PHP/TypeScript translation source and parity gate
+- [Customer handover](customer-handover.md) — deployment, acceptance, and open blockers
+- [Security audit](security-audit/00-SUMMARY.md) — findings and production blockers
 
 Playwright testing guide lives in [`Tests/TESTING.md`](../Tests/TESTING.md).

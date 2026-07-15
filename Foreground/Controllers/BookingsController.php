@@ -678,6 +678,13 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 return ControllerTools::notFound('Slot not found');
             }
 
+            // Approval gate on the GET side as well: don't render the booking
+            // form for a slot owned by an unapproved/disabled expert (the POST
+            // handler also checks, but showing the form is misleading).
+            if (!UserEntityConfig::isApprovedActiveExpert((int)$slot['expert_id'])) {
+                return ControllerTools::notFound('Slot not found');
+            }
+
             $expert = ExpertProfiles::get()->selectOneByField('account_id', $slot['expert_id']);
 
             $account = Account::fromSession();

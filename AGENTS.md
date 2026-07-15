@@ -6,6 +6,14 @@ This file is your map for *this application*: architecture, dev
 conventions, and tooling. For business logic, roles, and the data
 model, read [`docs/README.md`](docs/README.md) first.
 
+For a customer handover or release-readiness task, read
+[`docs/customer-handover.md`](docs/customer-handover.md),
+[`docs/framework-selection.md`](docs/framework-selection.md),
+[`docs/i18n.md`](docs/i18n.md), and
+[`docs/security-audit/00-SUMMARY.md`](docs/security-audit/00-SUMMARY.md)
+before making a production-readiness claim. Treat unchecked acceptance
+items and security blockers there as release blockers.
+
 ## Where the framework lives
 
 IRabi installs `phpcraftdream/garnet-framework` as a normal Composer

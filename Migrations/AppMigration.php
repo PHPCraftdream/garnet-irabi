@@ -11,6 +11,7 @@ namespace PHPCraftdream\IRabi\Migrations {
     use PHPCraftdream\IRabi\Migrations\Items\M_0007;
     use PHPCraftdream\IRabi\Migrations\Items\M_0008;
     use PHPCraftdream\IRabi\Migrations\Items\M_0009;
+    use PHPCraftdream\IRabi\Migrations\Items\M_0010;
 
     /**
      * Migration plan:
@@ -23,6 +24,8 @@ namespace PHPCraftdream\IRabi\Migrations {
      *   M_0006 — re-sync /terms block (no-asking-counterparty-to-cancel clause).
      *   M_0007 — `kind` column on cancellation tables (decline vs cancel stats).
      *   M_0008 — email_throttle table for per-account notification frequency.
+     *   M_0009 — SEO columns on static_pages (seo_title, og_image).
+     *   M_0010 — UNIQUE INDEX on balance_ledger for ledger idempotency.
      *
      * Historical M_0003..M_0019 were squashed into M_0002 in a one-time
      * consolidation pass. Existing prod DBs at version=19 keep their
@@ -30,7 +33,7 @@ namespace PHPCraftdream\IRabi\Migrations {
      * destructive ALTERs replayed).
      */
     class AppMigration extends Migration {
-        protected int $currentVersion = 9;
+        protected int $currentVersion = 10;
 
         /**
          * @var array|class-string[]
@@ -45,6 +48,7 @@ namespace PHPCraftdream\IRabi\Migrations {
             7 => M_0007::class,
             8 => M_0008::class,
             9 => M_0009::class,
+            10 => M_0010::class,
         ];
     }
 }

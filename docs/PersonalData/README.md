@@ -81,8 +81,8 @@
 | Категория | Источник | Где хранится |
 |-----------|----------|--------------|
 | Имя / псевдоним | `db_accounts.name` | основная БД |
-| E-mail | `db_accounts.email` | основная БД |
-| Хеш пароля | `db_accounts.password_hash` | основная БД |
+| E-mail/login | `db_accounts.login` | основная БД |
+| Login/email и auth tokens | `db_accounts.login`, `token16`, `token32` | основная БД; парольная аутентификация не используется |
 | Флаги (роли, статусы) | `db_accounts_data` | основная БД |
 | Фото профиля | загружаемые файлы | файловое хранилище |
 | IP-адреса | логи nginx, `db_ir_admin_action_log`, журнал входов | логи + БД |

@@ -69,8 +69,8 @@ setup('create expert user', async ({ page }) => {
 			const uid = [...Array(16)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
 			await conn.execute(
 				`INSERT INTO ${tn('time_slots')}
-				 (expert_id, start_at, end_at, duration_min, cost, is_online, location, max_users, status, uid, created_at, community_id)
-				 VALUES (?, ?, ?, 60, 500, 1, 'https://meet.example.com/test', 1, 'free', ?, ?, 1)`,
+				 (expert_id, start_at, end_at, duration_min, cost, is_online, location, max_users, status, uid, created_at)
+				 VALUES (?, ?, ?, 60, 500, 1, 'https://meet.example.com/test', 1, 'free', ?, ?)`,
 				[expertId, startAt, startAt + 3600, uid, now]
 			);
 		}
