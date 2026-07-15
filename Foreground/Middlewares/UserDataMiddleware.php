@@ -63,6 +63,27 @@ namespace PHPCraftdream\IRabi\Foreground\Middlewares {
             ]));
         }
 
+        /**
+         * Server-side deny gate for disabled accounts (security audit H-02).
+         * Previously only UserEntityConfig::isApprovedActiveExpert() checked
+         * IS_DISABLED, and only for the expert being booked — never for the
+         * acting session account. A disabled account with a still-valid
+         * session retained full access to every authenticated route
+         * (booking, comments, support, IM, expert slot management, admin
+         * panels for disabled staff), since isModerator()/isOwner()/isAdmin()/
+         * isExpert()/isUser() never consider it. Wired into the shared
+         * `$common` chain right after authOnly() so it runs before any
+         * business-role or staff-rank gate, for every protected route.
+         */
+        public static function notDisabled(IGlobalReqParams $globals, IRouterUriParams $params): string|null {
+            $account = Account::fromSession();
+            if ($account && $account->isDisabled()) {
+                return static::noAccess();
+            }
+
+            return null;
+        }
+
         public static function expertOnly(IGlobalReqParams $globals, IRouterUriParams $params): string|null {
             if (UserEntityConfig::isExpert()) {
                 return null;

@@ -56,7 +56,6 @@ namespace PHPCraftdream\IRabi {
     use PHPCraftdream\IRabi\Common\Tables\InviteTokens;
     use PHPCraftdream\IRabi\Common\Tables\JsErrors;
     use PHPCraftdream\IRabi\Common\Tables\SupportTickets;
-    use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardAccountsController;
     use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardBalancesController;
     use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardBookingsController;
     use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardCancellationsController;
@@ -197,6 +196,12 @@ namespace PHPCraftdream\IRabi {
                 [WorkerScopeMiddleware::class, 'process'],
                 [MaintenanceMiddleware::class, 'process'],
                 [IrabiAuthMiddleware::class, 'authOnly'],
+                // Deny gate for disabled accounts (security audit H-02): runs
+                // immediately after auth, before any business/staff role check,
+                // so a disabled account with a still-valid session can never
+                // reach a mutating or protected route regardless of its type/
+                // staff rank.
+                [UserDataMiddleware::class, 'notDisabled'],
                 [UserDataMiddleware::class, 'process'],
                 // Idempotency comes after auth so account_id is known when the
                 // key is reserved. Replays return immediately without re-running
@@ -238,11 +243,6 @@ namespace PHPCraftdream\IRabi {
             $router->add(StaticPagesController::URL . '/{view}', StaticPagesController::class, $maintenanceOnly);
             $router->add(DevLoginController::URL, DevLoginController::class, [
                 [WorkerScopeMiddleware::class, 'process'],
-            ]);
-
-            $router->add(DashboardAccountsController::URL, DashboardAccountsController::class, [
-                ...$common,
-                [UserDataMiddleware::class, 'moderatorOnly'],
             ]);
 
             $adminMiddleware = [
