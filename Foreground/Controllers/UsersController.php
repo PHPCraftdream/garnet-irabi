@@ -15,6 +15,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
+    use PHPCraftdream\IRabi\Common\Services\AccountDisplay;
     use PHPCraftdream\IRabi\Common\Tables\Bookings;
     use PHPCraftdream\IRabi\Common\Tables\ExpertCancellations;
     use PHPCraftdream\IRabi\Common\Tables\ExpertProfiles;
@@ -41,9 +42,19 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             // If account row is missing (e.g. stale news referencing a deleted/reseeded id) —
             // fall back to a stub so preview opens gracefully with "#id" as the name.
             $acc = DbAccount::get()->selectOneByField('id', $userId);
-            $name = $acc ? trim((string)($acc['name'] ?? '')) : '';
-            if ($name === '') {
-                $name = '#' . $userId;
+
+            // Disabled accounts must be anonymised uniformly across every surface —
+            // show the "Пользователь #{id} отключён" placeholder, a placeholder
+            // avatar and no expert profile, matching how slots/news/im already
+            // render blocked users.
+            $isDisabled = AccountDisplay::isDisabled($userId);
+            if ($isDisabled) {
+                $name = AccountDisplay::disabledName($userId);
+            } else {
+                $name = $acc ? trim((string)($acc['name'] ?? '')) : '';
+                if ($name === '') {
+                    $name = '#' . $userId;
+                }
             }
 
             $expertProfileRow = ExpertProfiles::get()->selectOneByField('account_id', $userId);
@@ -53,7 +64,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 'id' => $userId,
                 'name' => $name,
                 'type' => $type,
-                'avatar' => UserEntityConfig::avatarUrl([
+                'avatar' => $isDisabled ? UserEntityConfig::avatarUrl([]) : UserEntityConfig::avatarUrl([
                     'photo' => $acc['photo'] ?? null,
                     'photo_cropped' => $acc['photo_cropped'] ?? null,
                     'token16' => $acc['token16'] ?? null,
@@ -65,7 +76,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             if ($type === 'expert') {
                 $profile = $expertProfileRow;
                 $isApproved = (int)($profile['is_approved'] ?? 0) === 1;
-                if ($isApproved) {
+                if ($isApproved && !$isDisabled) {
                     $payload['expertProfile'] = [
                         'display_name' => (string)($profile['display_name'] ?? ''),
                         'specialization' => (string)($profile['specialization'] ?? ''),

@@ -7,6 +7,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Logs\Logger;
     use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
+    use PHPCraftdream\IRabi\Common\Tables\SysLogThrottle;
     use Throwable;
 
     /**
@@ -34,6 +35,13 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
         private const MAX_MSG_LEN = 1024;
         private const MAX_META_LEN = 1024;
 
+        // Per-IP fixed-window rate limit (finding F-LOG-01): at most
+        // RATE_MAX_PER_WINDOW breadcrumb writes per RATE_WINDOW_SEC-second bucket
+        // per client IP. Generous enough for legitimate diagnostic tracing, tight
+        // enough to blunt unauthenticated log-spam / disk-growth abuse.
+        private const RATE_WINDOW_SEC = 60;
+        private const RATE_MAX_PER_WINDOW = 60;
+
         public static function post__log(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
             $cat = (string)$globals->readPostValue('cat', '');
             $msg = (string)$globals->readPostValue('msg', '');
@@ -47,6 +55,10 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
 
             if ($msg === '') {
                 return ControllerTools::JSON(['ok' => false, 'error' => 'invalid_msg'], status: 400);
+            }
+
+            if (self::isRateLimited((string)$globals->ip())) {
+                return ControllerTools::JSON(['ok' => false, 'error' => 'rate_limited'], status: 429);
             }
 
             $msg = mb_substr($msg, 0, self::MAX_MSG_LEN);
@@ -81,6 +93,42 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             }
 
             return ControllerTools::JSON(['ok' => true], status: 200);
+        }
+
+        /**
+         * Per-IP fixed-window rate check. Atomically bumps the caller's counter
+         * for the current minute bucket and reports whether it now exceeds the
+         * cap. Fail-open by design: an empty/unknown IP or any DB error never
+         * blocks a legitimate breadcrumb — rate limiting is best-effort spam
+         * mitigation, not an auth gate.
+         */
+        private static function isRateLimited(string $ip): bool {
+            $ip = trim($ip);
+            if ($ip === '') {
+                return false;
+            }
+
+            try {
+                $now = time();
+                $window = $now - ($now % self::RATE_WINDOW_SEC);
+                $table = SysLogThrottle::get()->getTableName();
+
+                // On a new window reset cnt to 1, otherwise increment in place —
+                // single atomic upsert, no read-modify-write race.
+                SysLogThrottle::get()->getQueryEx()->ex(
+                    "INSERT INTO `{$table}` (ip, window_start, cnt)
+                     VALUES (?, ?, 1)
+                     ON DUPLICATE KEY UPDATE
+                        cnt = IF(window_start = VALUES(window_start), cnt + 1, 1),
+                        window_start = VALUES(window_start)",
+                    [$ip, $window]
+                );
+
+                $row = SysLogThrottle::get()->selectOneByField('ip', $ip);
+                return $row !== null && (int)$row['cnt'] > self::RATE_MAX_PER_WINDOW;
+            } catch (Throwable) {
+                return false;
+            }
         }
     }
 }

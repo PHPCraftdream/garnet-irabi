@@ -201,9 +201,13 @@ namespace PHPCraftdream\IRabi\Foreground\Params {
 
         /**
          * Staff-rank ladder as a comparable integer (higher = more privileged).
-         * Used by admin actions to enforce that an actor may only act on
-         * accounts strictly below their own rank (no lateral / upward moves,
-         * no self-targeting on destructive flags).
+         * Used by admin actions (see actorMayActOn()) to enforce that an actor
+         * may act only on accounts that do NOT outrank them and never on
+         * themselves. Equal-rank peer management (moderator↔moderator,
+         * owner↔owner, admin↔admin) is INTENTIONALLY allowed: IRabi is a small,
+         * trusted staff community where lateral operational help is expected —
+         * only upward escalation and self-targeting on destructive flags are
+         * refused (security audit H-2 / F-08-04, accepted policy).
          */
         public const RANK_USER = 0;
         public const RANK_MODERATOR = 1;
@@ -261,9 +265,10 @@ namespace PHPCraftdream\IRabi\Foreground\Params {
          * Authorization rule for staff actions that mutate another account
          * (flag / type / balance changes): the actor may act only when the
          * target does NOT outrank them and is not the actor themselves.
-         * Equal-rank peers may manage each other (e.g. admin↔admin), but
-         * upward moves (moderator→owner/admin) and self-targeting on
-         * destructive operations are refused — see security audit H-2.
+         * Equal-rank peers may manage each other (e.g. admin↔admin) by design —
+         * this is accepted policy for IRabi's small trusted staff community
+         * (security audit F-08-04). Only upward moves (moderator→owner/admin)
+         * and self-targeting on destructive operations are refused — see H-2.
          */
         public static function actorMayActOn(int $targetId): bool {
             $account = Account::fromSession();

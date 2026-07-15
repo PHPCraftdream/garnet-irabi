@@ -175,10 +175,23 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
             });
             $userCancellations = (int)($cancelledRows[0]['cnt'] ?? 0);
 
+            // Never fall back to login/email as a display name — that would leak
+            // the account's login handle. Disabled accounts are anonymised with the
+            // shared "Пользователь #{id} отключён" placeholder, consistent with
+            // every other user-facing surface.
+            if (AccountDisplay::isDisabled($userId)) {
+                $displayName = AccountDisplay::disabledName($userId);
+            } else {
+                $displayName = trim((string)($userAcc['name'] ?? ''));
+                if ($displayName === '') {
+                    $displayName = '#' . $userId;
+                }
+            }
+
             return ControllerTools::JSON([
                 'user' => [
                     'id' => (int)$userAcc['id'],
-                    'name' => $userAcc['name'] ?: $userAcc['login'],
+                    'name' => $displayName,
                     'completedBookings' => $completedBookings,
                     'totalBookings' => $totalBookings,
                     'userCancellations' => $userCancellations,

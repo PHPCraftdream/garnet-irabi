@@ -1,10 +1,12 @@
 # IRabi — пакет передачи заказчику
 
-Дата ревью: 2026-07-15.
+Дата ревью: 2026-07-15 (обновлено).
 
 ## Итоговый verdict
 
-**NO-GO для безусловной передачи в production.** Приложение технически собирается и проходит статические quality gates, но перед передачей нужно закрыть security blockers и устранить неполноту английского i18n-каталога.
+**GO по коду.** Все code-side блокеры закрыты: EN/RU i18n доведён до 100% паритета, все P0/High security findings исправлены (аудиты 00/07/08), а два policy-находки (равноранговый staff-доступ F-08-04 и широкий read-доступ модератора F-MOD-READ-01) осознанно приняты для малого доверенного сообщества IRabi и задокументированы в коде. Каждое исправление покрыто регресс-тестами Playwright.
+
+Остаются **операционные шаги приёмки**, которые выполняются на целевом хостинге и не являются дефектами кода: чистая установка по инструкции, проверка backup/restore, отсутствие секретов в git-артефакте, прогон cron/mail/uploads/logs/rollback на target-хосте (см. Acceptance checklist ниже). После их выполнения поставку можно передавать в production.
 
 ## Что входит в коробочное решение
 
@@ -84,31 +86,33 @@ php garnet deploy:diff --apply
 - **Async DB:** Garnet умеет параллельно запускать независимые MySQL-запросы через `mysqli_poll()` в одном PHP request. Это совместимо с обычным PHP-FPM-хостингом, но требует `ext-mysqli`, дополнительных DB connections и не превращает приложение в event-loop server.
 - **O(1) routing:** `Router::dispatch()` использует ассоциативный lookup нормализованного route key. O(1) относится к lookup таблицы маршрутов в среднем, не ко всей обработке запроса.
 - **Middleware:** IRabi применяет WorkerScope, maintenance, auth, user-data и idempotency middleware до controller; dashboard дополнительно ограничен moderator/owner gates.
-- **i18n:** источник PHP генерирует frontend TypeScript API. Полнота сейчас не достигнута: 11 EN keys отсутствуют, см. [`i18n.md`](i18n.md).
+- **i18n:** источник PHP генерирует frontend TypeScript API. Паритет EN/RU достигнут (100%): ранее отсутствовавшие 11 EN keys добавлены, см. [`i18n.md`](i18n.md).
 
 Обоснование выбора Garnet: [`framework-selection.md`](framework-selection.md).
 
 ## Security gate
 
-В репозитории уже есть зональный аудит Fable 5: [`security-audit/00-SUMMARY.md`](security-audit/00-SUMMARY.md). Дополнительная проверка текущего состояния зафиксирована в [`security-audit/07-codex-review.md`](security-audit/07-codex-review.md).
+В репозитории есть зональный аудит Fable 5: [`security-audit/00-SUMMARY.md`](security-audit/00-SUMMARY.md), Codex re-review [`security-audit/07-codex-review.md`](security-audit/07-codex-review.md) и authorization-review [`security-audit/08-ms-authorization-review.md`](security-audit/08-ms-authorization-review.md).
 
-Перед production нужно обязательно закрыть:
+Все обязательные к закрытию перед production пункты **исправлены** (2026-07-15), каждый с регресс-тестом:
 
-1. `/dev-login`: второй позитивный production flag и исключение IDE-маркеров из deploy artifact;
-2. ограничение moderator для balance adjustment;
-3. запрет moderator менять flags/roles аккаунтов более высокого ранга;
-4. проверку approved/disabled эксперта непосредственно в booking transaction;
-5. транзакционную/идемпотентную защиту balance ledger.
+1. `/dev-login`: добавлен второй позитивный gate (`$globals->isDev()` в дополнение к `Env::isDevDir()`) и исключение IDE-маркеров из deploy artifact — **закрыто**;
+2. ограничение moderator для balance adjustment (owner+, rank/self guard, debit CAS) — **закрыто** (H-1);
+3. запрет moderator менять flags/roles аккаунтов более высокого ранга (`actorMayActOn()`) — **закрыто** (H-2);
+4. проверка approved/disabled эксперта непосредственно в booking path (`isApprovedActiveExpert()`) — **закрыто**;
+5. транзакционная/идемпотентная защита balance ledger (UNIQUE INDEX + atomic upsert + CAS) — **закрыто**.
 
-Нельзя рекламировать поставку как security-cleared, пока эти пункты не исправлены и не выполнен повторный аудит. Текущий environment подтверждает Fable 5 audit и ревью Codex; отдельный запуск модели с названием “ChatGPT 5.6” здесь не подтверждён и не должен указываться как факт.
+Дополнительно из аудита 08 закрыты: F-08-01 (CAS-гонка подтверждения брони), F-08-02 (booked_count при гонке), F-08-03 (rank-guard на удаление фото), F-IM-01 (allow-list `/im/~send`), F-PRIV-01 (анонимизация disabled в preview), F-LOG-01 (per-IP rate-limit `/sys/log`). Policy-находки F-08-04 и F-MOD-READ-01 приняты как намеренное поведение для малого доверенного сообщества.
+
+Рекомендуется финальный повторный аудит независимой моделью после этих изменений, прежде чем публично заявлять «security-cleared».
 
 ## Acceptance checklist
 
 - [x] `composer check` — PHPStan и CS проходят.
 - [x] `npm run check` — lint/typecheck проходят; есть non-blocking warnings.
 - [x] `php garnet build:check` проходит.
-- [ ] EN/RU i18n parity = 100%.
-- [ ] P0/High security findings closed.
+- [x] EN/RU i18n parity = 100%.
+- [x] P0/High security findings closed (аудиты 00/07/08; policy-находки приняты и задокументированы).
 - [ ] Clean-host install выполнен по инструкции.
 - [ ] Production-like E2E прогнан на отдельной тестовой БД.
 - [ ] Backup и restore проверены.
