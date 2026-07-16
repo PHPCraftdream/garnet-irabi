@@ -7,6 +7,8 @@
  *   (c) change the account type of an owner/admin (H-2)
  *   (d) adjust balance at all (adjustBalance requires isOwner, not isModerator)
  *   (e) remove profile photo of an owner/admin account (F-08-03)
+ *   (f) create a support ticket on behalf of an owner/admin account
+ *       (security audit report 13, Finding 4)
  *
  * All requests are made as the moderator role via its storageState.
  * Expected response: 403 Access denied.
@@ -196,6 +198,75 @@ test.describe('H-1: balance unchanged after rejected adjustBalance', () => {
 
 		const balanceAfter = await getBalance(ownerId);
 		expect(balanceAfter).toBe(balanceBefore);
+	});
+});
+
+// ── Finding 4 (report 13): moderator cannot create a support ticket for
+// an owner/admin target, but can for a regular user/expert ────────────────
+
+async function countTickets(accountId: number): Promise<number> {
+	const conn = await mysql.createConnection(DB);
+	try {
+		const [rows] = await conn.execute<any[]>(
+			`SELECT COUNT(*) as cnt FROM ${tn('support_tickets')} WHERE account_id = ?`, [accountId]
+		);
+		return Number(rows[0]?.cnt ?? 0);
+	} finally { await conn.end(); }
+}
+
+test.describe('Finding 4: moderator cannot create support ticket for owner/admin target', () => {
+	let ownerId = 0;
+	let adminId = 0;
+	let userId = 0;
+
+	test('entry: resolve ids', async () => {
+		ownerId = await getAccountId(OWNER_LOGIN);
+		adminId = await getAccountId(ADMIN_LOGIN);
+		userId = await getAccountId(USER_LOGIN);
+		expect(ownerId).toBeGreaterThan(0);
+		expect(adminId).toBeGreaterThan(0);
+		expect(userId).toBeGreaterThan(0);
+	});
+
+	test('createForUser targeting owner returns 403, no ticket created', async ({ page }) => {
+		if (!ownerId) { test.skip(); return; }
+		const before = await countTickets(ownerId);
+
+		const resp = await page.request.post('/admin/support/~createForUser', {
+			form: { account_id: String(ownerId), subject: 'Security test', message: 'Should be rejected' },
+		});
+		expect(resp.status()).toBe(403);
+		expect(await countTickets(ownerId)).toBe(before);
+	});
+
+	test('createForUser targeting admin returns 403, no ticket created', async ({ page }) => {
+		if (!adminId) { test.skip(); return; }
+		const before = await countTickets(adminId);
+
+		const resp = await page.request.post('/admin/support/~createForUser', {
+			form: { account_id: String(adminId), subject: 'Security test', message: 'Should be rejected' },
+		});
+		expect(resp.status()).toBe(403);
+		expect(await countTickets(adminId)).toBe(before);
+	});
+
+	test('createForUser targeting a regular user is NOT rank-blocked', async ({ page }) => {
+		if (!userId) { test.skip(); return; }
+		const before = await countTickets(userId);
+
+		const resp = await page.request.post('/admin/support/~createForUser', {
+			form: { account_id: String(userId), subject: 'Security test', message: 'Legit ticket' },
+		});
+		const body = await resp.json().catch(() => ({}));
+		// Without a CSRF token the request may still fail (403 + CSRF error),
+		// but the rank-guard itself must NOT be the reason — same pattern as
+		// the removeUserPhoto check below.
+		if (resp.status() === 403) {
+			expect(body.error, 'rank-guard must not block moderator→user').not.toBe('Access denied');
+		} else {
+			expect(resp.status()).toBe(200);
+			expect(await countTickets(userId)).toBe(before + 1);
+		}
 	});
 });
 

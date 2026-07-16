@@ -170,6 +170,15 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
                 return ControllerTools::JSON(['error' => 'User not found'], status: 404);
             }
 
+            // Security audit Finding 4 (report 13): a moderator could
+            // otherwise open a user-visible ticket on behalf of a
+            // higher-rank staff account (owner/admin) and assign it to
+            // themselves — apply the same rank boundary already enforced
+            // for setUserFlag/adjustBalance.
+            if (!UserEntityConfig::actorMayActOn($targetAccountId)) {
+                return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
+            }
+
             $admin = Account::fromSession();
             $adminId = $admin->id();
             $now = time();
