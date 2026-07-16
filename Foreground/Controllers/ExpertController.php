@@ -55,7 +55,15 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
 
             $expert = ExpertProfiles::get()->selectOneByField('account_id', $expertId);
 
-            if (!$expert || !(int)($expert['is_approved'] ?? 0)) {
+            // Security audit M-01: expert_profiles.is_approved alone doesn't
+            // reflect account-level demotion — a moderator demoting an
+            // expert or clearing account-level approval doesn't cascade-clear
+            // this row. Gate on the same type+approved predicate the booking
+            // path enforces. IS_DISABLED is handled separately below (the
+            // profile stays reachable but anonymised, matching how disabled
+            // accounts are shown elsewhere — news feed, IM partner name —
+            // instead of 404).
+            if (!$expert || !UserEntityConfig::isApprovedExpertAccount($expertId)) {
                 return ControllerTools::notFound('Expert not found');
             }
 
@@ -120,6 +128,14 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 $expert['display_name'] = AccountDisplay::disabledName($expertId);
                 $avatar = null;
                 $avatarFull = null;
+                // Security audit M-01: a disabled expert's future free slots
+                // and booking/decline counters must not leak through the
+                // still-reachable anonymised profile page.
+                $slots = [];
+                $cancellationCount = 0;
+                $declineCount = 0;
+                $conductedCount = 0;
+                $totalBookingsCount = 0;
             }
 
             $content = RenderIsland::render('expert-profile', [

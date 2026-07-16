@@ -133,10 +133,13 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 return true;
             }
 
-            // Is the sender an expert?
-            $senderExpert = ExpertProfiles::get()->selectOneByField('account_id', $senderId);
+            // Is the sender an expert? Security audit M-02: existence of an
+            // expert_profiles row alone doesn't reflect account-level
+            // demotion/disable — gate on the same account-level predicate
+            // the booking path enforces.
+            $senderIsActiveExpert = UserEntityConfig::isApprovedActiveExpert($senderId);
 
-            if (!empty($senderExpert)) {
+            if ($senderIsActiveExpert) {
                 // Expert may message: their students (via bookings), moderators, owners
                 $recipientAccount = Account::getAccounts(
                     selectCallback: static function (SelectInterface $select) use ($recipientId): void {
@@ -180,10 +183,10 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 return false;
             }
 
-            // Regular user — may message experts only
-            $recipientExpert = ExpertProfiles::get()->selectOneByField('account_id', $recipientId);
-
-            return !empty($recipientExpert);
+            // Regular user — may message active approved experts only.
+            // Security audit M-02: existence of an expert_profiles row alone
+            // doesn't reflect account-level demotion/disable.
+            return UserEntityConfig::isApprovedActiveExpert($recipientId);
         }
 
         /**

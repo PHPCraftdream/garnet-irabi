@@ -308,5 +308,33 @@ namespace PHPCraftdream\IRabi\Foreground\Params {
                 && intval($a[Account::IS_APPROVED] ?? 0) > 0
                 && intval($a[Account::IS_DISABLED] ?? 0) < 1;
         }
+
+        /**
+         * Same eligibility as isApprovedActiveExpert() but ignoring
+         * IS_DISABLED — for the public profile page, where a disabled
+         * expert's entry is intentionally still rendered (anonymised name,
+         * no avatar, no slots/counters) rather than 404'd, matching how
+         * disabled accounts are handled elsewhere (news feed, IM partner
+         * name). A demoted or never-approved account still 404s.
+         */
+        public static function isApprovedExpertAccount(int $expertId): bool {
+            if ($expertId <= 0) {
+                return false;
+            }
+            $accounts = Account::getAccounts(
+                selectCallback: static function (SelectInterface $select) use ($expertId): void {
+                    $select->resetCols();
+                    $select->cols(['id', 'type']);
+                    $select->where('id = ?', [$expertId]);
+                },
+                accountDataFields: [Account::IS_APPROVED],
+            );
+            if (empty($accounts)) {
+                return false;
+            }
+            $a = $accounts[0];
+            return ($a['type'] ?? '') === 'expert'
+                && intval($a[Account::IS_APPROVED] ?? 0) > 0;
+        }
     }
 }

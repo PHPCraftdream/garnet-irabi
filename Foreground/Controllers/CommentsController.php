@@ -12,7 +12,6 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\IRabi\Common\PaginationHelper;
     use PHPCraftdream\IRabi\Common\Services\AccountDisplay;
     use PHPCraftdream\IRabi\Common\Tables\Comments;
-    use PHPCraftdream\IRabi\Common\Tables\ExpertProfiles;
     use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;
 
     class CommentsController extends FrameworkController {
@@ -107,9 +106,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 return ControllerTools::JSON(['error' => 'Cannot comment on your own profile'], status: 400);
             }
 
-            // Validate entity exists (only expert type supported now)
-            $entityExists = (bool)ExpertProfiles::get()->selectOneByField('account_id', $entityId);
-            if (!$entityExists) {
+            // Validate entity is a currently-public expert (only expert type
+            // supported now). Security audit L-01: a bare expert_profiles row
+            // doesn't reflect account-level demotion/disable/unapproval — a
+            // comment target must pass the same predicate the public expert
+            // profile itself requires.
+            if (!UserEntityConfig::isApprovedActiveExpert($entityId)) {
                 return ControllerTools::JSON(['error' => 'Entity not found'], status: 404);
             }
 
