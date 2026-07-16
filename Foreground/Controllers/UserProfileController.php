@@ -11,9 +11,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
     use PHPCraftdream\Garnet\Kernel\Io\Twig\TwigParams;
+    use PHPCraftdream\IRabi\Common\Services\AccountDisplay;
     use PHPCraftdream\IRabi\Common\Tables\Bookings;
     use PHPCraftdream\IRabi\Common\Tables\ExpertProfiles;
-    use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
     use PHPCraftdream\IRabi\Common\Tables\UserCancellations;
     use PHPCraftdream\IRabi\Foreground\Params\Menu;
     use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;
@@ -36,49 +36,6 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             );
         }
 
-        /**
-         * Security audit M-03: /user/id~N exposed any authenticated actor's
-         * name and booking/cancellation counters for ANY other regular user
-         * with no restriction. Policy (confirmed): visible to the profile's
-         * own owner, staff (moderator+), or an expert who has actually had a
-         * booking from this user (a real counterparty) — everyone else gets
-         * a 404, matching the "don't confirm existence" pattern already used
-         * elsewhere in this controller.
-         */
-        private static function canViewProfile(?Account $viewer, int $userId): bool {
-            if (!$viewer) {
-                return false;
-            }
-            if ($viewer->id() === $userId) {
-                return true;
-            }
-            if (UserEntityConfig::isModerator()) {
-                return true;
-            }
-
-            // Counterparty: viewer is an active approved expert who has had
-            // at least one booking from this user on one of their slots.
-            if (!UserEntityConfig::isApprovedActiveExpert($viewer->id())) {
-                return false;
-            }
-            $slotIds = array_column(
-                TimeSlots::get()->selectByField('expert_id', $viewer->id()),
-                'id'
-            );
-            if (empty($slotIds)) {
-                return false;
-            }
-            $bookings = Bookings::get()->selectAll(function (SelectInterface $q) use ($slotIds, $userId): void {
-                $q->resetCols()->cols(['id']);
-                $q->where("bookable_type = 'time_slot'");
-                $q->where('bookable_id IN (?)', [array_map('intval', $slotIds)]);
-                $q->where('user_id = ?', [$userId]);
-                $q->limit(1);
-            });
-
-            return !empty($bookings);
-        }
-
         public static function get__main(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
             $url = $globals->getUri();
             $userId = (int)$params->getUriParam('id');
@@ -93,10 +50,14 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 return ControllerTools::redirect(IRabi::url('/expert/id~' . $userId));
             }
 
+            // A regular user profile is a public surface: name + aggregate
+            // booking/cancellation counters are visible to any authenticated
+            // account (security audit report 14 decision — these counters are
+            // public everywhere, consistent with /users/~preview; the earlier
+            // M-03 self/staff/counterparty gate was intentionally reverted to
+            // keep the two profile surfaces consistent). Disabled accounts are
+            // still anonymised uniformly, matching every other surface.
             $currentAccount = Account::fromSession();
-            if (!static::canViewProfile($currentAccount, $userId)) {
-                return ControllerTools::notFound('User not found');
-            }
 
             // Load basic account info
             $row = DbAccount::get()->selectOneByField('id', $userId);
@@ -128,10 +89,15 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             $isModerator = $currentAccount ? UserEntityConfig::isModerator() : false;
             $isOwnProfile = $currentAccount && $currentAccount->id() === $userId;
 
+            $isDisabled = AccountDisplay::isDisabled($userId);
+            $displayName = $isDisabled
+                ? AccountDisplay::disabledName($userId)
+                : (string)($row['name'] ?? '');
+
             $content = RenderIsland::render('user-profile', [
                 'user' => [
                     'id' => (int)$row['id'],
-                    'name' => $row['name'] ?? '',
+                    'name' => $displayName,
                     'completedBookings' => $completedBookings,
                     'totalBookings' => $totalBookings,
                     'userCancellations' => $userCancellations,
