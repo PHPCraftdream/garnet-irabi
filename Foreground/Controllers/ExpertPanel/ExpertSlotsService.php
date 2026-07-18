@@ -482,6 +482,20 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 return ControllerTools::JSON(['error' => 'Cannot edit past slots'], status: 400);
             }
 
+            // Audit C-2: a partially-booked multi-slot stays status='free'
+            // while holding active bookings (booked_count > 0). Blocking
+            // cost/cancellation_penalty_percent edits on such slots prevents
+            // an expert from retroactively manipulating the price/refund
+            // terms of users who already paid under the old values.
+            $changesCost = $globals->readPostValue('cost') !== null;
+            $changesPenalty = $globals->readPostValue('cancellation_penalty_percent') !== null;
+            if (($changesCost || $changesPenalty) && (int)$slot['booked_count'] > 0) {
+                return ControllerTools::JSON(
+                    ['error' => 'Cannot change cost or penalty while the slot has active bookings'],
+                    status: 400,
+                );
+            }
+
             $date = $globals->readPostValue('date', '');
             $time = $globals->readPostValue('time', '');
             $durationMin = (int)$globals->readPostValue('duration_min', '0');
@@ -559,7 +573,19 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                     $params[] = $val;
                 }
                 $params[] = $slotId;
-                $sql = 'UPDATE ' . TimeSlots::get()->getTableName() . ' SET ' . implode(', ', $setParts) . " WHERE id = ? AND status = 'free'";
+                // CAS: status='free' covers single-seat slots that flipped to
+                // 'booked' on the first reservation. For partially-booked
+                // multi-slots (status stays 'free' until full), adding
+                // `booked_count = 0` only when cost/penalty is mutated closes
+                // the race window between the check above and this UPDATE — a
+                // concurrent booking that lands in between makes the UPDATE
+                // match 0 rows and falls through to the 409 below.
+                $whereExtra = (isset($updateData['cost']) || isset($updateData['cancellation_penalty_percent']))
+                    ? ' AND booked_count = 0'
+                    : '';
+                $sql = 'UPDATE ' . TimeSlots::get()->getTableName()
+                    . ' SET ' . implode(', ', $setParts)
+                    . " WHERE id = ? AND status = 'free'" . $whereExtra;
                 $affected = CasUpdate::exec($sql, $params);
                 if ($affected === 0) {
                     return ControllerTools::JSON(['error' => 'Slot has been booked, refresh and retry'], status: 409);
