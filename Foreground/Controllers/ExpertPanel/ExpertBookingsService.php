@@ -16,6 +16,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
     use PHPCraftdream\IRabi\Common\Services\BookingChatNotifier;
     use PHPCraftdream\IRabi\Common\Services\EmailNotifications;
     use PHPCraftdream\IRabi\Common\Services\NewsService;
+    use PHPCraftdream\IRabi\Common\Tables\AccountBalance;
     use PHPCraftdream\IRabi\Common\Tables\BalanceLedger;
     use PHPCraftdream\IRabi\Common\Tables\Bookings;
     use PHPCraftdream\IRabi\Common\Tables\ExpertCancellations;
@@ -154,37 +155,64 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
             }
 
-            if (!in_array($booking['status'], ['pending', 'confirmed'], true)) {
-                return ControllerTools::JSON(['error' => 'Only pending or confirmed bookings can be cancelled'], status: 400);
+            // ── Recover cancellation context (audit H-2) ──────────────────────
+            // A booking already 'cancelled' may be missing its refund if the
+            // original cancel crashed between the CAS transition and the ledger
+            // insert. tryInsertRefund() is idempotent (ledger UNIQUE index), so
+            // re-running the refund path is safe — a duplicate call is a no-op
+            // and recalculate() recomputes the same sum.
+            $currentStatus = (string)$booking['status'];
+            $alreadyCancelled = $currentStatus === 'cancelled';
+
+            if (!$alreadyCancelled) {
+                if (!in_array($currentStatus, ['pending', 'confirmed'], true)) {
+                    return ControllerTools::JSON(['error' => 'Only pending or confirmed bookings can be cancelled'], status: 400);
+                }
+
+                // A confirmed booking whose session has passed must not be refunded retroactively.
+                // Pending bookings stay cancellable (the session never took place — refund the user).
+                if ($currentStatus === 'confirmed' && (int)($slot['start_at'] ?? 0) < time()) {
+                    return ControllerTools::JSON(['error' => 'Cannot cancel past slot'], status: 400);
+                }
             }
 
-            // A confirmed booking whose session has passed must not be refunded retroactively.
-            // Pending bookings stay cancellable (the session never took place — refund the user).
-            if ($booking['status'] === 'confirmed' && (int)($slot['start_at'] ?? 0) < time()) {
-                return ControllerTools::JSON(['error' => 'Cannot cancel past slot'], status: 400);
-            }
-
+            $performedCancelNow = false;
             $now = time();
-            $affected = CasUpdate::exec(
-                'UPDATE ' . Bookings::get()->getTableName() . " SET status = 'cancelled', cancelled_at = ? WHERE id = ? AND status IN ('pending', 'confirmed')",
-                [$now, $bookingId]
-            );
 
-            if ($affected === 1) {
+            if (!$alreadyCancelled) {
+                $affected = CasUpdate::exec(
+                    'UPDATE ' . Bookings::get()->getTableName() . " SET status = 'cancelled', cancelled_at = ? WHERE id = ? AND status IN ('pending', 'confirmed')",
+                    [$now, $bookingId]
+                );
+                if ($affected === 1) {
+                    $performedCancelNow = true;
+                } else {
+                    // Raced: a concurrent request cancelled it between our read
+                    // and the CAS. Fall through to the idempotent refund path.
+                    $alreadyCancelled = true;
+                }
+            }
+
+            $slotCost = (int)$slot['cost'];
+            $userId = (int)$booking['user_id'];
+            $expertId = (int)$slot['expert_id'];
+
+            // Full refund (shared by normal + backfill paths; idempotent).
+            // Expert-initiated cancellation is always 100% — no penalty branch.
+            if ($slotCost > 0) {
+                static::tryInsertRefund($userId, true, $slotCost, $bookingId, 'Refund #' . $bookingId);
+                if ($expertId > 0) {
+                    static::tryInsertRefund($expertId, false, $slotCost, $bookingId, 'Refund #' . $bookingId);
+                }
+            }
+
+            // Side effects (normal path only — this request did the cancel).
+            // On the backfill path the original attempt already emitted these;
+            // re-running them would duplicate audit rows, emails and news.
+            if ($performedCancelNow) {
                 // Release the seat this booking held — counterpart to reserveSeat()
                 // in BookingsController/SlotsController's post__book().
                 TimeSlots::releaseSeat((int)$slot['id']);
-
-                $slotCost = (int)$slot['cost'];
-                $userId = (int)$booking['user_id'];
-                $expertId = (int)$slot['expert_id'];
-
-                if ($slotCost > 0) {
-                    static::tryInsertRefund($userId, true, $slotCost, $bookingId, 'Refund #' . $bookingId);
-                    if ($expertId > 0) {
-                        static::tryInsertRefund($expertId, false, $slotCost, $bookingId, 'Refund #' . $bookingId);
-                    }
-                }
 
                 // Log expert-initiated cancellation for audit / admin views (parity with cancelBookedSlot/cancelSlot).
                 ExpertCancellations::get()->insert([
@@ -225,6 +253,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                     BookingChatNotifier::cancelledOrDeclined($account->id(), (int)$booking['user_id'], (int)$slot['start_at'], (string)$booking['status']);
                 } catch (Throwable) {
                 }
+            }
+
+            // Recalculate balances after refund (both paths — idempotent).
+            AccountBalance::recalculate($userId);
+            if ($expertId > 0) {
+                AccountBalance::recalculate($expertId);
             }
 
             return ControllerTools::JSON(['success' => true]);

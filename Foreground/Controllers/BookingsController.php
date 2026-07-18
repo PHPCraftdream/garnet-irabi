@@ -517,49 +517,92 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
             }
 
-            $previousStatus = (string)$booking['status'];
-            if (!in_array($previousStatus, ['pending', 'confirmed'], true)) {
-                return ControllerTools::JSON(['error' => 'Booking cannot be cancelled'], status: 400);
-            }
+            // ── Recover cancellation context ──────────────────────────────────
+            // Backfill scenario (audit H-2): a booking already 'cancelled' may
+            // be missing its refund if the original cancel crashed between the
+            // CAS status transition and the ledger insert. The ledger's
+            // UNIQUE(account_id, entry_type, ref_type, ref_id) makes
+            // tryAddRefund() idempotent, so re-running the refund path is safe
+            // whether or not the refund already landed — the second call is a
+            // no-op (duplicate-key) and recalculate() recomputes the same sum.
+            $currentStatus = (string)$booking['status'];
+            $alreadyCancelled = $currentStatus === 'cancelled';
 
-            // Disallow cancellation of a CONFIRMED booking once the session has started/passed
-            // (the session took place — no retroactive refund). Pending bookings are still
-            // cancellable past the slot time: the expert never confirmed, so the user must be
-            // able to reclaim their funds.
-            if ($previousStatus === 'confirmed' && $booking['bookable_type'] === 'time_slot') {
-                $slotForTimeCheck = TimeSlots::get()->selectById((int)$booking['bookable_id']);
-                if ($slotForTimeCheck && (int)$slotForTimeCheck['start_at'] <= time()) {
-                    return ControllerTools::JSON(['error' => 'Cannot cancel a booking after the session has started'], status: 400);
+            // Read once for both paths; enforced only in the normal path below.
+            $reason = trim((string)$globals->readPostValue('reason', ''));
+
+            if ($alreadyCancelled) {
+                // confirmed_at is set only at confirmation (confirmBooking) and
+                // survives cancellation, so it reliably reconstructs the status
+                // the booking had BEFORE it was cancelled.
+                $previousStatus = $booking['confirmed_at'] !== null ? 'confirmed' : 'pending';
+            } else {
+                $previousStatus = $currentStatus;
+                if (!in_array($previousStatus, ['pending', 'confirmed'], true)) {
+                    return ControllerTools::JSON(['error' => 'Booking cannot be cancelled'], status: 400);
+                }
+
+                // Disallow cancellation of a CONFIRMED booking once the session has started/passed
+                // (the session took place — no retroactive refund). Pending bookings are still
+                // cancellable past the slot time: the expert never confirmed, so the user must be
+                // able to reclaim their funds.
+                if ($previousStatus === 'confirmed' && $booking['bookable_type'] === 'time_slot') {
+                    $slotForTimeCheck = TimeSlots::get()->selectById((int)$booking['bookable_id']);
+                    if ($slotForTimeCheck && (int)$slotForTimeCheck['start_at'] <= time()) {
+                        return ControllerTools::JSON(['error' => 'Cannot cancel a booking after the session has started'], status: 400);
+                    }
+                }
+
+                // User-initiated cancellation requires a reason
+                if ($isOwner && !$reason) {
+                    return ControllerTools::JSON(['error' => 'Reason is required'], status: 400);
                 }
             }
 
-            // User-initiated cancellation requires a reason
-            $reason = trim((string)$globals->readPostValue('reason', ''));
-            if ($isOwner && !$reason) {
-                return ControllerTools::JSON(['error' => 'Reason is required'], status: 400);
-            }
-
-            // CAS cancel: only succeeds if booking is still pending/confirmed.
-            $now = time();
+            // ── CAS cancel (normal path only) ────────────────────────────────
             $bookingsTbl = Bookings::get()->getTableName();
-            $affected = CasUpdate::exec(
-                "UPDATE {$bookingsTbl} SET status = 'cancelled', cancelled_at = ? WHERE id = ? AND status IN ('pending', 'confirmed')",
-                [$now, $bookingId]
-            );
+            $performedCancelNow = false;
+            $now = time();
 
-            if ($affected === 0) {
-                // Already cancelled (idempotent) — return success.
-                return ControllerTools::JSON(['success' => true]);
+            if (!$alreadyCancelled) {
+                $affected = CasUpdate::exec(
+                    "UPDATE {$bookingsTbl} SET status = 'cancelled', cancelled_at = ? WHERE id = ? AND status IN ('pending', 'confirmed')",
+                    [$now, $bookingId]
+                );
+                if ($affected === 1) {
+                    $performedCancelNow = true;
+                } else {
+                    // Raced: a concurrent request cancelled it between our read
+                    // and the CAS. Fall through to the idempotent refund path.
+                    // Re-read for the fresh cancelled_at used as the penalty-
+                    // timing reference below.
+                    $alreadyCancelled = true;
+                    $fresh = Bookings::get()->selectById($bookingId);
+                    if ($fresh) {
+                        $booking = $fresh;
+                    }
+                    $previousStatus = $booking['confirmed_at'] !== null ? 'confirmed' : 'pending';
+                }
             }
 
+            if ($alreadyCancelled) {
+                // Use the recorded cancellation moment as the penalty-timing
+                // reference — more accurate than this retry's wall-clock time,
+                // which may arrive long after the actual cancellation.
+                $now = (int)($booking['cancelled_at'] ?? time());
+            }
+
+            // ── Refund (shared by normal + backfill paths; idempotent) ───────
             $slotId = 0;
             $expertId = 0;
             $bookingUserId = (int)$booking['user_id'];
             if ($booking['bookable_type'] === 'time_slot') {
                 // Release the seat this booking held — counterpart to reserveSeat()
-                // in post__book(). Must run for every cancellation that actually
-                // transitioned the booking (guarded by $affected===1 above).
-                TimeSlots::releaseSeat((int)$booking['bookable_id']);
+                // in post__book(). Only when THIS request transitioned the booking;
+                // the original (crashed) attempt already released it.
+                if ($performedCancelNow) {
+                    TimeSlots::releaseSeat((int)$booking['bookable_id']);
+                }
 
                 $slot2 = TimeSlots::get()->selectById((int)$booking['bookable_id']);
                 $slotId = (int)$booking['bookable_id'];
@@ -589,66 +632,72 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 }
             }
 
-            if ($isOwner) {
-                UserCancellations::get()->insert([
-                    'user_id' => $bookingUserId,
-                    'booking_id' => $bookingId,
-                    'slot_id' => $slotId,
-                    'expert_id' => $expertId,
-                    'reason' => $reason,
-                    'created_at' => time(),
-                    'kind' => ($previousStatus === 'confirmed' ? 'cancel' : 'decline'),
-                ]);
-            }
-
-            if ($booking['bookable_type'] === 'time_slot') {
-                $slotId = (int)$booking['bookable_id'];
-                $slot = TimeSlots::get()->selectById($slotId);
-
-                if ($slot && $slot['status'] === 'booked') {
-                    $maxUsers = max(1, (int)($slot['max_users'] ?? 1));
-                    $remaining = Bookings::get()->selectAll(function (SelectInterface $query) use ($slotId): void {
-                        $query->where('bookable_type = :btype', ['btype' => 'time_slot'])
-                            ->where('bookable_id = :bid', ['bid' => $slotId])
-                            ->where("status IN ('pending', 'confirmed')");
-                    });
-                    if (count($remaining) < $maxUsers) {
-                        // CAS slot status revert: only if currently booked (idempotent).
-                        $slotsTbl = TimeSlots::get()->getTableName();
-                        CasUpdate::exec(
-                            "UPDATE {$slotsTbl} SET status = 'free' WHERE id = ? AND status = 'booked'",
-                            [$slotId]
-                        );
-                    }
+            // ── Side effects (normal path only — this request did the cancel) ─
+            // On the backfill path the original attempt already emitted these;
+            // re-running them would duplicate audit rows, slot-status reverts,
+            // emails and news entries. The refund above is the only thing that
+            // needs to be (idempotently) retried.
+            if ($performedCancelNow) {
+                if ($isOwner) {
+                    UserCancellations::get()->insert([
+                        'user_id' => $bookingUserId,
+                        'booking_id' => $bookingId,
+                        'slot_id' => $slotId,
+                        'expert_id' => $expertId,
+                        'reason' => $reason,
+                        'created_at' => time(),
+                        'kind' => ($previousStatus === 'confirmed' ? 'cancel' : 'decline'),
+                    ]);
                 }
 
-                if ($slot) {
-                    try {
-                        $cancelledByName = $account->readParam('name') ?: ('#' . $account->id());
-                        EmailNotifications::bookingCancelled((int)$slot['expert_id'], (int)($slot['start_at'] ?? 0), (int)($slot['duration_min'] ?? 0), $cancelledByName);
-                    } catch (Throwable) {
-                    }
+                if ($booking['bookable_type'] === 'time_slot') {
+                    $slot = TimeSlots::get()->selectById($slotId);
 
-                    $slotExpertId = (int)($slot['expert_id'] ?? 0);
-                    // Notify expert that their slot's booking was cancelled by the user.
-                    if ($slotExpertId > 0) {
-                        try {
-                            NewsService::createPersonal(NewsService::TYPE_BOOKING_CANCELLED, $account->id(), $slotExpertId, [
-                                'booking_id' => $bookingId,
-                                'slot_id' => $slotId,
-                                'user_id' => $account->id(),
-                                'name' => $cancelledByName ?? ('#' . $account->id()),
-                                'time' => (int)($slot['start_at'] ?? 0),
-                            ], NewsService::slotKey($slotId));
-                        } catch (Throwable) {
+                    if ($slot && $slot['status'] === 'booked') {
+                        $maxUsers = max(1, (int)($slot['max_users'] ?? 1));
+                        $remaining = Bookings::get()->selectAll(function (SelectInterface $query) use ($slotId): void {
+                            $query->where('bookable_type = :btype', ['btype' => 'time_slot'])
+                                ->where('bookable_id = :bid', ['bid' => $slotId])
+                                ->where("status IN ('pending', 'confirmed')");
+                        });
+                        if (count($remaining) < $maxUsers) {
+                            // CAS slot status revert: only if currently booked (idempotent).
+                            $slotsTbl = TimeSlots::get()->getTableName();
+                            CasUpdate::exec(
+                                "UPDATE {$slotsTbl} SET status = 'free' WHERE id = ? AND status = 'booked'",
+                                [$slotId]
+                            );
                         }
                     }
-                    // Purge the stale `slot_booked` announcement for this slot — it no longer holds.
-                    NewsService::deleteByTargetKey(NewsService::slotKey($slotId), NewsService::TYPE_SLOT_BOOKED);
+
+                    if ($slot) {
+                        try {
+                            $cancelledByName = $account->readParam('name') ?: ('#' . $account->id());
+                            EmailNotifications::bookingCancelled((int)$slot['expert_id'], (int)($slot['start_at'] ?? 0), (int)($slot['duration_min'] ?? 0), $cancelledByName);
+                        } catch (Throwable) {
+                        }
+
+                        $slotExpertId = (int)($slot['expert_id'] ?? 0);
+                        // Notify expert that their slot's booking was cancelled by the user.
+                        if ($slotExpertId > 0) {
+                            try {
+                                NewsService::createPersonal(NewsService::TYPE_BOOKING_CANCELLED, $account->id(), $slotExpertId, [
+                                    'booking_id' => $bookingId,
+                                    'slot_id' => $slotId,
+                                    'user_id' => $account->id(),
+                                    'name' => $cancelledByName ?? ('#' . $account->id()),
+                                    'time' => (int)($slot['start_at'] ?? 0),
+                                ], NewsService::slotKey($slotId));
+                            } catch (Throwable) {
+                            }
+                        }
+                        // Purge the stale `slot_booked` announcement for this slot — it no longer holds.
+                        NewsService::deleteByTargetKey(NewsService::slotKey($slotId), NewsService::TYPE_SLOT_BOOKED);
+                    }
                 }
             }
 
-            // Recalculate balances after refund.
+            // Recalculate balances after refund (both paths — idempotent).
             AccountBalance::recalculate($bookingUserId);
             if ($expertId > 0) {
                 AccountBalance::recalculate($expertId);
