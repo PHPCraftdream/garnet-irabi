@@ -14,6 +14,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
     use PHPCraftdream\Garnet\Kernel\Io\Twig\TwigParams;
+    use PHPCraftdream\IRabi\Common\Exceptions\AccountLockAcquireException;
     use PHPCraftdream\IRabi\Common\PaginationHelper;
     use PHPCraftdream\IRabi\Common\Services\AccountDisplay;
     use PHPCraftdream\IRabi\Common\Services\EmailNotifications;
@@ -365,79 +366,110 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 throw $e;
             }
 
-            // 2) CAS deduct + ledger entries (idempotent via UNIQUE(account_id, ref_type, ref_id, entry_type)).
-            if ($cost > 0) {
-                $balanceTbl = AccountBalance::get()->getTableName();
-                try {
-                    $affected = CasUpdate::exec(
-                        "UPDATE {$balanceTbl} SET balance = balance - ?, updated_at = ? WHERE account_id = ? AND balance >= ?",
-                        [$cost, $now, $account->id(), $cost]
-                    );
-                } catch (DbException $e) {
-                    // Exception-aware compensation: roll back the booking insert before re-throwing.
-                    Bookings::get()->deleteByField('id', $bookingId);
-                    TimeSlots::releaseSeat($slotId);
-                    throw $e;
-                }
-                if ($affected === 0) {
-                    // Compensate: roll back the booking insert and the seat reservation.
-                    Bookings::get()->deleteByField('id', $bookingId);
-                    TimeSlots::releaseSeat($slotId);
-                    return ControllerTools::JSON(['error' => 'Insufficient balance'], status: 400);
-                }
+            // Money critical section (handover audit 03, finding H-1): the
+            // transient CAS-debit and the ledger inserts must be serialised
+            // per account against any concurrent recalculate() of the same
+            // (debited) account — otherwise a concurrent top-up/refund
+            // recomputes the cache from a ledger missing this debit and
+            // resurrects the spent money, defeating the overdraft guard. The
+            // lock spans CAS-debit → final recalculate of the debited account.
+            // The expert (credited only) is recalculated after the lock: its
+            // own per-account lock (via the recalculate override) applies.
+            try {
+                $moneyResult = AccountBalance::withAccountLock(
+                    $account->id(),
+                    static function () use ($cost, $now, $account, $slotId, $bookingId, $expertId, $activeBookings, $maxUsers) {
+                        // 2) CAS deduct + ledger entries (idempotent via UNIQUE(account_id, ref_type, ref_id, entry_type)).
+                        if ($cost > 0) {
+                            $balanceTbl = AccountBalance::get()->getTableName();
+                            try {
+                                $affected = CasUpdate::exec(
+                                    "UPDATE {$balanceTbl} SET balance = balance - ?, updated_at = ? WHERE account_id = ? AND balance >= ?",
+                                    [$cost, $now, $account->id(), $cost]
+                                );
+                            } catch (DbException $e) {
+                                // Exception-aware compensation: roll back the booking insert before re-throwing.
+                                Bookings::get()->deleteByField('id', $bookingId);
+                                TimeSlots::releaseSeat($slotId);
+                                throw $e;
+                            }
+                            if ($affected === 0) {
+                                // Compensate: roll back the booking insert and the seat reservation.
+                                Bookings::get()->deleteByField('id', $bookingId);
+                                TimeSlots::releaseSeat($slotId);
+                                return ControllerTools::JSON(['error' => 'Insufficient balance'], status: 400);
+                            }
 
-                try {
-                    BalanceLedger::get()->insert([
-                        'account_id' => $account->id(),
-                        'is_credit' => 0,
-                        'amount' => $cost,
-                        'entry_type' => 'booking_invoice',
-                        'ref_type' => 'booking',
-                        'ref_id' => $bookingId,
-                        'note' => 'Счёт #' . $bookingId,
-                        'created_at' => $now,
-                    ]);
-                } catch (DbException $e) {
-                    if (!CasUpdate::isDuplicateKeyError($e)) {
-                        throw $e;
-                    }
-                }
+                            try {
+                                BalanceLedger::get()->insert([
+                                    'account_id' => $account->id(),
+                                    'is_credit' => 0,
+                                    'amount' => $cost,
+                                    'entry_type' => 'booking_invoice',
+                                    'ref_type' => 'booking',
+                                    'ref_id' => $bookingId,
+                                    'note' => 'Счёт #' . $bookingId,
+                                    'created_at' => $now,
+                                ]);
+                            } catch (DbException $e) {
+                                if (!CasUpdate::isDuplicateKeyError($e)) {
+                                    throw $e;
+                                }
+                            }
 
-                if ($expertId > 0) {
-                    try {
-                        BalanceLedger::get()->insert([
-                            'account_id' => $expertId,
-                            'is_credit' => 1,
-                            'amount' => $cost,
-                            'entry_type' => 'booking_payment',
-                            'ref_type' => 'booking',
-                            'ref_id' => $bookingId,
-                            'note' => 'Оплата #' . $bookingId,
-                            'created_at' => $now,
-                        ]);
-                    } catch (DbException $e) {
-                        if (!CasUpdate::isDuplicateKeyError($e)) {
-                            throw $e;
+                            if ($expertId > 0) {
+                                try {
+                                    BalanceLedger::get()->insert([
+                                        'account_id' => $expertId,
+                                        'is_credit' => 1,
+                                        'amount' => $cost,
+                                        'entry_type' => 'booking_payment',
+                                        'ref_type' => 'booking',
+                                        'ref_id' => $bookingId,
+                                        'note' => 'Оплата #' . $bookingId,
+                                        'created_at' => $now,
+                                    ]);
+                                } catch (DbException $e) {
+                                    if (!CasUpdate::isDuplicateKeyError($e)) {
+                                        throw $e;
+                                    }
+                                }
+                            }
                         }
-                    }
-                }
+
+                        // 3) CAS slot status update, gated on the real (post-reservation)
+                        //    booked_count rather than the stale pre-reservation $activeBookings
+                        //    count. Always safe to attempt — idempotent and best-effort; no
+                        //    compensation needed if this fails, booking/ledger already committed.
+                        $slotsTbl = TimeSlots::get()->getTableName();
+                        CasUpdate::exec(
+                            "UPDATE {$slotsTbl} SET status = 'booked' WHERE id = ? AND status = 'free' AND booked_count >= max_users",
+                            [$slotId]
+                        );
+                        if (count($activeBookings) + 1 >= $maxUsers) {
+                            // Slot is now full — purge the public new_slot announcement for everyone.
+                            NewsService::deleteByTargetKey(NewsService::slotKey($slotId), NewsService::TYPE_NEW_SLOT);
+                        }
+
+                        AccountBalance::recalculate($account->id());
+
+                        return null;
+                    },
+                );
+            } catch (AccountLockAcquireException) {
+                // Could not serialise the buyer's money ops within the timeout.
+                // The booking was inserted and the seat reserved above, but no
+                // money moved (the closure acquires the lock before the CAS-debit),
+                // so roll both back before refusing.
+                TimeSlots::releaseSeat($slotId);
+                Bookings::get()->deleteByField('id', $bookingId);
+                return ControllerTools::JSON(['error' => 'Account is busy, please retry'], status: 503);
             }
 
-            // 3) CAS slot status update, gated on the real (post-reservation)
-            //    booked_count rather than the stale pre-reservation $activeBookings
-            //    count. Always safe to attempt — idempotent and best-effort; no
-            //    compensation needed if this fails, booking/ledger already committed.
-            $slotsTbl = TimeSlots::get()->getTableName();
-            CasUpdate::exec(
-                "UPDATE {$slotsTbl} SET status = 'booked' WHERE id = ? AND status = 'free' AND booked_count >= max_users",
-                [$slotId]
-            );
-            if (count($activeBookings) + 1 >= $maxUsers) {
-                // Slot is now full — purge the public new_slot announcement for everyone.
-                NewsService::deleteByTargetKey(NewsService::slotKey($slotId), NewsService::TYPE_NEW_SLOT);
+            if ($moneyResult !== null) {
+                return $moneyResult;
             }
 
-            AccountBalance::recalculate($account->id());
             if ($expertId > 0) {
                 AccountBalance::recalculate($expertId);
             }

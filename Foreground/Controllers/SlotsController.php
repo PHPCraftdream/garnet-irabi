@@ -313,87 +313,83 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             //    balance from the ledger, so any direct UPDATE drift here is overwritten.
             //    The try/finally guarantees recalculate() runs even if an exception is thrown
             //    mid-loop — otherwise balance and ledger could remain out of sync.
-            $balanceTbl = \PHPCraftdream\IRabi\Common\Tables\AccountBalance::get()->getTableName();
-            if ($totalCost > 0) {
-                $affected = CasUpdate::exec(
-                    "UPDATE {$balanceTbl} SET balance = balance - ?, updated_at = ? WHERE account_id = ? AND balance >= ?",
-                    [$totalCost, $now, $accountId, $totalCost]
-                );
-                if ($affected === 0) {
-                    return ControllerTools::JSON(['error' => 'Insufficient balance'], status: 400);
-                }
-            }
-            $slotsTbl = TimeSlots::get()->getTableName();
 
-            // 2) Create bookings; on duplicate-key (UNIQUE active_dup_key) we silently skip
+            // Per-account advisory lock across the whole money critical section
+            // (CAS-debit → final buyer recalculate, including the try/finally
+            // below), handover audit 03, finding H-1: a concurrent
+            // recalculate() of the same account must not recompute the cache
+            // from a ledger that still misses this transient debit. Released
+            // in the outer finally at the end of the section.
+            try {
+                \PHPCraftdream\IRabi\Common\Tables\AccountBalance::acquireAccountLock($accountId);
+            } catch (\PHPCraftdream\IRabi\Common\Exceptions\AccountLockAcquireException) {
+                return ControllerTools::JSON(['error' => 'Account is busy, please retry'], status: 503);
+            }
+
+            try {
+                $balanceTbl = \PHPCraftdream\IRabi\Common\Tables\AccountBalance::get()->getTableName();
+                if ($totalCost > 0) {
+                    $affected = CasUpdate::exec(
+                        "UPDATE {$balanceTbl} SET balance = balance - ?, updated_at = ? WHERE account_id = ? AND balance >= ?",
+                        [$totalCost, $now, $accountId, $totalCost]
+                    );
+                    if ($affected === 0) {
+                        return ControllerTools::JSON(['error' => 'Insufficient balance'], status: 400);
+                    }
+                }
+                $slotsTbl = TimeSlots::get()->getTableName();
+
+                // 2) Create bookings; on duplicate-key (UNIQUE active_dup_key) we silently skip
             //    (slot already booked by this user — pre-flight check missed it due to race).
             //    Compensation: refund the proportional amount.
-            $createdBookingIds = [];
-            $createdSlotIds = []; // slot IDs for which INSERT actually succeeded (not duplicate-key skipped)
-            $refundedTotal = 0;
-            $touchedExpertIds = [];
-            try {
-                foreach ($validSlots as $slot) {
-                    $slotId = (int)$slot['id'];
-                    $slotCost = (int)$slot['cost'];
-                    $expertId = (int)($slot['expert_id'] ?? 0);
+                $createdBookingIds = [];
+                $createdSlotIds = []; // slot IDs for which INSERT actually succeeded (not duplicate-key skipped)
+                $refundedTotal = 0;
+                $touchedExpertIds = [];
+                try {
+                    foreach ($validSlots as $slot) {
+                        $slotId = (int)$slot['id'];
+                        $slotCost = (int)$slot['cost'];
+                        $expertId = (int)($slot['expert_id'] ?? 0);
 
-                    // Atomic capacity reservation (security audit H-01) — the real
-                    // concurrency boundary, must happen before the booking INSERT.
-                    if (!TimeSlots::reserveSeat($slotId)) {
-                        // Race-loss: slot filled up concurrently. Refund this slot's cost.
-                        $refundedTotal += $slotCost;
-                        continue;
-                    }
-
-                    try {
-                        $bookingId = (int)Bookings::get()->insert([
-                            'user_id' => $accountId,
-                            'bookable_type' => 'time_slot',
-                            'bookable_id' => $slotId,
-                            'status' => 'pending',
-                            'created_at' => $now,
-                        ]);
-                    } catch (DbException $e) {
-                        TimeSlots::releaseSeat($slotId);
-                        if (CasUpdate::isDuplicateKeyError($e)) {
-                            // Race-loss: refund this slot's cost.
+                        // Atomic capacity reservation (security audit H-01) — the real
+                        // concurrency boundary, must happen before the booking INSERT.
+                        if (!TimeSlots::reserveSeat($slotId)) {
+                            // Race-loss: slot filled up concurrently. Refund this slot's cost.
                             $refundedTotal += $slotCost;
                             continue;
                         }
-                        throw $e;
-                    }
-                    $createdBookingIds[] = $bookingId;
-                    $createdSlotIds[$slotId] = true;
 
-                    if ($slotCost > 0) {
                         try {
-                            \PHPCraftdream\IRabi\Common\Tables\BalanceLedger::get()->insert([
-                                'account_id' => $accountId,
-                                'is_credit' => 0,
-                                'amount' => $slotCost,
-                                'entry_type' => 'booking_invoice',
-                                'ref_type' => 'booking',
-                                'ref_id' => $bookingId,
-                                'note' => "\xD0\xA1\xD1\x87\xD1\x91\xD1\x82 #" . $bookingId,
+                            $bookingId = (int)Bookings::get()->insert([
+                                'user_id' => $accountId,
+                                'bookable_type' => 'time_slot',
+                                'bookable_id' => $slotId,
+                                'status' => 'pending',
                                 'created_at' => $now,
                             ]);
                         } catch (DbException $e) {
-                            if (!CasUpdate::isDuplicateKeyError($e)) {
-                                throw $e;
+                            TimeSlots::releaseSeat($slotId);
+                            if (CasUpdate::isDuplicateKeyError($e)) {
+                                // Race-loss: refund this slot's cost.
+                                $refundedTotal += $slotCost;
+                                continue;
                             }
+                            throw $e;
                         }
+                        $createdBookingIds[] = $bookingId;
+                        $createdSlotIds[$slotId] = true;
 
-                        if ($expertId > 0) {
+                        if ($slotCost > 0) {
                             try {
                                 \PHPCraftdream\IRabi\Common\Tables\BalanceLedger::get()->insert([
-                                    'account_id' => $expertId,
-                                    'is_credit' => 1,
+                                    'account_id' => $accountId,
+                                    'is_credit' => 0,
                                     'amount' => $slotCost,
-                                    'entry_type' => 'booking_payment',
+                                    'entry_type' => 'booking_invoice',
                                     'ref_type' => 'booking',
                                     'ref_id' => $bookingId,
-                                    'note' => "\xD0\x9E\xD0\xBF\xD0\xBB\xD0\xB0\xD1\x82\xD0\xB0 #" . $bookingId,
+                                    'note' => "\xD0\xA1\xD1\x87\xD1\x91\xD1\x82 #" . $bookingId,
                                     'created_at' => $now,
                                 ]);
                             } catch (DbException $e) {
@@ -401,44 +397,65 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                                     throw $e;
                                 }
                             }
+
+                            if ($expertId > 0) {
+                                try {
+                                    \PHPCraftdream\IRabi\Common\Tables\BalanceLedger::get()->insert([
+                                        'account_id' => $expertId,
+                                        'is_credit' => 1,
+                                        'amount' => $slotCost,
+                                        'entry_type' => 'booking_payment',
+                                        'ref_type' => 'booking',
+                                        'ref_id' => $bookingId,
+                                        'note' => "\xD0\x9E\xD0\xBF\xD0\xBB\xD0\xB0\xD1\x82\xD0\xB0 #" . $bookingId,
+                                        'created_at' => $now,
+                                    ]);
+                                } catch (DbException $e) {
+                                    if (!CasUpdate::isDuplicateKeyError($e)) {
+                                        throw $e;
+                                    }
+                                }
+                            }
+                        }
+
+                        // Gated on the real (post-reservation) booked_count rather than a
+                        // fresh COUNT(*) — always safe to attempt, idempotent/best-effort.
+                        CasUpdate::exec(
+                            "UPDATE {$slotsTbl} SET status = 'booked' WHERE id = ? AND status = 'free' AND booked_count >= max_users",
+                            [$slotId]
+                        );
+
+                        if ($expertId > 0) {
+                            $touchedExpertIds[$expertId] = true;
                         }
                     }
 
-                    // Gated on the real (post-reservation) booked_count rather than a
-                    // fresh COUNT(*) — always safe to attempt, idempotent/best-effort.
-                    CasUpdate::exec(
-                        "UPDATE {$slotsTbl} SET status = 'booked' WHERE id = ? AND status = 'free' AND booked_count >= max_users",
-                        [$slotId]
-                    );
-
-                    if ($expertId > 0) {
-                        $touchedExpertIds[$expertId] = true;
+                    // Compensate any race-lost bookings by re-crediting the user.
+                    // Like the initial deduct, this is a transient direct UPDATE — the final
+                    // recalculate() in finally rebuilds the balance from ledger truth anyway.
+                    if ($refundedTotal > 0) {
+                        CasUpdate::exec(
+                            "UPDATE {$balanceTbl} SET balance = balance + ?, updated_at = ? WHERE account_id = ?",
+                            [$refundedTotal, $now, $accountId]
+                        );
                     }
-                }
-
-                // Compensate any race-lost bookings by re-crediting the user.
-                // Like the initial deduct, this is a transient direct UPDATE — the final
-                // recalculate() in finally rebuilds the balance from ledger truth anyway.
-                if ($refundedTotal > 0) {
-                    CasUpdate::exec(
-                        "UPDATE {$balanceTbl} SET balance = balance + ?, updated_at = ? WHERE account_id = ?",
-                        [$refundedTotal, $now, $accountId]
-                    );
-                }
-            } finally {
-                // Always reconcile balances from ledger, even if the loop above threw.
-                // Ledger contains booking_invoice rows for every booking actually inserted,
-                // so this is the authoritative final balance for both user and experts.
-                foreach ($touchedExpertIds as $expertId => $_) {
+                } finally {
+                    // Always reconcile balances from ledger, even if the loop above threw.
+                    // Ledger contains booking_invoice rows for every booking actually inserted,
+                    // so this is the authoritative final balance for both user and experts.
+                    foreach ($touchedExpertIds as $expertId => $_) {
+                        try {
+                            \PHPCraftdream\IRabi\Common\Tables\AccountBalance::recalculate($expertId);
+                        } catch (Throwable) {
+                        }
+                    }
                     try {
-                        \PHPCraftdream\IRabi\Common\Tables\AccountBalance::recalculate($expertId);
+                        \PHPCraftdream\IRabi\Common\Tables\AccountBalance::recalculate($accountId);
                     } catch (Throwable) {
                     }
                 }
-                try {
-                    \PHPCraftdream\IRabi\Common\Tables\AccountBalance::recalculate($accountId);
-                } catch (Throwable) {
-                }
+            } finally {
+                \PHPCraftdream\IRabi\Common\Tables\AccountBalance::releaseAccountLock($accountId);
             }
 
             $userName = $account->readParam('name') ?: ('#' . $account->id());

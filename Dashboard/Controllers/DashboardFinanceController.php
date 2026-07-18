@@ -10,6 +10,7 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
     use PHPCraftdream\Garnet\Kernel\Io\Twig\TwigParams;
+    use PHPCraftdream\IRabi\Common\Exceptions\AccountLockAcquireException;
     use PHPCraftdream\IRabi\Common\PaginationHelper;
     use PHPCraftdream\IRabi\Common\Tables\AccountBalance;
     use PHPCraftdream\IRabi\Common\Tables\AdminActionLog;
@@ -381,41 +382,64 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
 
             $oldBalance = AccountBalance::getBalance($accountId);
 
-            // Overdraft guard for debits: atomically ensure sufficient funds
-            // before recording the ledger entry. The framework replaces SQL
-            // transactions with idempotent CAS updates (see CasUpdate), so we
-            // mirror the booking flow — a debit that would drive the balance
-            // below zero affects 0 rows and is refused. Credits need no guard;
-            // recalculate() below rebuilds the authoritative balance from the
-            // ledger in both cases.
-            if (!$isCredit) {
-                $balanceTbl = AccountBalance::get()->getTableName();
-                $affected = CasUpdate::exec(
-                    "UPDATE {$balanceTbl} SET balance = balance - ?, updated_at = ? WHERE account_id = ? AND balance >= ?",
-                    [$amount, time(), $accountId, $amount]
-                );
-                if ($affected === 0) {
-                    return ControllerTools::JSON(['error' => 'Insufficient balance'], status: 400);
-                }
-            }
-
             $actor = Account::fromSession();
             $actorId = $actor !== null ? (int)$actor->readParam('id') : null;
 
-            // Прямой insert + recalculate (вместо addEntry()), чтобы записать actor_id
-            // и при просмотре ledger в админке видеть, кто именно сделал корректировку.
-            BalanceLedger::get()->insert([
-                'account_id' => $accountId,
-                'is_credit' => $isCredit ? 1 : 0,
-                'amount' => $amount,
-                'entry_type' => 'manual',
-                'ref_type' => null,
-                'ref_id' => null,
-                'note' => $note,
-                'actor_id' => $actorId,
-                'created_at' => time(),
-            ]);
-            AccountBalance::recalculate($accountId);
+            // Money critical section (handover audit 03, finding H-1): the
+            // transient CAS-debit (for debits) and the ledger insert must be
+            // serialised per account against any concurrent recalculate() —
+            // otherwise a concurrent top-up/refund recalculates the cache from
+            // a ledger missing this debit and resurrects the spent money,
+            // defeating the overdraft guard. The lock also covers the final
+            // recalculate, so the balance returned below is authoritative.
+            try {
+                $debitResult = AccountBalance::withAccountLock(
+                    $accountId,
+                    static function () use ($accountId, $amount, $isCredit, $note, $actorId) {
+                        // Overdraft guard for debits: atomically ensure sufficient
+                        // funds before recording the ledger entry. The framework
+                        // replaces SQL transactions with idempotent CAS updates
+                        // (see CasUpdate), so we mirror the booking flow — a debit
+                        // that would drive the balance below zero affects 0 rows
+                        // and is refused. Credits need no guard; recalculate()
+                        // below rebuilds the authoritative balance from the ledger
+                        // in both cases.
+                        if (!$isCredit) {
+                            $balanceTbl = AccountBalance::get()->getTableName();
+                            $affected = CasUpdate::exec(
+                                "UPDATE {$balanceTbl} SET balance = balance - ?, updated_at = ? WHERE account_id = ? AND balance >= ?",
+                                [$amount, time(), $accountId, $amount]
+                            );
+                            if ($affected === 0) {
+                                return ControllerTools::JSON(['error' => 'Insufficient balance'], status: 400);
+                            }
+                        }
+
+                        // Прямой insert + recalculate (вместо addEntry()), чтобы записать actor_id
+                        // и при просмотре ledger в админке видеть, кто именно сделал корректировку.
+                        BalanceLedger::get()->insert([
+                            'account_id' => $accountId,
+                            'is_credit' => $isCredit ? 1 : 0,
+                            'amount' => $amount,
+                            'entry_type' => 'manual',
+                            'ref_type' => null,
+                            'ref_id' => null,
+                            'note' => $note,
+                            'actor_id' => $actorId,
+                            'created_at' => time(),
+                        ]);
+                        AccountBalance::recalculate($accountId);
+
+                        return null;
+                    },
+                );
+            } catch (AccountLockAcquireException) {
+                return ControllerTools::JSON(['error' => 'Account is busy, please retry'], status: 503);
+            }
+
+            if ($debitResult !== null) {
+                return $debitResult;
+            }
 
             $newBalance = AccountBalance::getBalance($accountId);
 
