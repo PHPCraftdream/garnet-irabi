@@ -20,7 +20,10 @@ namespace PHPCraftdream\IRabi\Common\Services {
 
             static::registerTask('complete-expired', function (Stdio $stdio): int {
                 $stats = CronCompletionService::completeExpired(500);
-                $stdio->outln("Completed: {$stats['slots']} slots, {$stats['bookings']} bookings");
+                $stdio->outln(
+                    "Completed: {$stats['slots']} slots, {$stats['bookings']} bookings"
+                    . ", {$stats['pending_expired']} pending-expired"
+                );
                 return array_sum($stats);
             }, 'Mark expired slots and bookings as completed');
 

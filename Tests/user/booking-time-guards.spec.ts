@@ -135,6 +135,7 @@ async function seedBooking(params: {
 	slotId: number;
 	status: string;
 	cost?: number;
+	expertId?: number;
 }): Promise<number> {
 	const conn = await mysql.createConnection(DB);
 	try {
@@ -146,9 +147,9 @@ async function seedBooking(params: {
 		const bookingId = result.insertId;
 
 		// If there is a cost, add ledger entries (booking_invoice for user, booking_payment for expert)
-		// so refund checks work correctly.
+		// so refund checks work correctly. Both sides mirror what post__book does
+		// at booking time: the user is debited and the expert credited unconditionally.
 		if (params.cost && params.cost > 0) {
-			// We don't have expertId here easily; the balance already exists; just insert invoice debit for user.
 			try {
 				await conn.execute(
 					`INSERT INTO ${tn('balance_ledger')} (account_id, is_credit, amount, entry_type, ref_type, ref_id, note, created_at)
@@ -159,6 +160,17 @@ async function seedBooking(params: {
 					`UPDATE ${tn('account_balance')} SET balance = balance - ?, updated_at = UNIX_TIMESTAMP() WHERE account_id = ?`,
 					[params.cost, params.userId]
 				);
+				if (params.expertId && params.expertId > 0) {
+					await conn.execute(
+						`INSERT INTO ${tn('balance_ledger')} (account_id, is_credit, amount, entry_type, ref_type, ref_id, note, created_at)
+						 VALUES (?, 1, ?, 'booking_payment', 'booking', ?, 'seed booking_payment', UNIX_TIMESTAMP())`,
+						[params.expertId, params.cost, bookingId]
+					);
+					await conn.execute(
+						`UPDATE ${tn('account_balance')} SET balance = balance + ?, updated_at = UNIX_TIMESTAMP() WHERE account_id = ?`,
+						[params.cost, params.expertId]
+					);
+				}
 			} catch {
 				// ignore ledger errors — balance deduction is optional for these guard tests
 			}
@@ -192,6 +204,18 @@ async function getBookingStatus(bookingId: number): Promise<string> {
 			`SELECT status FROM ${tn('bookings')} WHERE id = ?`, [bookingId]
 		);
 		return rows[0]?.status ?? 'not_found';
+	} finally { await conn.end(); }
+}
+
+/** Highest email_queue id for a recipient login — used to detect new emails. */
+async function emailQueueMaxId(login: string): Promise<number> {
+	const conn = await mysql.createConnection(DB);
+	try {
+		const [rows] = await conn.execute<any[]>(
+			`SELECT COALESCE(MAX(id), 0) AS maxId FROM ${tn('email_queue')} WHERE recipient_email = ?`,
+			[login]
+		);
+		return Number(rows[0]?.maxId ?? 0);
 	} finally { await conn.end(); }
 }
 
@@ -643,7 +667,8 @@ test.describe('Fix 6: expert cancelBooking returns 400 for confirmed + past slot
 //
 // Control assertions (selectivity):
 //   (a) confirmed booking on FUTURE free-slot  → stays 'confirmed' (not touched)
-//   (b) pending booking on PAST free-slot      → stays 'pending'   (cron skips non-confirmed)
+//   (b) pending booking on PAST free-slot      → AUTO-CANCELLED with full refund
+//       (user credited, expert debited) and a rejection email enqueued.
 // ─────────────────────────────────────────────────────────────────────────────
 
 test.describe('Fix 7: cron complete-expired completes orphan confirmed booking; user cannot cancel afterwards', () => {
@@ -658,9 +683,16 @@ test.describe('Fix 7: cron complete-expired completes orphan confirmed booking; 
 	let futureSlotId = 0;
 	let futureBookingId = 0;
 
-	// Control (b): past free-slot with PENDING booking → must stay pending
+	// Control (b): past free-slot with PENDING booking → auto-cancelled with full refund
 	let pastPendingSlotId = 0;
 	let pastPendingBookingId = 0;
+
+	// Balances + email-queue watermark captured before the cron runs, so the
+	// refund + notification assertions can compare against a known baseline.
+	const PENDING_SLOT_COST = 300;
+	let userBalanceBefore = 0;
+	let expertBalanceBefore = 0;
+	let userEmailMaxIdBefore = 0;
 
 	test('setup: seed target + control slots and bookings', async () => {
 		userId = await getAccountId('user1@dev.test');
@@ -699,17 +731,36 @@ test.describe('Fix 7: cron complete-expired completes orphan confirmed booking; 
 		futureBookingId = await seedBooking({ userId, slotId: futureSlotId, status: 'confirmed' });
 		expect(futureBookingId).toBeGreaterThan(0);
 
-		// CONTROL (b): PAST slot, status=free, PENDING booking — must NOT be completed (cron only targets confirmed)
+		// CONTROL (b): PAST slot, status=free, PENDING booking with a real cost.
+		// Cron auto-cancels it (slot expired without an expert decision),
+		// refunds the user in full and debits the expert by the same amount.
 		pastPendingSlotId = await seedSlot({
 			expertId,
 			startAt: pastStart,
 			endAt: pastEnd,
 			status: 'free',
-			cost: 0,
+			cost: PENDING_SLOT_COST,
 			maxUsers: 2,
 		});
 		expect(pastPendingSlotId).toBeGreaterThan(0);
-		pastPendingBookingId = await seedBooking({ userId, slotId: pastPendingSlotId, status: 'pending' });
+
+		// Fund both sides so the refund/debit math has a non-trivial baseline,
+		// and snapshot balances BEFORE seeding the booking.
+		await ensureBalance(userId, PENDING_SLOT_COST + 2000);
+		await ensureBalance(expertId, PENDING_SLOT_COST + 2000);
+		await recalcBalance(userId);
+		await recalcBalance(expertId);
+		userBalanceBefore = await getBalance(userId);
+		expertBalanceBefore = await getBalance(expertId);
+		userEmailMaxIdBefore = await emailQueueMaxId('user1@dev.test');
+
+		pastPendingBookingId = await seedBooking({
+			userId,
+			slotId: pastPendingSlotId,
+			status: 'pending',
+			cost: PENDING_SLOT_COST,
+			expertId,
+		});
 		expect(pastPendingBookingId).toBeGreaterThan(0);
 	});
 
@@ -757,9 +808,25 @@ test.describe('Fix 7: cron complete-expired completes orphan confirmed booking; 
 		expect(await getBookingStatus(futureBookingId)).toBe('confirmed');
 	});
 
-	test('DB control (b): past free-slot PENDING booking stays pending', async () => {
+	test('DB: past free-slot PENDING booking is auto-cancelled with full refund + email', async () => {
 		if (!pastPendingBookingId) { test.skip(); return; }
-		expect(await getBookingStatus(pastPendingBookingId)).toBe('pending');
+
+		// Status flipped pending → cancelled by the cron.
+		expect(await getBookingStatus(pastPendingBookingId)).toBe('cancelled');
+
+		// Full refund: user credited back the cost, expert debited the same amount.
+		// Both ledger rows (booking_invoice / booking_payment from seedBooking, plus
+		// the cron's booking_refund) net to zero against the baseline captured pre-seed.
+		await recalcBalance(userId);
+		await recalcBalance(expertId);
+		const userBalanceNow = await getBalance(userId);
+		const expertBalanceNow = await getBalance(expertId);
+		expect(userBalanceNow).toBe(userBalanceBefore);
+		expect(expertBalanceNow).toBe(expertBalanceBefore);
+
+		// A rejection email was enqueued to the user (bookingRejected path).
+		const userEmailMaxIdAfter = await emailQueueMaxId('user1@dev.test');
+		expect(userEmailMaxIdAfter).toBeGreaterThan(userEmailMaxIdBefore);
 	});
 
 	test('after cron: user cannot cancel completed booking (returns 400)', async ({ browser }) => {
@@ -783,5 +850,18 @@ test.describe('Fix 7: cron complete-expired completes orphan confirmed booking; 
 		if (targetSlotId) await cleanupSlot(targetSlotId);
 		if (futureSlotId) await cleanupSlot(futureSlotId);
 		if (pastPendingSlotId) await cleanupSlot(pastPendingSlotId);
+		// Clean the rejection email enqueued by the cron so it does not leak
+		// into subsequent test runs that share this isolated scope.
+		if (userEmailMaxIdBefore > 0) {
+			const conn = await mysql.createConnection(DB);
+			try {
+				await conn.execute(
+					`DELETE FROM ${tn('email_queue')} WHERE recipient_email = ? AND id > ?`,
+					['user1@dev.test', userEmailMaxIdBefore]
+				);
+			} finally { await conn.end(); }
+		}
+		if (userId) await recalcBalance(userId);
+		if (expertId) await recalcBalance(expertId);
 	});
 });
