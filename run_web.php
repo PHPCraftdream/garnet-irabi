@@ -15,6 +15,7 @@ namespace PHPCraftdream\IRabi {
     use PHPCraftdream\Garnet\Kernel\Io\Logs\Logger;
     use PHPCraftdream\Garnet\Kernel\Io\Router\RouterDevFile;
     use PHPCraftdream\Garnet\Kernel\Io\Router\RouterUriParams;
+    use PHPCraftdream\IRabi\Common\Services\HttpsRedirectService;
     use Psr\Http\Message\ResponseInterface;
     use Throwable;
 
@@ -26,6 +27,35 @@ namespace PHPCraftdream\IRabi {
     $errorCallback = [FrameworkController::class, 'internal_error_500'](...);
     $globalParams = GlobalReqParams::from($_SERVER, $_GET, GlobalReqParams::currentPost(), $_COOKIE, $_FILES);
     $isDev = $globalParams->isDev() && Env::isDevDir();
+
+    // -------------------------------
+    // Force HTTPS in production: redirect plaintext requests AND emit HSTS.
+    // Runs BEFORE ErrorCatcher init / IRabi construction / routing so the
+    // redirect is as cheap as possible — none of the heavy bootstrap fires
+    // for an HTTP→HTTPS bump. Gated on !$isDev so the local `php garnet
+    // serve` dev server (always isDev=true, plain HTTP by design — the
+    // Playwright e2e stack talks to it that way) is never touched. This is
+    // defense-in-depth on TOP of the hosting-level nginx redirect, not a
+    // replacement for it — if the panel is also configured to redirect, an
+    // upstream request never reaches PHP here, so the two never conflict.
+    //
+    // HSTS is intentionally NOT sent on the 301 redirect response itself:
+    // RFC 6797 §7.2 forbids HSTS on plaintext responses — it is only sent
+    // on the HTTPS response that the browser lands on after following the
+    // redirect (or on any direct HTTPS hit). The very first plaintext hit
+    // is therefore not pinned, which is the inherent HSTS bootstrap
+    // limitation — addressable only via the preload list, out of scope here.
+    if (!$isDev) {
+        $httpsRedirectTarget = HttpsRedirectService::redirectTarget($_SERVER, false);
+        if ($httpsRedirectTarget !== null) {
+            header('Location: ' . $httpsRedirectTarget, true, 301);
+            exit;
+        }
+
+        if (HttpsRedirectService::isHttps($_SERVER)) {
+            header(HttpsRedirectService::HSTS_HEADER);
+        }
+    }
 
     // -------------------------------
 
