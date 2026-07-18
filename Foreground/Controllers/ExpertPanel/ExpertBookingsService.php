@@ -309,6 +309,11 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
 
         /**
          * Отмена слота (free или booked) с возвратом средств по всем активным бронированиям.
+         *
+         * HTTP-эндпоинт для самого эксперта. Все доступовые и временные проверки
+         * (403/400) относятся только к этому прямому вызову — каскадный путь
+         * (cancelAllFutureSlotsForExpert) их не проходит, он сразу вызывает
+         * cancelSlotInternal() для уже выбранных слотов.
          */
         public static function cancelSlot(IGlobalReqParams $globals, Account $account): mixed {
             $slotId = (int)$globals->readPostValue('slot_id', '0');
@@ -326,6 +331,42 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 return ControllerTools::JSON(['error' => 'Slot cannot be cancelled in current status'], status: 400);
             }
 
+            // Resolve the expert's display name for the "Cancelled by" email row.
+            $expertProfile = ExpertProfiles::get()->selectOneByField('account_id', $account->id());
+            $cancelledBy = ($expertProfile['display_name'] ?? '') ?: ($account->readParam('name') ?: ('#' . $account->id()));
+
+            static::cancelSlotInternal($slot, null, $cancelledBy);
+
+            return ControllerTools::JSON(['success' => true]);
+        }
+
+        /**
+         * Общая логика отмены одного слота со всеми его активными бронированиями,
+         * полным возвратом средств и уведомлениями. Используется и публичным
+         * cancelSlot() (HTTP-эндпоинт эксперта), и каскадным
+         * cancelAllFutureSlotsForExpert() (разжалование/блокировка модератором).
+         *
+         * Действия для каждой активной (pending/confirmed) брони слота:
+         *  - атомарный (CAS) перевод в 'cancelled';
+         *  - 100%-й возврат: кредит пользователю, дебет эксперту (идемпотентно);
+         *  - аудит-запись в ExpertCancellations;
+         *  - news TYPE_BOOKING_CANCELLED + чат + email bookingCancelled.
+         * Затем слот → status='cancelled', booked_count=0, и чистятся объявления
+         * new_slot / slot_booked.
+         *
+         * @param array       $slot         Строка time_slots (уже загружена вызывающим).
+         * @param string|null $kind         Значение kind для ExpertCancellations.
+         *                                  null — выводить по статусу брони ('cancel' для
+         *                                  confirmed, 'decline' для pending), сохраняя
+         *                                  исходное поведение cancelSlot(). Фиксированная
+         *                                  строка (напр. 'admin_cancel') переопределяет.
+         * @param string      $cancelledBy  Подпись для строки "Отменено:" в email.
+         *
+         * @return int Число броней, фактически переведённых в 'cancelled'.
+         */
+        private static function cancelSlotInternal(array $slot, ?string $kind = null, string $cancelledBy = ''): int {
+            $slotId = (int)$slot['id'];
+
             $activeBookings = Bookings::get()->selectAll(function (SelectInterface $query) use ($slotId): void {
                 $query->where('bookable_id = :bid', ['bid' => $slotId]);
                 $query->where('bookable_type = :btype', ['btype' => 'time_slot']);
@@ -337,6 +378,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
 
             $now = time();
             $slotStartAt = (int)($slot['start_at'] ?? 0);
+            $durationMin = (int)($slot['duration_min'] ?? 0);
+            $cancelled = 0;
+
             foreach ($activeBookings as $booking) {
                 $bookingId = (int)$booking['id'];
 
@@ -346,6 +390,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 );
 
                 if ($affected === 1) {
+                    $cancelled++;
                     $userId = (int)$booking['user_id'];
                     if ($slotCost > 0) {
                         static::tryInsertRefund($userId, true, $slotCost, $bookingId, 'Refund #' . $bookingId);
@@ -361,10 +406,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                         'user_id' => $userId,
                         'reason' => '',
                         'created_at' => $now,
-                        'kind' => ($booking['status'] === 'confirmed' ? 'cancel' : 'decline'),
+                        'kind' => $kind ?? ($booking['status'] === 'confirmed' ? 'cancel' : 'decline'),
                     ]);
 
-                    // Notify the affected user that the expert cancelled their slot.
+                    // Notify the affected user that their booking was cancelled
+                    // (in-app news + chat + email). Wrapped so a notification
+                    // failure can never break the cancellation transaction.
                     try {
                         NewsService::createPersonal(NewsService::TYPE_BOOKING_CANCELLED, $expertId, $userId, [
                             'booking_id' => $bookingId,
@@ -373,6 +420,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                             'time' => $slotStartAt,
                         ], NewsService::slotKey($slotId));
                         BookingChatNotifier::cancelledOrDeclined($expertId, $userId, $slotStartAt, (string)$booking['status']);
+                        if ($cancelledBy !== '') {
+                            EmailNotifications::bookingCancelled($userId, $slotStartAt, $durationMin, $cancelledBy);
+                        }
                     } catch (Throwable) {
                     }
                 }
@@ -386,7 +436,37 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
             NewsService::deleteByTargetKey(NewsService::slotKey($slotId), NewsService::TYPE_NEW_SLOT);
             NewsService::deleteByTargetKey(NewsService::slotKey($slotId), NewsService::TYPE_SLOT_BOOKED);
 
-            return ControllerTools::JSON(['success' => true]);
+            return $cancelled;
+        }
+
+        /**
+         * Каскадная отмена всех будущих слотов эксперта с полным возвратом и
+         * уведомлениями пострадавшим пользователям. Вызывается при разжаловании
+         * (IS_APPROVED → 0) или блокировке (IS_DISABLED → 1) модератором, чтобы
+         * пользователь, оплативший бронь, не пришёл на занятие, которого не будет.
+         *
+         * Включая слоты со status='free' (аудит C-2): частично забронированный
+         * мульти-слот может оставаться 'free', но иметь активные брони.
+         *
+         * @param int    $expertId  ID аккаунта эксперта.
+         * @param string $kind      Метка для ExpertCancellations (по умолчанию 'admin_cancel',
+         *                          чтобы отличать от обычных 'cancel'/'decline' в отчётах).
+         *
+         * @return int Число броней, фактически переведённых в 'cancelled'.
+         */
+        public static function cancelAllFutureSlotsForExpert(int $expertId, string $kind = 'admin_cancel'): int {
+            $slots = TimeSlots::get()->selectByField('expert_id', $expertId, function (SelectInterface $q): void {
+                $q->where('start_at > UNIX_TIMESTAMP()');
+                $q->where("status IN ('free', 'booked')");
+            });
+
+            $cancelled = 0;
+            $cancelledBy = ForegroundI18n::getInstance()->Admin_Role_Moderator();
+            foreach ($slots as $slot) {
+                $cancelled += static::cancelSlotInternal($slot, $kind, $cancelledBy);
+            }
+
+            return $cancelled;
         }
 
         /**

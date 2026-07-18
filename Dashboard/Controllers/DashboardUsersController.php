@@ -27,6 +27,7 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
     use PHPCraftdream\IRabi\Common\Tables\UserCancellations;
     use PHPCraftdream\IRabi\Dashboard\GridConfig;
+    use PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel\ExpertBookingsService;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
     use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;
     use PHPCraftdream\IRabi\IRabi;
@@ -120,8 +121,22 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
                             static::announceFutureSlots($userId);
                         } else {
                             EmailNotifications::expertRejected($userId);
+                            // Cascade-cancel this expert's future slots and refund
+                            // affected users — a revoked expert must not leave paid
+                            // bookings dangling (audit C-1).
+                            ExpertBookingsService::cancelAllFutureSlotsForExpert($userId);
                         }
                     }
+                }
+            }
+
+            // Blocking an expert must likewise cancel their future bookings with
+            // full refund + user notification — the disabled expert can no longer
+            // deliver those sessions (audit C-1).
+            if ($flag === Account::IS_DISABLED && $value && $oldValue !== $newValue) {
+                $accountRow = DbAccount::get()->selectById($userId);
+                if ($accountRow && (string)($accountRow['type'] ?? '') === 'expert') {
+                    ExpertBookingsService::cancelAllFutureSlotsForExpert($userId);
                 }
             }
 
