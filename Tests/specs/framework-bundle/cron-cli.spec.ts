@@ -67,7 +67,8 @@ test.describe('php garnet cron — CLI boot wires service tables', () => {
         expect(result.stdout).toContain('[complete-expired]');
         expect(result.stdout).toContain('[disable-stale-tokens]');
         expect(result.stdout).toContain('[db-backup]');
-        expect(result.stdout).toMatch(/Done:\s*4\/4 tasks completed/);
+        expect(result.stdout).toContain('[log-rotation]');
+        expect(result.stdout).toMatch(/Done:\s*5\/5 tasks completed/);
         expect(result.stdout).not.toMatch(/ERROR:/);
         expect(result.exitCode).toBe(0);
 

@@ -60,6 +60,18 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 // that can fail the tick — retention and off-site are soft.
                 return DbBackupCronTask::run($stdio);
             }, 'Daily DB backup with 7-day + 4-week retention and optional off-site upload');
+
+            static::registerTask('log-rotation', static function (Stdio $stdio): int {
+                // 1-year retention for both the WorkDir/LogJournal file
+                // journals and the operational log tables — mirrors the
+                // privacy-policy promise (docs/handover-audit/01-legal-
+                // compliance.md F-05, required for 152-ФЗ). See
+                // LogRotationCronTask for the full policy; per-category
+                // and per-table failures are soft (logged, not thrown)
+                // so a partial schema or a missing dir never aborts the
+                // whole tick.
+                return LogRotationCronTask::run($stdio);
+            }, 'Prune file journals and log tables older than 1 year (privacy policy F-05)');
         }
 
         public static function runAll(Stdio $stdio): int {
