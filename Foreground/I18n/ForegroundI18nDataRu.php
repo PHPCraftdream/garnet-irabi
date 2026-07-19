@@ -34,6 +34,22 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Expert_Specialization' => 'Специализация',
             'Expert_PendingApproval' => 'Ваш профиль на модерации. Слоты не видны пользователям и не попадают в новости, пока администратор не одобрит профиль. После одобрения новости появятся автоматически.',
 
+            // Эксперт: редактирование публичного профиля
+            'ExpertProfile_Title' => 'Публичный профиль',
+            'ExpertProfile_DisplayName' => 'Отображаемое имя',
+            'ExpertProfile_DisplayNameHelp' => 'Видно на вашей публичной странице и в списке экспертов.',
+            'ExpertProfile_DisplayNameRequired' => 'Укажите отображаемое имя',
+            'ExpertProfile_DisplayNameTooLong' => 'Отображаемое имя слишком длинное (максимум 255 символов)',
+            'ExpertProfile_Specialization' => 'Специализация',
+            'ExpertProfile_SpecializationTooLong' => 'Специализация слишком длинная (максимум 255 символов)',
+            'ExpertProfile_Bio' => 'О себе',
+            'ExpertProfile_BioHelp' => 'Кратко расскажите о своём опыте и подходе. Видно на вашей публичной странице.',
+            'ExpertProfile_BioTooLong' => 'Поле «О себе» слишком длинное (максимум 2000 символов)',
+            'ExpertProfile_Save' => 'Сохранить',
+            'ExpertProfile_Saved' => 'Профиль сохранён',
+            'ExpertProfile_ViewPublic' => 'Открыть публичную страницу',
+            'ExpertProfile_PendingApprovalHint' => 'Профиль можно заполнить сейчас — он появится в списке экспертов после одобрения администратором.',
+
             'Batch_Title' => 'Пакетное создание слотов',
             'Batch_StartDate' => 'Дата начала',
             'Batch_EndDate' => 'Дата окончания',
@@ -287,6 +303,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Menu_Study' => 'Учёба',
             'Menu_BrowseSlots' => 'Обзор слотов',
             'Menu_ManageSlots' => 'Управление слотами',
+            'Menu_ExpertProfile' => 'Мой профиль',
 
             'Balance_Title' => 'Мой баланс',
             'Balance_TopUp' => 'Пополнить',

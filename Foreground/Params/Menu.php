@@ -40,6 +40,7 @@ namespace PHPCraftdream\IRabi\Foreground\Params {
             $isSlotsSection = static::isSection($url, SlotsController::URL);
             $isBookingsSection = static::isSection($url, BookingsController::URL);
             $isMySlotsSection = $url === ExpertPanelController::URL . '~slots';
+            $isMyProfileSection = $url === ExpertPanelController::URL . '~profile';
             $isAdminSection = static::isSection($url, DashboardUsersController::URL)
                 || static::isSection($url, '/admin/');
 
@@ -81,6 +82,12 @@ namespace PHPCraftdream\IRabi\Foreground\Params {
                     'href' => IRabi::url(ExpertPanelController::URL . '~slots'),
                     'icon' => 'people',
                     'active' => $isMySlotsSection,
+                ];
+                $items[] = [
+                    'label' => $t->Menu_ExpertProfile(),
+                    'href' => IRabi::url(ExpertPanelController::URL . '~profile'),
+                    'icon' => 'person',
+                    'active' => $isMyProfileSection,
                 ];
             }
 

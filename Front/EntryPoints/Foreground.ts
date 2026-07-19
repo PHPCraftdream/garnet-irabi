@@ -43,6 +43,7 @@ createIsland({className: 'invite-error-init', lazy: () => import('../Islands/Inv
 createIsland({className: 'expert-dashboard-init', lazy: () => import('../Islands/ExpertDashboard/ExpertDashboardIsland'), exportName: 'ExpertDashboardIsland'});
 createIsland({className: 'expert-slots-init', lazy: () => import('../Islands/ExpertSlots/ExpertSlotsIsland'), exportName: 'ExpertSlotsIsland'});
 createIsland({className: 'expert-bookings-init', lazy: () => import('../Islands/Bookings/ExpertBookings'), exportName: 'ExpertBookingsIsland'});
+createIsland({className: 'expert-profile-edit-init', lazy: () => import('../Islands/ExpertPanel/ExpertProfileEditIsland'), exportName: 'ExpertProfileEditIsland'});
 
 // Support
 createIsland({className: 'support-page-init', lazy: () => import('../Islands/Support/SupportPageIsland'), exportName: 'SupportPageIsland'});
