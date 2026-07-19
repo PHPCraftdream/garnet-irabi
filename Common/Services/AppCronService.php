@@ -43,7 +43,27 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 }
 
                 try {
-                    return FwEmailQueueService::processQueue(50);
+                    // First recover rows stuck in `sending` from a past
+                    // cron tick whose process crashed mid-send (audit
+                    // 09-email H-2). The freshly-acquired lock above is
+                    // the proof that every `sending` row is an orphan —
+                    // see EmailWatchdogService for the invariant. Order
+                    // matters: clean up orphans BEFORE letting
+                    // processQueue() re-select, so a recovered row with a
+                    // future next_attempt_at is correctly skipped this
+                    // tick and retried on a later one.
+                    $recovery = EmailWatchdogService::recoverStuckSending();
+                    if ($recovery['recovered'] > 0) {
+                        $stdio->outln(sprintf(
+                            'email-watchdog: recovered %d stuck sending email(s)',
+                            $recovery['recovered'],
+                        ));
+                    }
+
+                    // Add recovered to the return so a crash-recovery tick
+                    // is always recorded in cron_log (didWork), even when
+                    // processQueue itself had nothing to send afterwards.
+                    return FwEmailQueueService::processQueue(50) + $recovery['recovered'];
                 } finally {
                     NamedLock::release(self::EMAIL_QUEUE_LOCK);
                 }
