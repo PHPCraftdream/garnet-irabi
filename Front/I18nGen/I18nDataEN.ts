@@ -156,6 +156,16 @@ export class I18nDataEN {
     static Admin_MailLog_Filter_SearchUser = 'Search recipient…';
     static Admin_MailLog_Filter_NoMatches = 'No matches';
     static Admin_MailLog_Body = 'Body';
+    static Admin_EmailQueue = 'Email Queue';
+    static Admin_EmailQueue_Title = 'Email Queue';
+    static Admin_EmailQueue_Attempts = 'Attempts';
+    static Admin_EmailQueue_MaxAttempts = 'Limit';
+    static Admin_EmailQueue_NextAttempt = 'Next attempt';
+    static Admin_EmailQueue_DeadLetterBanner = 'Dead-letter emails (no auto-retry): {0}';
+    static Admin_EmailQueue_Empty = 'Queue is empty';
+    static Admin_EmailQueue_Retry = 'Retry';
+    static Admin_EmailQueue_RetryDone = 'Email returned to queue';
+    static Admin_EmailQueue_RetryFail = 'Failed to return email to queue';
     static Admin_RequestLog = 'Logs';
     static RequestLog_Date = 'Date';
     static RequestLog_NoData = 'No records';

@@ -2,6 +2,7 @@
 
 namespace PHPCraftdream\IRabi\Dashboard {
     use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardBookingsController;
+    use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardEmailQueueController;
     use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardFinanceController;
     use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardLogsController;
     use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardMainController;
@@ -41,6 +42,12 @@ namespace PHPCraftdream\IRabi\Dashboard {
                 Menu::item($t->Admin_Logs(), IRabi::url(DashboardLogsController::URL), 'clipboard-list', $url),
                 Menu::item($t->Admin_Support(), IRabi::url(DashboardSupportController::URL), 'chat-dots', $url),
             ];
+
+            // Email-queue viewer + manual dead-letter retry — admin only
+            // (the retry action re-arms sending), so hidden from moderators.
+            if (UserEntityConfig::isAdmin()) {
+                $items[] = Menu::item($t->Admin_EmailQueue(), IRabi::url(DashboardEmailQueueController::URL), 'mailbox', $url);
+            }
 
             if (static::isOwner()) {
                 $items[] = Menu::item($t->Admin_Pages(), IRabi::url(DashboardStaticPagesController::URL), 'file-earmark-text', $url, strict: true);

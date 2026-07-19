@@ -183,6 +183,17 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Admin_MailLog_Filter_NoMatches' => 'No matches',
             'Admin_MailLog_Body' => 'Body',
 
+            'Admin_EmailQueue' => 'Email Queue',
+            'Admin_EmailQueue_Title' => 'Email Queue',
+            'Admin_EmailQueue_Attempts' => 'Attempts',
+            'Admin_EmailQueue_MaxAttempts' => 'Limit',
+            'Admin_EmailQueue_NextAttempt' => 'Next attempt',
+            'Admin_EmailQueue_DeadLetterBanner' => 'Dead-letter emails (no auto-retry): {0}',
+            'Admin_EmailQueue_Empty' => 'Queue is empty',
+            'Admin_EmailQueue_Retry' => 'Retry',
+            'Admin_EmailQueue_RetryDone' => 'Email returned to queue',
+            'Admin_EmailQueue_RetryFail' => 'Failed to return email to queue',
+
             'Admin_RequestLog' => 'Logs',
             'RequestLog_Date' => 'Date',
             'RequestLog_NoData' => 'No records',

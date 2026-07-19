@@ -60,4 +60,5 @@ createIsland({className: 'admin-finance-init', lazy: () => import('../Islands/Ad
 createIsland({className: 'admin-support-init', lazy: () => import('../Islands/AdminPanel/AdminSupportIsland'), exportName: 'AdminSupportIsland'});
 createIsland({className: 'admin-system-settings-init', lazy: () => import('../Islands/AdminPanel/AdminSystemSettingsIsland'), exportName: 'AdminSystemSettingsIsland'});
 createIsland({className: 'admin-logs-viewer-init', lazy: () => import('../Islands/AdminPanel/AdminLogsViewerIsland'), exportName: 'AdminLogsViewerIsland'});
+createIsland({className: 'admin-email-queue-init', lazy: () => import('../Islands/AdminPanel/EmailQueue/EmailQueueIsland'), exportName: 'EmailQueueIsland'});
 createIsland({className: 'admin-static-pages-init', lazy: () => import('../Islands/AdminPanel/AdminStaticPagesIsland'), exportName: 'AdminStaticPagesIsland'});

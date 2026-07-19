@@ -22,6 +22,24 @@ namespace PHPCraftdream\IRabi\Common\Services {
         public const CAT_SUPPORT = 'support';
         public const CAT_BOOKINGS = 'bookings';
 
+        /**
+         * Max send attempts passed to FwEmailQueueService::enqueue() for
+         * every transactional email. The framework's retry backoff is
+         * linear (5s * min(attempt, 10)) and hardcoded inside the catch
+         * block of processQueue() with no overridable seam — so the ONLY
+         * retry-window lever reachable from app code (without editing
+         * vendor) is this $maxAttempts argument. Raising it from the
+         * framework default of 3 to 6 widens the effective retry window
+         * from ~15s (5+10) to ~75s (5+10+15+20+25) before a row goes
+         * terminal dead-letter.
+         *
+         * This is a PARTIAL mitigation of audit H-3, NOT a full fix: a
+         * proper exponential backoff (minutes/hours) requires changing
+         * the backoff formula in vendor/.../FwEmailQueueService.php —
+         * tracked as a separate framework task.
+         */
+        public const MAX_SEND_ATTEMPTS = 6;
+
         public const TYPE_BOOKING_CREATED = 'bookingCreated';
         public const TYPE_BOOKING_CONFIRMED = 'bookingConfirmed';
         public const TYPE_BOOKING_REJECTED = 'bookingRejected';
@@ -470,7 +488,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
             }
             $studentName = static::getAccountName($studentId);
             $rendered = static::buildBookingCreated($expertId, $studentName, $startAt, $durationMin);
-            FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body']);
+            FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body'], self::MAX_SEND_ATTEMPTS);
         }
 
         public static function bookingConfirmed(int $studentId, int $startAt, int $durationMin, int $expertId = 0): void {
@@ -483,7 +501,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
             }
             $expertName = $expertId > 0 ? static::getAccountName($expertId) : '';
             $rendered = static::buildBookingConfirmed($studentId, $expertName, $startAt, $durationMin);
-            FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body']);
+            FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body'], self::MAX_SEND_ATTEMPTS);
         }
 
         public static function bookingRejected(int $studentId, int $startAt, int $durationMin, int $expertId = 0, string $reason = ''): void {
@@ -496,7 +514,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
             }
             $expertName = $expertId > 0 ? static::getAccountName($expertId) : '';
             $rendered = static::buildBookingRejected($studentId, $expertName, $startAt, $durationMin, $reason);
-            FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body']);
+            FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body'], self::MAX_SEND_ATTEMPTS);
         }
 
         public static function bookingCancelled(int $recipientId, int $startAt, int $durationMin, string $cancelledBy): void {
@@ -508,7 +526,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 return;
             }
             $rendered = static::buildBookingCancelled($recipientId, $startAt, $durationMin, $cancelledBy);
-            FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body']);
+            FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body'], self::MAX_SEND_ATTEMPTS);
         }
 
         public static function newMessage(int $recipientId, int $senderId, string $messagePreview): void {
@@ -521,7 +539,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
             }
             $senderName = static::getAccountName($senderId);
             $rendered = static::buildNewMessage($senderName, $messagePreview);
-            FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body']);
+            FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body'], self::MAX_SEND_ATTEMPTS);
         }
 
         public static function supportTicketCreated(int $ticketId, string $subject, string $userName): void {
@@ -536,7 +554,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 return;
             }
             $rendered = static::buildSupportTicketCreated($ticketId, $subject, $userName);
-            FwEmailQueueService::enqueueToMany($emails, $rendered['subject'], $rendered['body']);
+            FwEmailQueueService::enqueueToMany($emails, $rendered['subject'], $rendered['body'], self::MAX_SEND_ATTEMPTS);
         }
 
         public static function supportReplyToUser(int $userId, int $ticketId, string $ticketSubject): void {
@@ -548,7 +566,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 return;
             }
             $rendered = static::buildSupportReplyToUser($ticketId, $ticketSubject);
-            FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body']);
+            FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body'], self::MAX_SEND_ATTEMPTS);
         }
 
         public static function supportUserReply(int $ticketId, string $ticketSubject, string $userName): void {
@@ -563,7 +581,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 return;
             }
             $rendered = static::buildSupportUserReply($ticketId, $ticketSubject, $userName);
-            FwEmailQueueService::enqueueToMany($emails, $rendered['subject'], $rendered['body']);
+            FwEmailQueueService::enqueueToMany($emails, $rendered['subject'], $rendered['body'], self::MAX_SEND_ATTEMPTS);
         }
 
         public static function expertApproved(int $expertId): void {
@@ -572,7 +590,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 return;
             }
             $rendered = static::buildExpertApproved();
-            FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body']);
+            FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body'], self::MAX_SEND_ATTEMPTS);
         }
 
         public static function expertRejected(int $expertId): void {
@@ -581,7 +599,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 return;
             }
             $rendered = static::buildExpertRejected();
-            FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body']);
+            FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body'], self::MAX_SEND_ATTEMPTS);
         }
 
         // ------------------------------------------------------------------

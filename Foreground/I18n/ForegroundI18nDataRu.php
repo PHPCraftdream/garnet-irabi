@@ -182,6 +182,17 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Admin_MailLog_Filter_NoMatches' => 'Нет совпадений',
             'Admin_MailLog_Body' => 'Текст',
 
+            'Admin_EmailQueue' => 'Очередь писем',
+            'Admin_EmailQueue_Title' => 'Очередь писем',
+            'Admin_EmailQueue_Attempts' => 'Попытки',
+            'Admin_EmailQueue_MaxAttempts' => 'Лимит',
+            'Admin_EmailQueue_NextAttempt' => 'След. попытка',
+            'Admin_EmailQueue_DeadLetterBanner' => 'Писем без авто-отправки (dead-letter): {0}',
+            'Admin_EmailQueue_Empty' => 'Очередь пуста',
+            'Admin_EmailQueue_Retry' => 'Повторить',
+            'Admin_EmailQueue_RetryDone' => 'Письмо возвращено в очередь',
+            'Admin_EmailQueue_RetryFail' => 'Не удалось вернуть письмо в очередь',
+
             'Admin_RequestLog' => 'Логи',
             'RequestLog_Date' => 'Дата',
             'RequestLog_NoData' => 'Записей нет',

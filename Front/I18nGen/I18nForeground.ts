@@ -161,6 +161,16 @@ class I18n extends I18nBase {
     Admin_MailLog_Filter_SearchUser: t = (a = []) => this.t('Admin_MailLog_Filter_SearchUser', a);
     Admin_MailLog_Filter_NoMatches: t = (a = []) => this.t('Admin_MailLog_Filter_NoMatches', a);
     Admin_MailLog_Body: t = (a = []) => this.t('Admin_MailLog_Body', a);
+    Admin_EmailQueue: t = (a = []) => this.t('Admin_EmailQueue', a);
+    Admin_EmailQueue_Title: t = (a = []) => this.t('Admin_EmailQueue_Title', a);
+    Admin_EmailQueue_Attempts: t = (a = []) => this.t('Admin_EmailQueue_Attempts', a);
+    Admin_EmailQueue_MaxAttempts: t = (a = []) => this.t('Admin_EmailQueue_MaxAttempts', a);
+    Admin_EmailQueue_NextAttempt: t = (a = []) => this.t('Admin_EmailQueue_NextAttempt', a);
+    Admin_EmailQueue_DeadLetterBanner: t = (a = []) => this.t('Admin_EmailQueue_DeadLetterBanner', a);
+    Admin_EmailQueue_Empty: t = (a = []) => this.t('Admin_EmailQueue_Empty', a);
+    Admin_EmailQueue_Retry: t = (a = []) => this.t('Admin_EmailQueue_Retry', a);
+    Admin_EmailQueue_RetryDone: t = (a = []) => this.t('Admin_EmailQueue_RetryDone', a);
+    Admin_EmailQueue_RetryFail: t = (a = []) => this.t('Admin_EmailQueue_RetryFail', a);
     Admin_RequestLog: t = (a = []) => this.t('Admin_RequestLog', a);
     RequestLog_Date: t = (a = []) => this.t('RequestLog_Date', a);
     RequestLog_NoData: t = (a = []) => this.t('RequestLog_NoData', a);

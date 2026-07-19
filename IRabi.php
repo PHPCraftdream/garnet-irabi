@@ -61,6 +61,7 @@ namespace PHPCraftdream\IRabi {
     use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardBookingsController;
     use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardCancellationsController;
     use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardCommentsController;
+    use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardEmailQueueController;
     use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardEntityHistoryController;
     use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardFinanceController;
     use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardInviteTokensController;
@@ -263,6 +264,7 @@ namespace PHPCraftdream\IRabi {
             $router->add(DashboardFinanceController::URL, DashboardFinanceController::class, $adminMiddleware);
             $router->add(DashboardBalancesController::URL, DashboardBalancesController::class, $adminMiddleware);
             $router->add(DashboardLogsController::URL, DashboardLogsController::class, $adminMiddleware);
+            $router->add(DashboardEmailQueueController::URL, DashboardEmailQueueController::class, $adminMiddleware);
             $router->add(DashboardCancellationsController::URL, DashboardCancellationsController::class, $adminMiddleware);
             $router->add(DashboardSupportController::URL, DashboardSupportController::class, $adminMiddleware);
             $router->add(DashboardCommentsController::URL, DashboardCommentsController::class, $adminMiddleware);

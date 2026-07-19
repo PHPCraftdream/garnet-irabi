@@ -155,6 +155,16 @@ export class I18nDataRU {
     static Admin_MailLog_Filter_SearchUser = 'Поиск получателя…';
     static Admin_MailLog_Filter_NoMatches = 'Нет совпадений';
     static Admin_MailLog_Body = 'Текст';
+    static Admin_EmailQueue = 'Очередь писем';
+    static Admin_EmailQueue_Title = 'Очередь писем';
+    static Admin_EmailQueue_Attempts = 'Попытки';
+    static Admin_EmailQueue_MaxAttempts = 'Лимит';
+    static Admin_EmailQueue_NextAttempt = 'След. попытка';
+    static Admin_EmailQueue_DeadLetterBanner = 'Писем без авто-отправки (dead-letter): {0}';
+    static Admin_EmailQueue_Empty = 'Очередь пуста';
+    static Admin_EmailQueue_Retry = 'Повторить';
+    static Admin_EmailQueue_RetryDone = 'Письмо возвращено в очередь';
+    static Admin_EmailQueue_RetryFail = 'Не удалось вернуть письмо в очередь';
     static Admin_RequestLog = 'Логи';
     static RequestLog_Date = 'Дата';
     static RequestLog_NoData = 'Записей нет';
