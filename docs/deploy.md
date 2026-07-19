@@ -131,6 +131,73 @@ forward or restore the backup, then re-run. Avoid `--skip-backup`
 except when you've already taken one manually; `--skip-migrate` is fine
 for a code-only release with no pending schema change.
 
+## Migrations: forward-only, no rollback
+
+The schema is created by **forward-only** migrations. There is no
+`down()`, no `rollback()`, no `--revert` — at any layer:
+
+- The migration interface `IMigrationItem`
+  (`vendor/…/garnet-framework/Kernel/Interfaces/Migration/IMigrationItem.php`)
+  declares exactly one method: `update(Stdio $stdio): void`. Nothing else.
+- The runner `Migration::migrate()`
+  (`vendor/…/garnet-framework/Kernel/Db/Entity/Migration/Migration.php`)
+  only ever iterates `range($dbVersion + 1, $fsVersion)` — strictly
+  forward. It records the new version number **after** each `update()`
+  succeeds, so a mid-migration failure leaves the DB in a
+  partially-applied state with the tracker unchanged.
+- All existing migrations (`Migrations/Items/M_0001..M_0012`) implement
+  only `update()`.
+
+Lowering the number in the `migration` tracker table
+(`UPDATE migration SET version = …`) does **not** undo any schema change —
+that column is just an integer. The DDL already executed is permanent.
+
+**Rule: a DB backup is MANDATORY before every `migrate` run, no
+exceptions, regardless of how small the migration looks.** A failed or
+wrong migration on production has exactly one recovery path: restore the
+DB from the backup taken immediately before. There is no in-place
+"reverse migration" to run.
+
+### Two ways to run migrations — only one backs up automatically
+
+| Path | Backup | When it's used |
+|---|---|---|
+| `php garnet deploy` | **Automatic.** The flow is `maintenance ON → DB backup → migrations → cache clear → maintenance OFF` (see [Recommended workflow](#recommended-workflow) above); if the backup or migration step fails, maintenance is deliberately left ON so a half-migrated site never goes live. | Full release with code + schema changes. |
+| `php run_cmd.php migration` (or the equivalent `php garnet migration`, `php garnet remote-migration`) | **NOT automatic.** `CMDMigration::migrate()` (`vendor/…/garnet-framework/Kernel/Db/Entity/Migration/CMDMigration.php`) runs `MigrationTable::init() → MigrationTable::afterInit() → Migration::migrate()` and nothing else — there is no backup step anywhere in this code path. | Point hotfix on the server via SSH, or any ad-hoc schema bump done without a full `garnet deploy`. |
+
+For the direct `php run_cmd.php migration` / `php garnet migration` path,
+the operator MUST take a backup **before** running the command. Use the
+existing `db-backup` mechanism (the same one the daily cron runs — see
+[Cron](#cron) below) invoked once by hand:
+
+```bash
+php run_cmd.php cron db-backup
+```
+
+That writes a timestamped dump into `WorkDir/Backups/` in the same
+on-disk format `php garnet deploy` produces, and runs retention so the
+fresh file is never pruned by its own tick. Confirm the dump exists and
+is non-empty (`php garnet db:backup --list`, or `ls -lh WorkDir/Backups/`)
+**before** proceeding to `migrate`. (`php garnet db:backup` is an
+equivalent standalone entry point — use whichever you're already in.)
+
+### Restore is the only rollback — and it hasn't been rehearsed yet
+
+Restoring from the pre-migrate backup loses every DB write between the
+backup and the moment of restore (bookings, balance-ledger entries,
+messages, …). A DB restore also does **not** roll back code — to undo a
+release fully you must also ship the previous code revision
+(`deploy:diff --since=<old-ref>` or a manual `ssh:put`), clear caches,
+and take the site out of maintenance. There is no single "undo release"
+command.
+
+A full dry-run restore on a clean database is tracked separately as
+organizational task **#83** and is not yet performed. Until it is, the
+first real production `migrate` is an elevated-risk operation: keep
+maintenance ON, have the operator watching the migration output, and
+have the pre-migrate backup file path recorded and verified before
+starting.
+
 ## Cron
 
 IRabi ships **five** cron tasks, registered in
