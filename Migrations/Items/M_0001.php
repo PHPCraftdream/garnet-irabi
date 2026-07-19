@@ -8,7 +8,6 @@ namespace PHPCraftdream\IRabi\Migrations\Items {
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Session\SessionData;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Settings\SettingsTable;
     use PHPCraftdream\Garnet\Kernel\Db\Link\DbPool;
-    use PHPCraftdream\Garnet\Kernel\Db\Tables\DbTableBuilderFactory;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Migration\IMigrationItem;
     use PHPCraftdream\Garnet\Kernel\Io\FileUpload\PendingUploadsTable;
 
@@ -38,17 +37,49 @@ namespace PHPCraftdream\IRabi\Migrations\Items {
             // ALTERs (login length, optional name, account type + photo
             // columns). Folded into the framework migration so a fresh
             // install gets the final layout in one pass.
+            //
+            // The two MODIFY COLUMN calls are idempotent by nature (MODIFY
+            // reshapes an existing column, never ADDs). The four ADD COLUMN
+            // + ADD INDEX steps below are guarded against the "tracker row
+            // lost / version hand-reset" replay scenario: if the migration
+            // runner re-executes M_0001 on an already-migrated DB, an
+            // unguarded ADD would fail with "Duplicate column name" /
+            // "Duplicate key name" and abort the whole pipeline.
+            //
+            // Column types/nullability below match exactly what the
+            // DbTableBuilderFactory chain emitted before this change
+            // (addColumn($n, 'VARCHAR', $len) → "VARCHAR($len) NULL", no
+            // DEFAULT, no AFTER) — verified against the builder source in
+            // Kernel/Db/Tables/TableBuilderMySQL.php — so a fresh install
+            // lands the identical schema.
             $accountsTable = DbAccount::get()->getTableName();
             $pool->query("ALTER TABLE {$accountsTable} MODIFY COLUMN login VARCHAR(128) NOT NULL");
             $pool->query("ALTER TABLE {$accountsTable} MODIFY COLUMN name VARCHAR(64) NULL");
 
-            DbTableBuilderFactory::newAlterTable(DbAccount::get())
-                ->addColumn('type', 'VARCHAR', '32')
-                ->addColumn('photo', 'VARCHAR', '128')
-                ->addColumn('photo_cropped', 'VARCHAR', '128')
-                ->addColumn('crop_info', 'VARCHAR', '128')
-                ->addIndex('type', ['type'])
-                ->ex();
+            $accountColumns = [
+                'type' => 'VARCHAR(32) NULL',
+                'photo' => 'VARCHAR(128) NULL',
+                'photo_cropped' => 'VARCHAR(128) NULL',
+                'crop_info' => 'VARCHAR(128) NULL',
+            ];
+
+            foreach ($accountColumns as $column => $def) {
+                $exists = $pool->query("SHOW COLUMNS FROM {$accountsTable} LIKE '{$column}'");
+                if (empty($exists)) {
+                    $pool->query("ALTER TABLE {$accountsTable} ADD COLUMN {$column} {$def}");
+                    $stdio->outln("M_0001: added {$accountsTable}.{$column}");
+                } else {
+                    $stdio->outln("M_0001: {$accountsTable}.{$column} already present, skipped");
+                }
+            }
+
+            $hasTypeIndex = $pool->query("SHOW INDEX FROM {$accountsTable} WHERE Key_name = 'type'");
+            if (empty($hasTypeIndex)) {
+                $pool->query("ALTER TABLE {$accountsTable} ADD INDEX type (type)");
+                $stdio->outln("M_0001: added index {$accountsTable}.type");
+            } else {
+                $stdio->outln("M_0001: index {$accountsTable}.type already present, skipped");
+            }
 
             PendingUploadsTable::init()->ex();
 
