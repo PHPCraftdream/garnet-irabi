@@ -23,6 +23,7 @@ interface RegistrationFormProps {
 	profileUrl?: string;
 	notifPrefs?: NotifPrefsState;
 	notifSaveUrl?: string;
+	marketingConsent?: boolean;
 }
 
 const NOTIF_CATS: (keyof NotifPrefsState)[] = ['messages', 'support', 'bookings'];
@@ -36,18 +37,27 @@ const catLabel = (cat: keyof NotifPrefsState): string => {
 interface NotificationPrefsProps {
 	initialPrefs: NotifPrefsState;
 	saveUrl: string;
+	initialMarketingConsent: boolean;
 }
 
-const NotificationPrefs: React.FC<NotificationPrefsProps> = ({initialPrefs, saveUrl}) => {
+const NotificationPrefs: React.FC<NotificationPrefsProps> = ({initialPrefs, saveUrl, initialMarketingConsent}) => {
 	const [prefs, setPrefs] = useState<NotifPrefsState>({
 		messages: initialPrefs.messages || 'each',
 		support: initialPrefs.support || 'each',
 		bookings: initialPrefs.bookings || 'each',
 	});
+	const [mkConsent, setMkConsent] = useState<boolean>(Boolean(initialMarketingConsent));
 
-	const save = async (next: NotifPrefsState): Promise<void> => {
+	// Every save carries BOTH the per-category prefs and the marketing-consent
+	// toggle. The backend compares consent_marketing against the current
+	// hasConsentMarketing() and journals ONLY on a real state change, so this
+	// re-send on every pref tweak does not duplicate audit rows.
+	const save = async (next: NotifPrefsState, nextMk: boolean): Promise<void> => {
 		try {
-			await sendPost(saveUrl, next as unknown as Record<string, unknown>);
+			await sendPost(saveUrl, {
+				...next,
+				consent_marketing: nextMk ? '1' : '0',
+			});
 			showToast(tf.NotifPrefs_Saved(), 'success');
 		} catch {
 			showToast(tf.General_Error(), 'danger');
@@ -57,13 +67,18 @@ const NotificationPrefs: React.FC<NotificationPrefsProps> = ({initialPrefs, save
 	const handleEnable = (cat: keyof NotifPrefsState, checked: boolean): void => {
 		const next = {...prefs, [cat]: checked ? 'each' : 'off'};
 		setPrefs(next);
-		void save(next);
+		void save(next, mkConsent);
 	};
 
 	const handleFreq = (cat: keyof NotifPrefsState, value: string): void => {
 		const next = {...prefs, [cat]: value};
 		setPrefs(next);
-		void save(next);
+		void save(next, mkConsent);
+	};
+
+	const handleMarketing = (checked: boolean): void => {
+		setMkConsent(checked);
+		void save(prefs, checked);
 	};
 
 	return (
@@ -95,6 +110,22 @@ const NotificationPrefs: React.FC<NotificationPrefsProps> = ({initialPrefs, save
 					</div>
 				);
 			})}
+			{/* Marketing consent is a SEPARATE concern from the transactional
+			    categories above: it governs advertising mailings (none exist
+			    yet), not booking/message/support notifications. Lives on the
+			    account as consent_marketing_at, not in email_notif_prefs. */}
+			<div className="mt-4 pt-3 border-top" data-test-id="notif-row-marketing">
+				<label className="auth-consent-row flex items-start gap-2">
+					<input
+						type="checkbox"
+						checked={mkConsent}
+						onChange={(e) => handleMarketing(e.currentTarget.checked)}
+						data-test-id="notif-marketing-consent"
+						className="mt-1"
+					/>
+					<span>{I18n.Consent_Marketing()}</span>
+				</label>
+			</div>
 		</div>
 	);
 };
@@ -109,6 +140,7 @@ export const RegistrationFormIsland: React.FC<RegistrationFormProps> = ({
 	profileUrl,
 	notifPrefs,
 	notifSaveUrl,
+	marketingConsent,
 }) => {
 	const formDetailInfo = {...detailsInfo, saveUrl: window.location.href};
 	// Consent gating is for first-time REGISTRATION only — not for editing an
@@ -192,7 +224,11 @@ export const RegistrationFormIsland: React.FC<RegistrationFormProps> = ({
 				/>
 			</div>
 			{!isRegistration && notifPrefs && notifSaveUrl && (
-				<NotificationPrefs initialPrefs={notifPrefs} saveUrl={notifSaveUrl} />
+				<NotificationPrefs
+					initialPrefs={notifPrefs}
+					saveUrl={notifSaveUrl}
+					initialMarketingConsent={Boolean(marketingConsent)}
+				/>
 			)}
 		</div>
 	);

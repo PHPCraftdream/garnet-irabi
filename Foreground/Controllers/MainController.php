@@ -10,9 +10,11 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\DbAccount;
     use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
+    use PHPCraftdream\Garnet\Kernel\Io\Logs\Logger;
     use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
     use PHPCraftdream\Garnet\Kernel\Io\Twig\TwigParams;
     use PHPCraftdream\IRabi\Common\Services\AccountDisplay;
+    use PHPCraftdream\IRabi\Common\Services\ConsentJournalService;
     use PHPCraftdream\IRabi\Common\Services\NewsService;
     use PHPCraftdream\IRabi\Common\System\DateUtils;
     use PHPCraftdream\IRabi\Common\System\ThirdPartyAssets;
@@ -31,6 +33,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\IRabi\Foreground\Params\Menu;
     use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;
     use PHPCraftdream\IRabi\IRabi;
+    use Throwable;
 
     class MainController extends FrameworkController {
         public static function getSideMenu(string $url): array {
@@ -495,6 +498,13 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 'bookings' => in_array($decodedPrefs['bookings'] ?? '', $allowedFreq, true) ? $decodedPrefs['bookings'] : 'each',
             ];
 
+            // Marketing consent is a separate concept from the per-category
+            // email prefs above (legal finding F-06): it lives on the account
+            // as consent_marketing_at / consent_marketing_withdrawn_at, not in
+            // the email_notif_prefs JSON. Exposed here so the profile form can
+            // render the current state and let the user grant/withdraw it.
+            $marketingConsent = $account->hasConsentMarketing();
+
             $params = TwigParams::init()->get(TwigParams::DEF_LAYOUT_PARAMS, [
                 'content' => RenderIsland::render('registration-form', [
                     'detailsInfo' => $detailsInfo,
@@ -504,6 +514,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                     'profileUrl' => IRabi::url('/~profile'),
                     'notifPrefs' => $notifPrefs,
                     'notifSaveUrl' => IRabi::url('/~saveNotifPrefs'),
+                    'marketingConsent' => $marketingConsent,
                 ]),
                 'top_menu_items' => static::getMainMenu($url),
                 'side_menu_items' => static::getSideMenu($url),
@@ -536,6 +547,15 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
          * Persist the current user's per-category email-notification preferences.
          * Stored as a JSON blob in the `email_notif_prefs` account-data param and
          * honoured at send time by EmailNotifications::gate().
+         *
+         * Also applies the marketing-consent toggle shown alongside the prefs
+         * (legal finding F-06(а)): grant sets a fresh consent_marketing_at +
+         * journals ACTION_GIVEN; withdraw calls Account::withdrawMarketingConsent()
+         * + journals ACTION_WITHDRAWN. Only a real state change (compared against
+         * the current hasConsentMarketing()) is journaled, so re-saving the form
+         * without toggling consent does not duplicate audit rows. Journal failures
+         * are logged but never block the prefs save — same contract as the auth
+         * path (IrabiAuthMiddleware::sendSuccessLogin).
          */
         public static function post__saveNotifPrefs(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
             if (!$globals->isPost()) {
@@ -559,11 +579,51 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
 
             $account->readDbAsync();
             $account->readDataAsyncPollFinishAll();
+
+            // Compare the checkbox state to the CURRENT consent BEFORE mutating
+            // anything, so an unchanged toggle produces no journal row.
+            $hadConsent = $account->hasConsentMarketing();
+            $wantsConsent = (string)$globals->readPostValue('consent_marketing', '') === '1';
+            $consentChanged = $wantsConsent !== $hadConsent;
+
             $account->setData('email_notif_prefs', json_encode($prefs, JSON_UNESCAPED_UNICODE));
+
+            if ($consentChanged) {
+                if ($wantsConsent) {
+                    // A new grant: stamp a fresh timestamp newer than any prior
+                    // withdrawal so hasConsentMarketing() flips back to true.
+                    $account->setParam(Account::PARAM_CONSENT_MARKETING_AT, (string)time());
+                } else {
+                    $account->withdrawMarketingConsent();
+                }
+            }
+
             $account->flush();
             $account->readDataAsyncPollFinishAll();
 
-            return ControllerTools::JSON(['success' => true, 'prefs' => $prefs]);
+            if ($consentChanged) {
+                try {
+                    ConsentJournalService::record(
+                        $account->id(),
+                        ConsentJournalService::TYPE_MARKETING,
+                        $wantsConsent ? ConsentJournalService::ACTION_GIVEN : ConsentJournalService::ACTION_WITHDRAWN,
+                        $globals->ip(),
+                        (string)$globals->readServerValue('HTTP_USER_AGENT', ''),
+                    );
+                } catch (Throwable $e) {
+                    try {
+                        Logger::get(Logger::ERROR_LOGGER)->write('consent_journal', $e->getMessage());
+                    } catch (Throwable) {
+                        // Logger unavailable — nothing more to do; never block the save.
+                    }
+                }
+            }
+
+            return ControllerTools::JSON([
+                'success' => true,
+                'prefs' => $prefs,
+                'marketingConsent' => $wantsConsent,
+            ]);
         }
 
         /**

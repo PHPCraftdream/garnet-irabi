@@ -129,23 +129,16 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                     ], status: 409);
                 }
 
-                $result = UserDataMiddleware::processPost($globals);
+                // Marketing consent is independent of transactional email
+                // categories (legal finding F-06(б)): a user who declines the
+                // marketing checkbox must still receive service notifications
+                // about their bookings, messages and support tickets. The
+                // previous code force-disabled messages/support/bookings here,
+                // conflating the two concepts. Email prefs now default to
+                // 'each' (handled by MainController::get__profile_edit) and
+                // the user controls them independently on the /~profile page.
 
-                // If the user did not opt into mailings at registration, start
-                // their profile with every email-notification category off.
-                $marketingConsent = (string)$globals->readPostValue('consent_marketing', '') === '1'
-                    || !empty($account->readParam('consent_marketing_at'));
-                if (!$marketingConsent) {
-                    $account->setData('email_notif_prefs', json_encode([
-                        'messages' => 'off',
-                        'support' => 'off',
-                        'bookings' => 'off',
-                    ], JSON_UNESCAPED_UNICODE));
-                    $account->flush();
-                    $account->readDataAsyncPollFinishAll();
-                }
-
-                return $result;
+                return UserDataMiddleware::processPost($globals);
             }
 
             return ControllerTools::redirect(IRabi::url('/'));
