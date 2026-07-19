@@ -10,7 +10,7 @@
  *
  * This spec exercises the CLI directly (no browser) and asserts:
  *   1. `php garnet cron` exits 0
- *   2. Output lists all three tasks and reports `Done: 3/3 tasks completed`
+ *   2. Output lists every registered task and reports `Done: N/N tasks completed`
  *   3. No service throws `setTableClasses() must be called before use`
  *   4. `cron:task disable-stale-tokens` actually disables a stale token (DB check)
  */
@@ -51,20 +51,37 @@ async function runGarnet(args: string[]): Promise<{ stdout: string; stderr: stri
 }
 
 test.describe('php garnet cron — CLI boot wires service tables', () => {
-    test('runs all 3 tasks without setTableClasses errors', async () => {
+    test('runs all registered tasks without setTableClasses errors', async () => {
         const result = await runGarnet(['cron']);
 
         expect(result.stdout).not.toContain('setTableClasses() must be called');
         expect(result.stderr).not.toContain('setTableClasses() must be called');
 
         // Tasks print their name + task-specific output + "OK" on a following
-        // line — assert each name appears and the overall summary reports 3/3.
+        // line — assert each name appears and the overall summary reports
+        // the full set registered in AppCronService::registerTasks(). The
+        // count drifts when a task is added/removed (db-backup was added
+        // by the audit-12 backup-retention work) — update both the list
+        // and the N/N regex together.
         expect(result.stdout).toContain('[email-queue]');
         expect(result.stdout).toContain('[complete-expired]');
         expect(result.stdout).toContain('[disable-stale-tokens]');
-        expect(result.stdout).toMatch(/Done:\s*3\/3 tasks completed/);
+        expect(result.stdout).toContain('[db-backup]');
+        expect(result.stdout).toMatch(/Done:\s*4\/4 tasks completed/);
         expect(result.stdout).not.toMatch(/ERROR:/);
         expect(result.exitCode).toBe(0);
+
+        // NOTE: the db-backup task created a fresh dump in WorkDir/Backups/
+        // as a side effect. We deliberately DON'T clean it up here — the
+        // framework's autoPath() is second-granular, so when this spec runs
+        // concurrently with db-backup-cron.spec.ts (default Playwright
+        // parallelism), the two cron ticks in the same second produce the
+        // SAME basename, and a directory-diff or basename-targeted cleanup
+        // would race the other spec's file. The dedicated
+        // db-backup-cron.spec.ts covers the backup pipeline in depth,
+        // including its own cleanup; one extra local dump left on the dev
+        // stand per cron-cli run is acceptable (retention prunes it on the
+        // next db-backup tick).
     });
 
     test('cron:task disable-stale-tokens actually disables expired tokens', async () => {

@@ -52,6 +52,14 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 $stdio->outln("Disabled tokens: {$stats['expired']} expired, {$stats['exhausted']} exhausted");
                 return array_sum($stats);
             }, 'Disable expired and exhausted invite tokens');
+
+            static::registerTask('db-backup', static function (Stdio $stdio): int {
+                // Daily DB snapshot + 7-day/4-week retention + best-effort
+                // off-site upload. See DbBackupCronTask for the full policy;
+                // the local backup is the load-bearing step and the only one
+                // that can fail the tick — retention and off-site are soft.
+                return DbBackupCronTask::run($stdio);
+            }, 'Daily DB backup with 7-day + 4-week retention and optional off-site upload');
         }
 
         public static function runAll(Stdio $stdio): int {
