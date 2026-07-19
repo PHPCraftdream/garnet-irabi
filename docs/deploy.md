@@ -200,13 +200,14 @@ starting.
 
 ## Cron
 
-IRabi ships **five** cron tasks, registered in
+IRabi ships **seven** cron tasks, registered in
 `Common/Services/AppCronService.php`. Two of them are **functional
 blockers** if crontab is not set up on the host: without `email-queue`
 no email is ever sent (the queue just grows), and without
 `complete-expired` slots/bookings never transition to `completed`.
-The other three (`disable-stale-tokens`, `db-backup`, `log-rotation`)
-are hygiene/retention. **Configure crontab on every host you deploy
+The other five (`disable-stale-tokens`, `db-backup`, `log-rotation`,
+`session-retention`, `finance-audit`) are hygiene/retention/audit.
+**Configure crontab on every host you deploy
 to** — there is no in-app scheduler.
 
 ### Invocation
@@ -235,7 +236,7 @@ most once per UTC day per task as a heartbeat, so a daily row for each
 task is the normal "cron is alive" signal — its absence for >24h means
 cron is broken.
 
-### The five registered tasks
+### The seven registered tasks
 
 | Task | What it does | Cadence rationale |
 |---|---|---|
@@ -244,6 +245,8 @@ cron is broken.
 | `disable-stale-tokens` | Disables expired/exhausted invite tokens (`FwInviteTokenService::disableStale`). | Hygiene; run every ~10–15 min. |
 | `db-backup` | Daily local DB snapshot + 7-day/4-week retention + best-effort off-site WebDAV upload (`DbBackupCronTask`). See `WorkDir/ConfigExample/backup.ini` for the off-site config template. | Once a day, at night. Produces one timestamped dump per run, so running it frequently floods `WorkDir/Backups/`. |
 | `log-rotation` | Prunes `WorkDir/LogJournal` file journals and the 5 operational log tables older than 365 days (`LogRotationCronTask` → `LogRotationService`). Mirrors the 1-year retention promised in the privacy policy (152-ФЗ). | Once a day, at night. Can share the `db-backup` tick or be a separate line. |
+| `session-retention` | Prunes `session`/`session_data` rows inactive for over 365 days (`SessionRetentionCronTask` → `SessionRetentionService`). Closes the last slice of the 1-year retention promise (privacy policy 152-ФЗ) — the session tables were never pruned before this task. No lock; a read-then-delete on an age slice. | Once a day, at night. Same nightly window as `log-rotation`. |
+| `finance-audit` | Read-only reconciliation of `account_balance` vs `balance_ledger` (`BalanceReconciliationService::runAll`). Detection only — no auto-repair; per-category counts land in `cron_log`. Guarded by a non-blocking named lock so overlapping ticks never double-walk the tables. | Once a day, at night. Cheap read-heavy check; any off-peak minute. |
 
 ### Recommended crontab (per-task lines — DEFAULT for this project)
 
@@ -281,6 +284,18 @@ the correct trade-off here.
 # logs before any pruning. Safe to fold into the 03:00 tick if you prefer
 # one fewer line.
 30 3 * * *  cd /var/www/<host>/data/www/<app-dir> && php run_cmd.php cron log-rotation >> WorkDir/Logs/cron-log-rotation.log 2>&1
+
+# ── session-retention: daily at 04:00 (after log-rotation) ───────────
+# Same 1-year retention surface as log-rotation; nightly keeps it off the
+# peak load window. No lock, but it's a read-then-delete on an age slice
+# so an overlapping tick at worst finds nothing left on the second pass.
+0 4 * * *  cd /var/www/<host>/data/www/<app-dir> && php run_cmd.php cron session-retention >> WorkDir/Logs/cron-session-retention.log 2>&1
+
+# ── finance-audit: daily at 04:30 (read-only reconciliation) ──────────
+# Cheap read-only check; guarded by a non-blocking named lock so two
+# overlapping ticks never double-walk the tables. 0 across all categories
+# is the expected healthy-state result every tick.
+30 4 * * *  cd /var/www/<host>/data/www/<app-dir> && php run_cmd.php cron finance-audit >> WorkDir/Logs/cron-finance-audit.log 2>&1
 ```
 
 Replace `/var/www/<host>/data/www/<app-dir>` with the real absolute path
@@ -294,9 +309,10 @@ log is the primary observability channel.
 ### Alternative: one unified call (NOT recommended here)
 
 ```cron
-# Runs all 5 tasks every 5 minutes. Simplest possible setup, BUT db-backup
-# and log-rotation fire 288×/day — only acceptable if you remove those two
-# tasks from the unified call and keep them on their own daily lines.
+# Runs all 7 tasks every 5 minutes. Simplest possible setup, BUT db-backup,
+# log-rotation, session-retention and finance-audit fire 288×/day — only
+# acceptable if you remove those four tasks from the unified call and keep
+# them on their own daily lines.
 */5 * * * *  cd /var/www/<host>/data/www/<app-dir> && php run_cmd.php cron >> WorkDir/Logs/cron-all.log 2>&1
 ```
 
@@ -305,14 +321,15 @@ cadence. IRabi's do not, so prefer the per-task block above.
 
 ### Multi-instance / multi-server warning (known limitation)
 
-Only `email-queue` is guarded against overlapping runs (the named lock
-above). The other four tasks have **no lock**: if crontab is configured
-on more than one server / PHP-FPM pool / container that shares the same
-DB, a tick can fire twice at the same instant. In practice each is
-idempotent by status (a row already `completed`/`disabled`/`pruned` is
-not selected again) and `db-backup`/`log-rotation` just do redundant
-work — so the cost is wasted work plus, for `db-backup`, extra dump
-files inside the retention window. **IRabi is currently a single-host
+Only `email-queue` and `finance-audit` are guarded against overlapping
+runs (the named locks above). The other five tasks have **no lock**: if
+crontab is configured on more than one server / PHP-FPM pool / container
+that shares the same DB, a tick can fire twice at the same instant. In
+practice each is idempotent by status (a row already
+`completed`/`disabled`/`pruned` is not selected again) and
+`db-backup`/`log-rotation`/`session-retention` just do redundant work —
+so the cost is wasted work plus, for `db-backup`, extra dump files
+inside the retention window. **IRabi is currently a single-host
 deployment, so this is a documented limitation, not a bug** — but if you
 ever scale to multiple cron-bearing nodes, either keep crontab on one
 node only, or add a guard (the existing `NamedLock` helper is the
@@ -323,7 +340,8 @@ pattern to copy).
 1. **List tasks** to confirm registration:
    ```bash
    php run_cmd.php cron list
-   # Expect: email-queue, complete-expired, disable-stale-tokens, db-backup, log-rotation
+   # Expect: email-queue, complete-expired, disable-stale-tokens, db-backup,
+   #         log-rotation, session-retention, finance-audit
    ```
 2. **Run each task once by hand** and confirm exit 0 + sane output:
    ```bash
