@@ -15,9 +15,30 @@ namespace PHPCraftdream\IRabi {
     use PHPCraftdream\Garnet\Kernel\Io\Logs\Logger;
     use PHPCraftdream\Garnet\Kernel\Io\Router\RouterDevFile;
     use PHPCraftdream\Garnet\Kernel\Io\Router\RouterUriParams;
+    use PHPCraftdream\IRabi\Common\Services\AccountStaticCacheResetter;
     use PHPCraftdream\IRabi\Common\Services\HttpsRedirectService;
+    use PHPCraftdream\IRabi\Common\Services\SessionStaticCacheResetter;
     use Psr\Http\Message\ResponseInterface;
     use Throwable;
+
+    // -------------------------------
+    // Always clear first — same defensive intent as
+    // WorkerScopeMiddleware (which plays this role for the IniConfig
+    // runtime override). The framework's Session / Account hold
+    // process-static caches ($instance / $sessionAccount / $items) that
+    // are NEVER cleared between requests. On the current php-cgi
+    // infrastructure (one OS process per request) the clear below is a
+    // no-op because the statics start cold anyway. On any
+    // persistent-worker runtime (php-fpm with reused workers /
+    // RoadRunner / Swoole / FrankenPHP) the first request served by a
+    // worker would otherwise "seal" its Session/Account values and
+    // leak them to every later request on the same worker — a
+    // confirmed cross-user account-takeover mechanism (audit
+    // 04-concurrency-race-conditions.md, finding C-1 → L-3). Must run
+    // BEFORE ErrorCatcher::init / IRabi construction / any middleware
+    // — anything that could lazily populate the cache first.
+    AccountStaticCacheResetter::reset();
+    SessionStaticCacheResetter::reset();
 
     // -------------------------------
     BenchmarkLog::init(($_SERVER['REQUEST_METHOD'] ?? 'GET') . ': ' . ($_SERVER['REQUEST_URI'] ?? '/'));
