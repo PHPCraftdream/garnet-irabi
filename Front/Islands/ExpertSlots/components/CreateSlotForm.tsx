@@ -9,6 +9,7 @@ import {createSlot} from '../api';
 import {DateInput} from '@common/Components/ui/DateInput';
 
 import {Slot} from '../types';
+import {SlotFormatFields} from './SlotFormatFields';
 
 function getTomorrow(): string {
     const d = new Date();
@@ -40,6 +41,13 @@ export const CreateSlotForm: React.FC<Props> = ({onSuccess, onError, fieldsInfo,
 
     const [serverError, setServerError] = React.useState('');
 
+    // is_online/location are held in local state, not in the zod-validated
+    // form data: the schema is built from slotFieldsInfo (date/time/duration/
+    // cost/max_users/penalty) and would strip unknown keys. Plain state matches
+    // how EditSlotModal already handles these fields.
+    const [isOnline, setIsOnline] = React.useState(true);
+    const [location, setLocation] = React.useState('');
+
     const onSubmit = async (data: SlotFormData) => {
         setServerError('');
         D('teaching.slot.submit', {date: data.date, time: data.time, cost: data.cost});
@@ -51,6 +59,8 @@ export const CreateSlotForm: React.FC<Props> = ({onSuccess, onError, fieldsInfo,
                 cost: data.cost,
                 max_users: data.max_users,
                 cancellation_penalty_percent: data.cancellation_penalty_percent,
+                is_online: isOnline,
+                location,
             });
             if (result.success) {
                 D('teaching.slot.created', {slotId: result.slot_id});
@@ -152,6 +162,13 @@ export const CreateSlotForm: React.FC<Props> = ({onSuccess, onError, fieldsInfo,
                     {errors.cancellation_penalty_percent && <div className="invalid-feedback">{errors.cancellation_penalty_percent.message}</div>}
                     <div className="text-xs text-muted mt-1">{t.Slot_PenaltyHelp()}</div>
                 </div>
+                <SlotFormatFields
+                    isOnline={isOnline}
+                    location={location}
+                    onIsOnlineChange={setIsOnline}
+                    onLocationChange={setLocation}
+                    idPrefix="slot"
+                />
             </div>
             {serverError && (
                 <div className="mb-3 text-sm text-danger">{serverError}</div>

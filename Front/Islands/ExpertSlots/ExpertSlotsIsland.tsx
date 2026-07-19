@@ -18,6 +18,7 @@ import {Slot, ExpertSlotsProps} from './types';
 import {CreateSlotForm} from './components/CreateSlotForm';
 import {BatchSlotWizard} from './components/BatchSlotWizard';
 import {ExpertCalendar} from './components/ExpertCalendar';
+import {SlotFormatFields} from './components/SlotFormatFields';
 import {IrabiPreviewProvider} from '../../Common/IrabiPreviewProvider';
 import {usePreview} from '@common/Components/UserPreviewModal/PreviewContext';
 import {PageHeader} from '@common/Components/PageHeader';
@@ -39,6 +40,8 @@ const EditSlotModal: React.FC<EditSlotModalProps> = ({slot, onClose, onSaved, on
     const [editDuration, setEditDuration] = React.useState(slot.duration_min ?? 60);
     const [editCost, setEditCost] = React.useState(slot.cost);
     const [editPenaltyPercent, setEditPenaltyPercent] = React.useState(slot.cancellation_penalty_percent ?? 0);
+    const [editIsOnline, setEditIsOnline] = React.useState(Number(slot.is_online ?? 1) === 1);
+    const [editLocation, setEditLocation] = React.useState(slot.location ?? '');
     const [validationError, setValidationError] = React.useState('');
 
     // Close on Escape
@@ -74,6 +77,8 @@ const EditSlotModal: React.FC<EditSlotModalProps> = ({slot, onClose, onSaved, on
                     duration: editDuration,
                     cost: editCost,
                     cancellation_penalty_percent: editPenaltyPercent,
+                    is_online: editIsOnline ? 1 : 0,
+                    location: editLocation,
                 });
                 const updated = (resp as any)?.slot ?? slot;
                 onSaved(updated);
@@ -171,6 +176,14 @@ const EditSlotModal: React.FC<EditSlotModalProps> = ({slot, onClose, onSaved, on
                         />
                         <div className="text-xs text-muted mt-1">{t.Slot_PenaltyHelp()}</div>
                     </div>
+                    <SlotFormatFields
+                        isOnline={editIsOnline}
+                        location={editLocation}
+                        onIsOnlineChange={setEditIsOnline}
+                        onLocationChange={setEditLocation}
+                        idPrefix="edit-slot"
+                        labelClassName="text-sm text-secondary mb-1 block"
+                    />
                 </div>
 
                 {/* Actions */}

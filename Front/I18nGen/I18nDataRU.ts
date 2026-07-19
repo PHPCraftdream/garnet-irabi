@@ -17,6 +17,9 @@ export class I18nDataRU {
     static Slot_PenaltyHelp = 'Если пользователь отменит подтверждённую бронь — этот процент останется у эксперта';
     static Slot_Online = 'Онлайн';
     static Slot_Location = 'Место';
+    static Slot_LocationPlaceholderOnline = 'Ссылка на встречу (Zoom/Meet/...)';
+    static Slot_LocationPlaceholderOffline = 'Адрес';
+    static Slot_LocationHint = 'Поле необязательное, но без него пользователь не получит ссылку или адрес';
     static Slot_Book = 'Забронировать';
     static Slot_Status_Free = 'Свободен';
     static Slot_Status_Booked = 'Забронирован';

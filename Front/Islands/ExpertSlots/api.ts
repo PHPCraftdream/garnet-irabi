@@ -10,6 +10,8 @@ export function createSlot(data: {
     cost: number;
     max_users: number;
     cancellation_penalty_percent: number;
+    is_online: boolean;
+    location: string;
 }): Promise<{success: boolean; slot_id?: number; slot?: import('./types').Slot; error?: string}> {
     D('teaching.slot.create', {date: data.date, time: data.time, duration: data.duration, cost: data.cost});
     const fd = new FormData();
@@ -19,6 +21,8 @@ export function createSlot(data: {
     fd.append('cost', String(data.cost));
     fd.append('max_users', String(data.max_users));
     fd.append('cancellation_penalty_percent', String(data.cancellation_penalty_percent));
+    fd.append('is_online', data.is_online ? '1' : '0');
+    fd.append('location', data.location);
     return sendPostFormData(appUrl('/expert/~slots'), fd);
 }
 
@@ -43,11 +47,15 @@ export function batchCreate(data: {
     slots: {date: string; time: string; duration: number}[];
     cost: number;
     max_users?: number;
+    is_online: boolean;
+    location: string;
 }): Promise<{success: boolean; created: number; overlaps: {date: string; time: string; reason: string}[]; slots?: import('./types').Slot[]; error?: string}> {
     D('teaching.batch.create', {slotsCount: data.slots.length, cost: data.cost});
     const fd = new FormData();
     fd.append('slots', JSON.stringify(data.slots));
     fd.append('cost', String(data.cost));
     if (data.max_users) fd.append('max_users', String(data.max_users));
+    fd.append('is_online', data.is_online ? '1' : '0');
+    fd.append('location', data.location);
     return sendPostFormData(appUrl('/expert/~batchSlots'), fd);
 }

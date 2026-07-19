@@ -345,6 +345,8 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
             $slotsJson = $globals->readPostValue('slots');
             $cost = (int)$globals->readPostValue('cost', 500);
             $maxUsers = max(1, (int)$globals->readPostValue('max_users', 1));
+            $isOnline = (int)$globals->readPostValue('is_online', 1);
+            $location = (string)$globals->readPostValue('location', '');
 
             $penaltyRaw = $globals->readPostValue('cancellation_penalty_percent');
             if ($penaltyRaw === null || $penaltyRaw === '') {
@@ -435,8 +437,8 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                     'end_at' => $proposedEnd,
                     'duration_min' => $duration,
                     'cost' => $cost,
-                    'is_online' => 1,
-                    'location' => '',
+                    'is_online' => $isOnline,
+                    'location' => $location,
                     'max_users' => $maxUsers,
                     'status' => 'free',
                     'uid' => TimeSlots::generateUid(),
@@ -487,8 +489,16 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
             // cost/cancellation_penalty_percent edits on such slots prevents
             // an expert from retroactively manipulating the price/refund
             // terms of users who already paid under the old values.
-            $changesCost = $globals->readPostValue('cost') !== null;
-            $changesPenalty = $globals->readPostValue('cancellation_penalty_percent') !== null;
+            //
+            // Gate on an actual VALUE change, not mere presence of the field:
+            // EditSlotModal (task #55) always echoes the slot's current cost/
+            // penalty back in every save — including saves that only touch
+            // unrelated fields like is_online/location. A presence-only check
+            // would reject every edit on a booked slot, not just money edits.
+            $costRaw = $globals->readPostValue('cost');
+            $changesCost = $costRaw !== null && (int)$costRaw !== (int)$slot['cost'];
+            $penaltyRaw = $globals->readPostValue('cancellation_penalty_percent');
+            $changesPenalty = $penaltyRaw !== null && (int)$penaltyRaw !== (int)$slot['cancellation_penalty_percent'];
             if (($changesCost || $changesPenalty) && (int)$slot['booked_count'] > 0) {
                 return ControllerTools::JSON(
                     ['error' => 'Cannot change cost or penalty while the slot has active bookings'],
@@ -576,11 +586,15 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 // CAS: status='free' covers single-seat slots that flipped to
                 // 'booked' on the first reservation. For partially-booked
                 // multi-slots (status stays 'free' until full), adding
-                // `booked_count = 0` only when cost/penalty is mutated closes
-                // the race window between the check above and this UPDATE — a
-                // concurrent booking that lands in between makes the UPDATE
-                // match 0 rows and falls through to the 409 below.
-                $whereExtra = (isset($updateData['cost']) || isset($updateData['cancellation_penalty_percent']))
+                // `booked_count = 0` only when cost/penalty is ACTUALLY
+                // changing (same $changesCost/$changesPenalty as the gate
+                // above, not mere presence of the field — EditSlotModal
+                // always echoes the current cost/penalty even on a
+                // location-only edit) closes the race window between the
+                // check above and this UPDATE — a concurrent booking that
+                // lands in between makes the UPDATE match 0 rows and falls
+                // through to the 409 below.
+                $whereExtra = ($changesCost || $changesPenalty)
                     ? ' AND booked_count = 0'
                     : '';
                 $sql = 'UPDATE ' . TimeSlots::get()->getTableName()

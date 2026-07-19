@@ -8,6 +8,7 @@ import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {batchPreview, batchCreate} from '../api';
 import {useBatchSlots} from '../hooks/useBatchSlots';
 import {BatchPreviewTable} from './BatchPreviewTable';
+import {SlotFormatFields} from './SlotFormatFields';
 import {Slot} from '../types';
 
 const DAY_NAMES = () => [t.Cal_Sun(), t.Cal_Mon(), t.Cal_Tue(), t.Cal_Wed(), t.Cal_Thu(), t.Cal_Fri(), t.Cal_Sat()];
@@ -38,6 +39,11 @@ export const BatchSlotWizard: React.FC<Props> = ({onSuccess, onError, onConfirm,
     const [batchDuration, setBatchDuration] = useState(60);
     const [batchCost, setBatchCost] = useState(500);
     const [showPreview, setShowPreview] = useState(false);
+
+    // Format + location are batch-wide: every slot in the party shares one
+    // setting (per-slot format makes no sense for a recurring series).
+    const [batchIsOnline, setBatchIsOnline] = useState(true);
+    const [batchLocation, setBatchLocation] = useState('');
 
     const [addSlotDate, setAddSlotDate] = useState('');
     const [addSlotTime, setAddSlotTime] = useState('10:00');
@@ -105,7 +111,12 @@ export const BatchSlotWizard: React.FC<Props> = ({onSuccess, onError, onConfirm,
 
         try {
             const slotsPayload = batch.batchSlots.map(s => ({date: s.date, time: s.time, duration: s.duration}));
-            const result = await batchCreate({slots: slotsPayload, cost: batchCost});
+            const result = await batchCreate({
+                slots: slotsPayload,
+                cost: batchCost,
+                is_online: batchIsOnline,
+                location: batchLocation,
+            });
 
             if (result.success) {
                 D('teaching.batch.created', {created: result.created, overlaps: result.overlaps?.length ?? 0});
@@ -174,6 +185,15 @@ export const BatchSlotWizard: React.FC<Props> = ({onSuccess, onError, onConfirm,
                             <label className="form-label">{t.Slot_Cost()}</label>
                             <input type="number" name="batch_cost" data-test-id="batch-cost" className="form-control" value={batchCost} onChange={e => setBatchCost(parseInt(e.target.value) || 0)} required />
                         </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <SlotFormatFields
+                            isOnline={batchIsOnline}
+                            location={batchLocation}
+                            onIsOnlineChange={setBatchIsOnline}
+                            onLocationChange={setBatchLocation}
+                            idPrefix="batch"
+                        />
                     </div>
                 </div>
                 <div className="flex gap-2 justify-end mb-3">

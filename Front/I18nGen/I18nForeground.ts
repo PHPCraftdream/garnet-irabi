@@ -23,6 +23,9 @@ class I18n extends I18nBase {
     Slot_PenaltyHelp: t = (a = []) => this.t('Slot_PenaltyHelp', a);
     Slot_Online: t = (a = []) => this.t('Slot_Online', a);
     Slot_Location: t = (a = []) => this.t('Slot_Location', a);
+    Slot_LocationPlaceholderOnline: t = (a = []) => this.t('Slot_LocationPlaceholderOnline', a);
+    Slot_LocationPlaceholderOffline: t = (a = []) => this.t('Slot_LocationPlaceholderOffline', a);
+    Slot_LocationHint: t = (a = []) => this.t('Slot_LocationHint', a);
     Slot_Book: t = (a = []) => this.t('Slot_Book', a);
     Slot_Status_Free: t = (a = []) => this.t('Slot_Status_Free', a);
     Slot_Status_Booked: t = (a = []) => this.t('Slot_Status_Booked', a);

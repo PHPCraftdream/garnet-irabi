@@ -17,6 +17,9 @@ export class I18nDataEN {
     static Slot_PenaltyHelp = 'If a user cancels a confirmed booking — this percent stays with the expert';
     static Slot_Online = 'Online';
     static Slot_Location = 'Location';
+    static Slot_LocationPlaceholderOnline = 'Meeting link (Zoom/Meet/...)';
+    static Slot_LocationPlaceholderOffline = 'Address';
+    static Slot_LocationHint = 'Optional, but without it the user will not receive a link or address';
     static Slot_Book = 'Book';
     static Slot_Status_Free = 'Free';
     static Slot_Status_Booked = 'Booked';
