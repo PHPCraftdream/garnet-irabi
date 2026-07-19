@@ -32,6 +32,7 @@ namespace PHPCraftdream\IRabi {
     use PHPCraftdream\Garnet\Kernel\Io\Twig\TwigParams;
     use PHPCraftdream\IRabi\Common\Commands\CMDClearLogs;
     use PHPCraftdream\IRabi\Common\Commands\CMDClearUser;
+    use PHPCraftdream\IRabi\Common\Commands\CMDFinanceAudit;
     use PHPCraftdream\IRabi\Common\Commands\CMDLogTail;
     use PHPCraftdream\IRabi\Common\Commands\CMDRemoteCache;
     use PHPCraftdream\IRabi\Common\Commands\CMDRemoteClearLogs;
@@ -486,6 +487,7 @@ namespace PHPCraftdream\IRabi {
             CommandClasses::set('test-mode', CMDTestMode::class);
             CommandClasses::set('clear-user', CMDClearUser::class);
             CommandClasses::set('clear-logs', CMDClearLogs::class);
+            CommandClasses::set('finance-audit', CMDFinanceAudit::class);
             CommandClasses::set('log-tail', CMDLogTail::class);
             CommandClasses::set('remote-log-tail', CMDRemoteLogTail::class);
             CommandClasses::set('remote-test-mode', CMDRemoteTestMode::class);

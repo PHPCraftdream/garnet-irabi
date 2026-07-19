@@ -23,6 +23,17 @@ namespace PHPCraftdream\IRabi\Common\Services {
          */
         public const EMAIL_QUEUE_LOCK = 'irabi_email_queue';
 
+        /**
+         * Named MySQL advisory lock serialising overlapping finance-audit
+         * cron ticks. The audit is read-only, but two concurrent ticks
+         * would both walk the same tables and double-log the same
+         * discrepancy counts; the lock keeps the per-tick output coherent
+         * and matches the audit's §4 recommendation (GET_LOCK around the
+         * reconciliation). Non-blocking: a tick that finds a prior tick
+         * still alive skips entirely rather than waiting.
+         */
+        public const FINANCE_AUDIT_LOCK = 'irabi_finance_audit';
+
         public static function registerTasks(): void {
             static::registerTask('email-queue', function (Stdio $stdio): int {
                 if (!NamedLock::tryAcquire(self::EMAIL_QUEUE_LOCK)) {
@@ -72,6 +83,59 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 // whole tick.
                 return LogRotationCronTask::run($stdio);
             }, 'Prune file journals and log tables older than 1 year (privacy policy F-05)');
+
+            static::registerTask('finance-audit', static function (Stdio $stdio): int {
+                // Read-only reconciliation of account_balance vs
+                // balance_ledger (handover audit 03, finding H-4, §4).
+                // Detection only — repair is a separate human-gated
+                // command. Skips entirely when a prior tick is still
+                // alive (non-blocking lock) so overlapping cron ticks
+                // never double-walk the tables. Output lands in cron_log
+                // via the wrapping CapturingStdio — the per-category
+                // counts are the useful signal; 0 across the board is
+                // the expected healthy-state result every tick.
+                if (!NamedLock::tryAcquire(self::FINANCE_AUDIT_LOCK)) {
+                    $stdio->outln('finance-audit: previous run still active, skipping');
+
+                    return 0;
+                }
+
+                try {
+                    $report = BalanceReconciliationService::runAll();
+                } finally {
+                    NamedLock::release(self::FINANCE_AUDIT_LOCK);
+                }
+
+                // Aggregate discrepancy count across every category: the
+                // idempotency-index smoke contributes 1 when the index is
+                // missing (a structural breach), 0 otherwise.
+                $mismatch =
+                    $report['cache_vs_ledger']['count']
+                    + $report['booking_pairing']['count']
+                    + $report['orphans']['count']
+                    + $report['global_zero']['count']
+                    + $report['negatives']['count']
+                    + ($report['idempotency_index']['present'] ? 0 : 1);
+
+                $stdio->outln(sprintf(
+                    'finance-audit: cache_vs_ledger=%d booking_pairing=%d orphans=%d'
+                    . ' global_zero_breach=%d negatives=%d idempotency_index=%s',
+                    $report['cache_vs_ledger']['count'],
+                    $report['booking_pairing']['count'],
+                    $report['orphans']['count'],
+                    $report['global_zero']['count'],
+                    $report['negatives']['count'],
+                    $report['idempotency_index']['present'] ? 'ok' : 'MISSING',
+                ));
+
+                // The cron tick itself must not fail on discovered
+                // discrepancies — that would mark every subsequent tick
+                // as an error until repair, drowning the per-category
+                // counts in cron_log noise. Return the mismatch count
+                // (a non-zero "did work" signal to the cron logger so
+                // this tick always gets a row even on a clean run).
+                return $mismatch;
+            }, 'Reconcile account_balance vs balance_ledger (read-only, audit H-4)');
         }
 
         public static function runAll(Stdio $stdio): int {
