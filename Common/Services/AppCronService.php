@@ -84,6 +84,21 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 return LogRotationCronTask::run($stdio);
             }, 'Prune file journals and log tables older than 1 year (privacy policy F-05)');
 
+            static::registerTask('session-retention', static function (Stdio $stdio): int {
+                // The last unpurgeable slice of F-05: the framework
+                // session/session_data tables. The file journals and six
+                // log tables above are covered by log-rotation (task
+                // #60); the session tables — which carry consent
+                // timestamps, auth_login links and other personal-data-
+                // derived params — were never pruned before this task.
+                // Same 365-day inactivity window as log-rotation for a
+                // uniform 1-year retention policy. No NamedLock: this is
+                // a read-then-delete on an age slice, so an overlapping
+                // tick at worst finds nothing left on the second pass.
+                // Failures are soft (reported, not thrown).
+                return SessionRetentionCronTask::run($stdio);
+            }, 'Prune session and session_data rows inactive for over 1 year (privacy policy F-05)');
+
             static::registerTask('finance-audit', static function (Stdio $stdio): int {
                 // Read-only reconciliation of account_balance vs
                 // balance_ledger (handover audit 03, finding H-4, §4).
