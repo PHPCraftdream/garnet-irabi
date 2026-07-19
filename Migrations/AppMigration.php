@@ -14,6 +14,7 @@ namespace PHPCraftdream\IRabi\Migrations {
     use PHPCraftdream\IRabi\Migrations\Items\M_0010;
     use PHPCraftdream\IRabi\Migrations\Items\M_0011;
     use PHPCraftdream\IRabi\Migrations\Items\M_0012;
+    use PHPCraftdream\IRabi\Migrations\Items\M_0013;
 
     /**
      * Migration plan:
@@ -30,6 +31,7 @@ namespace PHPCraftdream\IRabi\Migrations {
      *   M_0010 — UNIQUE INDEX on balance_ledger for ledger idempotency.
      *   M_0011 — sys_log_throttle table for per-IP /sys/log rate limiting.
      *   M_0012 — time_slots.booked_count atomic capacity gate (H-01).
+     *   M_0013 — fix broken Privacy/Cookies cross-links (content audit B-1/B-2).
      *
      * Historical M_0003..M_0019 were squashed into M_0002 in a one-time
      * consolidation pass. Existing prod DBs at version=19 keep their
@@ -37,7 +39,7 @@ namespace PHPCraftdream\IRabi\Migrations {
      * destructive ALTERs replayed).
      */
     class AppMigration extends Migration {
-        protected int $currentVersion = 12;
+        protected int $currentVersion = 13;
 
         /**
          * @var array|class-string[]
@@ -55,6 +57,7 @@ namespace PHPCraftdream\IRabi\Migrations {
             10 => M_0010::class,
             11 => M_0011::class,
             12 => M_0012::class,
+            13 => M_0013::class,
         ];
     }
 }
