@@ -123,7 +123,7 @@ php garnet deploy:diff --apply
 ## Что ещё должно быть передано заказчику
 
 - контакт для incident escalation и сроки реакции;
-- список cron jobs и расписание;
+- список cron jobs и расписание — см. [`deploy.md` → Cron](deploy.md#cron): пять задач (`email-queue`, `complete-expired`, `disable-stale-tokens`, `db-backup`, `log-rotation`) с точными crontab-строками для прода;
 - схема backup retention и ручная процедура restore;
 - матрица ролей и процедура отзыва admin/owner доступа;
 - список персональных данных, сроки хранения и legal sign-off;

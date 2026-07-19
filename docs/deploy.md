@@ -131,6 +131,153 @@ forward or restore the backup, then re-run. Avoid `--skip-backup`
 except when you've already taken one manually; `--skip-migrate` is fine
 for a code-only release with no pending schema change.
 
+## Cron
+
+IRabi ships **five** cron tasks, registered in
+`Common/Services/AppCronService.php`. Two of them are **functional
+blockers** if crontab is not set up on the host: without `email-queue`
+no email is ever sent (the queue just grows), and without
+`complete-expired` slots/bookings never transition to `completed`.
+The other three (`disable-stale-tokens`, `db-backup`, `log-rotation`)
+are hygiene/retention. **Configure crontab on every host you deploy
+to** — there is no in-app scheduler.
+
+### Invocation
+
+```bash
+php run_cmd.php cron             # run ALL registered tasks, sequentially, in one process
+php run_cmd.php cron <task-name> # run ONE task
+php run_cmd.php cron list        # list registered task names (no side effects)
+```
+
+`php garnet cron …` is equivalent — both reach the same `CMDCron::run()`.
+The `run_cmd.php` form is what the rest of this section uses (it matches
+the convention already in `WorkDir/ConfigExample/backup.ini`). Run it
+from the directory that owns `WorkDir/` (i.e. where `WorkDir/Config`
+resolves) — in the 4-folder production layout above that is the app
+folder; `cd` into it first, exactly like the `backup.ini` example does.
+
+Each task self-logs to the `cron_log` table (start/finish time,
+duration, status, captured output, error message) — actual table name
+is prefixed per the `prefix` setting in `WorkDir/Config/db.ini` (e.g.
+`db_ir_cron_log` on this dev stand; the prod prefix depends on what was
+configured during install). The log is viewable in **Dashboard → Logs
+→ Cron** tab (`DashboardLogsController`); no need to SSH in to confirm
+a tick ran. A no-op success (task processed no work) is recorded at
+most once per UTC day per task as a heartbeat, so a daily row for each
+task is the normal "cron is alive" signal — its absence for >24h means
+cron is broken.
+
+### The five registered tasks
+
+| Task | What it does | Cadence rationale |
+|---|---|---|
+| `email-queue` | Sends pending emails (`FwEmailQueueService::processQueue`, batch of 50/tick). | Needs to be frequent — users wait on these emails. Safe to run every minute (see lock note below). |
+| `complete-expired` | Marks expired slots/bookings as `completed` and auto-cancels stale `pending` bookings (`CronCompletionService::completeExpired`). | Functional; run every ~10 min. |
+| `disable-stale-tokens` | Disables expired/exhausted invite tokens (`FwInviteTokenService::disableStale`). | Hygiene; run every ~10–15 min. |
+| `db-backup` | Daily local DB snapshot + 7-day/4-week retention + best-effort off-site WebDAV upload (`DbBackupCronTask`). See `WorkDir/ConfigExample/backup.ini` for the off-site config template. | Once a day, at night. Produces one timestamped dump per run, so running it frequently floods `WorkDir/Backups/`. |
+| `log-rotation` | Prunes `WorkDir/LogJournal` file journals and the 5 operational log tables older than 365 days (`LogRotationCronTask` → `LogRotationService`). Mirrors the 1-year retention promised in the privacy policy (152-ФЗ). | Once a day, at night. Can share the `db-backup` tick or be a separate line. |
+
+### Recommended crontab (per-task lines — DEFAULT for this project)
+
+Use **separate crontab lines with per-task schedules**. The task mix
+does not fit a single unified cadence: `email-queue` wants every
+minute, but `db-backup`/`log-rotation` want once a day — a single
+`cron` call at the fastest interval would create ~1440 backup dumps
+per day, and a single call at a daily interval would delay every email
+by up to a day. Per-task lines are a few extra crontab entries and are
+the correct trade-off here.
+
+```cron
+# ── email-queue: every minute ───────────────────────────────────────
+# Safe at this frequency: wrapped in a named non-blocking MySQL advisory
+# lock (NamedLock / GET_LOCK, see Common/Services/NamedLock.php). If a
+# previous tick is still running when the next one fires, the new tick
+# prints "previous run still active, skipping" and exits 0 — emails are
+# never double-sent. */2 is an acceptable lighter alternative.
+* * * * *  cd /var/www/<host>/data/www/<app-dir> && php run_cmd.php cron email-queue >> WorkDir/Logs/cron-email-queue.log 2>&1
+
+# ── complete-expired: every 10 min ───────────────────────────────────
+*/10 * * * *  cd /var/www/<host>/data/www/<app-dir> && php run_cmd.php cron complete-expired >> WorkDir/Logs/cron-complete-expired.log 2>&1
+
+# ── disable-stale-tokens: every 15 min ───────────────────────────────
+*/15 * * * *  cd /var/www/<host>/data/www/<app-dir> && php run_cmd.php cron disable-stale-tokens >> WorkDir/Logs/cron-disable-stale-tokens.log 2>&1
+
+# ── db-backup: daily at 03:00 ────────────────────────────────────────
+# Configure off-site WebDAV upload in WorkDir/Config/backup.ini (seed
+# from WorkDir/ConfigExample/backup.ini). Without it the dump stays
+# local-only (a one-line warning is logged, not an error).
+0 3 * * *  cd /var/www/<host>/data/www/<app-dir> && php run_cmd.php cron db-backup >> WorkDir/Logs/cron-db-backup.log 2>&1
+
+# ── log-rotation: daily at 03:30 (after backup) ──────────────────────
+# Running after db-backup means the backup still captures the full day's
+# logs before any pruning. Safe to fold into the 03:00 tick if you prefer
+# one fewer line.
+30 3 * * *  cd /var/www/<host>/data/www/<app-dir> && php run_cmd.php cron log-rotation >> WorkDir/Logs/cron-log-rotation.log 2>&1
+```
+
+Replace `/var/www/<host>/data/www/<app-dir>` with the real absolute path
+to the folder containing `run_cmd.php` and `WorkDir/` on this host (see
+the `deploy.ini` layout above). The `WorkDir/Logs/…` redirect captures
+boot-level failures that never reach the DB log; normal per-tick output
+goes to `cron_log` regardless. If `WorkDir/Logs/` does not exist yet,
+create it once (`mkdir -p WorkDir/Logs`) or drop the redirect — the DB
+log is the primary observability channel.
+
+### Alternative: one unified call (NOT recommended here)
+
+```cron
+# Runs all 5 tasks every 5 minutes. Simplest possible setup, BUT db-backup
+# and log-rotation fire 288×/day — only acceptable if you remove those two
+# tasks from the unified call and keep them on their own daily lines.
+*/5 * * * *  cd /var/www/<host>/data/www/<app-dir> && php run_cmd.php cron >> WorkDir/Logs/cron-all.log 2>&1
+```
+
+A unified call is viable only for projects whose tasks all share one
+cadence. IRabi's do not, so prefer the per-task block above.
+
+### Multi-instance / multi-server warning (known limitation)
+
+Only `email-queue` is guarded against overlapping runs (the named lock
+above). The other four tasks have **no lock**: if crontab is configured
+on more than one server / PHP-FPM pool / container that shares the same
+DB, a tick can fire twice at the same instant. In practice each is
+idempotent by status (a row already `completed`/`disabled`/`pruned` is
+not selected again) and `db-backup`/`log-rotation` just do redundant
+work — so the cost is wasted work plus, for `db-backup`, extra dump
+files inside the retention window. **IRabi is currently a single-host
+deployment, so this is a documented limitation, not a bug** — but if you
+ever scale to multiple cron-bearing nodes, either keep crontab on one
+node only, or add a guard (the existing `NamedLock` helper is the
+pattern to copy).
+
+### Verifying cron after deploy
+
+1. **List tasks** to confirm registration:
+   ```bash
+   php run_cmd.php cron list
+   # Expect: email-queue, complete-expired, disable-stale-tokens, db-backup, log-rotation
+   ```
+2. **Run each task once by hand** and confirm exit 0 + sane output:
+   ```bash
+   php run_cmd.php cron email-queue
+   php run_cmd.php cron complete-expired
+   # …etc
+   ```
+3. **After the first real crontab tick** (within 1 min for
+   `email-queue`, 10 min for `complete-expired`, etc.), confirm the run
+   landed in the log — either via **Dashboard → Logs → Cron** tab, or:
+   ```bash
+   php garnet sql "SELECT task_name, status, started_at, duration_ms, LEFT(error_message,120) AS err FROM db_ir_cron_log ORDER BY id DESC LIMIT 20"
+   ```
+   (`garnet` — the app-local CLI wrapper in this repo's root, not
+   `run_cmd.php`; `sql` is a framework-provided command, see
+   `GarnetSqlCommand`. Adjust the `db_ir_` prefix to whatever `prefix`
+   is set to in this host's `WorkDir/Config/db.ini`.)
+   A `success` row per task = cron is wired correctly. An `error` row
+   (or no row at all after the expected interval) = investigate
+   (`error_message` column, plus the `WorkDir/Logs/cron-*.log` redirect).
+
 ## Historical migration record: 3-folder → 4-folder layout
 
 Assumes the server already has a 3-folder layout
@@ -199,7 +346,9 @@ php garnet ssh "ls -la /var/www/<hosting-account>/data/www"
 
 8. **Cron** — if any cron command contains a path to the old `garnet`
    binary (`garnet-app-example/garnet`), update it to
-   `garnet-runtime-example/garnet`.
+   `garnet-runtime-example/garnet`. For the full list of registered
+   tasks and the recommended crontab lines to install on the host, see
+   the [Cron](#cron) section above.
 
 ## Future deploys (after migration)
 
