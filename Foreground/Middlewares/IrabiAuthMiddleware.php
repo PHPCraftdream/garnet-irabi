@@ -8,9 +8,12 @@ namespace PHPCraftdream\IRabi\Foreground\Middlewares {
     use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\IniConfig\IniConfig;
+    use PHPCraftdream\Garnet\Kernel\Io\Logs\Logger;
     use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
+    use PHPCraftdream\IRabi\Common\Services\ConsentJournalService;
     use PHPCraftdream\IRabi\Common\Services\StaticPagesService;
     use Psr\Http\Message\ResponseInterface;
+    use Throwable;
 
     class IrabiAuthMiddleware extends EmailAuthMiddleware {
         public static ?string $customTitle = null;
@@ -75,6 +78,66 @@ namespace PHPCraftdream\IRabi\Foreground\Middlewares {
             }
 
             return parent::processPhaseNullPost($globals, $params);
+        }
+
+        /**
+         * Extend the post-login hook to append consent events to the audit
+         * trail (legal finding F-04). The framework's sendSuccessLogin sends
+         * the "you logged in" email; right after it, this override reads the
+         * consent timestamps staged in the session by processStartSession
+         * (still present at this point — they are only ever read, never
+         * unset, in processPhaseSentCodePost) and writes one consents row
+         * per consent the user actually gave THIS login. Every repeat login
+         * re-confirms the PD consent, so each produces its own audit row —
+         * by design.
+         *
+         * Authorization must succeed even if the audit write fails, so the
+         * whole thing is wrapped in try/catch(Throwable): a DB hiccup is
+         * logged via the error logger but never blocks the login.
+         */
+        protected static function sendSuccessLogin(IGlobalReqParams $globals, string $authEmail): void {
+            parent::sendSuccessLogin($globals, $authEmail);
+
+            try {
+                $session = Session::get();
+                $ip = $globals->ip();
+                $userAgent = (string)$globals->readServerValue('HTTP_USER_AGENT', '');
+
+                $consentPdAt = $session->getValue('consent_pd_at', '');
+                $consentMarketingAt = $session->getValue('consent_marketing_at', '');
+
+                if ($consentPdAt === '' && $consentMarketingAt === '') {
+                    return;
+                }
+
+                $accountId = Account::touchAccount($authEmail, 'email')->id();
+
+                if ($consentPdAt !== '') {
+                    ConsentJournalService::record(
+                        $accountId,
+                        ConsentJournalService::TYPE_PERSONAL_DATA,
+                        ConsentJournalService::ACTION_GIVEN,
+                        $ip,
+                        $userAgent,
+                    );
+                }
+
+                if ($consentMarketingAt !== '') {
+                    ConsentJournalService::record(
+                        $accountId,
+                        ConsentJournalService::TYPE_MARKETING,
+                        ConsentJournalService::ACTION_GIVEN,
+                        $ip,
+                        $userAgent,
+                    );
+                }
+            } catch (Throwable $e) {
+                try {
+                    Logger::get(Logger::ERROR_LOGGER)->write('consent_journal', $e->getMessage());
+                } catch (Throwable) {
+                    // Logger unavailable — nothing more to do; never break login.
+                }
+            }
         }
     }
 }
