@@ -83,6 +83,8 @@ namespace PHPCraftdream\IRabi {
     use PHPCraftdream\IRabi\Foreground\Controllers\MainController;
     use PHPCraftdream\IRabi\Foreground\Controllers\NewsController;
     use PHPCraftdream\IRabi\Foreground\Controllers\RegisterController;
+    use PHPCraftdream\IRabi\Foreground\Controllers\RobotsController;
+    use PHPCraftdream\IRabi\Foreground\Controllers\SitemapController;
     use PHPCraftdream\IRabi\Foreground\Controllers\SlotsController;
     use PHPCraftdream\IRabi\Foreground\Controllers\StaticPagesController;
     use PHPCraftdream\IRabi\Foreground\Controllers\SupportController;
@@ -242,6 +244,11 @@ namespace PHPCraftdream\IRabi {
             $router->add(SysOpcacheResetController::URL, SysOpcacheResetController::class, $maintenanceOnly);
             $router->add(RegisterController::URL . '/{token}', RegisterController::class, $maintenanceOnly);
             $router->add(StaticPagesController::URL . '/{view}', StaticPagesController::class, $maintenanceOnly);
+            // SEO endpoints at the domain root (no /system prefix) —
+            // served anonymous, no auth. See defineBundles() for the
+            // matching registerNoPrefixPath() calls.
+            $router->add(RobotsController::URL, RobotsController::class, $maintenanceOnly);
+            $router->add(SitemapController::URL, SitemapController::class, $maintenanceOnly);
             $router->add(DevLoginController::URL, DevLoginController::class, [
                 [WorkerScopeMiddleware::class, 'process'],
             ]);
@@ -416,6 +423,10 @@ namespace PHPCraftdream\IRabi {
             // IRabi::url() and the URI dispatcher both see the list before
             // any route is resolved.
             RouterUriParams::registerNoPrefixPath(StaticPagesController::URL); // /page
+            // SEO files must live at the domain root (crawlers fetch them
+            // at the absolute path), never under the /system prefix.
+            RouterUriParams::registerNoPrefixPath(RobotsController::URL); // /robots.txt
+            RouterUriParams::registerNoPrefixPath(SitemapController::URL); // /sitemap.xml
 
             $this->bundles = [
                 new Framework($this->workDir, $this),
