@@ -13,6 +13,7 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
     use PHPCraftdream\Garnet\Kernel\Io\Twig\TwigParams;
     use PHPCraftdream\IRabi\Common\PaginationHelper;
+    use PHPCraftdream\IRabi\Common\Services\ClearUserService;
     use PHPCraftdream\IRabi\Common\Services\EmailNotifications;
     use PHPCraftdream\IRabi\Common\Services\NewsService;
     use PHPCraftdream\IRabi\Common\System\ThirdPartyAssets;
@@ -312,6 +313,92 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
             );
 
             return ControllerTools::JSON(['success' => true, 'moved' => $movedFiles]);
+        }
+
+        /**
+         * Irreversibly hard-delete an account and every trace of its data —
+         * bookings, messages, payments, sessions, ledger, files, the account
+         * row itself. Fulfills a 152-ФЗ subject erasure request that /privacy
+         * promises; the only previously-available path was the test-mode-gated
+         * `php garnet clear-user` CLI (audit 01-legal-compliance F-02).
+         *
+         * Reuses ClearUserService::clearByEmail() — the same cascade the CLI
+         * runs — but through a properly authorized HTTP path so an owner/admin
+         * can execute the request on production without SSH access.
+         *
+         * Double confirmation: the caller MUST supply `confirm_login` (the
+         * target account's email) separately from `user_id`, and the server
+         * verifies it matches the account's actual login before deleting.
+         * Guards against clicking the wrong grid row — the id may be invisible
+         * or misread in the UI, but the email is what the admin actually sees
+         * and types.
+         *
+         * Owner-only (admin OR owner, NOT plain moderator): this is the most
+         * destructive action in the system. The rank guard additionally
+         * refuses self-targeting and any upward move (moderator→owner/admin),
+         * same rule as post__setUserFlag (audit H-2).
+         */
+        public static function post__clearUser(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
+            if (!UserEntityConfig::isOwner()) {
+                return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
+            }
+
+            $userId = (int)$globals->readPostValue('user_id', '0');
+            $confirmLogin = trim((string)$globals->readPostValue('confirm_login', ''));
+
+            if (!$userId || $confirmLogin === '') {
+                return ControllerTools::JSON(['error' => 'Invalid params'], status: 400);
+            }
+
+            // Target-rank guard — refuse self-targeting and any upward move
+            // (moderator→owner/admin). Same rule as post__setUserFlag (audit H-2).
+            if (!UserEntityConfig::actorMayActOn($userId)) {
+                return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
+            }
+
+            // Load the target account to verify confirm_login matches its
+            // actual email — the explicit double-confirmation.
+            $account = Account::get((string)$userId);
+            $account->readDbAsync();
+            $account->readDataAsyncPollFinishAll();
+
+            if (!$account->id()) {
+                return ControllerTools::JSON(['error' => 'User not found'], status: 404);
+            }
+
+            $targetLogin = (string)$account->readParam('login');
+            if ($targetLogin === '' || $targetLogin !== $confirmLogin) {
+                return ControllerTools::JSON(
+                    ['error' => 'confirm_login does not match the account email'],
+                    status: 400,
+                );
+            }
+
+            // Hand off to the shared cascade deleter. Idempotent by nature:
+            // re-running on an already-deleted account is a no-op.
+            $result = ClearUserService::clearByEmail($confirmLogin);
+
+            // The only trace left after erasure — proves the request was
+            // executed and records how much was deleted. Important for
+            // demonstrating 152-ФЗ compliance if challenged by the subject
+            // or РКН; the action itself has already irreversibly wiped
+            // everything else.
+            $actor = Account::fromSession();
+            AdminActionLog::get()->writeLog(
+                actorId:     (int)$actor->readParam('id'),
+                actorLogin:  (string)$actor->readParam('login'),
+                targetId:    $userId,
+                targetLogin: $confirmLogin,
+                action:      'clear_user',
+                oldValue:    '',
+                newValue:    (string)$result['total'],
+            );
+
+            return ControllerTools::JSON([
+                'success' => true,
+                'deleted' => $result['deleted'],
+                'total' => $result['total'],
+            ]);
         }
 
         public static function post__userDetail(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
@@ -690,6 +777,11 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
                 'setUserTypeUrl' => IRabi::url(static::URL . '~setUserType'),
                 'userDetailUrl' => IRabi::url(static::URL . '~userDetail'),
                 'createTicketUrl' => IRabi::url(DashboardSupportController::URL . '~createForUser'),
+                // Owner-level visibility gate for the irreversible "clear
+                // account (ПДн)" button in UserDetailPanel. The backend
+                // re-checks isOwner() on click; this only hides the button
+                // from moderators to avoid false expectations.
+                'callerIsOwner' => $callerIsOwner,
                 'gridConfig' => GridConfig::make(
                     columns:      $columns,
                     searchFields: ['login', 'name'],

@@ -589,6 +589,14 @@ export class I18nDataRU {
     static Admin_RemovePhoto = 'Удалить фото';
     static Admin_RemovePhotoConfirm = 'Удалить фото пользователя? Файл не удаляется с диска, а переносится в архив приложения.';
     static Admin_RemovePhotoDone = 'Фото удалено';
+    static Admin_ClearUser = 'Удалить аккаунт (ПДн, необратимо)';
+    static Admin_ClearUserTitle = 'Необратимое удаление аккаунта (исполнение запроса субъекта ПДн по 152-ФЗ)';
+    static Admin_ClearUserModalTitle = 'Необратимое удаление аккаунта';
+    static Admin_ClearUserModalBody = 'Будут безвозвратно удалены все персональные данные: профиль, брони, сообщения, платежи, сессии, история операций. Действие нельзя отменить. Единственный след — запись в admin_action_log о факте удаления.';
+    static Admin_ClearUserTypeEmail = 'Введите email аккаунта для подтверждения';
+    static Admin_ClearUserTypeEmailHint = '(должно совпадать точно)';
+    static Admin_ClearUserMismatch = 'Введённый email не совпадает с email аккаунта.';
+    static Admin_ClearUserDone = 'Аккаунт удалён';
     static Admin_PublicProfile = 'Публичный профиль';
     static Admin_History = 'История';
     static Admin_History_Empty = 'Записей в истории нет';

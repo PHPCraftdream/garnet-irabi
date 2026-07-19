@@ -595,6 +595,14 @@ class I18n extends I18nBase {
     Admin_RemovePhoto: t = (a = []) => this.t('Admin_RemovePhoto', a);
     Admin_RemovePhotoConfirm: t = (a = []) => this.t('Admin_RemovePhotoConfirm', a);
     Admin_RemovePhotoDone: t = (a = []) => this.t('Admin_RemovePhotoDone', a);
+    Admin_ClearUser: t = (a = []) => this.t('Admin_ClearUser', a);
+    Admin_ClearUserTitle: t = (a = []) => this.t('Admin_ClearUserTitle', a);
+    Admin_ClearUserModalTitle: t = (a = []) => this.t('Admin_ClearUserModalTitle', a);
+    Admin_ClearUserModalBody: t = (a = []) => this.t('Admin_ClearUserModalBody', a);
+    Admin_ClearUserTypeEmail: t = (a = []) => this.t('Admin_ClearUserTypeEmail', a);
+    Admin_ClearUserTypeEmailHint: t = (a = []) => this.t('Admin_ClearUserTypeEmailHint', a);
+    Admin_ClearUserMismatch: t = (a = []) => this.t('Admin_ClearUserMismatch', a);
+    Admin_ClearUserDone: t = (a = []) => this.t('Admin_ClearUserDone', a);
     Admin_PublicProfile: t = (a = []) => this.t('Admin_PublicProfile', a);
     Admin_History: t = (a = []) => this.t('Admin_History', a);
     Admin_History_Empty: t = (a = []) => this.t('Admin_History_Empty', a);

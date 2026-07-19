@@ -9,6 +9,7 @@ interface Props {
     detailUrl: string;
     setFlagUrl?: string;
     createTicketUrl?: string;
+    callerIsOwner?: boolean;
 }
 
 export const UserDetailTab: React.FC<Props> = (props) => (

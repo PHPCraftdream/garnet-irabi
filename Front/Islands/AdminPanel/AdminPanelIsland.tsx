@@ -21,6 +21,10 @@ interface Props {
     gridConfig: GridConfig;
     userDetailUrl: string;
     createTicketUrl?: string;
+    // When true, the user-detail panel renders the irreversible
+    // "clear account (ПДн)" danger button. Computed server-side from
+    // UserEntityConfig::isOwner() — admin OR owner, NOT plain moderator.
+    callerIsOwner?: boolean;
     // Comments tab data
     commentsPageUrl: string;
     commentsHideUrl: string;
@@ -70,6 +74,7 @@ export const AdminPanelIsland: React.FC<Props> = (props) => {
         gridConfig,
         userDetailUrl,
         createTicketUrl,
+        callerIsOwner,
         commentsPageUrl,
         commentsHideUrl,
         commentsUnhideUrl,
@@ -195,6 +200,7 @@ export const AdminPanelIsland: React.FC<Props> = (props) => {
                     detailUrl={userDetailUrl || ADMIN_URLS.detailUrl}
                     setFlagUrl={setFlagUrl ?? ADMIN_URLS.setFlagUrl}
                     createTicketUrl={createTicketUrl ?? ADMIN_URLS.createTicketUrl}
+                    callerIsOwner={callerIsOwner}
                 />
             )}
             </div>

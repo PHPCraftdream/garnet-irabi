@@ -589,6 +589,14 @@ export class I18nDataEN {
     static Admin_RemovePhoto = 'Remove photo';
     static Admin_RemovePhotoConfirm = 'Remove the user\'s photo? The file is not deleted from disk — it is moved to the app archive.';
     static Admin_RemovePhotoDone = 'Photo removed';
+    static Admin_ClearUser = 'Delete account (GDPR, irreversible)';
+    static Admin_ClearUserTitle = 'Irreversible account deletion (GDPR / 152-ФЗ subject erasure request)';
+    static Admin_ClearUserModalTitle = 'Irreversible account deletion';
+    static Admin_ClearUserModalBody = 'ALL personal data will be permanently deleted: profile, bookings, messages, payments, sessions, ledger. This cannot be undone. The only trace left is an admin_action_log entry recording that the deletion happened.';
+    static Admin_ClearUserTypeEmail = 'Type the account email to confirm';
+    static Admin_ClearUserTypeEmailHint = '(must match exactly)';
+    static Admin_ClearUserMismatch = 'Typed email does not match the account email.';
+    static Admin_ClearUserDone = 'Account deleted';
     static Admin_PublicProfile = 'Public profile';
     static Admin_History = 'History';
     static Admin_History_Empty = 'No history entries';

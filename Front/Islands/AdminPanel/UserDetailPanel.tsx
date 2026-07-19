@@ -275,19 +275,115 @@ const WriteToUserModal: React.FC<{
     );
 };
 
+/* ---- Irreversible account-clear modal (GDPR / 152-ФЗ) ---- */
+const ClearUserModal: React.FC<{
+    accountId: number;
+    accountLogin: string;
+    accountName: string;
+    onClose: () => void;
+    onSuccess: () => void;
+}> = ({accountId, accountLogin, accountName, onClose, onSuccess}) => {
+    const [typed, setTyped]           = useState('');
+    const [sending, setSending]       = useState(false);
+    const [error, setError]           = useState<string | null>(null);
+
+    // Submit is only enabled once the admin typed the EXACT email of the
+    // account being deleted. This is the client-side mirror of the
+    // confirm_login===login check the backend does.
+    const matches = typed.trim().length > 0 && typed.trim() === accountLogin;
+
+    const handleSend = async () => {
+        if (!matches || sending) return;
+        setSending(true);
+        setError(null);
+        try {
+            const r: any = await sendPost(appUrl('/admin/~clearUser'), {
+                user_id: accountId,
+                confirm_login: typed.trim(),
+            });
+            if (r?.error) {
+                setError(r.error);
+            } else {
+                onSuccess();
+            }
+        } catch {
+            setError(t.General_Error());
+        } finally {
+            setSending(false);
+        }
+    };
+
+    return (
+        <Portal><div className="fg-modal-overlay" onClick={onClose}>
+            <div className="fg-modal-card fg-modal-card-lg" onClick={e => e.stopPropagation()}>
+                <div className="fg-modal-header-row">
+                    <h3 className="fg-modal-title text-danger">{t.Admin_ClearUserModalTitle()}</h3>
+                    <button type="button" className="fg-modal-close-x" onClick={onClose}
+                        aria-label={t.A11y_CloseModal()}>&times;</button>
+                </div>
+                <div className="fg-modal-subtitle">
+                    <strong className="text-danger">{accountName}</strong>
+                    <span className="text-muted"> · {accountLogin} · ID: {accountId}</span>
+                </div>
+                {error && <div className="fg-modal-error">{error}</div>}
+                <div className="fg-modal-warning mb-3">
+                    {t.Admin_ClearUserModalBody()}
+                </div>
+                <div className="mb-3">
+                    <label className="block text-sm font-medium mb-1">
+                        {t.Admin_ClearUserTypeEmail()}
+                        <span className="text-muted"> {t.Admin_ClearUserTypeEmailHint()}</span>
+                    </label>
+                    <input
+                        type="text"
+                        className="form-control w-full"
+                        autoComplete="off"
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        spellCheck={false}
+                        value={typed}
+                        onChange={e => setTyped(e.target.value)}
+                        disabled={sending}
+                        data-test-id={`clear-user-confirm-input-${accountId}`}
+                    />
+                    {typed.trim().length > 0 && !matches && (
+                        <div className="text-danger text-sm mt-1">{t.Admin_ClearUserMismatch()}</div>
+                    )}
+                </div>
+                <div className="fg-modal-actions">
+                    <button type="button" className="btn btn-sm btn-secondary" onClick={onClose} disabled={sending}>
+                        {t.Action_Cancel()}
+                    </button>
+                    <SendButton
+                        onClick={handleSend}
+                        sending={sending}
+                        disabled={!matches}
+                        label={sending ? t.User_Loading() : t.Admin_ClearUser()}
+                        testId={`clear-user-confirm-btn-${accountId}`}
+                        size="sm"
+                    />
+                </div>
+            </div>
+        </div></Portal>
+    );
+};
+
 interface Props {
     accountId: number;
     detailUrl: string;
     setFlagUrl?: string;
     createTicketUrl?: string;
+    callerIsOwner?: boolean;
 }
 
-export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, createTicketUrl}: Props) {
+export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, createTicketUrl, callerIsOwner}: Props) {
     const [data, setData]         = useState<UserDetailData | null>(null);
     const [error, setError]       = useState<string | null>(null);
     const [flagPending, setFlagPending] = useState(false);
     const [photoRemovePending, setPhotoRemovePending] = useState(false);
     const [showWriteModal, setShowWriteModal] = useState(false);
+    const [showClearModal, setShowClearModal] = useState(false);
+    const [cleared, setCleared] = useState(false);
     const [toastMsg, setToastMsg] = useState<string | null>(null);
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const openUser = useOpenUser();
@@ -354,6 +450,20 @@ export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, creat
 
     if (error) return <div className="admin-detail-error">{error}</div>;
     if (!data)  return <div className="admin-detail-loading">{t.User_Loading()}</div>;
+
+    // After a successful clear, the account and every related row are gone —
+    // the panel can no longer refresh from the server. Show a final banner
+    // instead; the admin closes the tab manually.
+    if (cleared) {
+        return (
+            <div className="admin-detail-pane" data-test-id="user-detail-pane">
+                {toastMsg && <div className="admin-floating-toast">{toastMsg}</div>}
+                <div className="admin-detail-cleared">
+                    <h3 className="text-danger">{t.Admin_ClearUserDone()}</h3>
+                </div>
+            </div>
+        );
+    }
 
     const {account, expertProfile, slots, balance, ledger, bookings, tickets, expertCancelCount, userCancelCount, expertDeclineCount, userDeclineCount, expertCancellations, userCancellations} = data;
     const isExpert   = account.type === 'expert';
@@ -497,6 +607,17 @@ export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, creat
                             className="btn btn-sm btn-outline-secondary ml-2"
                             testIdSuffix={`account-${account.id}`}
                         />
+                        {callerIsOwner && (
+                            <button
+                                type="button"
+                                className="btn btn-sm btn-danger ml-2"
+                                data-test-id={`clear-user-${account.id}`}
+                                title={t.Admin_ClearUserTitle()}
+                                onClick={() => setShowClearModal(true)}
+                            >
+                                {t.Admin_ClearUser()}
+                            </button>
+                        )}
                     </div>
                 )}
             </div>
@@ -811,6 +932,20 @@ export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, creat
                             .then((r: any) => {
                                 if (!r?.error) setData(r as UserDetailData);
                             });
+                    }}
+                />
+            )}
+            {/* Irreversible clear-account modal (ПДн / 152-ФЗ) */}
+            {showClearModal && (
+                <ClearUserModal
+                    accountId={account.id}
+                    accountLogin={account.login}
+                    accountName={displayName}
+                    onClose={() => setShowClearModal(false)}
+                    onSuccess={() => {
+                        setShowClearModal(false);
+                        setToastMsg(t.Admin_ClearUserDone());
+                        setCleared(true);
                     }}
                 />
             )}
