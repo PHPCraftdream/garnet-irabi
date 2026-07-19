@@ -126,7 +126,7 @@ php garnet deploy:diff --apply
 - список cron jobs и расписание — см. [`deploy.md` → Cron](deploy.md#cron): пять задач (`email-queue`, `complete-expired`, `disable-stale-tokens`, `db-backup`, `log-rotation`) с точными crontab-строками для прода;
 - схема backup retention и ручная процедура restore;
 - матрица ролей и процедура отзыва admin/owner доступа;
-- список персональных данных, сроки хранения и legal sign-off;
+- список персональных данных, сроки хранения и legal sign-off; (политика удаления/блокировки аккаунтов и отсутствие `FOREIGN KEY` в схеме — см. [`architecture.md` → Database](architecture.md#database): три механизма работы с данными — блокировка, жёсткое удаление и известные краевые случаи осиротевших записей);
 - политика обновления framework и зависимостей;
 - release notes с текущим commit SHA и известными ограничениями;
 - тестовые сценарии приёмки по ролям.
