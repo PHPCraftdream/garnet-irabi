@@ -13,9 +13,29 @@ namespace PHPCraftdream\IRabi\Common\Services {
     use Throwable;
 
     class AppCronService extends FwCronService {
+        /**
+         * Named MySQL advisory lock serialising overlapping email-queue
+         * cron ticks. See NamedLock for why processQueue() needs this
+         * external guard (its SELECT-then-UPDATE loop has no per-row
+         * claim, so two concurrent runs would both deliver the same
+         * email). Two cron ticks are two CLI processes, hence two DB
+         * connections — they contend on this lock across processes.
+         */
+        public const EMAIL_QUEUE_LOCK = 'irabi_email_queue';
+
         public static function registerTasks(): void {
             static::registerTask('email-queue', function (Stdio $stdio): int {
-                return FwEmailQueueService::processQueue(50);
+                if (!NamedLock::tryAcquire(self::EMAIL_QUEUE_LOCK)) {
+                    $stdio->outln('email-queue: previous run still active, skipping');
+
+                    return 0;
+                }
+
+                try {
+                    return FwEmailQueueService::processQueue(50);
+                } finally {
+                    NamedLock::release(self::EMAIL_QUEUE_LOCK);
+                }
             }, 'Process email queue (send pending emails)');
 
             static::registerTask('complete-expired', function (Stdio $stdio): int {
