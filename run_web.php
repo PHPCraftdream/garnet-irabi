@@ -11,6 +11,8 @@ namespace PHPCraftdream\IRabi {
     use PHPCraftdream\Garnet\Kernel\Db\Link\DbPool;
     use PHPCraftdream\Garnet\Kernel\Io\Emitter\Emitter;
     use PHPCraftdream\Garnet\Kernel\Io\ErrorCatcher\ErrorCatcher;
+    use PHPCraftdream\Garnet\Kernel\Io\IniConfig\AppConfig;
+    use PHPCraftdream\Garnet\Kernel\Io\IniConfig\IniConfig;
     use PHPCraftdream\Garnet\Kernel\Io\IoRun\IoRunWeb;
     use PHPCraftdream\Garnet\Kernel\Io\Logs\Logger;
     use PHPCraftdream\Garnet\Kernel\Io\Router\RouterDevFile;
@@ -50,12 +52,21 @@ namespace PHPCraftdream\IRabi {
     $isDev = $globalParams->isDev() && Env::isDevDir();
 
     // -------------------------------
+    // Construct (but do not webInit()) the app object early so the HTTPS
+    // block below can reach $app->configProdDir / $app->configDevDir.
+    // BaseAppInit::__construct() only builds path strings — no I/O, no ini
+    // parsing — so this stays as cheap as constructing it after the HTTPS
+    // block would have been. The expensive part (Twig/cache/logs) lives in
+    // webInit(), which still runs AFTER the HTTPS block, unchanged.
+    $app = new IRabi($isDev);
+
+    // -------------------------------
     // Force HTTPS in production: redirect plaintext requests AND emit HSTS.
-    // Runs BEFORE ErrorCatcher init / IRabi construction / routing so the
-    // redirect is as cheap as possible — none of the heavy bootstrap fires
-    // for an HTTP→HTTPS bump. Gated on !$isDev so the local `php garnet
-    // serve` dev server (always isDev=true, plain HTTP by design — the
-    // Playwright e2e stack talks to it that way) is never touched. This is
+    // Runs BEFORE ErrorCatcher init / routing so the redirect is as cheap
+    // as possible — none of the heavy bootstrap (webInit()) fires for an
+    // HTTP→HTTPS bump. Gated on !$isDev so the local `php garnet serve`
+    // dev server (always isDev=true, plain HTTP by design — the Playwright
+    // e2e stack talks to it that way) is never touched. This is
     // defense-in-depth on TOP of the hosting-level nginx redirect, not a
     // replacement for it — if the panel is also configured to redirect, an
     // upstream request never reaches PHP here, so the two never conflict.
@@ -67,7 +78,25 @@ namespace PHPCraftdream\IRabi {
     // is therefore not pinned, which is the inherent HSTS bootstrap
     // limitation — addressable only via the preload list, out of scope here.
     if (!$isDev) {
-        $httpsRedirectTarget = HttpsRedirectService::redirectTarget($_SERVER, false);
+        // Resolve the canonical host from app.ini's base_url — never from
+        // $_SERVER['HTTP_HOST'], which is attacker-controlled and would
+        // otherwise turn the redirect into an open redirect (CWE-601).
+        // IniConfig::defineAppIni() is idempotent (just overwrites the
+        // registered path), so this early call does not conflict with the
+        // one $app->webInit() -> defineConfigs() makes later. Wrapped in
+        // try/catch: ErrorCatcher::init() hasn't run yet at this point, so
+        // a missing/broken app.ini must not surface as a raw PHP fatal —
+        // fall back to no app-level redirect and rely on the hosting layer.
+        $canonicalBaseUrl = '';
+        try {
+            $configDir = $isDev ? $app->configDevDir : $app->configProdDir;
+            IniConfig::defineAppIni($configDir . 'app.ini');
+            $canonicalBaseUrl = AppConfig::get(IniConfig::ENV_APP)->baseUrl();
+        } catch (Throwable) {
+            $canonicalBaseUrl = '';
+        }
+
+        $httpsRedirectTarget = HttpsRedirectService::redirectTarget($_SERVER, false, $canonicalBaseUrl);
         if ($httpsRedirectTarget !== null) {
             header('Location: ' . $httpsRedirectTarget, true, 301);
             exit;
@@ -94,7 +123,6 @@ namespace PHPCraftdream\IRabi {
         }
     );
 
-    $app = new IRabi($isDev);
     $app->webInit();
 
     // -------------------------------

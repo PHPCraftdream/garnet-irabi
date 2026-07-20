@@ -71,20 +71,31 @@ namespace PHPCraftdream\IRabi\Common\Services {
          * Return the https:// URL the current request should be 301-ed to,
          * or null when no redirect should happen.
          *
+         * The target host comes ONLY from `$canonicalBaseUrl` (the app's
+         * configured `base_url`, e.g. `AppConfig::get(IniConfig::ENV_APP)
+         * ->baseUrl()`), never from `$server['HTTP_HOST']`. The `Host`
+         * header is attacker-controlled input — building the redirect
+         * `Location` from it turns this defense-in-depth layer into an
+         * open redirect (CWE-601): a request with `Host: attacker.example`
+         * would otherwise get a same-origin-looking 301 straight to a
+         * phishing destination. Resolving the canonical host is the
+         * caller's responsibility precisely so this method can stay a
+         * pure function that never reads config/global state itself.
+         *
          * Returns null (do not redirect) when:
          *   - $isDev is true — the local dev server / Playwright stack is
          *     plain HTTP by design. Tying the redirect to anything other
          *     than this flag would lock the dev stack in a redirect loop.
          *   - the request already arrived over HTTPS — nothing to upgrade.
-         *   - no HTTP_HOST is present (CLI / malformed env) — safest to
-         *     no-op rather than guess a destination from SERVER_NAME,
-         *     which is more often misconfigured than not behind proxies.
+         *   - $canonicalBaseUrl is empty (caller couldn't resolve config
+         *     this early / app.ini missing) — safest to no-op rather than
+         *     guess a destination, relying on the hosting-level redirect.
          *
          * Preserves the original path AND query string via REQUEST_URI,
          * which PHP populates verbatim from the request line — including
          * any `?id=…` / anchor-style fragments the router depends on.
          */
-        public static function redirectTarget(array $server, bool $isDev): ?string {
+        public static function redirectTarget(array $server, bool $isDev, string $canonicalBaseUrl): ?string {
             if ($isDev) {
                 return null;
             }
@@ -93,8 +104,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 return null;
             }
 
-            $host = (string)($server['HTTP_HOST'] ?? '');
-            if ($host === '') {
+            if ($canonicalBaseUrl === '') {
                 return null;
             }
 
@@ -103,7 +113,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 $requestUri = '/';
             }
 
-            return 'https://' . $host . $requestUri;
+            return $canonicalBaseUrl . $requestUri;
         }
     }
 }
