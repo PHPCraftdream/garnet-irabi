@@ -89,9 +89,13 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 $isFinal = $newAttempts >= $maxAttempts;
 
                 // Same backoff as FwEmailQueueService::processQueue()'s
-                // failure branch: next retry at +5s per attempt, capped at
-                // +50s; NULL when the attempt budget is exhausted.
-                $nextAttemptAt = $isFinal ? null : time() + (5 * min($newAttempts, 10));
+                // failure branch: delegates to the framework's own
+                // backoffSeconds() (via EmailQueueBackoffExposer, since it
+                // is protected static there) instead of duplicating the
+                // BACKOFF_TIERS_SECONDS ladder here, so this can never
+                // drift out of sync with the real formula again; NULL
+                // when the attempt budget is exhausted.
+                $nextAttemptAt = $isFinal ? null : time() + EmailQueueBackoffExposer::backoffSeconds($newAttempts);
 
                 $queue->updateById([
                     'status' => 'error',

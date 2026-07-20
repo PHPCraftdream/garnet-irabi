@@ -133,6 +133,7 @@ test.describe('email-watchdog: recovers stuck `sending` rows on the next cron ti
         const res = runEmailQueueCron(getDbPrefix());
         // eslint-disable-next-line no-console
         console.log('[watchdog recover0 cron output]', (res.stdout + res.stderr).trim());
+        const afterRun = Math.floor(Date.now() / 1000);
 
         const row = await readQueueRow(id);
         // Watchdog flipped sending → error and counted the crashed attempt.
@@ -141,6 +142,15 @@ test.describe('email-watchdog: recovers stuck `sending` rows on the next cron ti
         // 1 < 3 → not terminal, so a future retry is scheduled (not NULL).
         expect(row.next_attempt_at).not.toBeNull();
         expect(row.next_attempt_at!).toBeGreaterThan(beforeRun);
+        // Watchdog now delegates to FwEmailQueueService::backoffSeconds()
+        // (BACKOFF_TIERS_SECONDS = [60, 600, 3600, 21600], exponential) via
+        // EmailQueueBackoffExposer, instead of the old linear 5s-per-attempt
+        // formula. attempts 0→1 is the first failure → tier[0] = 60s. Bound
+        // with a window (not an exact equality) to absorb the cron process's
+        // own wall-clock time between `time()` inside PHP and our Node-side
+        // before/after reads.
+        expect(row.next_attempt_at!).toBeGreaterThanOrEqual(beforeRun + 60);
+        expect(row.next_attempt_at!).toBeLessThanOrEqual(afterRun + 60);
     });
 
     test('last-attempt sending row (attempts=2/max=3) → error, attempts=3, terminal (NULL)', async () => {
