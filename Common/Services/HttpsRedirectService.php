@@ -44,6 +44,18 @@ namespace PHPCraftdream\IRabi\Common\Services {
          * a behind-CDN deployment would look "plaintext" forever and
          * redirect-loop against itself.
          *
+         * `X-Forwarded-Proto` may be a comma-separated list when the
+         * request passes through multiple proxies (e.g. `"https, http"`);
+         * by de-facto convention each hop appends its own value to the
+         * right, so the FIRST element reflects the protocol the client
+         * used to reach the outermost proxy and is the one that matters
+         * here. Comparing the whole header would never match that string
+         * and would wrongly conclude "not HTTPS" behind a multi-hop chain
+         * — this file's ONLY consumer of a false "not HTTPS" is
+         * `redirectTarget()`, which would then send an HTTP redirect on a
+         * connection that is already HTTPS (a redirect loop), and the
+         * HSTS header in run_web.php, which would silently be skipped.
+         *
          * The legacy `'off'` value comes from ancient CGI setups where
          * the variable was always present and equal to 'off' on HTTP —
          * it must NOT count as HTTPS.
@@ -54,8 +66,9 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 return true;
             }
 
-            $forwardedProto = strtolower((string)($server['HTTP_X_FORWARDED_PROTO'] ?? ''));
-            if ($forwardedProto === 'https') {
+            $forwardedProtoHeader = (string)($server['HTTP_X_FORWARDED_PROTO'] ?? '');
+            $forwardedProtoFirst = strtolower(trim(explode(',', $forwardedProtoHeader)[0]));
+            if ($forwardedProtoFirst === 'https') {
                 return true;
             }
 
