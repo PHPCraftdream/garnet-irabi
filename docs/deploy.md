@@ -109,6 +109,37 @@ dev-only, never read at runtime by a deployed app; also excluded by
 tooling, not needed once `Public/assets/` is already built and shipped),
 `Tests/` (dev-only specs).
 
+**⚠️ MANDATORY follow-up — `Bundle/` can silently ship stale asset-bridge
+files.** `Bundle/FrameworkJsGen.php` and `Bundle/FrameworkCssGen.php` are
+build artifacts: `php garnet build` (run from *this app's* context, not
+the framework repo's) generates them into
+`vendor/phpcraftdream/garnet-framework/Bundle/…Gen.php`, hash-linked to
+whatever `Public/assets/framework/gen/{js,css}/` files that same build
+produced. They are `.gitignore`d in `<framework-repo>` — so if a stray
+copy ever ends up sitting in `<framework-repo>/Bundle/` (leftover from
+ad-hoc local testing, a manual copy, anything not routed through this
+app's own `php garnet build`), `git status` in the framework repo won't
+show it, and the `ssh:put <framework-repo>/Bundle …` step above uploads
+it anyway — overwriting the correct, matching pair that a prior
+`deploy:diff` frontend-rebuild had shipped. The app then boots fine (no
+PHP fatal — `remoteBootCheck()`/`php garnet noop` never touches static
+assets) while every page 404s on a `framework.<hash>.gen.css`/`.js`
+that doesn't exist on disk — a real incident on this exact host (see the
+2026-07-26 auth-fix deploy in git history). **Always** run this right
+after a manual framework `Bundle/` upload, even if no frontend source
+changed in this release:
+```bash
+php garnet build                                            # regenerate the Gen.php + hashed assets fresh, locally
+php garnet deploy:diff --commit=<HEAD-sha> --frontend --apply --yes   # --commit=<any already-shipped sha> is fine — it exists only to satisfy the selector requirement; --frontend forces the rebuild+ship even though the commit itself has nothing new
+```
+This re-ships the *correct* `Bundle/…Gen.php` pair (categorised into the
+`framework` bucket by path, same as any other framework file) together
+with the actual hashed asset files, guaranteeing they agree. Cheap
+insurance: `curl -I` the exact asset URL(s) referenced by a fresh page
+load afterward to confirm 200, since neither the boot check nor
+`deploy:diff`'s own success output verifies that a *browser* can
+actually fetch what the shipped HTML/Gen.php now points at.
+
 **Routine code-only deploys** (fast — only the diff since the last
 deploy, not a full re-upload):
 ```bash
