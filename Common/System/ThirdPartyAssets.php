@@ -6,15 +6,22 @@
  * (unlike the `/gen/` bundle output), and gitignored, so a fresh checkout
  * (a real deploy, or CI) may not have them on disk yet.
  *
- * Each accessor checks the real file on disk (via PUBLIC_DIR, set at
- * request bootstrap) and returns '' when absent, matching the same
- * graceful-degradation convention FrontBuilder's own generated
- * FrameworkJsGen::vendor_react()/vendor_other() use for a chunk that
- * didn't materialise — callers array_filter() the resulting list so a
- * missing asset never renders a broken empty href/src.
+ * Each accessor checks the real file on disk (via IRabi::getInstance()
+ * ->publicDir — NOT the bare `PUBLIC_DIR` constant, which is only ever
+ * defined by `Public/index.php`'s local-dev boot path and stays undefined
+ * on a host that boots through the runtime shim's `_shared_index.php`
+ * instead, which sets `GARNET_PUBLIC_DIR` as an env var, not a PHP
+ * constant — same accessor already used by UserDataMiddleware::publicDir())
+ * and returns '' when absent, matching the same graceful-degradation
+ * convention FrontBuilder's own generated FrameworkJsGen::vendor_react()
+ * /vendor_other() use for a chunk that didn't materialise — callers
+ * array_filter() the resulting list so a missing asset never renders a
+ * broken empty href/src.
  */
 
 namespace PHPCraftdream\IRabi\Common\System {
+    use PHPCraftdream\IRabi\IRabi;
+
     final class ThirdPartyAssets {
         public static function cropperJs(): string {
             return self::urlIfExists('cropper/cropper.min.js');
@@ -29,7 +36,7 @@ namespace PHPCraftdream\IRabi\Common\System {
         }
 
         private static function urlIfExists(string $relPath): string {
-            $fsPath = PUBLIC_DIR . 'assets' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR
+            $fsPath = IRabi::getInstance()->publicDir . 'assets' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR
                 . 'assets' . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relPath);
 
             return is_file($fsPath) ? '/assets/framework/assets/' . $relPath : '';
