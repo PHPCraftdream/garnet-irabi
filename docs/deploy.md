@@ -77,12 +77,21 @@ php garnet ssh:put dist/IRabi/<app_dir>       "<app_dir>"       --cd-remote
 php garnet ssh:put dist/IRabi/<runtime_dir>   "<runtime_dir>"   --cd-remote
 ```
 
-**Manual framework-only redeploy** (when `garnet bundle` isn't usable —
-e.g. this app's standalone layout, where `bundle` errors with "not
-supported in the standalone app layout yet"). `deploy:diff` can't reach
-`framework_dir` either — its `Framework/…` path mapping only matches
-files inside *this* app's own repo, and the framework lives in a
-separate sibling repo/checkout. Ship it directly with `ssh:put`
+**Manual framework-only redeploy** (fallback — as of garnet-framework
+`v0.1.0-alpha17`, `php garnet bundle` works for this app's standalone
+layout too, sourcing the framework copy from `vendor/phpcraftdream/
+garnet-framework` (the exact tree `php garnet build` writes its
+asset-bridge files into, so it can never carry a stale one the way this
+manual path did — see the incident note below) and materialising its
+`vendor/` via a scoped `composer install` inside the disposable dist/
+copy. Verified locally end-to-end (CLI boot, real DB, real HTTP
+request) but not yet exercised against slotbook.ru itself — prefer
+`bundle` for the next fresh-host situation, and keep this manual path
+documented as the proven fallback until `bundle` has a real remote-host
+track record too). `deploy:diff` still can't reach `framework_dir` on
+its own — its `Framework/…` path mapping only matches files inside
+*this* app's own repo, and the framework lives in a separate sibling
+repo/checkout. Ship it directly with `ssh:put`
 (supports directories via `-r`, auto-detected when `<local>` is a dir):
 ```bash
 # Wipe the curated set first so deleted/renamed framework files don't
@@ -139,6 +148,16 @@ insurance: `curl -I` the exact asset URL(s) referenced by a fresh page
 load afterward to confirm 200, since neither the boot check nor
 `deploy:diff`'s own success output verifies that a *browser* can
 actually fetch what the shipped HTML/Gen.php now points at.
+
+The root cause here — sourcing the framework copy from a *separate*
+checkout that can silently drift from what was actually built — is
+exactly the class of bug `bundle` (v0.1.0-alpha17+) fixes structurally:
+it always sources `framework_dir` from `vendor/phpcraftdream/
+garnet-framework`, the one tree `php garnet build` actually writes
+`*Gen.php` into, so there's no separate checkout to drift from in the
+first place. Once `bundle` has a track record on this exact host, this
+whole manual-redeploy section (and its failure mode) should be
+retireable.
 
 **Routine code-only deploys** (fast — only the diff since the last
 deploy, not a full re-upload):
