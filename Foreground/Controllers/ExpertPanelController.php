@@ -10,7 +10,6 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
     use PHPCraftdream\Garnet\Kernel\Io\Twig\TwigParams;
     use PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel\ExpertBookingsService;
-    use PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel\ExpertProfileService;
     use PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel\ExpertSlotsService;
     use PHPCraftdream\IRabi\Foreground\Params\Menu;
     use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;
@@ -156,33 +155,6 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 return static::deniedNotApproved();
             }
             return ExpertSlotsService::deleteSlot($globals, $account);
-        }
-
-        // ── Публичный профиль эксперта ──────────────────────────────────
-        //
-        // GET /expert/~profile открыт любому эксперту (в т.ч. неодобренному) —
-        // по аналогии с get__slots: заполнить профиль до/во время ожидания
-        // одобрения нормально. Само сохранение (post__profile) требует
-        // mayMutate() — единый defense-in-depth инвариант A-02 для всех
-        // мутирующих /expert/~* эндпоинтов этого контроллера.
-
-        public static function get__profile(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
-            $account = static::account();
-            if (!$account) {
-                return static::denied();
-            }
-            return ExpertProfileService::profilePage($globals, $account, static::render($globals->getUri()));
-        }
-
-        public static function post__profile(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
-            $account = static::account();
-            if (!$account) {
-                return static::denied();
-            }
-            if (!static::mayMutate($account)) {
-                return static::deniedNotApproved();
-            }
-            return ExpertProfileService::updateProfile($globals, $account);
         }
 
         // ── Бронирования ───────────────────────────────────────────────

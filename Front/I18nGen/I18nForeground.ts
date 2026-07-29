@@ -33,20 +33,6 @@ class I18n extends I18nBase {
     Slot_Status_Cancelled: t = (a = []) => this.t('Slot_Status_Cancelled', a);
     Expert_Specialization: t = (a = []) => this.t('Expert_Specialization', a);
     Expert_PendingApproval: t = (a = []) => this.t('Expert_PendingApproval', a);
-    ExpertProfile_Title: t = (a = []) => this.t('ExpertProfile_Title', a);
-    ExpertProfile_DisplayName: t = (a = []) => this.t('ExpertProfile_DisplayName', a);
-    ExpertProfile_DisplayNameHelp: t = (a = []) => this.t('ExpertProfile_DisplayNameHelp', a);
-    ExpertProfile_DisplayNameRequired: t = (a = []) => this.t('ExpertProfile_DisplayNameRequired', a);
-    ExpertProfile_DisplayNameTooLong: t = (a = []) => this.t('ExpertProfile_DisplayNameTooLong', a);
-    ExpertProfile_Specialization: t = (a = []) => this.t('ExpertProfile_Specialization', a);
-    ExpertProfile_SpecializationTooLong: t = (a = []) => this.t('ExpertProfile_SpecializationTooLong', a);
-    ExpertProfile_Bio: t = (a = []) => this.t('ExpertProfile_Bio', a);
-    ExpertProfile_BioHelp: t = (a = []) => this.t('ExpertProfile_BioHelp', a);
-    ExpertProfile_BioTooLong: t = (a = []) => this.t('ExpertProfile_BioTooLong', a);
-    ExpertProfile_Save: t = (a = []) => this.t('ExpertProfile_Save', a);
-    ExpertProfile_Saved: t = (a = []) => this.t('ExpertProfile_Saved', a);
-    ExpertProfile_ViewPublic: t = (a = []) => this.t('ExpertProfile_ViewPublic', a);
-    ExpertProfile_PendingApprovalHint: t = (a = []) => this.t('ExpertProfile_PendingApprovalHint', a);
     Batch_Title: t = (a = []) => this.t('Batch_Title', a);
     Batch_StartDate: t = (a = []) => this.t('Batch_StartDate', a);
     Batch_EndDate: t = (a = []) => this.t('Batch_EndDate', a);
@@ -284,7 +270,6 @@ class I18n extends I18nBase {
     Menu_Study: t = (a = []) => this.t('Menu_Study', a);
     Menu_BrowseSlots: t = (a = []) => this.t('Menu_BrowseSlots', a);
     Menu_ManageSlots: t = (a = []) => this.t('Menu_ManageSlots', a);
-    Menu_ExpertProfile: t = (a = []) => this.t('Menu_ExpertProfile', a);
     Balance_Title: t = (a = []) => this.t('Balance_Title', a);
     Balance_TopUp: t = (a = []) => this.t('Balance_TopUp', a);
     Balance_Amount: t = (a = []) => this.t('Balance_Amount', a);

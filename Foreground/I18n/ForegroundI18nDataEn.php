@@ -37,22 +37,6 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Expert_Specialization' => 'Specialization',
             'Expert_PendingApproval' => 'Your profile is under review. Your slots are hidden from users and excluded from news until an admin approves your profile. After approval, news will appear automatically.',
 
-            // Expert: public profile editing
-            'ExpertProfile_Title' => 'Public Profile',
-            'ExpertProfile_DisplayName' => 'Display Name',
-            'ExpertProfile_DisplayNameHelp' => 'Shown on your public page and in the expert listing.',
-            'ExpertProfile_DisplayNameRequired' => 'Display name is required',
-            'ExpertProfile_DisplayNameTooLong' => 'Display name is too long (max 255 characters)',
-            'ExpertProfile_Specialization' => 'Specialization',
-            'ExpertProfile_SpecializationTooLong' => 'Specialization is too long (max 255 characters)',
-            'ExpertProfile_Bio' => 'About',
-            'ExpertProfile_BioHelp' => 'Briefly describe your experience and approach. Shown on your public page.',
-            'ExpertProfile_BioTooLong' => 'About is too long (max 2000 characters)',
-            'ExpertProfile_Save' => 'Save',
-            'ExpertProfile_Saved' => 'Profile saved',
-            'ExpertProfile_ViewPublic' => 'Open public page',
-            'ExpertProfile_PendingApprovalHint' => 'You can fill in your profile now — it will appear in the expert listing after an admin approves it.',
-
             'Batch_Title' => 'Batch Slot Creation',
             'Batch_StartDate' => 'Start Date',
             'Batch_EndDate' => 'End Date',
@@ -318,7 +302,6 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Menu_Study' => 'Learning',
             'Menu_BrowseSlots' => 'Browse Slots',
             'Menu_ManageSlots' => 'Manage Slots',
-            'Menu_ExpertProfile' => 'My Profile',
 
             'Balance_Title' => 'My Balance',
             'Balance_TopUp' => 'Top Up',
