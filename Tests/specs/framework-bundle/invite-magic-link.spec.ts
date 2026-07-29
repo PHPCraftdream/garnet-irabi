@@ -180,12 +180,28 @@ test.describe('Invite-flow magic-login — one-click token', () => {
 
         // 3. Visit the magic-login URL in a fresh page of the SAME context.
         //    A plain server-side GET → validate → consume → login → 302
-        //    redirect to return_uri (the invite first-step page). No JSON,
-        //    no client-side replay of any kind.
+        //    redirect to return_uri (the invite first-step page). RegisterController
+        //    itself then bounces an already-logged-in visitor of /first-step/{token}
+        //    straight to home ("Already logged in -> redirect to home") — so the
+        //    browser follows a SECOND hop and lands on the site root, not the
+        //    invite page. That's correct, expected behaviour (and exactly what
+        //    was asked for in the original bug report): a user who just logged
+        //    in via the link should end up on the real app, not stuck re-viewing
+        //    the invite/registration screen.
         const linkPage = await context.newPage();
-        await linkPage.goto(`/magic-login/code~${token}`);
+        const response = await linkPage.goto(`/magic-login/code~${token}`);
 
-        // 4. Logged in — no auth input, no F5 required.
+        // 4. Regression guard (real prod incident): the final destination must
+        //    be the single-prefixed home page, NOT a doubled route prefix
+        //    (`/system/system/first-step/...`) that 404s. A weaker assertion
+        //    here — just "no auth-login-input visible" — passed even on the
+        //    broken build, because a 404 page ALSO has no auth input. Assert
+        //    the actual URL and a real 200, not just an absent element.
+        expect(response?.status(), `magic-login redirect landed on ${linkPage.url()}`).toBe(200);
+        expect(linkPage.url()).toBe(`${BASE}/system/`);
+        expect(linkPage.url()).not.toContain('/system/system/');
+
+        // 5. Logged in — no auth input, no F5 required.
         await expect(linkPage.locator('[data-test-id="auth-login-input"]')).not.toBeVisible({ timeout: 10000 });
 
         await context.close();
@@ -211,7 +227,17 @@ test.describe('Invite-flow magic-login — one-click token', () => {
         const freshCtx = await newScopedContext(browser, { baseURL: BASE });
         const freshPage = await freshCtx.newPage();
 
-        await freshPage.goto(`/magic-login/code~${token}`);
+        const response = await freshPage.goto(`/magic-login/code~${token}`);
+
+        // Same regression guard as the same-device test: assert the actual
+        // final destination (site root — RegisterController redirects an
+        // already-logged-in visitor away from /first-step/{token}) and a
+        // real 200, not just an absent element (a 404 page also has no
+        // auth-login-input, so that alone doesn't prove the redirect landed
+        // on the right page).
+        expect(response?.status(), `magic-login redirect landed on ${freshPage.url()}`).toBe(200);
+        expect(freshPage.url()).toBe(`${BASE}/system/`);
+        expect(freshPage.url()).not.toContain('/system/system/');
 
         // Logged in — even though this context never had the SENT_CODE
         // session state that the old mechanism depended on.

@@ -136,7 +136,11 @@ async function loginOnce(
     // logs in and redirects server-side. Same context, but no session
     // continuity is required for this to work (that's the whole point).
     const linkPage = await context.newPage();
-    await linkPage.goto(`/magic-login/code~${magicToken}`);
+    const response = await linkPage.goto(`/magic-login/code~${magicToken}`);
+    // Regression guard: the redirect must land on a real 200, not a doubled
+    // route prefix (/system/system/...) 404 — see invite-magic-link.spec.ts.
+    expect(response?.status(), `magic-login redirect landed on ${linkPage.url()}`).toBe(200);
+    expect(linkPage.url()).not.toContain('/system/system/');
     await expect(linkPage.locator('[data-test-id="auth-login-input"]')).not.toBeVisible({ timeout: 10000 });
 
     await context.close();

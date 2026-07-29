@@ -87,7 +87,15 @@ test.describe('Magic-link — fresh context needs no deferred capture', () => {
         const freshCtx = await newScopedContext(browser, { baseURL: BASE });
         const page = await freshCtx.newPage();
 
-        await page.goto(`/magic-login/code~${token}`);
+        const response = await page.goto(`/magic-login/code~${token}`);
+
+        // Regression guard (real prod incident): the redirect target must be
+        // the single-prefixed page, not a doubled route prefix
+        // (`/system/system/...`) that 404s. A bare "auth-login-input not
+        // visible" check would pass on a 404 page too — assert the actual
+        // URL and a real 200 instead.
+        expect(response?.status(), `magic-login redirect landed on ${page.url()}`).toBe(200);
+        expect(page.url()).not.toContain('/system/system/');
 
         // No intermediate email form — we land already authenticated.
         await expect(page.locator('[data-test-id="auth-login-input"]')).not.toBeVisible({ timeout: 10000 });

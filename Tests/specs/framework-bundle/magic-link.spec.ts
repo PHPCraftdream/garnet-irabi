@@ -112,12 +112,20 @@ test.describe('Magic-link verify — one-click token path', () => {
         //     so the old #176 "white screen from truncated SPA-replace body"
         //     class of bug can't occur on this path at all.
         const linkPage = await context.newPage();
-        await linkPage.goto(`/magic-login/code~${token}`);
+        const response = await linkPage.goto(`/magic-login/code~${token}`);
 
-        // ── 5. Logged in — auth input is gone.
+        // ── 5. Regression guard (real prod incident): the redirect target
+        //     must be the single-prefixed page, not a doubled route prefix
+        //     (`/system/system/...`) that 404s. A bare "auth-login-input
+        //     not visible" check would pass on a 404 page too — assert the
+        //     actual URL and a real 200 instead.
+        expect(response?.status(), `magic-login redirect landed on ${linkPage.url()}`).toBe(200);
+        expect(linkPage.url()).not.toContain('/system/system/');
+
+        // ── 6. Logged in — auth input is gone.
         await expect(linkPage.locator('[data-test-id="auth-login-input"]')).not.toBeVisible({ timeout: 10000 });
 
-        // ── 6. #175 post-verify: account now exists ──────────────────────
+        // ── 7. #175 post-verify: account now exists ──────────────────────
         expect(await countAccounts(EMAIL)).toBe(1);
 
         await context.close();

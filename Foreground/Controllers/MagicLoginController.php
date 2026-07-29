@@ -11,7 +11,6 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Kernel\Io\Twig\TwigParams;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
     use PHPCraftdream\IRabi\Foreground\Middlewares\IrabiAuthMiddleware;
-    use PHPCraftdream\IRabi\IRabi;
 
     /**
      * One-click magic-login: GET /magic-login/code~{32-char one-time token}.
@@ -36,8 +35,18 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             return IrabiAuthMiddleware::class;
         }
 
+        /**
+         * $returnUri comes from $globals->getUri() captured at code-request
+         * time (see EmailAuthMiddleware::sendCode()), which is the RAW
+         * incoming request URI — already carrying the /system route prefix
+         * when present, exactly like the old hash-based link's $baseUrl . $uri
+         * concatenation never re-prefixed it either. Routing this through
+         * IRabi::url() (which ALWAYS prepends the prefix, meant for bare
+         * Controller::URL constants) double-prefixes it, producing an
+         * invalid /system/system/... redirect target that 404s.
+         */
         protected static function buildRedirectUrl(string $returnUri): string {
-            return IRabi::url($returnUri);
+            return $returnUri;
         }
 
         protected static function renderError(IGlobalReqParams $globals, string $reason): mixed {
