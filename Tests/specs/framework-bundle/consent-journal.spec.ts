@@ -38,20 +38,13 @@ interface ConsentRow {
     user_agent: string | null;
 }
 
-async function fetchLatestAuthCode(email: string): Promise<string | null> {
+async function fetchLatestMagicToken(email: string): Promise<string | null> {
     return withConnection(async (conn) => {
         const [rows] = await conn.execute<any[]>(
-            `SELECT meta FROM ${tn('mail_log')} WHERE recipient_email = ? ORDER BY id DESC LIMIT 1`,
+            `SELECT token FROM ${tn('magic_login_tokens')} WHERE email = ? ORDER BY id DESC LIMIT 1`,
             [email],
         );
-        const meta = rows[0]?.meta;
-        if (!meta) return null;
-        try {
-            const parsed = JSON.parse(meta);
-            return typeof parsed.auth_code === 'string' ? parsed.auth_code : null;
-        } catch {
-            return null;
-        }
+        return rows[0]?.token ?? null;
     });
 }
 
@@ -97,9 +90,10 @@ async function cleanupEmail(email: string): Promise<void> {
 
 /**
  * Drive the full real email-code login once: tick the consent checkbox(es),
- * request a code, read it from mail_log, then follow the magic link which
- * auto-verifies. A fresh context = a fresh session, so consent timestamps
- * staged this login can't leak from a prior login.
+ * request a code, then follow the one-click magic-login link (read from
+ * magic_login_tokens) to complete the login via a plain GET + redirect. A
+ * fresh context = a fresh session, so consent timestamps staged this login
+ * can't leak from a prior login.
  */
 async function loginOnce(
     browser: Browser,
@@ -135,21 +129,15 @@ async function loginOnce(
         throw new Error(`request-code POST failed: ${requestResponse.status()} ${body}`);
     }
 
-    const code = await fetchLatestAuthCode(email);
-    expect(code, `auth_code not found in mail log for ${email}`).toBeTruthy();
+    const magicToken = await fetchLatestMagicToken(email);
+    expect(magicToken, `magic-login token not found for ${email}`).toBeTruthy();
 
-    // Magic-link auto-verify (same context → same session cookie).
+    // One-click magic-login link — a plain GET that validates, consumes,
+    // logs in and redirects server-side. Same context, but no session
+    // continuity is required for this to work (that's the whole point).
     const linkPage = await context.newPage();
-    const [verifyResponse] = await Promise.all([
-        linkPage.waitForResponse(
-            (r) => r.request().method() === 'POST' && r.url().includes('/system/'),
-            { timeout: 15000 },
-        ),
-        linkPage.goto(`/system/#token=${code}`),
-    ]);
-    expect(verifyResponse.ok()).toBe(true);
-    const verifyBody = await verifyResponse.json();
-    expect(verifyBody.success).toBe(true);
+    await linkPage.goto(`/magic-login/code~${magicToken}`);
+    await expect(linkPage.locator('[data-test-id="auth-login-input"]')).not.toBeVisible({ timeout: 10000 });
 
     await context.close();
 }

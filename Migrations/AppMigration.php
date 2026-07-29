@@ -16,6 +16,7 @@ namespace PHPCraftdream\IRabi\Migrations {
     use PHPCraftdream\IRabi\Migrations\Items\M_0012;
     use PHPCraftdream\IRabi\Migrations\Items\M_0013;
     use PHPCraftdream\IRabi\Migrations\Items\M_0014;
+    use PHPCraftdream\IRabi\Migrations\Items\M_0015;
 
     /**
      * Migration plan:
@@ -34,6 +35,7 @@ namespace PHPCraftdream\IRabi\Migrations {
      *   M_0012 — time_slots.booked_count atomic capacity gate (H-01).
      *   M_0013 — fix broken Privacy/Cookies cross-links (content audit B-1/B-2).
      *   M_0014 — consents consent-audit-trail table (legal finding F-04).
+     *   M_0015 — magic_login_tokens table for one-click magic-login links.
      *
      * Historical M_0003..M_0019 were squashed into M_0002 in a one-time
      * consolidation pass. Existing prod DBs at version=19 keep their
@@ -41,7 +43,7 @@ namespace PHPCraftdream\IRabi\Migrations {
      * destructive ALTERs replayed).
      */
     class AppMigration extends Migration {
-        protected int $currentVersion = 14;
+        protected int $currentVersion = 15;
 
         /**
          * @var array|class-string[]
@@ -61,6 +63,7 @@ namespace PHPCraftdream\IRabi\Migrations {
             12 => M_0012::class,
             13 => M_0013::class,
             14 => M_0014::class,
+            15 => M_0015::class,
         ];
     }
 }

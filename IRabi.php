@@ -7,6 +7,7 @@ namespace PHPCraftdream\IRabi {
     use PHPCraftdream\Garnet\Bundle\I18n\FwI18n;
     use PHPCraftdream\Garnet\Bundle\Middlewares\MaintenanceMiddleware;
     use PHPCraftdream\Garnet\Bundle\Middlewares\WorkerScopeMiddleware;
+    use PHPCraftdream\Garnet\Bundle\Modules\Auth\FwMagicLoginService;
     use PHPCraftdream\Garnet\Bundle\Modules\Email\FwEmailQueueService;
     use PHPCraftdream\Garnet\Bundle\Modules\Idempotency\IdempotencyMiddleware;
     use PHPCraftdream\Garnet\Bundle\Modules\Invite\FwInviteTokenService;
@@ -56,6 +57,7 @@ namespace PHPCraftdream\IRabi {
     use PHPCraftdream\IRabi\Common\Tables\InviteRegistrations;
     use PHPCraftdream\IRabi\Common\Tables\InviteTokens;
     use PHPCraftdream\IRabi\Common\Tables\JsErrors;
+    use PHPCraftdream\IRabi\Common\Tables\MagicLoginTokens;
     use PHPCraftdream\IRabi\Common\Tables\SupportTickets;
     use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardBalancesController;
     use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardBookingsController;
@@ -81,6 +83,7 @@ namespace PHPCraftdream\IRabi {
     use PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanelController;
     use PHPCraftdream\IRabi\Foreground\Controllers\ExternalController;
     use PHPCraftdream\IRabi\Foreground\Controllers\ImController;
+    use PHPCraftdream\IRabi\Foreground\Controllers\MagicLoginController;
     use PHPCraftdream\IRabi\Foreground\Controllers\MainController;
     use PHPCraftdream\IRabi\Foreground\Controllers\NewsController;
     use PHPCraftdream\IRabi\Foreground\Controllers\RegisterController;
@@ -244,6 +247,7 @@ namespace PHPCraftdream\IRabi {
             $router->add(SysLogController::URL, SysLogController::class, $maintenanceOnly);
             $router->add(SysOpcacheResetController::URL, SysOpcacheResetController::class, $maintenanceOnly);
             $router->add(RegisterController::URL . '/{token}', RegisterController::class, $maintenanceOnly);
+            $router->add(MagicLoginController::URL . '/{code}', MagicLoginController::class, $maintenanceOnly);
             $router->add(StaticPagesController::URL . '/{view}', StaticPagesController::class, $maintenanceOnly);
             // SEO endpoints at the domain root (no /system prefix) —
             // served anonymous, no auth. See defineBundles() for the
@@ -526,6 +530,7 @@ namespace PHPCraftdream\IRabi {
         public static function wireSharedServiceTables(): void {
             FwInviteTokenService::setTableClasses(InviteTokens::class, InviteRegistrations::class);
             FwEmailQueueService::setTableClasses(EmailQueue::class, EmailAttempts::class);
+            FwMagicLoginService::setTableClasses(MagicLoginTokens::class);
         }
 
         protected function defineTwigParams(): void {

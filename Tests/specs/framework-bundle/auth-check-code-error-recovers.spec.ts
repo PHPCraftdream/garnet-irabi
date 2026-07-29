@@ -5,19 +5,21 @@
  * (unlike HandleRequestCode's, which already handled this). Any rejection —
  * network failure, CSRF not ready, 4xx/5xx, maintenance 503 — left
  * `isSendingRequest` stuck at `true` forever, since only the success/failure
- * branches inside `.then()` ever reset it. The magic-link auto-verify effect
- * in Auth2Island calls handleCheckCode with zero user interaction, so this
- * was reported live as "clicking the email link — nothing happens for a
- * long time" (the form was actually frozen, not merely slow).
+ * branches inside `.then()` ever reset it. This was originally reported live
+ * as "clicking the email link — nothing happens for a long time" via the
+ * (since removed) hash-based auto-verify, which called handleCheckCode with
+ * zero user interaction — but the underlying bug is in handleCheckCode
+ * itself, so it reproduces identically on a manual code submit, which is
+ * what this test now drives.
  *
  * Also covers the paired UX fix: while `isSendingRequest` is true, the
  * input/button are hidden behind a loader (`auth-loading`) instead of just
  * being disabled, so a slow-but-succeeding request doesn't look inert either.
  *
- * Strategy: request a real code, then open the magic link with the verify
- * POST intercepted to return 500 after a short delay (long enough to assert
- * the loader is visible mid-flight). Confirm the loader appears, then the
- * form recovers — input/button become visible again, not stuck frozen.
+ * Strategy: request a real code, manually enter it with the verify POST
+ * intercepted to return 500 after a short delay (long enough to assert the
+ * loader is visible mid-flight). Confirm the loader appears, then the form
+ * recovers — input/button become visible again, not stuck frozen.
  */
 
 import { test, expect, tn } from '../../helpers/scoped-test';
@@ -80,11 +82,13 @@ test.describe('Auth code-verify — a failed request recovers instead of freezin
         const code = await fetchLatestAuthCode(EMAIL);
         expect(code, `auth_code not found in mail log for ${EMAIL}`).toBeTruthy();
 
-        // ── 2. Open the magic link with the verify POST forced to fail ──
-        //     Delay the failure slightly so there's a reliable window to
-        //     assert the loader is visible before the request resolves.
-        const linkPage = await context.newPage();
-        await linkPage.route('**/*', async (route, request) => {
+        // ── 2. Still on the SAME page — the request-code POST above already
+        //     flipped client-side state to INPUT_CODE (handleRequestCode
+        //     transitions phase without a reload for the normal, non-
+        //     "success" response shape). Intercept the verify POST to fail,
+        //     delayed slightly so there's a reliable window to assert the
+        //     loader is visible before the request resolves.
+        await page.route('**/*', async (route, request) => {
             if (request.method() === 'POST' && request.url().includes('/system/')) {
                 await new Promise((r) => setTimeout(r, 400));
                 await route.fulfill({ status: 500, body: 'simulated error' });
@@ -92,21 +96,22 @@ test.describe('Auth code-verify — a failed request recovers instead of freezin
             }
             await route.continue();
         });
-        await linkPage.goto(`/system/#token=${code}`);
+        await page.locator('[data-test-id="auth-login-input"]').fill(code as string);
+        await page.locator('[data-test-id="auth-submit-btn"]').click();
 
         // ── 3. Loader visible, input/button hidden while the request is
-        //     in flight (the auto-verify effect fires with no click at all).
-        await expect(linkPage.locator('[data-test-id="auth-loading"]')).toBeVisible({ timeout: 5000 });
-        await expect(linkPage.locator('[data-test-id="auth-login-input"]')).toBeHidden();
-        await expect(linkPage.locator('[data-test-id="auth-submit-btn"]')).toBeHidden();
+        //     in flight.
+        await expect(page.locator('[data-test-id="auth-loading"]')).toBeVisible({ timeout: 5000 });
+        await expect(page.locator('[data-test-id="auth-login-input"]')).toBeHidden();
+        await expect(page.locator('[data-test-id="auth-submit-btn"]')).toBeHidden();
 
         // ── 4. The whole point of the regression: after the 500, the form
         //     recovers — loader gone, input/button visible again. Before the
         //     fix this hung forever (isSendingRequest never reset to false).
-        await expect(linkPage.locator('[data-test-id="auth-loading"]')).toBeHidden({ timeout: 10000 });
-        await expect(linkPage.locator('[data-test-id="auth-login-input"]')).toBeVisible({ timeout: 5000 });
-        await expect(linkPage.locator('[data-test-id="auth-submit-btn"]')).toBeVisible();
-        await expect(linkPage.locator('[data-test-id="auth-submit-btn"]')).toBeEnabled();
+        await expect(page.locator('[data-test-id="auth-loading"]')).toBeHidden({ timeout: 10000 });
+        await expect(page.locator('[data-test-id="auth-login-input"]')).toBeVisible({ timeout: 5000 });
+        await expect(page.locator('[data-test-id="auth-submit-btn"]')).toBeVisible();
+        await expect(page.locator('[data-test-id="auth-submit-btn"]')).toBeEnabled();
 
         await context.close();
     });

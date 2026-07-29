@@ -49,7 +49,7 @@ const APP_DIR = path.resolve(__dirname, '../../..');
  * constant rather than hard-coding so a future bump doesn't silently
  * stale this assertion — the runner itself reports fsVersion in output.
  */
-const FS_VERSION = 14;
+const FS_VERSION = 15;
 
 /**
  * Run the migration the same way `php garnet migration` does, but pointed

@@ -1,22 +1,27 @@
 /**
  * Magic-link verify flow (non-.test email, normal code-sending path).
  *
- * Covers two regressions that landed together:
+ * Covers regression #175: the account row must NOT exist until
+ * verify-success. The pre-fix code created it on the request-code POST
+ * via Account::fromSession() → touchAccount(). This property is
+ * independent of which link mechanism does the verifying, so it's kept
+ * here, adapted to the new one-click flow.
  *
- * 1. #175 — the account row must NOT exist until verify-success. The
- *    pre-fix code created it on the request-code POST via
- *    Account::fromSession() → touchAccount().
- * 2. #176 — clicking the magic link rendered a white screen. PageLoader
- *    truncated the body to a few hundred bytes during SPA navigation.
+ * Regression #176 ("clicking the magic link rendered a white screen",
+ * caused by PageLoader truncating the body during a client-side SPA
+ * navigation) is NOT applicable anymore and is intentionally dropped:
+ * the new magic-login link is consumed entirely server-side
+ * (`FwMagicLoginController::get__main()` → validate → consume → login →
+ * HTTP 302 redirect to `return_uri`). There is no client-side JSON
+ * response, no SPA-replace, no PageLoader step in this path at all — the
+ * whole class of bug is structurally impossible here.
  *
  * Flow under test:
  *   POST /system/  { auth_email: <real email> } → 200 "Код отправлен"
  *   (assert: no row in accounts yet)
- *   read auth_code from mail_log.meta JSON
- *   GET /system/#token=<code>  (Auth2 island reads hash, POSTs verify)
- *   (assert: verify POST returns success=true)
- *   (assert: body is fully populated — at least registration-form
- *    appears for a first-time user)
+ *   read the 32-char magic token from magic_login_tokens
+ *   GET /magic-login/code~<token>  → 302 redirect to return_uri (/system/)
+ *   (assert: end up logged in — auth-login-input gone)
  *   (assert: row in accounts now exists)
  */
 
@@ -32,20 +37,13 @@ const PIDX = process.env.TEST_PARALLEL_INDEX ?? '0';
 // address) outlives test cleanup, so a fixed email goes 429 on rerun.
 const EMAIL = `magic_${PIDX}_${Date.now()}@external.example.com`;
 
-async function fetchLatestAuthCode(email: string): Promise<string | null> {
+async function fetchLatestMagicToken(email: string): Promise<string | null> {
     return withConnection(async (conn) => {
         const [rows] = await conn.execute<any[]>(
-            `SELECT meta FROM ${tn('mail_log')} WHERE recipient_email = ? ORDER BY id DESC LIMIT 1`,
+            `SELECT token FROM ${tn('magic_login_tokens')} WHERE email = ? ORDER BY id DESC LIMIT 1`,
             [email],
         );
-        const meta = rows[0]?.meta;
-        if (!meta) return null;
-        try {
-            const parsed = JSON.parse(meta);
-            return typeof parsed.auth_code === 'string' ? parsed.auth_code : null;
-        } catch {
-            return null;
-        }
+        return rows[0]?.token ?? null;
     });
 }
 
@@ -62,11 +60,12 @@ async function countAccounts(email: string): Promise<number> {
 async function cleanup(email: string) {
     await withConnection(async (conn) => {
         await conn.execute(`DELETE FROM ${tn('mail_log')} WHERE recipient_email = ?`, [email]);
+        await conn.execute(`DELETE FROM ${tn('magic_login_tokens')} WHERE email = ?`, [email]);
         await conn.execute(`DELETE FROM ${tn('accounts')} WHERE login = ?`, [email]);
     });
 }
 
-test.describe('Magic-link verify — code path + SPA-replace', () => {
+test.describe('Magic-link verify — one-click token path', () => {
     test.beforeAll(async () => {
         await cleanup(EMAIL);
     });
@@ -75,7 +74,7 @@ test.describe('Magic-link verify — code path + SPA-replace', () => {
         await cleanup(EMAIL);
     });
 
-    test('full flow: request-code does NOT create account, verify does, no white screen', async ({ browser }) => {
+    test('full flow: request-code does NOT create account, visiting the link does', async ({ browser }) => {
         const context = await newScopedContext(browser);
         const page = await context.newPage();
 
@@ -103,38 +102,20 @@ test.describe('Magic-link verify — code path + SPA-replace', () => {
         // ── 2. #175 guard: account must NOT exist yet ────────────────────
         expect(await countAccounts(EMAIL)).toBe(0);
 
-        // ── 3. Read code from mail log ───────────────────────────────────
-        const code = await fetchLatestAuthCode(EMAIL);
-        expect(code, `auth_code not found in mail log for ${EMAIL}`).toBeTruthy();
+        // ── 3. Read the one-click token straight from the DB ─────────────
+        const token = await fetchLatestMagicToken(EMAIL);
+        expect(token, `magic token not found in DB for ${EMAIL}`).toBeTruthy();
 
-        // ── 4. Navigate via magic link (Auth2 reads #token from hash) ────
-        //     Open a fresh page in the SAME context — session cookie carries
-        //     over, but a fresh page guarantees a full reload (page.goto on
-        //     a same-origin URL that only changes the hash does NOT reload).
+        // ── 4. Visit the magic-login URL — a plain server-side GET that
+        //     validates + atomically consumes the token, logs the user in,
+        //     and 302-redirects to return_uri. No client JS/JSON involved,
+        //     so the old #176 "white screen from truncated SPA-replace body"
+        //     class of bug can't occur on this path at all.
         const linkPage = await context.newPage();
-        const [verifyResponse] = await Promise.all([
-            linkPage.waitForResponse(
-                r => r.request().method() === 'POST' && r.url().includes('/system/'),
-                { timeout: 15000 },
-            ),
-            linkPage.goto(`/system/#token=${code}`),
-        ]);
-        expect(verifyResponse.ok()).toBe(true);
-        const verifyBody = await verifyResponse.json();
-        expect(verifyBody.success).toBe(true);
+        await linkPage.goto(`/magic-login/code~${token}`);
 
-        // ── 5. #176 guard: SPA-replaced body must be fully populated ────
-        //     A fresh account on verify-success is sent through RegMiddleware
-        //     and rendered with the registration form. If the white-screen
-        //     bug regressed, the body would shrink to ~500 bytes and the
-        //     form-field test ids would be missing.
-        await expect(linkPage.locator('[data-test-id="registration-form"]')).toBeVisible({ timeout: 10000 });
-        await expect(linkPage.locator('[data-test-id="form-field-name"]')).toBeVisible();
-
-        // Belt-and-braces: real body content size is well above the
-        // truncated-body footprint (~500 bytes was the failure mode).
-        const bodyText = await linkPage.locator('body').innerHTML();
-        expect(bodyText.length).toBeGreaterThan(2000);
+        // ── 5. Logged in — auth input is gone.
+        await expect(linkPage.locator('[data-test-id="auth-login-input"]')).not.toBeVisible({ timeout: 10000 });
 
         // ── 6. #175 post-verify: account now exists ──────────────────────
         expect(await countAccounts(EMAIL)).toBe(1);
