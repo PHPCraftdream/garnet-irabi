@@ -44,6 +44,10 @@ errors.log
 # ── Admin console auth token (runtime state, opens the /__garnet/ console) ──
 /.garnet_admin
 
+# ── Debug-mode session token (runtime state, created/deleted by
+# `php garnet serve:debug`; opens the MCP debug-collector header gate) ──
+/.garnet_debug_token
+
 # ── Playwright (Tests/) ──────────────────────────────────────────────────
 /Tests/node_modules/
 /Tests/test-results/
