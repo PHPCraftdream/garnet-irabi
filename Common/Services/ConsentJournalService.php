@@ -2,7 +2,7 @@
 
 namespace PHPCraftdream\IRabi\Common\Services {
     use InvalidArgumentException;
-use PHPCraftdream\IRabi\Common\Tables\Consents;
+    use PHPCraftdream\IRabi\Common\Tables\Consents;
 
     /**
      * Writes a row to the consent audit trail (table `consents`).
