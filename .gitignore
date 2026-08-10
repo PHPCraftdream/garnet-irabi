@@ -54,4 +54,8 @@ errors.log
 # ── IDE / OS ─────────────────────────────────────────────────────────────
 /.idea/
 /.vscode/
+/.claude/
 .DS_Store
+
+# ── AI session checkpoints (local working notes) ───────────────────────────
+/docs/checkpoints/
