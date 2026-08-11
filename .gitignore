@@ -45,7 +45,8 @@ errors.log
 /.garnet_admin
 
 # ── Debug-mode session token (runtime state, created/deleted by
-# `php garnet serve:debug`; opens the MCP debug-collector header gate) ──
+# `php garnet serve:debug`). Reserved for a future server-side
+# debug-collector auth check — not currently enforced anywhere. ──
 /.garnet_debug_token
 
 # ── Playwright (Tests/) ──────────────────────────────────────────────────
