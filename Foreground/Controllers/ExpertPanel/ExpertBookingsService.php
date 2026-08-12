@@ -249,7 +249,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                     ], NewsService::slotKey((int)$slot['id']));
                     // Stale slot_booked event for this slot is no longer meaningful.
                     NewsService::deleteByTargetKey(NewsService::slotKey((int)$slot['id']), NewsService::TYPE_SLOT_BOOKED);
-                    EmailNotifications::bookingRejected((int)$booking['user_id'], (int)($slot['start_at'] ?? 0), (int)($slot['duration_min'] ?? 0), $account->id());
+                    EmailNotifications::bookingRejected((int)$booking['user_id'], (int)($slot['start_at'] ?? 0), (int)($slot['duration_min'] ?? 0), $account->id(), $reason);
                     BookingChatNotifier::cancelledOrDeclined($account->id(), (int)$booking['user_id'], (int)$slot['start_at'], (string)$booking['status']);
                 } catch (Throwable) {
                 }
