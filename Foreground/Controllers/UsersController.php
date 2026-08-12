@@ -57,8 +57,8 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 }
             }
 
-            $expertProfileRow = ExpertProfiles::get()->selectOneByField('account_id', $userId);
-            $type = $expertProfileRow ? 'expert' : 'user';
+            $type = UserEntityConfig::isApprovedActiveExpert($userId) ? 'expert' : 'user';
+            $expertProfileRow = $type === 'expert' ? ExpertProfiles::get()->selectOneByField('account_id', $userId) : null;
 
             $payload = [
                 'id' => $userId,
@@ -114,10 +114,10 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 }
 
                 // Use ExpertCancellations log (cancellations initiated by this expert) —
-                // matches what the public profile shows.
+                // matches what the public profile shows (only kind='cancel').
                 $row = ExpertCancellations::get()->selectAll(function (SelectInterface $q) use ($userId): void {
                     $q->resetCols()->cols(['COUNT(*) as cnt']);
-                    $q->where('expert_id = ?', [$userId]);
+                    $q->where('expert_id = ? AND kind = ?', [$userId, 'cancel']);
                 });
                 $cancellations = (int)($row[0]['cnt'] ?? 0);
 
