@@ -464,4 +464,66 @@ test.describe('iRabi Batch Slot Creation', () => {
 		// Close batch modal
 		await page.locator('[data-test-id="batch-slot-modal-close"]').click();
 	});
+
+	test('17. Batch rejects slots that overlap each other (not just the DB)', async () => {
+		// Open batch modal
+		await page.locator('[data-test-id="open-batch-slot-modal"]').click();
+		const batchModal = page.locator('[data-test-id="batch-slot-modal"]');
+		await expect(batchModal).toBeVisible({ timeout: 5000 });
+
+		await batchModal.locator('input[name="start_date"]').fill('2026-06-01');
+		await batchModal.locator('input[name="per_week"]').fill('1');
+		await batchModal.locator('input[name="count"]').fill('1');
+		await batchModal.locator('input[name="batch_time"]').fill('10:00');
+		await batchModal.locator('select[name="batch_duration"]').selectOption('60');
+
+		await batchModal.locator('#batchForm button[type="submit"]').click();
+		await expect(batchModal.locator('#batchPreview')).toBeVisible({ timeout: 5000 });
+		await expect(batchModal.locator('#proposedBody tr')).toHaveCount(1, { timeout: 8000 });
+
+		// Add a second slot on the SAME date, overlapping the first
+		// (10:00-11:00 vs 10:30-11:30) — neither exists in the DB yet,
+		// so only a within-batch check catches this.
+		const targetDate = await batchModal.locator('#proposedBody tr').first().locator('input[type="date"]').inputValue();
+		expect(targetDate).toBeTruthy();
+
+		await batchModal.locator('#addSlotDate').fill(targetDate);
+		await batchModal.locator('#addSlotTime').fill('10:30');
+		await batchModal.locator('#addSlotDuration').selectOption('60');
+		await batchModal.locator('#addSlotBtn').click();
+
+		await expect(batchModal.locator('#proposedBody tr')).toHaveCount(2, { timeout: 5000 });
+
+		await batchModal.locator('#batchCreateBtn').click();
+
+		const confirmModal = page.locator('#confirmModal');
+		await expect(confirmModal).toBeVisible({ timeout: 3000 });
+
+		const [batchResponse] = await Promise.all([
+			page.waitForResponse(resp => resp.url().includes('/expert/~batchSlots') && resp.request().method() === 'POST'),
+			page.locator('#confirmModalOk').click(),
+		]);
+
+		// Whole batch must be rejected — no partial insert of the non-overlapping slot.
+		expect(batchResponse.status()).toBe(400);
+		const body = await batchResponse.json().catch(() => null);
+		expect(body?.overlap).toBe(true);
+
+		// Verify via DB that neither proposed slot from this test was created.
+		const conn = await mysql.createConnection(DB);
+		try {
+			const [rows] = await conn.execute<any[]>(
+				`SELECT COUNT(*) as cnt FROM ${tn('time_slots')} ts
+				 JOIN ${tn('accounts')} a ON a.id = ts.expert_id
+				 WHERE a.login = ? AND ts.start_at >= UNIX_TIMESTAMP('2026-06-01 00:00:00')
+				   AND ts.start_at < UNIX_TIMESTAMP('2026-06-02 00:00:00')`,
+				[EXPERT_LOGIN],
+			);
+			expect(Number(rows[0]?.cnt ?? 0)).toBe(0);
+		} finally {
+			await conn.end();
+		}
+
+		console.log('Batch with in-batch overlap correctly rejected, no partial insert');
+	});
 });

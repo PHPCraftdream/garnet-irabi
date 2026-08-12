@@ -396,9 +396,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
             }
 
             $t = ForegroundI18n::getInstance();
-            $rows = [];
-            $overlaps = [];
 
+            // First, parse all proposed slots with their start/end times
+            $proposedSlots = [];
             foreach ($slots as $slot) {
                 $date = $slot['date'] ?? '';
                 $time = $slot['time'] ?? '10:00';
@@ -413,6 +413,40 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                     continue;
                 }
                 $proposedEnd = $proposedStart + $duration * 60;
+
+                $proposedSlots[] = [
+                    'date' => $date,
+                    'time' => $time,
+                    'duration' => $duration,
+                    'start_at' => $proposedStart,
+                    'end_at' => $proposedEnd,
+                ];
+            }
+
+            // Check for overlaps within the batch itself
+            $proposedCount = count($proposedSlots);
+            for ($i = 0; $i < $proposedCount; $i++) {
+                for ($j = $i + 1; $j < $proposedCount; $j++) {
+                    $slotA = $proposedSlots[$i];
+                    $slotB = $proposedSlots[$j];
+                    if ($slotA['start_at'] < $slotB['end_at'] && $slotA['end_at'] > $slotB['start_at']) {
+                        return ControllerTools::JSON([
+                            'error' => $t->Slot_OverlapError(),
+                            'overlap' => true,
+                        ], status: 400);
+                    }
+                }
+            }
+
+            $rows = [];
+            $overlaps = [];
+
+            foreach ($proposedSlots as $slot) {
+                $proposedStart = $slot['start_at'];
+                $proposedEnd = $slot['end_at'];
+                $date = $slot['date'];
+                $time = $slot['time'];
+                $duration = $slot['duration'];
 
                 $hasOverlap = false;
 
