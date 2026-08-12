@@ -38,7 +38,13 @@ async function setExpertDisabled(on: boolean): Promise<void> {
 
 test.describe('Blocked user — anonymised name & avatar', () => {
 
-    test('entry: resolve ids, seed a news event, block the expert', async () => {
+    // beforeAll/afterAll (not plain tests) — serial mode skips every
+    // subsequent test once one fails, so a cleanup step written as a
+    // regular test never runs after a mid-flow assertion fails, leaving
+    // the shared testuser_setup_expert fixture disabled for the rest
+    // of this worker's run, poisoning unrelated later specs. Hooks
+    // run regardless of test outcome.
+    test.beforeAll(async () => {
         const conn = await mysql.createConnection(DB);
         try {
             const [u] = await conn.execute<any[]>(`SELECT id FROM ${tn('accounts')} WHERE login = ?`, [USER_LOGIN]);
@@ -96,7 +102,7 @@ test.describe('Blocked user — anonymised name & avatar', () => {
         await expect(page.locator('[data-test-id="expert-avatar"]')).toHaveCount(0);
     });
 
-    test('exit: unblock + cleanup', async () => {
+    test.afterAll(async () => {
         if (expertId) {
             const conn = await mysql.createConnection(DB);
             try {

@@ -95,7 +95,13 @@ test.describe('OwnerSM × ModerationSM: 3-level capability chain', () => {
 	let initialExpertApproval = 0;
 	let ownerCtx: BrowserContext | null = null;
 
-	test('entry: record initial states, reset to clean start', async () => {
+	// beforeAll/afterAll (not plain tests) — serial mode skips every
+	// subsequent test once one fails, so a cleanup step written as a
+	// regular test never runs after a mid-flow assertion fails, leaving
+	// the shared testuser_setup_moderator/testuser_setup_expert
+	// fixtures' IS_MODERATOR/approval flags mutated for the rest of
+	// this worker's run. Hooks run regardless of test outcome.
+	test.beforeAll(async () => {
 		moderatorId = await getAccountId('testuser_setup_moderator@irabi.test');
 		expertId   = await getAccountId('testuser_setup_expert@irabi.test');
 		expect(moderatorId).toBeGreaterThan(0);
@@ -239,7 +245,7 @@ test.describe('OwnerSM × ModerationSM: 3-level capability chain', () => {
 		).toBe(0);
 	});
 
-	test('exit: restore expert to initial approval state', async () => {
+	test.afterAll(async () => {
 		if (ownerCtx) { await ownerCtx.close(); ownerCtx = null; }
 		if (expertId) {
 			await setExpertApproval(expertId, initialExpertApproval);

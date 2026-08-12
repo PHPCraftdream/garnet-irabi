@@ -79,7 +79,13 @@ async function sendMessage(page: Page, text: string): Promise<void> {
 
 test.describe('Email notification gate — messages category', () => {
 
-    test('entry: resolve ids + seed a conversation', async () => {
+    // beforeAll/afterAll (not plain tests) — serial mode skips every
+    // subsequent test once one fails, so a cleanup step written as a
+    // regular test never runs after an earlier assertion fails, leaving
+    // the shared testuser_setup_expert fixture's email_notif_prefs /
+    // email_throttle / seeded conversation mutated for the rest of this
+    // worker's run. Hooks run regardless of test outcome.
+    test.beforeAll(async () => {
         const conn = await mysql.createConnection(DB);
         try {
             const [s] = await conn.execute<any[]>(`SELECT id FROM ${tn('accounts')} WHERE login = ?`, [SENDER_LOGIN]);
@@ -151,7 +157,7 @@ test.describe('Email notification gate — messages category', () => {
         expect(afterSecond).toBe(before + 1); // throttled — no new row
     });
 
-    test('exit: cleanup', async () => {
+    test.afterAll(async () => {
         const conn = await mysql.createConnection(DB);
         try {
             if (seededMsgIds.length) {

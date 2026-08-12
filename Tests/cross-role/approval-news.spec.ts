@@ -143,7 +143,13 @@ async function getNewsForSlot(slotId: number): Promise<any[]> {
 
 test.describe('Approval broadcasts new_slot news for future slots', () => {
 
-	test('entry: make expert unapproved, seed 2 future slots, clear their news', async () => {
+	// beforeAll/afterAll (not plain tests) — serial mode skips every
+	// subsequent test once one fails, so a cleanup step written as a
+	// regular test never runs after a mid-flow assertion fails, leaving
+	// the shared testuser_setup_expert fixture's approval state
+	// mutated and stray test slots behind for the rest of this
+	// worker's run. Hooks run regardless of test outcome.
+	test.beforeAll(async () => {
 		expertId = await getExpertId();
 		expect(expertId).toBeGreaterThan(0);
 
@@ -217,7 +223,7 @@ test.describe('Approval broadcasts new_slot news for future slots', () => {
 		}
 	});
 
-	test('exit: cleanup + restore', async () => {
+	test.afterAll(async () => {
 		// Delete seeded slots and their news
 		await deleteNewsForSlots([slotId1, slotId2]);
 		await deleteSlots([slotId1, slotId2]);

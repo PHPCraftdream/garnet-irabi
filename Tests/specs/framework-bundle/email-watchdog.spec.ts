@@ -246,7 +246,11 @@ test.describe('email-watchdog: recovers stuck `sending` rows on the next cron ti
         expect(row.attempts).toBe(1);
     });
 
-    test('cleanup: remove seeded rows and their attempts', async () => {
+    // afterAll (not a plain test) — serial mode skips every subsequent
+    // test once one fails, so a cleanup step written as a regular test
+    // never runs after a mid-flow assertion fails, leaving stray
+    // email_queue rows behind. Hooks run regardless of test outcome.
+    test.afterAll(async () => {
         for (const id of seeded) {
             await deleteRowAndAttempts(id);
         }

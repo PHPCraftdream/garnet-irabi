@@ -149,7 +149,12 @@ test.describe('TimeSlotSM: edit free slot via edit-slot-modal', () => {
 	let expertId = 0;
 	let slotId = 0;
 
-	test('entry: create free slot', async () => {
+	// beforeAll/afterAll (not plain tests) — serial mode skips every
+	// subsequent test once one fails, so a cleanup step written as a
+	// regular test never runs after a mid-flow assertion fails, leaving
+	// a stray test slot behind for the rest of this worker's run.
+	// Hooks run regardless of test outcome.
+	test.beforeAll(async () => {
 		expertId = await getAccountId('testuser_setup_expert@irabi.test');
 		expect(expertId).toBeGreaterThan(0);
 		slotId = await createFreeSlot(expertId, 100);
@@ -215,7 +220,7 @@ test.describe('TimeSlotSM: edit free slot via edit-slot-modal', () => {
 		expect(slot.status).toBe('free');
 	});
 
-	test('exit: clean up', async () => {
+	test.afterAll(async () => {
 		if (slotId) await deleteSlot(slotId);
 	});
 });
@@ -228,7 +233,7 @@ test.describe('TimeSlotSM: free → deleted via delete button + ConfirmModal', (
 	let expertId = 0;
 	let slotId = 0;
 
-	test('entry: create free slot', async () => {
+	test.beforeAll(async () => {
 		expertId = await getAccountId('testuser_setup_expert@irabi.test');
 		expect(expertId).toBeGreaterThan(0);
 		slotId = await createFreeSlot(expertId, 0);
@@ -302,7 +307,7 @@ test.describe('TimeSlotSM: booked → cancelled (refund via cancel-booking-modal
 	let userBalanceBefore = 0;
 	let expertBalanceBefore = 0;
 
-	test('entry: create slot, user books it via UI', async ({ browser }) => {
+	test.beforeAll(async ({ browser }) => {
 		expertId = await getAccountId('testuser_setup_expert@irabi.test');
 		userId = await getAccountId('testuser_setup_user@irabi.test');
 		expect(expertId).toBeGreaterThan(0);
@@ -418,7 +423,7 @@ test.describe('TimeSlotSM: booked → cancelled (refund via cancel-booking-modal
 		expect(expertBalanceAfter).toBe(expertBalanceBefore);
 	});
 
-	test('exit: clean up', async () => {
+	test.afterAll(async () => {
 		if (slotId) await deleteSlot(slotId);
 	});
 });

@@ -260,7 +260,15 @@ test.describe('C-1: IS_DISABLED=1 cancels a pending paid booking + refund + emai
 	let expertBalanceBefore = 0;
 	let emailIdBefore = 0;
 
-	test('entry: seed slot + pending booking', async () => {
+	// beforeAll/afterAll (not plain tests) — serial mode skips every
+	// subsequent test once one fails, so a cleanup step written as a
+	// regular test never runs after a mid-flow assertion fails. This
+	// spec's entry disables/demotes the shared testuser_setup_expert
+	// fixture via the admin UI, so a skipped cleanup leaves it disabled
+	// for the rest of this worker's run, poisoning unrelated later
+	// specs (confirmed live in this session — see live-counts.spec.ts).
+	// Hooks run regardless of test outcome.
+	test.beforeAll(async () => {
 		expertId = await getAccountId(EXPERT_LOGIN);
 		userId = await getAccountId(USER_LOGIN);
 		expect(expertId).toBeGreaterThan(0);
@@ -315,7 +323,7 @@ test.describe('C-1: IS_DISABLED=1 cancels a pending paid booking + refund + emai
 		expect(maxId).toBeGreaterThan(emailIdBefore);
 	});
 
-	test('exit: cleanup', async () => {
+	test.afterAll(async () => {
 		await cleanupTest({
 			slotId, bookingIds: bookingId ? [bookingId] : [],
 			userLogin: USER_LOGIN, userBalanceBefore,
@@ -333,7 +341,7 @@ test.describe('C-1: IS_APPROVED 1→0 cancels a confirmed paid booking + refund 
 	let expertBalanceBefore = 0;
 	let emailIdBefore = 0;
 
-	test('entry: seed slot + confirmed booking', async () => {
+	test.beforeAll(async () => {
 		expertId = await getAccountId(EXPERT_LOGIN);
 		userId = await getAccountId(USER_LOGIN);
 		expect(expertId).toBeGreaterThan(0);
@@ -387,7 +395,7 @@ test.describe('C-1: IS_APPROVED 1→0 cancels a confirmed paid booking + refund 
 		expect(maxId).toBeGreaterThan(emailIdBefore);
 	});
 
-	test('exit: cleanup', async () => {
+	test.afterAll(async () => {
 		await cleanupTest({
 			slotId, bookingIds: bookingId ? [bookingId] : [],
 			userLogin: USER_LOGIN, userBalanceBefore,
@@ -405,7 +413,7 @@ test.describe('C-2: IS_DISABLED=1 cancels a partially-booked multi-slot (status=
 	let expertBalanceBefore = 0;
 	let emailIdBefore = 0;
 
-	test('entry: seed multi-seat slot (max_users=3) + 1 booking, slot stays free', async () => {
+	test.beforeAll(async () => {
 		expertId = await getAccountId(EXPERT_LOGIN);
 		userId = await getAccountId(USER_LOGIN);
 		expect(expertId).toBeGreaterThan(0);
@@ -456,7 +464,7 @@ test.describe('C-2: IS_DISABLED=1 cancels a partially-booked multi-slot (status=
 		expect(maxId).toBeGreaterThan(emailIdBefore);
 	});
 
-	test('exit: cleanup', async () => {
+	test.afterAll(async () => {
 		await cleanupTest({
 			slotId, bookingIds: bookingId ? [bookingId] : [],
 			userLogin: USER_LOGIN, userBalanceBefore,

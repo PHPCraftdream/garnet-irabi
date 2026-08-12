@@ -126,7 +126,12 @@ test.describe('Expert Onboarding: slot creation flow', () => {
 
 	// ── Cleanup ────────────────────────────────────────────────────────────────
 
-	test('exit: clean up test data', async () => {
+	// afterAll (not a plain test) — serial mode skips every subsequent
+	// test once one fails, so a cleanup step written as a regular test
+	// never runs after a mid-flow assertion fails, leaving a stray
+	// test slot behind for the rest of this worker's run. Hooks run
+	// regardless of test outcome.
+	test.afterAll(async () => {
 		if (slotId) await deleteSlot(slotId);
 		console.log('Cleanup complete — slot:', slotId);
 	});

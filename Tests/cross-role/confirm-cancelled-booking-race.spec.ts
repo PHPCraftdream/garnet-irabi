@@ -115,7 +115,12 @@ test.describe('F-08-01: confirm after cancel returns 409 (CAS race)', () => {
 	let bookingId = 0;
 	let expertCtx: BrowserContext | null = null;
 
-	test('entry: setup slot + pending booking, then cancel via DB', async () => {
+	// beforeAll/afterAll (not plain tests) — serial mode skips every
+	// subsequent test once one fails, so a cleanup step written as a
+	// regular test never runs after a mid-flow assertion fails, leaving
+	// a stray test slot/booking behind for the rest of this worker's
+	// run. Hooks run regardless of test outcome.
+	test.beforeAll(async () => {
 		expertId = await getAccountId('expert1@dev.test');
 		userId = await getAccountId('user1@dev.test');
 		expect(expertId).toBeGreaterThan(0);
@@ -165,7 +170,7 @@ test.describe('F-08-01: confirm after cancel returns 409 (CAS race)', () => {
 		expect(await getBookingStatus(bookingId)).toBe('cancelled');
 	});
 
-	test('exit: cleanup', async () => {
+	test.afterAll(async () => {
 		if (expertCtx) { await expertCtx.close(); expertCtx = null; }
 		if (slotId) await cleanup(slotId);
 	});
@@ -182,7 +187,7 @@ test.describe('F-08-01: happy path — confirm pending booking succeeds', () => 
 	let bookingId = 0;
 	let expertCtx: BrowserContext | null = null;
 
-	test('entry: setup slot + pending booking', async () => {
+	test.beforeAll(async () => {
 		expertId = await getAccountId('expert1@dev.test');
 		userId = await getAccountId('user1@dev.test');
 		expect(expertId).toBeGreaterThan(0);
@@ -225,7 +230,7 @@ test.describe('F-08-01: happy path — confirm pending booking succeeds', () => 
 		expect(await getBookingStatus(bookingId)).toBe('confirmed');
 	});
 
-	test('exit: cleanup', async () => {
+	test.afterAll(async () => {
 		if (expertCtx) { await expertCtx.close(); expertCtx = null; }
 		if (slotId) await cleanup(slotId);
 	});

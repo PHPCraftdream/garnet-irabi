@@ -189,7 +189,14 @@ test.describe('Cross-role: booking + expert cancels + refund', () => {
 
 	// ── Step 0: Setup ───────────────────────────────────────────────────────
 
-	test('entry: dev-login expert & user, create slot, ensure balance', async ({ browser }) => {
+	// beforeAll/afterAll (not plain tests) — serial mode skips every
+	// subsequent test once one fails, so a cleanup step written as a
+	// regular test never runs after a mid-flow assertion fails, leaving
+	// the shared user1@dev.test/expert1@dev.test dev-seed fixtures'
+	// balance un-recalculated and a stray test slot/booking behind for
+	// the rest of this worker's run. Hooks run regardless of test
+	// outcome.
+	test.beforeAll(async ({ browser }) => {
 		const expert = await devLogin(browser, 'expert');
 		expertContext = expert.context;
 		expertPage = expert.page;
@@ -483,7 +490,7 @@ test.describe('Cross-role: booking + expert cancels + refund', () => {
 
 	// ── Cleanup ─────────────────────────────────────────────────────────────
 
-	test('exit: clean up test data and recalculate balances', async () => {
+	test.afterAll(async () => {
 		if (slotId) {
 			await cleanupSlot(slotId);
 		}

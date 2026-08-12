@@ -32,7 +32,14 @@ let hadExpertProfile = false;
 
 test.describe('IM -- partner name resolution', () => {
 
-    test('entry: blank partner account name, set expert display_name, seed a conversation', async () => {
+    // beforeAll/afterAll (not plain tests) — serial mode skips every
+    // subsequent test once one fails, so a cleanup step written as a
+    // regular test never runs after the middle assertion times out,
+    // leaving the shared testuser_setup_expert fixture's accounts.name
+    // blanked and expert_profiles.display_name corrupted for the rest
+    // of this worker's run (poisoning unrelated later specs). Hooks run
+    // regardless of test outcome.
+    test.beforeAll(async () => {
         const conn = await mysql.createConnection(DB);
         try {
             // Resolve user and partner account ids
@@ -146,7 +153,7 @@ test.describe('IM -- partner name resolution', () => {
         expect(text).not.toContain(`#${partnerId}`);
     });
 
-    test('exit: cleanup + restore', async () => {
+    test.afterAll(async () => {
         const conn = await mysql.createConnection(DB);
         try {
             // Delete seeded message

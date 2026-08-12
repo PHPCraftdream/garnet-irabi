@@ -150,7 +150,12 @@ test.describe('C-2: editSlot refuses cost/penalty change when booked_count > 0',
 	const ORIGINAL_COST = 200;
 	const ORIGINAL_PENALTY = 10;
 
-	test('entry: seed multi-slot + one active booking (status stays free)', async () => {
+	// beforeAll/afterAll (not plain tests) — serial mode skips every
+	// subsequent test once one fails, so a cleanup step written as a
+	// regular test never runs after a mid-flow assertion fails, leaving
+	// a stray test slot/booking behind for the rest of this worker's
+	// run. Hooks run regardless of test outcome.
+	test.beforeAll(async () => {
 		expertId = await getAccountId(EXPERT_LOGIN);
 		userId = await getAccountId(USER_LOGIN);
 		expect(expertId).toBeGreaterThan(0);
@@ -216,7 +221,7 @@ test.describe('C-2: editSlot refuses cost/penalty change when booked_count > 0',
 		expect(Number(slot.cancellation_penalty_percent)).toBe(ORIGINAL_PENALTY);
 	});
 
-	test('exit: cleanup', async () => {
+	test.afterAll(async () => {
 		await cleanup(slotId, bookingId ? [bookingId] : []);
 	});
 });
@@ -229,7 +234,7 @@ test.describe('C-2: editSlot still allows cost change when booked_count = 0', ()
 	let expertId = 0;
 	let slotId = 0;
 
-	test('entry: seed empty multi-slot', async () => {
+	test.beforeAll(async () => {
 		expertId = await getAccountId(EXPERT_LOGIN);
 		expect(expertId).toBeGreaterThan(0);
 		slotId = await createMultiSlot(expertId, 100, 3, 5);
@@ -254,7 +259,7 @@ test.describe('C-2: editSlot still allows cost change when booked_count = 0', ()
 		expect(Number(slot.cost)).toBe(500);
 	});
 
-	test('exit: cleanup', async () => {
+	test.afterAll(async () => {
 		await cleanup(slotId, []);
 	});
 });
@@ -269,7 +274,7 @@ test.describe('C-2: editSlot allows non-money field edits with booked_count > 0'
 	let slotId = 0;
 	let bookingId = 0;
 
-	test('entry: seed multi-slot + one active booking', async () => {
+	test.beforeAll(async () => {
 		expertId = await getAccountId(EXPERT_LOGIN);
 		userId = await getAccountId(USER_LOGIN);
 		expect(expertId).toBeGreaterThan(0);
@@ -305,7 +310,7 @@ test.describe('C-2: editSlot allows non-money field edits with booked_count > 0'
 		expect(Number(slot.cancellation_penalty_percent)).toBe(15);
 	});
 
-	test('exit: cleanup', async () => {
+	test.afterAll(async () => {
 		await cleanup(slotId, bookingId ? [bookingId] : []);
 	});
 });

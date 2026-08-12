@@ -105,7 +105,12 @@ test.describe('TimeSlotSM: free → booked → free', () => {
 	let slotId = 0;
 	let bookingId = 0;
 
-	test('entry: create test slot (max_users=1, cost=0)', async () => {
+	// beforeAll/afterAll (not plain tests) — serial mode skips every
+	// subsequent test once one fails, so a cleanup step written as a
+	// regular test never runs after a mid-flow assertion fails, leaving
+	// a stray test slot/booking behind for the rest of this worker's
+	// run. Hooks run regardless of test outcome.
+	test.beforeAll(async () => {
 		expertId = await getExpertId();
 		expect(expertId).toBeGreaterThan(0);
 
@@ -169,7 +174,7 @@ test.describe('TimeSlotSM: free → booked → free', () => {
 		await expect(cancelBookingBtn).toHaveCount(0);
 	});
 
-	test('exit: clean up test slot and booking', async () => {
+	test.afterAll(async () => {
 		const conn = await mysql.createConnection(DB);
 		try {
 			if (bookingId) await conn.execute(`DELETE FROM ${tn('bookings')} WHERE id = ?`, [bookingId]);
@@ -185,7 +190,7 @@ test.describe('TimeSlotSM: multi-seat slot stays free until capacity', () => {
 	let slotId2 = 0;
 	let bookingId2 = 0;
 
-	test('entry: create slot with max_users=2', async () => {
+	test.beforeAll(async () => {
 		expertId2 = await getExpertId();
 		slotId2 = await createTestSlot(expertId2, 0, 2);
 		expect(slotId2).toBeGreaterThan(0);
@@ -198,7 +203,7 @@ test.describe('TimeSlotSM: multi-seat slot stays free until capacity', () => {
 		expect(status).toBe('free'); // still free — seat available
 	});
 
-	test('exit: clean up', async () => {
+	test.afterAll(async () => {
 		const conn = await mysql.createConnection(DB);
 		try {
 			if (bookingId2) await conn.execute(`DELETE FROM ${tn('bookings')} WHERE id = ?`, [bookingId2]);

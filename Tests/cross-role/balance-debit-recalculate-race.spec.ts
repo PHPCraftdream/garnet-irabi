@@ -181,7 +181,13 @@ test.describe('H-1: concurrent CAS-debit ↔ recalculate() race (balance must no
     let expertId = 0;
     const slotIds: number[] = [];
 
-    test('setup: resolve accounts, log in the buyer', async ({ browser }) => {
+    // beforeAll/afterAll (not plain tests) — serial mode skips every
+    // subsequent test once one fails, so a cleanup step written as a
+    // regular test never runs after a mid-flow assertion fails, leaving
+    // the shared user1@dev.test fixture's ledger wiped/reset and stray
+    // test slots behind for the rest of this worker's run. Hooks run
+    // regardless of test outcome.
+    test.beforeAll(async ({ browser }) => {
         userId = await getAccountId('user1@dev.test');
         expertId = await getAccountId('expert1@dev.test');
         expect(userId).toBeGreaterThan(0);
@@ -242,7 +248,7 @@ test.describe('H-1: concurrent CAS-debit ↔ recalculate() race (balance must no
         expect(balance).toBe(0);
     });
 
-    test('cleanup', async () => {
+    test.afterAll(async () => {
         await page?.close().catch(() => {});
         await ctx?.close().catch(() => {});
         await cleanupSlots(slotIds);

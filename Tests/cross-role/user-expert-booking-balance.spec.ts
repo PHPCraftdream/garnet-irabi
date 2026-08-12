@@ -113,7 +113,15 @@ test.describe('BalanceSM(User) × BalanceSM(Expert) × TimeSlotSM', () => {
 	let bookingId = 0;
 	let userCtx: BrowserContext | null = null;
 
-	test('entry: create paid slot, record both balances', async () => {
+	// beforeAll/afterAll (not plain tests) — serial mode skips every
+	// subsequent test once one fails, so a cleanup step written as a
+	// regular test never runs after a mid-flow assertion fails. This
+	// spec's entry step wipes ALL balance_ledger rows for the shared
+	// testuser_setup_user/testuser_setup_expert fixtures, so a skipped
+	// cleanup leaves both accounts' balances corrupted for the rest of
+	// this worker's run, poisoning unrelated later specs. Hooks run
+	// regardless of test outcome.
+	test.beforeAll(async () => {
 		expertId = await getAccountId('testuser_setup_expert@irabi.test');
 		userId = await getAccountId('testuser_setup_user@irabi.test');
 		expect(expertId).toBeGreaterThan(0);
@@ -325,7 +333,7 @@ test.describe('BalanceSM(User) × BalanceSM(Expert) × TimeSlotSM', () => {
 		}
 	});
 
-	test('exit: clean up test slot', async () => {
+	test.afterAll(async () => {
 		if (userCtx) { await userCtx.close(); userCtx = null; }
 		if (slotId) await deleteSlot(slotId);
 	});

@@ -119,7 +119,12 @@ test.describe('H-01: max_users=1, two concurrent bookers', () => {
     let ctxA: BrowserContext, ctxB: BrowserContext;
     let pageA: Page, pageB: Page;
 
-    test('setup: seed a single-seat slot, log in two distinct users', async ({ browser }) => {
+    // beforeAll/afterAll (not plain tests) — serial mode skips every
+    // subsequent test once one fails, so a cleanup step written as a
+    // regular test never runs after a mid-flow assertion fails, leaving
+    // a stray test slot/booking behind for the rest of this worker's
+    // run. Hooks run regardless of test outcome.
+    test.beforeAll(async ({ browser }) => {
         const expertId = await getAccountId('expert1@dev.test');
         expect(expertId).toBeGreaterThan(0);
         slotId = await seedSlot(expertId, 1);
@@ -153,7 +158,7 @@ test.describe('H-01: max_users=1, two concurrent bookers', () => {
         expect(bc).toBe(1);
     });
 
-    test('cleanup', async () => {
+    test.afterAll(async () => {
         await ctxA?.close().catch(() => {});
         await ctxB?.close().catch(() => {});
         if (slotId) await cleanupSlot(slotId);
@@ -168,7 +173,7 @@ test.describe('H-01: max_users=2, three concurrent bookers', () => {
     let ctxA: BrowserContext, ctxB: BrowserContext, ctxC: BrowserContext;
     let pageA: Page, pageB: Page, pageC: Page;
 
-    test('setup: seed a two-seat slot, log in three distinct users', async ({ browser }) => {
+    test.beforeAll(async ({ browser }) => {
         const expertId = await getAccountId('expert1@dev.test');
         expect(expertId).toBeGreaterThan(0);
         slotId = await seedSlot(expertId, 2);
@@ -203,7 +208,7 @@ test.describe('H-01: max_users=2, three concurrent bookers', () => {
         expect(bc).toBe(2);
     });
 
-    test('cleanup', async () => {
+    test.afterAll(async () => {
         await ctxA?.close().catch(() => {});
         await ctxB?.close().catch(() => {});
         await ctxC?.close().catch(() => {});

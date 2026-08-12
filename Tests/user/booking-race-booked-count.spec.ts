@@ -135,7 +135,12 @@ test.describe('F-08-02: duplicate slot_id in multi-book returns correct booked_c
     let userId = 0;
     let slotId = 0;
 
-    test('setup: seed free slot with zero cost', async () => {
+    // beforeAll/afterAll (not plain tests) — serial mode skips every
+    // subsequent test once one fails, so a cleanup step written as a
+    // regular test never runs after a mid-flow assertion fails, leaving
+    // a stray test slot/booking behind for the rest of this worker's
+    // run. Hooks run regardless of test outcome.
+    test.beforeAll(async () => {
         expertId = await getAccountId('expert1@dev.test');
         userId = await getAccountId('user1@dev.test');
         expect(expertId).toBeGreaterThan(0);
@@ -167,7 +172,7 @@ test.describe('F-08-02: duplicate slot_id in multi-book returns correct booked_c
         expect(cnt).toBe(1);
     });
 
-    test('cleanup', async () => {
+    test.afterAll(async () => {
         if (slotId) await cleanupSlot(slotId);
     });
 });

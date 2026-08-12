@@ -70,7 +70,12 @@ test.describe('Profile-edit — hidden ID, My-profile link, notification prefs',
         } finally { await conn.end(); }
     });
 
-    test('exit: cleanup', async () => {
+    // afterAll (not a plain test) — serial mode skips every subsequent
+    // test once one fails, so a cleanup step written as a regular test
+    // never runs after a mid-flow assertion fails, leaving the shared
+    // testuser_setup_user fixture's email_notif_prefs mutated for the
+    // rest of this worker's run. Hooks run regardless of test outcome.
+    test.afterAll(async () => {
         if (userId === 0) return;
         const conn = await mysql.createConnection(DB);
         try {

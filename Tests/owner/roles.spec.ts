@@ -68,7 +68,14 @@ test.describe('OwnerSM: grant/revoke IS_MODERATOR role', () => {
 	let targetId = 0;
 	let logCountBefore = 0;
 
-	test('entry: target user exists, IS_MODERATOR = 0 for clean start', async () => {
+	// beforeAll (not a plain test) so this setup always runs first. The
+	// real safety net is the afterAll below: the "revoke" step is a
+	// regular test in the middle of the chain (not the last one), so
+	// if a later test fails, serial mode never reaches it — leaving
+	// the shared testuser_setup_moderator fixture's IS_MODERATOR flag
+	// stuck at 1 for the rest of this worker's run. afterAll runs
+	// regardless of test outcome.
+	test.beforeAll(async () => {
 		targetId = await getAccountId(TARGET_LOGIN);
 		expect(targetId).toBeGreaterThan(0);
 
@@ -170,5 +177,18 @@ test.describe('OwnerSM: grant/revoke IS_MODERATOR role', () => {
 		if (!targetId) { test.skip(); return; }
 		const count = await countActionLogEntries(TARGET_LOGIN, 'IS_MODERATOR');
 		expect(count).toBeGreaterThanOrEqual(logCountBefore + 2);
+	});
+
+	test.afterAll(async () => {
+		if (!targetId) return;
+		const conn = await mysql.createConnection(DB);
+		try {
+			await conn.execute(
+				`INSERT INTO ${tn('accounts_data')} (account_id, param, value)
+				 VALUES (?, 'IS_MODERATOR', '0')
+				 ON DUPLICATE KEY UPDATE value = '0'`,
+				[targetId],
+			);
+		} finally { await conn.end(); }
 	});
 });

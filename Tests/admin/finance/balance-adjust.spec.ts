@@ -142,7 +142,12 @@ test.describe('Admin balance: UI adjustment via finance page', () => {
 	let userId = 0;
 	let balanceBefore = 0;
 
-	test('entry: ensure balance row exists for user', async () => {
+	// beforeAll/afterAll (not plain tests) — a cleanup step written
+	// inline at the end of a regular test never runs if an earlier
+	// assertion in that same test throws, leaving the shared
+	// testuser_setup_user fixture's balance/ledger mutated for the
+	// rest of this worker's run. Hooks run regardless of test outcome.
+	test.beforeAll(async () => {
 		userId = await getAccountId(userLogin);
 		expect(userId).toBeGreaterThan(0);
 		balanceBefore = await getBalance(userLogin);
@@ -155,6 +160,23 @@ test.describe('Admin balance: UI adjustment via finance page', () => {
 				 VALUES (?, ?, ?)
 				 ON DUPLICATE KEY UPDATE updated_at = ?`,
 				[userId, balanceBefore, now, now]
+			);
+		} finally { await conn.end(); }
+	});
+
+	test.afterAll(async () => {
+		if (!userId) return;
+		const conn = await mysql.createConnection(DB);
+		try {
+			await conn.execute(
+				`UPDATE ${tn('account_balance')} SET balance = ?, updated_at = ?
+				 WHERE account_id = ?`,
+				[balanceBefore, Math.floor(Date.now() / 1000), userId]
+			);
+			await conn.execute(
+				`DELETE FROM ${tn('balance_ledger')}
+				 WHERE account_id = ? AND entry_type = 'manual' AND note = 'Тестовая корректировка'`,
+				[userId]
 			);
 		} finally { await conn.end(); }
 	});
@@ -217,24 +239,8 @@ test.describe('Admin balance: UI adjustment via finance page', () => {
 				expect(Number(rows[0].actor_id)).toBeGreaterThan(0);
 			} finally { await conn.end(); }
 		}
-
-		// Cleanup: revert via DB
-		const conn = await mysql.createConnection(DB);
-		try {
-			await conn.execute(
-				`UPDATE ${tn('account_balance')} SET balance = balance - ?, updated_at = ?
-				 WHERE account_id = ?`,
-				[ADJUST_AMOUNT, Math.floor(Date.now() / 1000), userId]
-			);
-			await conn.execute(
-				`DELETE FROM ${tn('balance_ledger')}
-				 WHERE account_id = ? AND entry_type = 'manual' AND note = 'Тестовая корректировка'`,
-				[userId]
-			);
-		} finally { await conn.end(); }
-
-		const balanceReverted = await getBalance(userLogin);
-		expect(balanceReverted).toBe(balanceBefore);
+		// Revert is handled by afterAll above (runs even if an assertion
+		// in this test throws before reaching here).
 	});
 });
 
@@ -243,7 +249,13 @@ test.describe('Admin balance: DB adjustment reflected in grid', () => {
 	let userId = 0;
 	let balanceBefore = 0;
 
-	test('entry: record user balance before adjustment', async () => {
+	// beforeAll/afterAll (not plain tests) — serial mode skips every
+	// subsequent test once one fails, so a cleanup step written as a
+	// regular test never runs after a mid-flow assertion fails, leaving
+	// the shared testuser_setup_user fixture's balance/ledger mutated
+	// for the rest of this worker's run. Hooks run regardless of test
+	// outcome.
+	test.beforeAll(async () => {
 		userId = await getAccountId('testuser_setup_user@irabi.test');
 		expect(userId).toBeGreaterThan(0);
 		balanceBefore = await getBalance('testuser_setup_user@irabi.test');
@@ -270,7 +282,7 @@ test.describe('Admin balance: DB adjustment reflected in grid', () => {
 		await expect(page.locator('text=/Fatal|Exception/i')).toHaveCount(0);
 	});
 
-	test('exit: revert balance adjustment', async () => {
+	test.afterAll(async () => {
 		if (!userId) { test.skip(); return; }
 
 		// Reverse the adjustment

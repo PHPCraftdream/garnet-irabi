@@ -152,7 +152,11 @@ test.describe('email-queue cron: named-lock serialises overlapping ticks', () =>
         expect(row.attempts).toBe(1);
     });
 
-    test('cleanup: remove seeded email', async () => {
+    // afterAll (not a plain test) — serial mode skips every subsequent
+    // test once one fails, so a cleanup step written as a regular test
+    // never runs after a mid-flow assertion fails, leaving a stray
+    // email_queue row behind. Hooks run regardless of test outcome.
+    test.afterAll(async () => {
         const conn = await mysql.createConnection(DB);
         try {
             await conn.execute(`DELETE FROM ${tn('email_queue')} WHERE recipient_email = ?`, [RECIPIENT]);

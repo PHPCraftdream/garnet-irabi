@@ -157,7 +157,15 @@ test.describe('Moderator: cancel user booking (with refund)', () => {
 	let userBalanceBefore = 0;
 	let expertBalanceBefore = 0;
 
-	test('entry: user books expert slot via UI', async ({ browser }) => {
+	// beforeAll/afterAll (not plain tests) — serial mode skips every
+	// subsequent test once one fails, so a cleanup step written as a
+	// regular test never runs after a mid-flow assertion fails. This
+	// spec's entry wipes balance_ledger for the shared testuser_setup_
+	// user/testuser_setup_expert fixtures, so a skipped cleanup leaves
+	// both accounts' balances corrupted for the rest of this worker's
+	// run, poisoning unrelated later specs. Hooks run regardless of
+	// test outcome.
+	test.beforeAll(async ({ browser }) => {
 		expertId = await getAccountId('testuser_setup_expert@irabi.test');
 		userId = await getAccountId('testuser_setup_user@irabi.test');
 		expect(expertId).toBeGreaterThan(0);
@@ -309,7 +317,7 @@ test.describe('Moderator: cancel user booking (with refund)', () => {
 		await expect(bookingRow).toBeVisible({ timeout: 8000 });
 	});
 
-	test('exit: clean up test data', async () => {
+	test.afterAll(async () => {
 		if (slotId) await deleteSlot(slotId);
 	});
 });

@@ -121,7 +121,12 @@ test.describe('BookingSM: pending → confirmed (expert confirms)', () => {
 	let slotId = 0;
 	let bookingId = 0;
 
-	test('entry: create slot and pending booking via DB', async () => {
+	// beforeAll/afterAll (not plain tests) — serial mode skips every
+	// subsequent test once one fails, so a cleanup step written as a
+	// regular test never runs after a mid-flow assertion fails, leaving
+	// a stray test slot/booking behind for the rest of this worker's
+	// run. Hooks run regardless of test outcome.
+	test.beforeAll(async () => {
 		expertId = await getAccountId('testuser_setup_expert@irabi.test');
 		userId = await getAccountId('testuser_setup_user@irabi.test');
 		expect(expertId).toBeGreaterThan(0);
@@ -190,7 +195,7 @@ test.describe('BookingSM: pending → confirmed (expert confirms)', () => {
 		await expect(cancelBtn).toBeVisible({ timeout: 8000 });
 	});
 
-	test('exit: clean up test data', async () => {
+	test.afterAll(async () => {
 		await cleanup(slotId, bookingId);
 	});
 });
@@ -204,7 +209,7 @@ test.describe('BookingSM: pending → cancelled (expert cancels with refund)', (
 	let userBalanceBefore = 0;
 	let expertBalanceBefore = 0;
 
-	test('entry: create slot, book it via user, record balances', async ({ browser }) => {
+	test.beforeAll(async ({ browser }) => {
 		expertId = await getAccountId('testuser_setup_expert@irabi.test');
 		userId = await getAccountId('testuser_setup_user@irabi.test');
 		expect(expertId).toBeGreaterThan(0);
@@ -306,7 +311,7 @@ test.describe('BookingSM: pending → cancelled (expert cancels with refund)', (
 		expect(status).toBe('free');
 	});
 
-	test('exit: clean up test data', async () => {
+	test.afterAll(async () => {
 		const conn = await mysql.createConnection(DB);
 		try {
 			if (bookingId) await conn.execute(`DELETE FROM ${tn('bookings')} WHERE id = ?`, [bookingId]);

@@ -86,13 +86,32 @@ async function getSlotStatus(slotId: number): Promise<string> {
 	}
 }
 
-async function ensureBalance(page: any, minBalance: number) {
+// DB-only top-up (not the UI topup flow) — beforeAll only has worker-scoped
+// fixtures (no authenticated `page`), so top up directly via the ledger,
+// matching the pattern used elsewhere in this suite (e.g. booking-guards.spec.ts).
+async function ensureBalance(minBalance: number) {
 	const current = await getUserBalance();
 	if (current < minBalance) {
-		await page.goto('/system/balance');
-		await page.locator('[data-test-id="topup-amount-input"]').fill(String(minBalance - current + 1000));
-		await page.locator('[data-test-id="topup-submit"]').click();
-		// XHR-based topup -- wait for reactive update
+		const conn = await mysql.createConnection(DB);
+		try {
+			const [rows] = await conn.execute<any[]>(
+				`SELECT id FROM ${tn('accounts')} WHERE login = 'testuser_setup_user@irabi.test'`
+			);
+			const userId = rows[0]?.id;
+			if (!userId) return;
+			const topUp = minBalance - current + 1000;
+			await conn.execute(
+				`INSERT INTO ${tn('balance_ledger')} (account_id, is_credit, amount, entry_type, ref_type, ref_id, note, created_at)
+				 VALUES (?, 1, ?, 'top_up', '', 0, 'booking-cancel.spec top-up', UNIX_TIMESTAMP())`,
+				[userId, topUp]
+			);
+			await conn.execute(
+				`INSERT INTO ${tn('account_balance')} (account_id, balance, updated_at)
+				 VALUES (?, ?, UNIX_TIMESTAMP())
+				 ON DUPLICATE KEY UPDATE balance = balance + ?, updated_at = UNIX_TIMESTAMP()`,
+				[userId, topUp, topUp]
+			);
+		} finally { await conn.end(); }
 	}
 }
 
@@ -105,12 +124,17 @@ test.describe('BookingSM: pending -> cancelled (balance refund)', () => {
 	let balanceBefore = 0;
 	let bookingId = 0;
 
-	test('entry: create test slot and ensure user has balance', async ({ page }) => {
+	// beforeAll/afterAll (not plain tests) — serial mode skips every
+	// subsequent test once one fails, so a cleanup step written as a
+	// regular test never runs after a mid-flow assertion fails, leaving
+	// a stray test slot/booking behind for the rest of this worker's
+	// run. Hooks run regardless of test outcome.
+	test.beforeAll(async () => {
 		slotId = await createTestSlot(SLOT_COST);
 		expect(slotId).toBeGreaterThan(0);
 		slotCost = SLOT_COST;
 
-		await ensureBalance(page, SLOT_COST + 500);
+		await ensureBalance(SLOT_COST + 500);
 		balanceBefore = await getUserBalance();
 		expect(balanceBefore).toBeGreaterThanOrEqual(SLOT_COST);
 	});
@@ -222,7 +246,7 @@ test.describe('BookingSM: pending -> cancelled (balance refund)', () => {
 		expect(status).toBe('free');
 	});
 
-	test('exit: clean up test slot', async () => {
+	test.afterAll(async () => {
 		if (slotId) await deleteTestSlot(slotId);
 	});
 });

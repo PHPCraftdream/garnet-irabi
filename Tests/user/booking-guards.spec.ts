@@ -118,7 +118,13 @@ test.describe('G1: BookingSM guard -- slot not found (404)', () => {
 test.describe('G2: BookingSM guard -- insufficient balance', () => {
 	let expensiveSlotId = 0;
 
-	test('entry: create expensive slot, set user balance to 0', async () => {
+	// beforeAll/afterAll (not plain tests) — serial mode skips every
+	// subsequent test once one fails, so a cleanup step written as a
+	// regular test never runs after a mid-flow assertion fails, leaving
+	// the shared testuser_setup_user fixture's balance stuck at 0 for
+	// the rest of this worker's run. Hooks run regardless of test
+	// outcome.
+	test.beforeAll(async () => {
 		const slot = await createFreeExpensiveSlot();
 		expensiveSlotId = slot.id;
 		await setUserBalance(0);
@@ -159,7 +165,7 @@ test.describe('G2: BookingSM guard -- insufficient balance', () => {
 		} finally { await conn.end(); }
 	});
 
-	test('exit: restore user balance, clean up slot', async () => {
+	test.afterAll(async () => {
 		const userId = await getUserId();
 		const conn = await mysql.createConnection(DB);
 		try {
@@ -178,7 +184,9 @@ test.describe('G2: BookingSM guard -- insufficient balance', () => {
 test.describe('G3: BookingSM guard -- slot at capacity (status=booked)', () => {
 	let fullSlotId = 0;
 
-	test('entry: create slot at capacity (status=booked)', async () => {
+	// beforeAll/afterAll (not plain tests) — same serial-skip risk as
+	// the G2 block above (stray test slot/booking here).
+	test.beforeAll(async () => {
 		fullSlotId = await createFullSlot();
 		expect(fullSlotId).toBeGreaterThan(0);
 	});
@@ -203,7 +211,7 @@ test.describe('G3: BookingSM guard -- slot at capacity (status=booked)', () => {
 		expect(page.url()).toContain(`/bookings/id~${fullSlotId}`);
 	});
 
-	test('exit: clean up full slot', async () => {
+	test.afterAll(async () => {
 		if (fullSlotId) await cleanup([fullSlotId]);
 	});
 });

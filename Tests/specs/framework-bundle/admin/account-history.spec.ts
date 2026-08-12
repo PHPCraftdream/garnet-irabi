@@ -66,7 +66,13 @@ test.describe('EntityHistory: account flag toggle is recorded and visible in UI'
 	let targetId = 0;
 	let countBefore = 0;
 
-	test('entry: target user exists, history baseline noted', async () => {
+	// beforeAll/afterAll (not plain tests) — serial mode skips every
+	// subsequent test once one fails, so a cleanup step written as a
+	// regular test never runs after a mid-flow assertion fails, leaving
+	// the shared testuser_setup_expert fixture's IS_APPROVED flag
+	// mutated for the rest of this worker's run, poisoning unrelated
+	// later specs. Hooks run regardless of test outcome.
+	test.beforeAll(async () => {
 		targetId = await getAccountId(TARGET_LOGIN);
 		expect(targetId).toBeGreaterThan(0);
 
@@ -223,15 +229,12 @@ test.describe('EntityHistory: account flag toggle is recorded and visible in UI'
 		}
 	});
 
-	test('cleanup: revert flag and clear history rows for next runs', async ({ page }) => {
-		if (!targetId) { test.skip(); return; }
+	test.afterAll(async () => {
+		if (!targetId) return;
 
-		// Re-toggle so target ends up with IS_APPROVED=1 — that's the
-		// expected steady state for testuser_setup_expert. If the previous
-		// step left it at 0, click again; otherwise skip.
-		await page.goto('/admin/');
-		await page.waitForSelector('table', { timeout: 12000 });
-
+		// Restore IS_APPROVED=1 — the expected steady state for
+		// testuser_setup_expert — directly via DB (no UI click needed;
+		// this hook must not depend on a test-scoped `page` fixture).
 		const conn = await mysql.createConnection(DB);
 		try {
 			const [rows] = await conn.execute<any[]>(

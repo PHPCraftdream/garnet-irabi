@@ -48,10 +48,13 @@ test.describe('Live nav counters (~counts poll)', () => {
         await page.goto('/system/');
 
         // Islands hydrate post-load; the badges update on the first poll (~2s).
+        // All four badges come from the same fetch, so they need the same
+        // generous margin under load — leaving the other three at the
+        // default 5s timeout let them flake independently of badge 1.
         await expect(page.locator('[data-test-id="nav-брони"] .count-badge-warning')).toHaveText('7', { timeout: 12000 });
-        await expect(page.locator('[data-test-id="util-messages"] .util-badge')).toHaveText('3');
-        await expect(page.locator('[data-test-id="util-support"] .util-badge')).toHaveText('4');
+        await expect(page.locator('[data-test-id="util-messages"] .util-badge')).toHaveText('3', { timeout: 12000 });
+        await expect(page.locator('[data-test-id="util-support"] .util-badge')).toHaveText('4', { timeout: 12000 });
         // Widget badge = unread support + unread IM.
-        await expect(page.locator('[data-test-id="support-widget-badge"]')).toHaveText('7');
+        await expect(page.locator('[data-test-id="support-widget-badge"]')).toHaveText('7', { timeout: 12000 });
     });
 });

@@ -303,7 +303,14 @@ test.describe('H-2 backfill: user cancel on already-cancelled booking (was pendi
 	let expertBalanceBefore = 0;
 	const SLOT_COST = 300;
 
-	test('setup: seed slot + already-cancelled booking without refund', async () => {
+	// beforeAll/afterAll (not plain tests) — serial mode skips every
+	// subsequent test once one fails, so a cleanup step written as a
+	// regular test never runs after a mid-flow assertion fails, leaving
+	// the shared user1@dev.test/expert1@dev.test dev-seed fixtures'
+	// balances un-recalculated and stray test slots/bookings behind for
+	// the rest of this worker's run. Hooks run regardless of test
+	// outcome.
+	test.beforeAll(async () => {
 		userId = await getAccountId('user1@dev.test');
 		expertId = await getAccountId('expert1@dev.test');
 		expect(userId).toBeGreaterThan(0);
@@ -378,7 +385,7 @@ test.describe('H-2 backfill: user cancel on already-cancelled booking (was pendi
 		expect(balanceNow).toBe(expertBalanceBefore);
 	});
 
-	test('cleanup', async () => {
+	test.afterAll(async () => {
 		if (slotId) await cleanupSlot(slotId);
 		if (userId) await recalcBalance(userId);
 		if (expertId) await recalcBalance(expertId);
@@ -399,7 +406,7 @@ test.describe('H-2 backfill: user cancel on already-cancelled booking (was confi
 	let expertBalanceBefore = 0;
 	const SLOT_COST = 250;
 
-	test('setup: seed slot + already-cancelled confirmed booking without refund', async () => {
+	test.beforeAll(async () => {
 		userId = await getAccountId('user1@dev.test');
 		expertId = await getAccountId('expert1@dev.test');
 		expect(userId).toBeGreaterThan(0);
@@ -473,7 +480,7 @@ test.describe('H-2 backfill: user cancel on already-cancelled booking (was confi
 		expect(balanceNow).toBe(expertBalanceBefore);
 	});
 
-	test('cleanup', async () => {
+	test.afterAll(async () => {
 		if (slotId) await cleanupSlot(slotId);
 		if (userId) await recalcBalance(userId);
 		if (expertId) await recalcBalance(expertId);
@@ -494,7 +501,7 @@ test.describe('H-2 idempotency: retry cancel on already-refunded booking (no dou
 	let expertBalanceBefore = 0;
 	const SLOT_COST = 200;
 
-	test('setup: seed already-cancelled booking WITH refund already present', async () => {
+	test.beforeAll(async () => {
 		userId = await getAccountId('user1@dev.test');
 		expertId = await getAccountId('expert1@dev.test');
 		expect(userId).toBeGreaterThan(0);
@@ -573,7 +580,7 @@ test.describe('H-2 idempotency: retry cancel on already-refunded booking (no dou
 		expect(balanceNow).toBe(expertBalanceBefore);
 	});
 
-	test('cleanup', async () => {
+	test.afterAll(async () => {
 		if (slotId) await cleanupSlot(slotId);
 		if (userId) await recalcBalance(userId);
 		if (expertId) await recalcBalance(expertId);
@@ -593,7 +600,14 @@ test.describe('H-2 backfill: expert cancelBooking on already-cancelled booking (
 	let expertBalanceBefore = 0;
 	const SLOT_COST = 350;
 
-	test('setup: seed slot + already-cancelled booking without refund', async () => {
+	// beforeAll/afterAll (not plain tests) — serial mode skips every
+	// subsequent test once one fails, so a cleanup step written as a
+	// regular test never runs after a mid-flow assertion fails, leaving
+	// the shared user1@dev.test/expert1@dev.test dev-seed fixtures'
+	// balances un-recalculated and stray test slots/bookings behind for
+	// the rest of this worker's run. Hooks run regardless of test
+	// outcome.
+	test.beforeAll(async () => {
 		userId = await getAccountId('user1@dev.test');
 		expertId = await getAccountId('expert1@dev.test');
 		expect(userId).toBeGreaterThan(0);
@@ -668,7 +682,7 @@ test.describe('H-2 backfill: expert cancelBooking on already-cancelled booking (
 		expect(balanceNow).toBe(expertBalanceBefore);
 	});
 
-	test('cleanup', async () => {
+	test.afterAll(async () => {
 		if (slotId) await cleanupSlot(slotId);
 		if (userId) await recalcBalance(userId);
 		if (expertId) await recalcBalance(expertId);

@@ -57,7 +57,13 @@ test.describe('ExpertProfileSM: not_approved → approved → not_approved', () 
 	let initialApprovalState = 0;
 	let logCountBefore = 0;
 
-	test('entry: record initial state and ensure expert is not_approved', async () => {
+	// beforeAll/afterAll (not plain tests) — serial mode skips every
+	// subsequent test once one fails, so a cleanup step written as a
+	// regular test never runs after a mid-flow assertion fails, leaving
+	// the shared testuser_setup_expert fixture's approval state mutated
+	// for the rest of this worker's run. Hooks run regardless of test
+	// outcome.
+	test.beforeAll(async () => {
 		expertId = await getExpertId();
 		expect(expertId).toBeGreaterThan(0);
 
@@ -149,7 +155,7 @@ test.describe('ExpertProfileSM: not_approved → approved → not_approved', () 
 		expect(count).toBeGreaterThanOrEqual(logCountBefore + 2);
 	});
 
-	test('exit: restore expert to initial approval state', async () => {
+	test.afterAll(async () => {
 		if (!expertId) return;
 		const conn = await mysql.createConnection(DB);
 		try {

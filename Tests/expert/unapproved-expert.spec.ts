@@ -79,7 +79,13 @@ test.describe('Unapproved expert — banner & news suppression', () => {
 
     // ── TEST 1: record initial state and set unapproved ──────────────────
 
-    test('entry: record initial approval state and set expert unapproved', async () => {
+    // beforeAll/afterAll (not plain tests) — serial mode skips every
+    // subsequent test once one fails, so a cleanup step written as a
+    // regular test never runs after a mid-flow assertion fails, leaving
+    // the shared testuser_setup_expert fixture unapproved for the rest
+    // of this worker's run, poisoning unrelated later specs. Hooks run
+    // regardless of test outcome.
+    test.beforeAll(async () => {
         expertId = await getExpertId();
         expect(expertId).toBeGreaterThan(0);
 
@@ -153,7 +159,7 @@ test.describe('Unapproved expert — banner & news suppression', () => {
 
     // ── TEST 5: restore initial state & cleanup ──────────────────────────
 
-    test('exit: restore initial state + cleanup', async () => {
+    test.afterAll(async () => {
         if (!expertId) return;
 
         // Restore approval state

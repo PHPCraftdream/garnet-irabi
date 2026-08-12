@@ -123,7 +123,13 @@ test.describe('G4: Booking gate — unapproved expert (BookingsController)', () 
     let slotId = 0;
     let initialApproval = 0;
 
-    test('entry: create slot, set expert unapproved', async () => {
+    // beforeAll/afterAll (not plain tests) — serial mode skips every
+    // subsequent test once one fails, so a cleanup step written as a
+    // regular test never runs after a mid-flow assertion fails, leaving
+    // the shared testuser_setup_expert fixture's approval/disabled
+    // flags mutated for the rest of this worker's run. Hooks run
+    // regardless of test outcome.
+    test.beforeAll(async () => {
         expertId = await getExpertId();
         expect(expertId).toBeGreaterThan(0);
 
@@ -156,7 +162,7 @@ test.describe('G4: Booking gate — unapproved expert (BookingsController)', () 
         expect(await bookingExists(slotId)).toBe(false);
     });
 
-    test('exit: restore approval, clean up', async () => {
+    test.afterAll(async () => {
         if (expertId) await setApproval(expertId, initialApproval || 1);
         if (slotId) await cleanup([slotId]);
     });
@@ -170,7 +176,7 @@ test.describe('G5: Booking gate — disabled expert (BookingsController)', () =>
     let expertId = 0;
     let slotId = 0;
 
-    test('entry: create slot, set expert IS_DISABLED=1', async () => {
+    test.beforeAll(async () => {
         expertId = await getExpertId();
         expect(expertId).toBeGreaterThan(0);
 
@@ -194,7 +200,7 @@ test.describe('G5: Booking gate — disabled expert (BookingsController)', () =>
         expect(await bookingExists(slotId)).toBe(false);
     });
 
-    test('exit: restore IS_DISABLED=0, clean up', async () => {
+    test.afterAll(async () => {
         if (expertId) await setDisabled(expertId, 0);
         if (slotId) await cleanup([slotId]);
     });
@@ -209,7 +215,7 @@ test.describe('G6: Booking gate — unapproved expert (SlotsController::bookData
     let slotId = 0;
     let initialApproval = 0;
 
-    test('entry: create slot, set expert unapproved', async () => {
+    test.beforeAll(async () => {
         expertId = await getExpertId();
         expect(expertId).toBeGreaterThan(0);
 
@@ -260,7 +266,7 @@ test.describe('G6: Booking gate — unapproved expert (SlotsController::bookData
         expect(await bookingExists(slotId)).toBe(false);
     });
 
-    test('exit: restore approval, clean up', async () => {
+    test.afterAll(async () => {
         if (expertId) await setApproval(expertId, initialApproval || 1);
         if (slotId) await cleanup([slotId]);
     });

@@ -72,7 +72,12 @@ test.describe('TimeSlotSM: free → cancelled', () => {
 	let expertId = 0;
 	let slotId = 0;
 
-	test('entry: create free slot for expert', async () => {
+	// beforeAll/afterAll (not plain tests) — serial mode skips every
+	// subsequent test once one fails, so a cleanup step written as a
+	// regular test never runs after a mid-flow assertion fails, leaving
+	// a stray test slot behind for the rest of this worker's run.
+	// Hooks run regardless of test outcome.
+	test.beforeAll(async () => {
 		expertId = await getExpertId();
 		expect(expertId).toBeGreaterThan(0);
 
@@ -139,7 +144,7 @@ test.describe('TimeSlotSM: free → cancelled', () => {
 		await expect(cancelledSlotBookLink).toHaveCount(0);
 	});
 
-	test('exit: clean up test slot', async () => {
+	test.afterAll(async () => {
 		const conn = await mysql.createConnection(DB);
 		try {
 			if (slotId) await conn.execute(`DELETE FROM ${tn('time_slots')} WHERE id = ?`, [slotId]);

@@ -202,7 +202,13 @@ test.describe('Expert cancels booking — cross-role (dev-login)', () => {
 
 	// -- Step 0: Setup --
 
-	test('entry: dev-login expert & user, create paid slot, ensure balance', async () => {
+	// beforeAll/afterAll (not plain tests) — serial mode skips every
+	// subsequent test once one fails, so a cleanup step written as a
+	// regular test never runs after a mid-flow assertion fails, leaving
+	// the shared user1@dev.test/expert1@dev.test dev-seed fixtures'
+	// balance debited and a stray test slot behind for the rest of this
+	// worker's run. Hooks run regardless of test outcome.
+	test.beforeAll(async () => {
 		// Don't pre-warm sessions via dev-login here — the dev seed accounts
 		// (expert1@dev.test / user1@dev.test) are guaranteed to exist by
 		// globalSetup (isolation-setup.ts seeds them into every worker's
@@ -453,7 +459,7 @@ test.describe('Expert cancels booking — cross-role (dev-login)', () => {
 
 	// -- Cleanup --
 
-	test('exit: clean up test data', async () => {
+	test.afterAll(async () => {
 		if (userCtx) { await userCtx.close(); userCtx = null; }
 		if (expertCtx) { await expertCtx.close(); expertCtx = null; }
 		if (slotId) await cleanupSlot(slotId);

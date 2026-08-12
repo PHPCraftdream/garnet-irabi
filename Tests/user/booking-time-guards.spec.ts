@@ -300,7 +300,14 @@ test.describe('Fix 1: post__book returns 404 for non-existent or non-free slot',
 		expect(resp?.status()).toBe(404);
 	});
 
-	test('setup: seed a cancelled slot (exists but status != free)', async () => {
+	// beforeAll/afterAll (not plain tests) — serial mode skips every
+	// subsequent test once one fails, so a cleanup step written as a
+	// regular test never runs after a mid-flow assertion fails, leaving
+	// stray test slots/bookings (and, in the balance-touching blocks
+	// below, un-recalculated shared user1@dev.test/expert1@dev.test
+	// balances) behind for the rest of this worker's run. Hooks run
+	// regardless of test outcome.
+	test.beforeAll(async () => {
 		expertId = await getAccountId('expert1@dev.test');
 		expect(expertId).toBeGreaterThan(0);
 
@@ -337,7 +344,7 @@ test.describe('Fix 1: post__book returns 404 for non-existent or non-free slot',
 		}
 	});
 
-	test('cleanup: remove cancelled slot', async () => {
+	test.afterAll(async () => {
 		if (cancelledSlotId) await cleanupSlot(cancelledSlotId);
 	});
 });
@@ -351,7 +358,7 @@ test.describe('Fix 2: post__book (single) returns 400 for past slot', () => {
 	let userId = 0;
 	let slotId = 0;
 
-	test('setup: seed past slot', async () => {
+	test.beforeAll(async () => {
 		expertId = await getAccountId('expert1@dev.test');
 		userId = await getAccountId('user1@dev.test');
 		expect(expertId).toBeGreaterThan(0);
@@ -397,7 +404,7 @@ test.describe('Fix 2: post__book (single) returns 400 for past slot', () => {
 		}
 	});
 
-	test('cleanup', async () => {
+	test.afterAll(async () => {
 		if (slotId) await cleanupSlot(slotId);
 	});
 });
@@ -407,7 +414,7 @@ test.describe('Fix 3: SlotsController::post__book returns 409 slot_in_past for p
 	let userId = 0;
 	let slotId = 0;
 
-	test('setup: seed past slot', async () => {
+	test.beforeAll(async () => {
 		expertId = await getAccountId('expert1@dev.test');
 		userId = await getAccountId('user1@dev.test');
 		expect(expertId).toBeGreaterThan(0);
@@ -438,7 +445,7 @@ test.describe('Fix 3: SlotsController::post__book returns 409 slot_in_past for p
 		}
 	});
 
-	test('cleanup', async () => {
+	test.afterAll(async () => {
 		if (slotId) await cleanupSlot(slotId);
 	});
 });
@@ -455,7 +462,7 @@ test.describe('Fix 4: post__cancel returns 400 for confirmed booking after sessi
 	let balanceBefore = 0;
 	const SLOT_COST = 300;
 
-	test('setup: seed past confirmed booking with cost', async () => {
+	test.beforeAll(async () => {
 		userId = await getAccountId('user1@dev.test');
 		expertId = await getAccountId('expert1@dev.test');
 		expect(userId).toBeGreaterThan(0);
@@ -514,7 +521,7 @@ test.describe('Fix 4: post__cancel returns 400 for confirmed booking after sessi
 		expect(balanceNow).toBe(balanceBefore - SLOT_COST);
 	});
 
-	test('cleanup', async () => {
+	test.afterAll(async () => {
 		if (slotId) await cleanupSlot(slotId);
 		if (userId) await recalcBalance(userId);
 	});
@@ -532,7 +539,7 @@ test.describe('Fix 5: pending booking on past slot IS cancellable with full refu
 	let balanceBefore = 0;
 	const SLOT_COST = 250;
 
-	test('setup: seed past pending booking with cost', async () => {
+	test.beforeAll(async () => {
 		userId = await getAccountId('user1@dev.test');
 		expertId = await getAccountId('expert1@dev.test');
 		expect(userId).toBeGreaterThan(0);
@@ -589,7 +596,7 @@ test.describe('Fix 5: pending booking on past slot IS cancellable with full refu
 		expect(balanceNow).toBe(balanceBefore);
 	});
 
-	test('cleanup', async () => {
+	test.afterAll(async () => {
 		if (slotId) await cleanupSlot(slotId);
 	});
 });
@@ -605,7 +612,7 @@ test.describe('Fix 6: expert cancelBooking returns 400 for confirmed + past slot
 	let bookingId = 0;
 	const SLOT_COST = 200;
 
-	test('setup: seed past confirmed booking for expert context', async () => {
+	test.beforeAll(async () => {
 		userId = await getAccountId('user1@dev.test');
 		expertId = await getAccountId('expert1@dev.test');
 		expect(userId).toBeGreaterThan(0);
@@ -655,7 +662,7 @@ test.describe('Fix 6: expert cancelBooking returns 400 for confirmed + past slot
 		expect(status).toBe('confirmed');
 	});
 
-	test('cleanup', async () => {
+	test.afterAll(async () => {
 		if (slotId) await cleanupSlot(slotId);
 	});
 });
@@ -694,7 +701,7 @@ test.describe('Fix 7: cron complete-expired completes orphan confirmed booking; 
 	let expertBalanceBefore = 0;
 	let userEmailMaxIdBefore = 0;
 
-	test('setup: seed target + control slots and bookings', async () => {
+	test.beforeAll(async () => {
 		userId = await getAccountId('user1@dev.test');
 		expertId = await getAccountId('expert1@dev.test');
 		expect(userId).toBeGreaterThan(0);
@@ -846,7 +853,7 @@ test.describe('Fix 7: cron complete-expired completes orphan confirmed booking; 
 		expect(await getBookingStatus(targetBookingId)).toBe('completed');
 	});
 
-	test('cleanup: remove all seeded slots', async () => {
+	test.afterAll(async () => {
 		if (targetSlotId) await cleanupSlot(targetSlotId);
 		if (futureSlotId) await cleanupSlot(futureSlotId);
 		if (pastPendingSlotId) await cleanupSlot(pastPendingSlotId);

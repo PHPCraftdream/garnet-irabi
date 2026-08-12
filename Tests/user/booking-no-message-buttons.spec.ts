@@ -18,7 +18,12 @@ test.describe('Booking card — no message buttons (regression)', () => {
     let slotId = 0;
     let bookingId = 0;
 
-    test('entry: seed a confirmed booking for the user on an expert slot', async () => {
+    // beforeAll/afterAll (not plain tests) — serial mode skips every
+    // subsequent test once one fails, so a cleanup step written as a
+    // regular test never runs after a mid-flow assertion fails, leaving
+    // a stray test slot/booking behind for the rest of this worker's
+    // run. Hooks run regardless of test outcome.
+    test.beforeAll(async () => {
         const conn = await mysql.createConnection(DB);
         try {
             const [userRows] = await conn.execute<any[]>(
@@ -78,7 +83,7 @@ test.describe('Booking card — no message buttons (regression)', () => {
         await expect(page.locator('[data-test-id^="message-user-btn-"]')).toHaveCount(0);
     });
 
-    test('exit: cleanup', async () => {
+    test.afterAll(async () => {
         const conn = await mysql.createConnection(DB);
         try {
             if (bookingId) {

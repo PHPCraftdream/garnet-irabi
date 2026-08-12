@@ -30,7 +30,13 @@ let hadExpertProfile = false;
 
 test.describe('News feed -- actor name resolution', () => {
 
-    test('entry: set a known actor name and seed a stale-payload personal news event', async () => {
+    // beforeAll/afterAll (not plain tests) — serial mode skips every
+    // subsequent test once one fails, so a cleanup step written as a
+    // regular test never runs after the middle assertion fails, leaving
+    // the shared testuser_setup_expert fixture's accounts.name /
+    // expert_profiles.display_name mutated for the rest of this
+    // worker's run. Hooks run regardless of test outcome.
+    test.beforeAll(async () => {
         const conn = await mysql.createConnection(DB);
         try {
             // Resolve user (audience) and actor (expert) account ids
@@ -109,7 +115,7 @@ test.describe('News feed -- actor name resolution', () => {
         expect(text).not.toContain(STALE_NAME);
     });
 
-    test('exit: cleanup', async () => {
+    test.afterAll(async () => {
         const conn = await mysql.createConnection(DB);
         try {
             // Delete the seeded news event

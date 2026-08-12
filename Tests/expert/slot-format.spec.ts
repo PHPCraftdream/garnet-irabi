@@ -175,7 +175,7 @@ test.describe('Slot format: create single offline slot with location', () => {
 		expect(slot.location).toBe('ул. Тестовая, 1, офис 5');
 	});
 
-	test('exit: cleanup', async () => {
+	test.afterAll(async () => {
 		if (slotId) await deleteSlots([slotId]);
 	});
 });
@@ -238,7 +238,7 @@ test.describe('Slot format: batch create offline with shared location', () => {
 		}
 	});
 
-	test('exit: cleanup', async () => {
+	test.afterAll(async () => {
 		await deleteSlots(createdIds);
 	});
 });
@@ -251,7 +251,12 @@ test.describe('Slot format: edit existing slot format + location', () => {
 	let expertId = 0;
 	let slotId = 0;
 
-	test('entry: seed an Online slot with empty location', async () => {
+	// beforeAll/afterAll (not plain tests) — serial mode skips every
+	// subsequent test once one fails, so a cleanup step written as a
+	// regular test never runs after a mid-flow assertion fails, leaving
+	// a stray test slot behind for the rest of this worker's run.
+	// Hooks run regardless of test outcome.
+	test.beforeAll(async () => {
 		expertId = await getAccountId(EXPERT_LOGIN);
 		expect(expertId).toBeGreaterThan(0);
 		slotId = await createFreeSlot(expertId, 1, '');
@@ -290,7 +295,7 @@ test.describe('Slot format: edit existing slot format + location', () => {
 		expect(slot.location).toBe('Zoom was wrong, meet at Office 12');
 	});
 
-	test('exit: cleanup', async () => {
+	test.afterAll(async () => {
 		if (slotId) await deleteSlots([slotId]);
 	});
 });
@@ -316,7 +321,7 @@ test.describe('Slot format: EditSlotModal on a slot with an active booking still
 	let slotId = 0;
 	let bookingId = 0;
 
-	test('entry: seed a partially-booked multi-seat slot (status stays free)', async () => {
+	test.beforeAll(async () => {
 		expertId = await getAccountId(EXPERT_LOGIN);
 		userId = await getAccountId(USER_LOGIN);
 		expect(expertId).toBeGreaterThan(0);
@@ -366,7 +371,7 @@ test.describe('Slot format: EditSlotModal on a slot with an active booking still
 		expect(Number(slot.cost)).toBe(100);
 	});
 
-	test('exit: cleanup', async () => {
+	test.afterAll(async () => {
 		if (bookingId) {
 			const conn = await mysql.createConnection(DB);
 			try {

@@ -72,7 +72,14 @@ test.describe('AccountSM: active → disabled → active', () => {
 	let userId = 0;
 	let logCountBefore = 0;
 
-	test('entry: user account is active', async () => {
+	// beforeAll (not a plain test) so this setup always runs first even
+	// on a re-run. The real safety net is the afterAll below: this
+	// spec's mid-flow "re-enable" step is a regular test, not the last
+	// one in the block, so if a test between disable and re-enable
+	// fails, serial mode skips re-enable too — leaving the shared
+	// testuser_setup_user fixture disabled for the rest of this
+	// worker's run. afterAll runs regardless of test outcome.
+	test.beforeAll(async () => {
 		userId = await getUserId();
 		expect(userId).toBeGreaterThan(0);
 
@@ -186,5 +193,18 @@ test.describe('AccountSM: active → disabled → active', () => {
 		} finally {
 			await userCtx.close();
 		}
+	});
+
+	test.afterAll(async () => {
+		if (!userId) return;
+		const conn = await mysql.createConnection(DB);
+		try {
+			await conn.execute(
+				`INSERT INTO ${tn('accounts_data')} (account_id, param, value)
+				 VALUES (?, 'IS_DISABLED', '0')
+				 ON DUPLICATE KEY UPDATE value = '0'`,
+				[userId],
+			);
+		} finally { await conn.end(); }
 	});
 });
