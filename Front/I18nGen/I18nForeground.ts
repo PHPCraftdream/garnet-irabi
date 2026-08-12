@@ -404,13 +404,6 @@ class I18n extends I18nBase {
     Admin_NoActivity: t = (a = []) => this.t('Admin_NoActivity', a);
     Support_AssignedTo: t = (a = []) => this.t('Support_AssignedTo', a);
     Support_Unassigned_Action: t = (a = []) => this.t('Support_Unassigned_Action', a);
-    Teaching_Dashboard: t = (a = []) => this.t('Teaching_Dashboard', a);
-    Teaching_MySlots: t = (a = []) => this.t('Teaching_MySlots', a);
-    Teaching_PendingBookings: t = (a = []) => this.t('Teaching_PendingBookings', a);
-    Teaching_MonthlyUsers: t = (a = []) => this.t('Teaching_MonthlyUsers', a);
-    Teaching_MonthlyEarnings: t = (a = []) => this.t('Teaching_MonthlyEarnings', a);
-    Teaching_SlotsToday: t = (a = []) => this.t('Teaching_SlotsToday', a);
-    Teaching_SlotsTomorrow: t = (a = []) => this.t('Teaching_SlotsTomorrow', a);
     Teaching_Declines: t = (a = []) => this.t('Teaching_Declines', a);
     Teaching_Cancellations: t = (a = []) => this.t('Teaching_Cancellations', a);
     Slots_Calendar: t = (a = []) => this.t('Slots_Calendar', a);

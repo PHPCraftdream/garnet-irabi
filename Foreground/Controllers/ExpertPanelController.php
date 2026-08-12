@@ -19,7 +19,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
      * Личный кабинет эксперта (/expert/...).
      *
      * Тонкий контроллер-диспетчер. Вся бизнес-логика вынесена
-     * в сервисы в подпапке Teaching/.
+     * в сервисы в подпапке ExpertPanel/.
      */
     class ExpertPanelController extends FrameworkController {
         public const URL = '/expert/';

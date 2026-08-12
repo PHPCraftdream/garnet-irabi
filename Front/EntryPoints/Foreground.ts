@@ -40,7 +40,6 @@ createIsland({className: 'registration-form-init', lazy: () => import('../Island
 createIsland({className: 'invite-error-init', lazy: () => import('../Islands/InviteError/InviteErrorIsland'), exportName: 'InviteErrorIsland'});
 
 // Expert pages
-createIsland({className: 'expert-dashboard-init', lazy: () => import('../Islands/ExpertDashboard/ExpertDashboardIsland'), exportName: 'ExpertDashboardIsland'});
 createIsland({className: 'expert-slots-init', lazy: () => import('../Islands/ExpertSlots/ExpertSlotsIsland'), exportName: 'ExpertSlotsIsland'});
 createIsland({className: 'expert-bookings-init', lazy: () => import('../Islands/Bookings/ExpertBookings'), exportName: 'ExpertBookingsIsland'});
 

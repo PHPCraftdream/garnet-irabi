@@ -399,13 +399,6 @@ export class I18nDataEN {
     static Admin_NoActivity = 'No activity';
     static Support_AssignedTo = 'Assigned to';
     static Support_Unassigned_Action = 'Unassigned';
-    static Teaching_Dashboard = 'Overview';
-    static Teaching_MySlots = 'My Slots';
-    static Teaching_PendingBookings = 'Pending Bookings';
-    static Teaching_MonthlyUsers = 'Users This Month';
-    static Teaching_MonthlyEarnings = 'Earnings This Month';
-    static Teaching_SlotsToday = 'Slots Today';
-    static Teaching_SlotsTomorrow = 'Slots Tomorrow';
     static Teaching_Declines = 'Declines';
     static Teaching_Cancellations = 'Cancellations';
     static Slots_Calendar = 'Schedule';

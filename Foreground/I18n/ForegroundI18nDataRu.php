@@ -455,18 +455,9 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Support_AssignedTo' => 'Назначено',
             'Support_Unassigned_Action' => 'Снято назначение',
 
-            // Teaching Dashboard
-            'Teaching_Dashboard' => 'Обзор',
-            'Teaching_MySlots' => 'Мои слоты',
-            'Teaching_PendingBookings' => 'Ожидающие брони',
-            'Teaching_MonthlyUsers' => 'Пользователей за месяц',
-            'Teaching_MonthlyEarnings' => 'Доход за месяц',
-            'Teaching_SlotsToday' => 'Слотов сегодня',
-            'Teaching_SlotsTomorrow' => 'Слотов завтра',
+            // Slots Calendar
             'Teaching_Declines' => 'Отклонения',
             'Teaching_Cancellations' => 'Отмены',
-
-            // Slots Calendar
             'Slots_Calendar' => 'Расписание',
             'Slots_PrevWeek' => 'Предыдущая',
             'Slots_NextWeek' => 'Следующая',

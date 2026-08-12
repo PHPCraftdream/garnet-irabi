@@ -456,18 +456,9 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Support_AssignedTo' => 'Assigned to',
             'Support_Unassigned_Action' => 'Unassigned',
 
-            // Teaching Dashboard
-            'Teaching_Dashboard' => 'Overview',
-            'Teaching_MySlots' => 'My Slots',
-            'Teaching_PendingBookings' => 'Pending Bookings',
-            'Teaching_MonthlyUsers' => 'Users This Month',
-            'Teaching_MonthlyEarnings' => 'Earnings This Month',
-            'Teaching_SlotsToday' => 'Slots Today',
-            'Teaching_SlotsTomorrow' => 'Slots Tomorrow',
+            // Slots Calendar
             'Teaching_Declines' => 'Declines',
             'Teaching_Cancellations' => 'Cancellations',
-
-            // Slots Calendar
             'Slots_Calendar' => 'Schedule',
             'Slots_PrevWeek' => 'Previous',
             'Slots_NextWeek' => 'Next',

@@ -398,13 +398,6 @@ export class I18nDataRU {
     static Admin_NoActivity = 'Нет действий';
     static Support_AssignedTo = 'Назначено';
     static Support_Unassigned_Action = 'Снято назначение';
-    static Teaching_Dashboard = 'Обзор';
-    static Teaching_MySlots = 'Мои слоты';
-    static Teaching_PendingBookings = 'Ожидающие брони';
-    static Teaching_MonthlyUsers = 'Пользователей за месяц';
-    static Teaching_MonthlyEarnings = 'Доход за месяц';
-    static Teaching_SlotsToday = 'Слотов сегодня';
-    static Teaching_SlotsTomorrow = 'Слотов завтра';
     static Teaching_Declines = 'Отклонения';
     static Teaching_Cancellations = 'Отмены';
     static Slots_Calendar = 'Расписание';
