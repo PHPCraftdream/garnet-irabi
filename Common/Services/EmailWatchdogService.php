@@ -32,11 +32,11 @@ namespace PHPCraftdream\IRabi\Common\Services {
      *
      * This service instead leans on a guarantee the project already has:
      * the email-queue cron tick is serialised by a MySQL named advisory
-     * lock (NamedLock::tryAcquire(EMAIL_QUEUE_LOCK) in AppCronService,
-     * task #57). GET_LOCK is bound to the DB connection (session): when
-     * the holder process crashes, its connection drops and MySQL releases
-     * the lock automatically, so the next tick acquires it fresh. The
-     * invariant this relies on: processQueue() is synchronous and
+     * lock (PHPCraftdream\Garnet\Kernel\Db\Link\NamedLock::tryAcquire()
+     * in AppCronService, task #57). GET_LOCK is bound to the DB connection
+     * (session): when the holder process crashes, its connection drops and
+     * MySQL releases the lock automatically, so the next tick acquires it
+     * fresh. The invariant this relies on: processQueue() is synchronous and
      * single-pass, so when it RETURNS normally every row it touched is
      * already out of `sending` (flipped to `sent` or `error`). Therefore
      * any row STILL in `sending` at the instant a freshly-acquired lock

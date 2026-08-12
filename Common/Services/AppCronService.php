@@ -6,6 +6,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
     use Aura\SqlQuery\Common\SelectInterface;
     use PHPCraftdream\Garnet\Bundle\Modules\Email\FwEmailQueueService;
     use PHPCraftdream\Garnet\Bundle\Modules\Invite\FwInviteTokenService;
+    use PHPCraftdream\Garnet\Kernel\Db\Link\NamedLock;
     use PHPCraftdream\Garnet\Kernel\Io\Cron\FwCronService;
     use PHPCraftdream\IRabi\Common\Tables\CronLog;
     use ReflectionClass;
@@ -15,10 +16,10 @@ namespace PHPCraftdream\IRabi\Common\Services {
     class AppCronService extends FwCronService {
         /**
          * Named MySQL advisory lock serialising overlapping email-queue
-         * cron ticks. See NamedLock for why processQueue() needs this
-         * external guard (its SELECT-then-UPDATE loop has no per-row
-         * claim, so two concurrent runs would both deliver the same
-         * email). Two cron ticks are two CLI processes, hence two DB
+         * cron ticks. See PHPCraftdream\Garnet\Kernel\Db\Link\NamedLock for
+         * why processQueue() needs this external guard (its SELECT-then-UPDATE
+         * loop has no per-row claim, so two concurrent runs would both deliver
+         * the same email). Two cron ticks are two CLI processes, hence two DB
          * connections — they contend on this lock across processes.
          */
         public const EMAIL_QUEUE_LOCK = 'irabi_email_queue';

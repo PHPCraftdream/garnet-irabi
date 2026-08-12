@@ -3,7 +3,8 @@
 namespace PHPCraftdream\IRabi\Common\Tables {
     use PHPCraftdream\Garnet\Bundle\Modules\Balance\Tables\FwAccountBalance;
     use PHPCraftdream\Garnet\Bundle\Modules\Balance\Tables\FwBalanceLedger;
-    use PHPCraftdream\Garnet\Kernel\Db\Query\QueryEx;
+    use PHPCraftdream\Garnet\Kernel\Db\Link\NamedLock;
+    use PHPCraftdream\Garnet\Kernel\Exceptions\DbException;
     use PHPCraftdream\IRabi\Common\Exceptions\AccountLockAcquireException;
 
     class AccountBalance extends FwAccountBalance {
@@ -120,19 +121,15 @@ namespace PHPCraftdream\IRabi\Common\Tables {
          * @return bool true only when GET_LOCK returned 1 (lock acquired)
          */
         protected static function acquireLock(string $name, int $timeout): bool {
-            $rows = QueryEx::get()->exFetch('SELECT GET_LOCK(?, ?) AS lk', [$name, $timeout]);
-
-            if (!is_array($rows)) {
+            try {
+                return NamedLock::acquire($name, $timeout);
+            } catch (DbException) {
                 return false;
             }
-
-            $first = $rows[0] ?? null;
-
-            return is_array($first) && (int)($first['lk'] ?? null) === 1;
         }
 
         protected static function releaseLock(string $name): void {
-            QueryEx::get()->ex('SELECT RELEASE_LOCK(?)', [$name]);
+            NamedLock::release($name);
         }
     }
 }
