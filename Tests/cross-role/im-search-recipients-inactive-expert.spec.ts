@@ -43,6 +43,19 @@ async function setAccountFlag(accountId: number, flag: string, value: string): P
     });
 }
 
+async function cleanupConversation(a: number, b: number): Promise<void> {
+    await withConnection(async (c) => {
+        const [convs] = await c.execute<any[]>(
+            `SELECT id FROM ${tn('im_conversations')} WHERE (participant_a = ? AND participant_b = ?) OR (participant_a = ? AND participant_b = ?)`,
+            [a, b, b, a],
+        );
+        for (const conv of convs) {
+            await c.execute(`DELETE FROM ${tn('im_messages')} WHERE conversation_id = ?`, [conv.id]);
+            await c.execute(`DELETE FROM ${tn('im_conversations')} WHERE id = ?`, [conv.id]);
+        }
+    });
+}
+
 async function searchRecipients(page: Page, query: string): Promise<{ status: number; body: any }> {
     return page.evaluate(async (searchQuery) => {
         let csrf = '';
@@ -74,6 +87,14 @@ test.describe('M-02 (search side): searchRecipients excludes non-active-approved
         expect(expertId).toBeGreaterThan(0);
 
         ({ context: userCtx, page: userPage } = await devLogin(browser, 'user'));
+        const userId = await getAccountId('user1@dev.test');
+        expect(userId).toBeGreaterThan(0);
+        // searchRecipients() always includes existing conversation partners
+        // regardless of active/approved status (documented, intentional —
+        // matches canMessage()'s same bypass) — clear any leftover
+        // conversation from other specs sharing this worker's scope so the
+        // exclusion tests below aren't short-circuited by it.
+        await cleanupConversation(expertId, userId);
         await userPage.goto('/im/');
     });
 

@@ -471,28 +471,30 @@ test.describe('iRabi Batch Slot Creation', () => {
 		const batchModal = page.locator('[data-test-id="batch-slot-modal"]');
 		await expect(batchModal).toBeVisible({ timeout: 5000 });
 
+		// Generate 2 slots on different dates (the add-row control (#addSlotBtn)
+		// refuses same-date adds via batch.isProposed(date) — see
+		// BatchSlotWizard.tsx:148 — so it can never produce an in-batch overlap
+		// by itself). Instead, edit the SECOND row's date to match the first
+		// row's date and its time to overlap — onDateChange/onTimeChange have
+		// no such guard.
 		await batchModal.locator('input[name="start_date"]').fill('2026-06-01');
 		await batchModal.locator('input[name="per_week"]').fill('1');
-		await batchModal.locator('input[name="count"]').fill('1');
+		await batchModal.locator('input[name="count"]').fill('2');
 		await batchModal.locator('input[name="batch_time"]').fill('10:00');
 		await batchModal.locator('select[name="batch_duration"]').selectOption('60');
 
 		await batchModal.locator('#batchForm button[type="submit"]').click();
 		await expect(batchModal.locator('#batchPreview')).toBeVisible({ timeout: 5000 });
-		await expect(batchModal.locator('#proposedBody tr')).toHaveCount(1, { timeout: 8000 });
+		await expect(batchModal.locator('#proposedBody tr')).toHaveCount(2, { timeout: 8000 });
 
-		// Add a second slot on the SAME date, overlapping the first
-		// (10:00-11:00 vs 10:30-11:30) — neither exists in the DB yet,
-		// so only a within-batch check catches this.
-		const targetDate = await batchModal.locator('#proposedBody tr').first().locator('input[type="date"]').inputValue();
+		const rows = batchModal.locator('#proposedBody tr');
+		const targetDate = await rows.nth(0).locator('input[type="date"]').inputValue();
 		expect(targetDate).toBeTruthy();
 
-		await batchModal.locator('#addSlotDate').fill(targetDate);
-		await batchModal.locator('#addSlotTime').fill('10:30');
-		await batchModal.locator('#addSlotDuration').selectOption('60');
-		await batchModal.locator('#addSlotBtn').click();
-
-		await expect(batchModal.locator('#proposedBody tr')).toHaveCount(2, { timeout: 5000 });
+		// Make the second row overlap the first: same date, 10:30-11:30
+		// against the first row's 10:00-11:00 (both duration 60).
+		await rows.nth(1).locator('input[type="date"]').fill(targetDate);
+		await rows.nth(1).locator('.slot-time-input').fill('10:30');
 
 		await batchModal.locator('#batchCreateBtn').click();
 
@@ -510,16 +512,18 @@ test.describe('iRabi Batch Slot Creation', () => {
 		expect(body?.overlap).toBe(true);
 
 		// Verify via DB that neither proposed slot from this test was created.
+		// Both rows share targetDate after the edit above, so a day-wide
+		// window around it covers everything the batch could have inserted.
 		const conn = await mysql.createConnection(DB);
 		try {
-			const [rows] = await conn.execute<any[]>(
+			const [dbRows] = await conn.execute<any[]>(
 				`SELECT COUNT(*) as cnt FROM ${tn('time_slots')} ts
 				 JOIN ${tn('accounts')} a ON a.id = ts.expert_id
-				 WHERE a.login = ? AND ts.start_at >= UNIX_TIMESTAMP('2026-06-01 00:00:00')
-				   AND ts.start_at < UNIX_TIMESTAMP('2026-06-02 00:00:00')`,
-				[EXPERT_LOGIN],
+				 WHERE a.login = ? AND ts.start_at >= UNIX_TIMESTAMP(?)
+				   AND ts.start_at < UNIX_TIMESTAMP(?) + 86400`,
+				[EXPERT_LOGIN, `${targetDate} 00:00:00`, `${targetDate} 00:00:00`],
 			);
-			expect(Number(rows[0]?.cnt ?? 0)).toBe(0);
+			expect(Number(dbRows[0]?.cnt ?? 0)).toBe(0);
 		} finally {
 			await conn.end();
 		}

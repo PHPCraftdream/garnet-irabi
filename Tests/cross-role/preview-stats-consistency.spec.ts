@@ -13,6 +13,7 @@
 import { test, expect, tn } from '../helpers/scoped-test';
 import mysql from 'mysql2/promise';
 import { DB } from '../helpers/db';
+import { roleLogin } from '../helpers/role-login';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -36,13 +37,7 @@ test.describe('L-01/M-01: /users/~preview matches ExpertController stats', () =>
 
     test('preview cancellation count matches expert profile (kind=cancel filter)', async ({ page }) => {
         // Login as a regular user to view the preview
-        await page.goto(`${BASE_URL}/system/`);
-        await page.click('text=Выйти');
-        await page.click('text=Войти');
-        await page.fill('input[name="login"]', 'user1@dev.test');
-        await page.fill('input[name="password"]', 'password');
-        await page.click('button[type="submit"]');
-        await page.waitForURL(`${BASE_URL}/system/`);
+        await roleLogin(page, 'user');
 
         viewerId = await page.evaluate(() => (window as unknown as { __GARNET_ACCOUNT_ID__: number }).__GARNET_ACCOUNT_ID__);
         expect(viewerId).toBeGreaterThan(0);
