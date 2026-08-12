@@ -10,7 +10,6 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Session\Session;
     use PHPCraftdream\Garnet\Kernel\Db\Link\CasUpdate;
-    use PHPCraftdream\Garnet\Kernel\Exceptions\DbException;
     use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
     use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
     use PHPCraftdream\IRabi\Common\Services\BookingChatNotifier;
@@ -160,7 +159,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
             // ── Recover cancellation context (audit H-2) ──────────────────────
             // A booking already 'cancelled' may be missing its refund if the
             // original cancel crashed between the CAS transition and the ledger
-            // insert. tryInsertRefund() is idempotent (ledger UNIQUE index), so
+            // insert. tryAddRefund() is idempotent (ledger UNIQUE index), so
             // re-running the refund path is safe — a duplicate call is a no-op
             // and recalculate() recomputes the same sum.
             $currentStatus = (string)$booking['status'];
@@ -203,9 +202,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
             // Expert-initiated cancellation is always 100% — no penalty branch.
             if ($slotCost > 0) {
                 $note = $t->Ledger_Type_Refund() . ' #' . $bookingId;
-                static::tryInsertRefund($userId, true, $slotCost, $bookingId, $note);
+                BalanceLedger::tryAddRefund($userId, true, $slotCost, $bookingId, $note);
                 if ($expertId > 0) {
-                    static::tryInsertRefund($expertId, false, $slotCost, $bookingId, $note);
+                    BalanceLedger::tryAddRefund($expertId, false, $slotCost, $bookingId, $note);
                 }
             }
 
@@ -317,9 +316,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 if ($affected === 1) {
                     if ($slotCost > 0) {
                         $note = $t->Ledger_Type_Refund() . ' #' . $bookingId;
-                        static::tryInsertRefund($userId, true, $slotCost, $bookingId, $note);
+                        BalanceLedger::tryAddRefund($userId, true, $slotCost, $bookingId, $note);
                         if ($expertId > 0) {
-                            static::tryInsertRefund($expertId, false, $slotCost, $bookingId, $note);
+                            BalanceLedger::tryAddRefund($expertId, false, $slotCost, $bookingId, $note);
                         }
                     }
 
@@ -435,9 +434,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                     $userId = (int)$booking['user_id'];
                     if ($slotCost > 0) {
                         $note = $t->Ledger_Type_Refund() . ' #' . $bookingId;
-                        static::tryInsertRefund($userId, true, $slotCost, $bookingId, $note);
+                        BalanceLedger::tryAddRefund($userId, true, $slotCost, $bookingId, $note);
                         if ($expertId > 0) {
-                            static::tryInsertRefund($expertId, false, $slotCost, $bookingId, $note);
+                            BalanceLedger::tryAddRefund($expertId, false, $slotCost, $bookingId, $note);
                         }
                     }
 
@@ -509,27 +508,6 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
             }
 
             return $cancelled;
-        }
-
-        /**
-         * Insert a refund ledger entry and recalculate balance. Ignores duplicates (idempotent).
-         */
-        private static function tryInsertRefund(int $accountId, bool $isCredit, int $amount, int $bookingId, string $note): void {
-            try {
-                BalanceLedger::addEntry(
-                    accountId: $accountId,
-                    isCredit: $isCredit,
-                    amount: $amount,
-                    entryType: 'booking_refund',
-                    refType: 'booking',
-                    refId: $bookingId,
-                    note: $note,
-                );
-            } catch (DbException $e) {
-                if (!CasUpdate::isDuplicateKeyError($e)) {
-                    throw $e;
-                }
-            }
         }
     }
 }

@@ -625,9 +625,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                     if ($userRefund > 0) {
                         $t = ForegroundI18n::getInstance();
                         $note = $t->Ledger_Type_Refund() . ' #' . $bookingId . ($noteSuffix !== '' ? ' (' . $noteSuffix . ')' : '');
-                        static::tryAddRefund($bookingUserId, true, $userRefund, $bookingId, $note);
+                        BalanceLedger::tryAddRefund($bookingUserId, true, $userRefund, $bookingId, $note);
                         if ($expertId && $expertDebit > 0) {
-                            static::tryAddRefund($expertId, false, $expertDebit, $bookingId, $note);
+                            BalanceLedger::tryAddRefund($expertId, false, $expertDebit, $bookingId, $note);
                         }
                     }
                 }
@@ -746,27 +746,6 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             $refund = $cost - $penalty;
 
             return [$refund, $refund, "penalty {$penaltyPct}%"];
-        }
-
-        /**
-         * Add a refund ledger entry and recalculate balance. Ignores duplicates (idempotent).
-         */
-        private static function tryAddRefund(int $accountId, bool $isCredit, int $amount, int $bookingId, string $note): void {
-            try {
-                BalanceLedger::addEntry(
-                    accountId: $accountId,
-                    isCredit: $isCredit,
-                    amount: $amount,
-                    entryType: 'booking_refund',
-                    refType: 'booking',
-                    refId: $bookingId,
-                    note: $note,
-                );
-            } catch (DbException $e) {
-                if (!CasUpdate::isDuplicateKeyError($e)) {
-                    throw $e;
-                }
-            }
         }
 
         public static function get__book(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
