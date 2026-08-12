@@ -233,9 +233,11 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
          * - Always includes existing conversation partners
          */
         protected static function searchRecipients(int $accountId, string $query): array {
-            // Determine if current user is an expert
-            $expertProfile = ExpertProfiles::get()->selectOneByField('account_id', $accountId);
-            $isCurrentUserExpert = !empty($expertProfile);
+            // Determine if current user is an expert. Security audit M-02:
+            // existence of an expert_profiles row alone doesn't reflect
+            // account-level demotion/disable — gate on the same account-level
+            // predicate the booking path enforces.
+            $isCurrentUserExpert = UserEntityConfig::isApprovedActiveExpert($accountId);
 
             // Fetch all accounts (excluding self) with moderator/owner flags
             $accs = Account::getAccounts(
@@ -247,12 +249,20 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 accountDataFields: [Account::IS_MODERATOR, Account::IS_OWNER],
             );
 
-            // Build a lookup of all expert account IDs
+            // Build a lookup of all approved active expert account IDs.
+            // Security audit M-02: existence of an expert_profiles row alone
+            // doesn't reflect account-level demotion/disable.
             $allExperts = ExpertProfiles::get()->selectAll(function (SelectInterface $q): void {
                 $q->resetCols();
                 $q->cols(['account_id']);
             });
-            $expertIds = array_map('intval', array_column($allExperts, 'account_id'));
+            $expertIds = [];
+            foreach ($allExperts as $expert) {
+                $expertId = (int)$expert['account_id'];
+                if (UserEntityConfig::isApprovedActiveExpert($expertId)) {
+                    $expertIds[] = $expertId;
+                }
+            }
 
             // For experts: find their users via bookings on their time_slots
             $userIds = [];
