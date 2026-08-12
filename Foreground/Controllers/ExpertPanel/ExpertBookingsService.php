@@ -155,6 +155,8 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
             }
 
+            $t = ForegroundI18n::getInstance();
+
             // ── Recover cancellation context (audit H-2) ──────────────────────
             // A booking already 'cancelled' may be missing its refund if the
             // original cancel crashed between the CAS transition and the ledger
@@ -200,9 +202,10 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
             // Full refund (shared by normal + backfill paths; idempotent).
             // Expert-initiated cancellation is always 100% — no penalty branch.
             if ($slotCost > 0) {
-                static::tryInsertRefund($userId, true, $slotCost, $bookingId, 'Refund #' . $bookingId);
+                $note = $t->Ledger_Type_Refund() . ' #' . $bookingId;
+                static::tryInsertRefund($userId, true, $slotCost, $bookingId, $note);
                 if ($expertId > 0) {
-                    static::tryInsertRefund($expertId, false, $slotCost, $bookingId, 'Refund #' . $bookingId);
+                    static::tryInsertRefund($expertId, false, $slotCost, $bookingId, $note);
                 }
             }
 
@@ -288,6 +291,8 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 return ControllerTools::JSON(['error' => 'Cannot cancel past slot'], status: 400);
             }
 
+            $t = ForegroundI18n::getInstance();
+
             // Find active bookings for this slot
             // Use selectAll with named params (selectByField + callback causes param binding conflicts)
             $activeBookings = Bookings::get()->selectAll(function (SelectInterface $query) use ($slotId): void {
@@ -311,9 +316,10 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
 
                 if ($affected === 1) {
                     if ($slotCost > 0) {
-                        static::tryInsertRefund($userId, true, $slotCost, $bookingId, 'Expert cancellation refund #' . $bookingId);
+                        $note = $t->Ledger_Type_Refund() . ' #' . $bookingId;
+                        static::tryInsertRefund($userId, true, $slotCost, $bookingId, $note);
                         if ($expertId > 0) {
-                            static::tryInsertRefund($expertId, false, $slotCost, $bookingId, 'Expert cancellation refund #' . $bookingId);
+                            static::tryInsertRefund($expertId, false, $slotCost, $bookingId, $note);
                         }
                     }
 
@@ -400,6 +406,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
          */
         private static function cancelSlotInternal(array $slot, ?string $kind = null, string $cancelledBy = ''): int {
             $slotId = (int)$slot['id'];
+            $t = ForegroundI18n::getInstance();
 
             $activeBookings = Bookings::get()->selectAll(function (SelectInterface $query) use ($slotId): void {
                 $query->where('bookable_id = :bid', ['bid' => $slotId]);
@@ -427,9 +434,10 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                     $cancelled++;
                     $userId = (int)$booking['user_id'];
                     if ($slotCost > 0) {
-                        static::tryInsertRefund($userId, true, $slotCost, $bookingId, 'Refund #' . $bookingId);
+                        $note = $t->Ledger_Type_Refund() . ' #' . $bookingId;
+                        static::tryInsertRefund($userId, true, $slotCost, $bookingId, $note);
                         if ($expertId > 0) {
-                            static::tryInsertRefund($expertId, false, $slotCost, $bookingId, 'Refund #' . $bookingId);
+                            static::tryInsertRefund($expertId, false, $slotCost, $bookingId, $note);
                         }
                     }
 

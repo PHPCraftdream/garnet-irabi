@@ -262,6 +262,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             $accountId = $account->id();
             $slotIds = array_map('intval', $slotIds);
             $now = time();
+            $t = ForegroundI18n::getInstance();
 
             // Validate slots and calculate total
             $totalCost = 0;
@@ -389,7 +390,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                                     'entry_type' => 'booking_invoice',
                                     'ref_type' => 'booking',
                                     'ref_id' => $bookingId,
-                                    'note' => "\xD0\xA1\xD1\x87\xD1\x91\xD1\x82 #" . $bookingId,
+                                    'note' => $t->Ledger_Type_Invoice() . ' #' . $bookingId,
                                     'created_at' => $now,
                                 ]);
                             } catch (DbException $e) {
@@ -407,7 +408,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                                         'entry_type' => 'booking_payment',
                                         'ref_type' => 'booking',
                                         'ref_id' => $bookingId,
-                                        'note' => "\xD0\x9E\xD0\xBF\xD0\xBB\xD0\xB0\xD1\x82\xD0\xB0 #" . $bookingId,
+                                        'note' => $t->Ledger_Type_Payment() . ' #' . $bookingId,
                                         'created_at' => $now,
                                     ]);
                                 } catch (DbException $e) {

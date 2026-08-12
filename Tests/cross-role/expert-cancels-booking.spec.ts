@@ -368,6 +368,22 @@ test.describe('Expert cancels booking — cross-role (dev-login)', () => {
 		expect(Number(expertRefunds[0].amount)).toBe(SLOT_COST);
 	});
 
+	// Regression for the ledger-note i18n unification: ExpertBookingsService's
+	// refund note used to be a hardcoded English literal ('Refund #123'),
+	// diverging from BookingsController's Russian literal / SlotsController's
+	// hex-escaped Russian literal for the same operation. All three now go
+	// through ForegroundI18n::Ledger_Type_Refund() — default app locale is
+	// Russian (ForegroundI18n::$lang), so the note must read "Возврат #<id>".
+	test('DB: refund note uses the i18n label, not a hardcoded literal', async () => {
+		if (!bookingId) { test.skip(); return; }
+
+		const userRefunds = await getLedgerRefundEntries(userId, bookingId);
+		const expertRefunds = await getLedgerRefundEntries(expertId, bookingId);
+
+		expect(userRefunds[0].note).toBe(`Возврат #${bookingId}`);
+		expect(expertRefunds[0].note).toBe(`Возврат #${bookingId}`);
+	});
+
 	test('DB: cancellation log entry with correct reason', async () => {
 		if (!slotId) { test.skip(); return; }
 		const logEntry = await getCancellationLog(slotId);

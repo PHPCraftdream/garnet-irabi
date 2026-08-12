@@ -296,6 +296,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 return ControllerTools::JSON(['error' => 'CSRF check failed'], status: 403);
             }
 
+            $t = ForegroundI18n::getInstance();
             $slotId = (int)$params->getUriParam('id');
             $slotArr = TimeSlots::get()->selectAll(function (SelectInterface $query) use ($slotId): void {
                 $query->where('`id` = :slot_id', ['slot_id' => $slotId])
@@ -378,7 +379,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             try {
                 $moneyResult = AccountBalance::withAccountLock(
                     $account->id(),
-                    static function () use ($cost, $now, $account, $slotId, $bookingId, $expertId, $activeBookings, $maxUsers) {
+                    static function () use ($cost, $now, $account, $slotId, $bookingId, $expertId, $activeBookings, $maxUsers, $t) {
                         // 2) CAS deduct + ledger entries (idempotent via UNIQUE(account_id, ref_type, ref_id, entry_type)).
                         if ($cost > 0) {
                             $balanceTbl = AccountBalance::get()->getTableName();
@@ -408,7 +409,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                                     'entry_type' => 'booking_invoice',
                                     'ref_type' => 'booking',
                                     'ref_id' => $bookingId,
-                                    'note' => 'Счёт #' . $bookingId,
+                                    'note' => $t->Ledger_Type_Invoice() . ' #' . $bookingId,
                                     'created_at' => $now,
                                 ]);
                             } catch (DbException $e) {
@@ -426,7 +427,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                                         'entry_type' => 'booking_payment',
                                         'ref_type' => 'booking',
                                         'ref_id' => $bookingId,
-                                        'note' => 'Оплата #' . $bookingId,
+                                        'note' => $t->Ledger_Type_Payment() . ' #' . $bookingId,
                                         'created_at' => $now,
                                     ]);
                                 } catch (DbException $e) {
