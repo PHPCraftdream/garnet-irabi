@@ -64,7 +64,8 @@ export const ExpertPendingBookings: React.FC<Props> = ({bookings: initialBooking
         withConfirmSending(async () => {
             D('teaching.pendingBookings.confirm', {bookingId});
             try {
-                await sendPost(appUrl('/expert/~confirmBooking'), {booking_id: bookingId});
+                const csrf = (window as any).__GARNET_CSRF__ ?? '';
+                await sendPost(appUrl('/expert/~confirmBooking'), {CSRF_TOKEN: csrf, booking_id: bookingId});
                 setBookings(prev => prev.filter(b => b.booking_id !== bookingId));
             } catch (e: any) {
                 D('teaching.pendingBookings.error', {action: 'confirm', bookingId, error: e?.message});
@@ -87,7 +88,8 @@ export const ExpertPendingBookings: React.FC<Props> = ({bookings: initialBooking
         withRejectSending(async () => {
             D('teaching.pendingBookings.reject', {bookingId, reason: rejectReason});
             try {
-                await sendPost(appUrl('/expert/~cancelBooking'), {booking_id: bookingId, reason: rejectReason.trim()});
+                const csrf = (window as any).__GARNET_CSRF__ ?? '';
+                await sendPost(appUrl('/expert/~cancelBooking'), {CSRF_TOKEN: csrf, booking_id: bookingId, reason: rejectReason.trim()});
                 setBookings(prev => prev.filter(b => b.booking_id !== bookingId));
                 setRejectId(null);
                 setRejectReason('');

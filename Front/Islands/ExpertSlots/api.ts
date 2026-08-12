@@ -23,6 +23,8 @@ export function createSlot(data: {
     fd.append('cancellation_penalty_percent', String(data.cancellation_penalty_percent));
     fd.append('is_online', data.is_online ? '1' : '0');
     fd.append('location', data.location);
+    const csrf = (globalThis as any).__GARNET_CSRF__ ?? '';
+    fd.append('CSRF_TOKEN', csrf);
     return sendPostFormData(appUrl('/expert/~slots'), fd);
 }
 
@@ -57,5 +59,7 @@ export function batchCreate(data: {
     if (data.max_users) fd.append('max_users', String(data.max_users));
     fd.append('is_online', data.is_online ? '1' : '0');
     fd.append('location', data.location);
+    const csrf = (globalThis as any).__GARNET_CSRF__ ?? '';
+    fd.append('CSRF_TOKEN', csrf);
     return sendPostFormData(appUrl('/expert/~batchSlots'), fd);
 }

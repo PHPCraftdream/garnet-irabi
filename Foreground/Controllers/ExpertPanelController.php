@@ -5,6 +5,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Bundle\Utils\HtmlLayout;
     use PHPCraftdream\Garnet\Kernel\Core\FrameworkController;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
+    use PHPCraftdream\Garnet\Kernel\Db\Entity\Session\Session;
     use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
@@ -113,6 +114,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             if (!static::mayMutate($account)) {
                 return static::deniedNotApproved();
             }
+
+            $postCsrf = $globals->readPostValue(Session::CSRF_TOKEN, '');
+            if (!hash_equals(Session::touchCSRF_(), (string)$postCsrf)) {
+                return ControllerTools::JSON(['error' => 'CSRF check failed'], status: 403);
+            }
+
             return ExpertSlotsService::createSlot($globals, $account);
         }
 
@@ -132,6 +139,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             if (!static::mayMutate($account)) {
                 return static::deniedNotApproved();
             }
+
+            $postCsrf = $globals->readPostValue(Session::CSRF_TOKEN, '');
+            if (!hash_equals(Session::touchCSRF_(), (string)$postCsrf)) {
+                return ControllerTools::JSON(['error' => 'CSRF check failed'], status: 403);
+            }
+
             return ExpertSlotsService::batchSlots($globals, $account);
         }
 
@@ -143,6 +156,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             if (!static::mayMutate($account)) {
                 return static::deniedNotApproved();
             }
+
+            $postCsrf = $globals->readPostValue(Session::CSRF_TOKEN, '');
+            if (!hash_equals(Session::touchCSRF_(), (string)$postCsrf)) {
+                return ControllerTools::JSON(['error' => 'CSRF check failed'], status: 403);
+            }
+
             return ExpertSlotsService::editSlot($globals, $account);
         }
 
@@ -154,6 +173,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             if (!static::mayMutate($account)) {
                 return static::deniedNotApproved();
             }
+
+            $postCsrf = $globals->readPostValue(Session::CSRF_TOKEN, '');
+            if (!hash_equals(Session::touchCSRF_(), (string)$postCsrf)) {
+                return ControllerTools::JSON(['error' => 'CSRF check failed'], status: 403);
+            }
+
             return ExpertSlotsService::deleteSlot($globals, $account);
         }
 
@@ -175,6 +200,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             if (!static::mayMutate($account)) {
                 return static::deniedNotApproved();
             }
+
+            $postCsrf = $globals->readPostValue(Session::CSRF_TOKEN, '');
+            if (!hash_equals(Session::touchCSRF_(), (string)$postCsrf)) {
+                return ControllerTools::JSON(['error' => 'CSRF check failed'], status: 403);
+            }
+
             return ExpertBookingsService::confirmBooking($globals, $account);
         }
 
@@ -186,6 +217,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             if (!static::mayMutate($account)) {
                 return static::deniedNotApproved();
             }
+
+            $postCsrf = $globals->readPostValue(Session::CSRF_TOKEN, '');
+            if (!hash_equals(Session::touchCSRF_(), (string)$postCsrf)) {
+                return ControllerTools::JSON(['error' => 'CSRF check failed'], status: 403);
+            }
+
             return ExpertBookingsService::cancelBooking($globals, $account);
         }
 
@@ -197,6 +234,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             if (!static::mayMutate($account)) {
                 return static::deniedNotApproved();
             }
+
+            $postCsrf = $globals->readPostValue(Session::CSRF_TOKEN, '');
+            if (!hash_equals(Session::touchCSRF_(), (string)$postCsrf)) {
+                return ControllerTools::JSON(['error' => 'CSRF check failed'], status: 403);
+            }
+
             return ExpertBookingsService::cancelBookedSlot($globals, $account);
         }
 
@@ -208,6 +251,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             if (!static::mayMutate($account)) {
                 return static::deniedNotApproved();
             }
+
+            $postCsrf = $globals->readPostValue(Session::CSRF_TOKEN, '');
+            if (!hash_equals(Session::touchCSRF_(), (string)$postCsrf)) {
+                return ControllerTools::JSON(['error' => 'CSRF check failed'], status: 403);
+            }
+
             return ExpertBookingsService::cancelSlot($globals, $account);
         }
     }

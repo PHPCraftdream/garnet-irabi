@@ -48,7 +48,9 @@ export const BalanceAdjustModal: React.FC<Props> = ({row, adjustUrl, onClose, on
         withSending(async () => {
             setError('');
             try {
+                const csrf = (window as any).__GARNET_CSRF__ ?? '';
                 const r: AdjustResponse = await sendPost(adjustUrl, {
+                    CSRF_TOKEN: csrf,
                     account_id: row.account_id,
                     amount,
                     is_credit: isCredit ? 1 : 0,

@@ -5,6 +5,7 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use PHPCraftdream\Garnet\Bundle\Utils\HtmlLayout;
     use PHPCraftdream\Garnet\Bundle\Utils\RenderIsland;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
+    use PHPCraftdream\Garnet\Kernel\Db\Entity\Session\Session;
     use PHPCraftdream\Garnet\Kernel\Db\Link\CasUpdate;
     use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
@@ -343,6 +344,11 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
             // must never be able to mint or drain funds — see security audit H-1.
             if (!static::isOwner()) {
                 return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
+            }
+
+            $postCsrf = $globals->readPostValue(Session::CSRF_TOKEN, '');
+            if (!hash_equals(Session::touchCSRF_(), (string)$postCsrf)) {
+                return ControllerTools::JSON(['error' => 'CSRF check failed'], status: 403);
             }
 
             $accountId = (int)$globals->readPostValue('account_id', '0');

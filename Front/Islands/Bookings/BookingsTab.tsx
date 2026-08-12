@@ -466,9 +466,10 @@ const BookingsTab: React.FC<BookingsTabProps> = ({
         if (confirmingId !== null) return;
         setConfirmingId(bookingId);
         try {
-            const res = await sendPost<{booking_id: number}, {error?: string}>(
+            const csrf = (window as any).__GARNET_CSRF__ ?? '';
+            const res = await sendPost<{booking_id: number; CSRF_TOKEN: string}, {error?: string}>(
                 confirmUrl,
-                {booking_id: bookingId},
+                {booking_id: bookingId, CSRF_TOKEN: csrf},
             );
             const data = ('data' in res && res.data) ? res.data : (res as unknown as {error?: string});
             if (data?.error) {
@@ -494,9 +495,10 @@ const BookingsTab: React.FC<BookingsTabProps> = ({
         }
         withRejectSending(async () => {
             try {
-                const res = await sendPost<{booking_id: number | null; reason: string}, {error?: string}>(
+                const csrf = (window as any).__GARNET_CSRF__ ?? '';
+                const res = await sendPost<{booking_id: number | null; reason: string; CSRF_TOKEN: string}, {error?: string}>(
                     rejectUrl,
-                    {booking_id: rejectBookingId, reason: rejectReason.trim()},
+                    {booking_id: rejectBookingId, reason: rejectReason.trim(), CSRF_TOKEN: csrf},
                 );
                 const data = ('data' in res && res.data) ? res.data : (res as unknown as {error?: string});
                 if (data?.error) {

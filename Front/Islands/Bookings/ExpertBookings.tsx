@@ -49,7 +49,8 @@ const ExpertBookingsIslandInner: React.FC<ExpertBookingsProps> = ({bookings: ini
         setLoading(prev => ({...prev, [bookingId]: true}));
         D('booking.confirm', {bookingId});
         try {
-            await sendPost(appUrl('/expert/~confirmBooking'), {booking_id: bookingId});
+            const csrf = (window as any).__GARNET_CSRF__ ?? '';
+            await sendPost(appUrl('/expert/~confirmBooking'), {CSRF_TOKEN: csrf, booking_id: bookingId});
             setBookingList(prev => prev.map(b =>
                 b.id === bookingId ? {...b, status: 'confirmed'} : b
             ));
@@ -70,7 +71,8 @@ const ExpertBookingsIslandInner: React.FC<ExpertBookingsProps> = ({bookings: ini
         setLoading(prev => ({...prev, [bookingId]: true}));
         D('booking.cancel', {bookingId, source: 'expert'});
         try {
-            await sendPost(appUrl('/expert/~cancelBooking'), {booking_id: bookingId});
+            const csrf = (window as any).__GARNET_CSRF__ ?? '';
+            await sendPost(appUrl('/expert/~cancelBooking'), {CSRF_TOKEN: csrf, booking_id: bookingId});
             setBookingList(prev => prev.map(b =>
                 b.id === bookingId ? {...b, status: 'cancelled'} : b
             ));

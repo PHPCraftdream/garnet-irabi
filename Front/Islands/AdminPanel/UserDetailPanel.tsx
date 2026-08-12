@@ -297,7 +297,9 @@ const ClearUserModal: React.FC<{
         setSending(true);
         setError(null);
         try {
+            const csrf = (window as any).__GARNET_CSRF__ ?? '';
             const r: any = await sendPost(appUrl('/admin/~clearUser'), {
+                CSRF_TOKEN: csrf,
                 user_id: accountId,
                 confirm_login: typed.trim(),
             });
@@ -410,7 +412,8 @@ export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, creat
         if (!setFlagUrl || flagPending || !data) return;
         setFlagPending(true);
         try {
-            const resp = await sendPost(setFlagUrl, {user_id: data.account.id, flag: flagName, value}) as any;
+            const csrf = (window as any).__GARNET_CSRF__ ?? '';
+            const resp = await sendPost(setFlagUrl, {CSRF_TOKEN: csrf, user_id: data.account.id, flag: flagName, value}) as any;
             if (resp?.error) {
                 showToast(resp.error, 'danger');
                 return;
@@ -431,7 +434,8 @@ export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, creat
         if (!window.confirm(t.Admin_RemovePhotoConfirm())) return;
         setPhotoRemovePending(true);
         try {
-            const resp = await sendPost(appUrl('/admin/~removeUserPhoto'), {user_id: data.account.id}) as any;
+            const csrf = (window as any).__GARNET_CSRF__ ?? '';
+            const resp = await sendPost(appUrl('/admin/~removeUserPhoto'), {CSRF_TOKEN: csrf, user_id: data.account.id}) as any;
             if (resp?.error) {
                 showToast(resp.error, 'danger');
                 return;

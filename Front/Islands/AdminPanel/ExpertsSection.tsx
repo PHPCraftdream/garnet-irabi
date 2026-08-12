@@ -25,7 +25,8 @@ export const ExpertsSection: React.FC<Props> = ({
         if (pending[userId]) return;
         setPending(p => ({...p, [userId]: true}));
         try {
-            await sendPost(setFlagUrl, {user_id: userId, flag: flagName, value});
+            const csrf = (window as any).__GARNET_CSRF__ ?? '';
+            await sendPost(setFlagUrl, {CSRF_TOKEN: csrf, user_id: userId, flag: flagName, value});
             setExperts(prev => prev.map(u => u.id === userId ? {...u, [flagName]: value || null} : u));
         } finally {
             setPending(p => ({...p, [userId]: false}));

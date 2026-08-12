@@ -8,6 +8,7 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use PHPCraftdream\Garnet\Bundle\Utils\RenderIsland;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\DbAccount;
+    use PHPCraftdream\Garnet\Kernel\Db\Entity\Session\Session;
     use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
@@ -58,6 +59,11 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
         public static function post__setUserFlag(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
             if (!static::isModerator()) {
                 return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
+            }
+
+            $postCsrf = $globals->readPostValue(Session::CSRF_TOKEN, '');
+            if (!hash_equals(Session::touchCSRF_(), (string)$postCsrf)) {
+                return ControllerTools::JSON(['error' => 'CSRF check failed'], status: 403);
             }
 
             $userId = (int)$globals->readPostValue('user_id', '0');
@@ -182,6 +188,11 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
                 return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
             }
 
+            $postCsrf = $globals->readPostValue(Session::CSRF_TOKEN, '');
+            if (!hash_equals(Session::touchCSRF_(), (string)$postCsrf)) {
+                return ControllerTools::JSON(['error' => 'CSRF check failed'], status: 403);
+            }
+
             $userId = (int)$globals->readPostValue('user_id', '0');
             $newType = (string)$globals->readPostValue('type', '');
 
@@ -240,6 +251,11 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
         public static function post__removeUserPhoto(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
             if (!static::isModerator()) {
                 return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
+            }
+
+            $postCsrf = $globals->readPostValue(Session::CSRF_TOKEN, '');
+            if (!hash_equals(Session::touchCSRF_(), (string)$postCsrf)) {
+                return ControllerTools::JSON(['error' => 'CSRF check failed'], status: 403);
             }
 
             $userId = (int)$globals->readPostValue('user_id', '0');
@@ -341,6 +357,11 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
         public static function post__clearUser(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
             if (!UserEntityConfig::isOwner()) {
                 return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
+            }
+
+            $postCsrf = $globals->readPostValue(Session::CSRF_TOKEN, '');
+            if (!hash_equals(Session::touchCSRF_(), (string)$postCsrf)) {
+                return ControllerTools::JSON(['error' => 'CSRF check failed'], status: 403);
             }
 
             $userId = (int)$globals->readPostValue('user_id', '0');

@@ -70,7 +70,9 @@ const EditSlotModal: React.FC<EditSlotModalProps> = ({slot, onClose, onSaved, on
         withSending(async () => {
             D('teaching.slot.edit', {slotId: slot.id, date: editDate, time: editTime});
             try {
+                const csrf = (window as any).__GARNET_CSRF__ ?? '';
                 const resp = await sendPost(appUrl('/expert/~editSlot'), {
+                    CSRF_TOKEN: csrf,
                     slot_id: slot.id,
                     date: editDate,
                     time: editTime,
@@ -250,7 +252,8 @@ const ExpertSlotsIslandInner: React.FC<ExpertSlotsProps> = (props) => {
         if (!ok) return;
         D('teaching.slot.cancel', {slotId: id});
         try {
-            await sendPost(appUrl('/expert/~cancelSlot'), {slot_id: id});
+            const csrf = (window as any).__GARNET_CSRF__ ?? '';
+            await sendPost(appUrl('/expert/~cancelSlot'), {CSRF_TOKEN: csrf, slot_id: id});
             setSlots(prev => prev.map(s => s.id === id ? {...s, status: 'cancelled'} : s));
             showToast(t.Cancel_Success(), 'success');
         } catch (e: any) {
@@ -264,7 +267,8 @@ const ExpertSlotsIslandInner: React.FC<ExpertSlotsProps> = (props) => {
         if (!ok) return;
         D('teaching.slot.delete', {slotId: id});
         try {
-            await sendPost(appUrl('/expert/~deleteSlot'), {slot_id: id});
+            const csrf = (window as any).__GARNET_CSRF__ ?? '';
+            await sendPost(appUrl('/expert/~deleteSlot'), {CSRF_TOKEN: csrf, slot_id: id});
             setSlots(prev => prev.filter(s => s.id !== id));
         } catch (e: any) {
             D('teaching.error', {action: 'deleteSlot', slotId: id, error: e?.message});
@@ -283,7 +287,8 @@ const ExpertSlotsIslandInner: React.FC<ExpertSlotsProps> = (props) => {
         if (!slot.booking_id) return;
         D('teaching.slot.confirmBooking', {slotId: slot.id, bookingId: slot.booking_id});
         try {
-            await sendPost(appUrl('/expert/~confirmBooking'), {booking_id: slot.booking_id});
+            const csrf = (window as any).__GARNET_CSRF__ ?? '';
+            await sendPost(appUrl('/expert/~confirmBooking'), {CSRF_TOKEN: csrf, booking_id: slot.booking_id});
             setSlots(prev => prev.map(s => s.id === slot.id ? {...s, booking_status: 'confirmed'} : s));
             showToast(t.Booking_Status_Confirmed(), 'success');
         } catch (e: any) {
@@ -322,7 +327,9 @@ const ExpertSlotsIslandInner: React.FC<ExpertSlotsProps> = (props) => {
         withCancelSending(async () => {
             D('teaching.slot.cancelBooking', {slotId: cancelBookingSlotId, reason: cancelReason});
             try {
+                const csrf = (window as any).__GARNET_CSRF__ ?? '';
                 await sendPost(appUrl('/expert/~cancelBookedSlot'), {
+                    CSRF_TOKEN: csrf,
                     slot_id: cancelBookingSlotId,
                     reason: cancelReason.trim(),
                 });
@@ -373,7 +380,9 @@ const ExpertSlotsIslandInner: React.FC<ExpertSlotsProps> = (props) => {
         D('teaching.slot.drop', {slotId, from: slot.start_at, newDate: newDateStr, time});
 
         try {
+            const csrf = (window as any).__GARNET_CSRF__ ?? '';
             const resp = await sendPost(appUrl('/expert/~editSlot'), {
+                CSRF_TOKEN: csrf,
                 slot_id: slotId,
                 date: newDateStr,
                 time,
