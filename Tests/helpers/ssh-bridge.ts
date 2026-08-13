@@ -48,8 +48,8 @@ export function isProd(): boolean {
  * non-standard layouts.
  */
 const DEPLOY_INI_CANDIDATES = [
-    path.resolve(REPO_ROOT, 'Apps', 'IRabi', 'WorkDir', 'ConfigDev', 'deploy.ini'),
-    path.resolve(REPO_ROOT, 'Apps', 'IRabi', 'WorkDir', 'Config', 'deploy.ini'),
+    path.resolve(REPO_ROOT, 'WorkDir', 'ConfigDev', 'deploy.ini'),
+    path.resolve(REPO_ROOT, 'WorkDir', 'Config', 'deploy.ini'),
 ];
 function readDeployIni(): Record<string, string> {
     for (const file of DEPLOY_INI_CANDIDATES) {

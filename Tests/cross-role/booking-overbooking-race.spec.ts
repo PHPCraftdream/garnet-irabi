@@ -20,6 +20,8 @@
 import { test, expect, tn } from '../helpers/scoped-test';
 import { newScopedContext } from '../helpers/scoped-test';
 import { DB, withConnection } from '../helpers/db';
+import { emailLogin } from '../helpers/role-login';
+import { isProd } from '../helpers/ssh-bridge';
 import type { BrowserContext, Page } from '@playwright/test';
 import mysql from 'mysql2/promise';
 
@@ -78,10 +80,20 @@ async function slotBookedCount(slotId: number): Promise<number> {
     });
 }
 
-/** Fast-lane dev-login as an arbitrary *.test account (bypasses role mapping). */
+/**
+ * Fast-lane login as an arbitrary *.test account (bypasses role mapping).
+ * Dev → `/dev-login` POST; prod → the real passwordless email flow (see
+ * `emailLogin` in `helpers/role-login.ts` — there is no `/dev-login` on prod).
+ */
 async function loginAs(browser: any, login: string): Promise<{ context: BrowserContext; page: Page }> {
     const context = await newScopedContext(browser);
     const page = await context.newPage();
+
+    if (isProd()) {
+        await emailLogin(page, login);
+        return { context, page };
+    }
+
     await page.goto('/');
     const resp = await page.evaluate(async (loginParam: string) => {
         const fd = new FormData();
