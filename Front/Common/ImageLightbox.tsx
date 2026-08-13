@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {useEffect} from 'react';
+import {createPortal} from 'react-dom';
 import {Download, X} from 'lucide-react';
 import {I18nForeground as t} from '../I18nGen/I18nForeground';
 
@@ -29,7 +30,15 @@ export default function ImageLightbox({src, alt, downloadUrl, downloadName, onCl
         if (e.target === e.currentTarget) onClose();
     };
 
-    return (
+    // Portal straight to <body>: a `position: fixed` element rendered as a
+    // descendant of ANY ancestor with backdrop-filter/filter/transform/
+    // perspective/will-change (e.g. the glass-skin theme's frosted `.card`/
+    // `.welcome-card`/etc.) gets trapped inside that ancestor's box instead
+    // of covering the viewport — the lightbox shrinks to the card's bounds
+    // and its `absolute top-3 right-3` close button ends up misplaced inside
+    // it. Escaping to `document.body` sidesteps the issue regardless of
+    // which card/theme a given call site happens to render inside.
+    return createPortal(
         <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
             onClick={handleBackdrop}
@@ -76,6 +85,7 @@ export default function ImageLightbox({src, alt, downloadUrl, downloadName, onCl
                     {downloadName}
                 </div>
             )}
-        </div>
+        </div>,
+        document.body,
     );
 }
