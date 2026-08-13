@@ -65,13 +65,15 @@ test.describe('Dashboard -- upcoming bookings', () => {
 
     test('dashboard container is visible', async ({ page }) => {
         await openDashboard(page);
-        await expect(page.locator('[data-test-id="dashboard"]')).toBeVisible({ timeout: 8000 });
+        await expect(page.locator('[data-test-id="dashboard"]')).toBeVisible({ timeout: 15000 });
     });
 
     test('upcoming bookings section is visible', async ({ page }) => {
         await openDashboard(page);
-        // For user role, upcoming-bookings is always shown
-        await expect(page.locator('[data-test-id="upcoming-bookings"]')).toBeVisible({ timeout: 8000 });
+        // For user role, upcoming-bookings is always shown. Under full-suite
+        // 6-worker load the dashboard island's hydration can queue behind
+        // other workers' php-cgi requests — 8s wasn't always enough margin.
+        await expect(page.locator('[data-test-id="upcoming-bookings"]')).toBeVisible({ timeout: 15000 });
     });
 
 });

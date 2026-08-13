@@ -112,6 +112,14 @@ test.describe('BalanceSM(User) × BalanceSM(Expert) × TimeSlotSM', () => {
 	let expertBalanceBefore = 0;
 	let bookingId = 0;
 	let userCtx: BrowserContext | null = null;
+	// The shared testuser_setup_user/expert accounts' balances BEFORE this
+	// spec wipes their ledger to a deterministic FIXED_* value below —
+	// restored in afterAll so this spec doesn't permanently pin the shared
+	// fixtures' balance for the rest of this worker's run (every other spec
+	// sharing this worker would otherwise inherit the FIXED_* value as their
+	// own "before" baseline instead of the account's real accumulated state).
+	let trueUserBalanceBefore = 0;
+	let trueExpertBalanceBefore = 0;
 
 	// beforeAll/afterAll (not plain tests) — serial mode skips every
 	// subsequent test once one fails, so a cleanup step written as a
@@ -126,6 +134,9 @@ test.describe('BalanceSM(User) × BalanceSM(Expert) × TimeSlotSM', () => {
 		userId = await getAccountId('testuser_setup_user@irabi.test');
 		expect(expertId).toBeGreaterThan(0);
 		expect(userId).toBeGreaterThan(0);
+
+		trueUserBalanceBefore = await getBalance('testuser_setup_user@irabi.test');
+		trueExpertBalanceBefore = await getBalance('testuser_setup_expert@irabi.test');
 
 		// Create a fresh paid slot
 		slotId = await createPaidSlot(expertId, SLOT_COST);
@@ -208,12 +219,15 @@ test.describe('BalanceSM(User) × BalanceSM(Expert) × TimeSlotSM', () => {
 	test('BalanceSM(User): balance decreased by slot cost after booking', async () => {
 		if (!slotId) { test.skip(); return; }
 		// Booking response can return before PHP finishes the balance update
-		// under parallel-worker load; poll briefly for the expected value.
+		// under parallel-worker load; poll for the expected value. Under
+		// full-suite 6-worker load the write can queue behind other workers'
+		// php-cgi requests — the original 500ms budget (10×50ms) wasn't
+		// always enough margin.
 		let userBalanceAfter = 0;
-		for (let i = 0; i < 10; i++) {
+		for (let i = 0; i < 40; i++) {
 			userBalanceAfter = await getBalance('testuser_setup_user@irabi.test');
 			if (userBalanceAfter === userBalanceBefore - SLOT_COST) break;
-			await new Promise(r => setTimeout(r, 50));
+			await new Promise(r => setTimeout(r, 100));
 		}
 		expect(userBalanceAfter).toBe(userBalanceBefore - SLOT_COST);
 	});
@@ -221,10 +235,10 @@ test.describe('BalanceSM(User) × BalanceSM(Expert) × TimeSlotSM', () => {
 	test('BalanceSM(Expert): balance increased by slot cost after user booking', async () => {
 		if (!slotId) { test.skip(); return; }
 		let expertBalanceAfter = 0;
-		for (let i = 0; i < 10; i++) {
+		for (let i = 0; i < 40; i++) {
 			expertBalanceAfter = await getBalance('testuser_setup_expert@irabi.test');
 			if (expertBalanceAfter === expertBalanceBefore + SLOT_COST) break;
-			await new Promise(r => setTimeout(r, 50));
+			await new Promise(r => setTimeout(r, 100));
 		}
 		expect(expertBalanceAfter).toBe(expertBalanceBefore + SLOT_COST);
 	});
@@ -336,5 +350,33 @@ test.describe('BalanceSM(User) × BalanceSM(Expert) × TimeSlotSM', () => {
 	test.afterAll(async () => {
 		if (userCtx) { await userCtx.close(); userCtx = null; }
 		if (slotId) await deleteSlot(slotId);
+
+		// Restore the shared accounts' ledger/balance to what they were
+		// before this spec's deterministic FIXED_* reset — otherwise every
+		// other spec sharing this worker inherits the FIXED_* value as its
+		// own starting balance instead of the account's real state.
+		if (userId || expertId) {
+			const conn = await mysql.createConnection(DB);
+			try {
+				for (const [accId, trueBal] of [[userId, trueUserBalanceBefore], [expertId, trueExpertBalanceBefore]] as const) {
+					if (!accId) continue;
+					await conn.execute(`DELETE FROM ${tn('balance_ledger')} WHERE account_id = ?`, [accId]);
+					if (trueBal > 0) {
+						await conn.execute(
+							`INSERT INTO ${tn('balance_ledger')}
+							 (account_id, is_credit, amount, entry_type, note, created_at)
+							 VALUES (?, 1, ?, 'top_up', 'user-expert-booking-balance.spec restore', UNIX_TIMESTAMP())`,
+							[accId, trueBal]
+						);
+					}
+					await conn.execute(
+						`INSERT INTO ${tn('account_balance')} (account_id, balance, updated_at)
+						 VALUES (?, ?, UNIX_TIMESTAMP())
+						 ON DUPLICATE KEY UPDATE balance = VALUES(balance), updated_at = VALUES(updated_at)`,
+						[accId, trueBal]
+					);
+				}
+			} finally { await conn.end(); }
+		}
 	});
 });

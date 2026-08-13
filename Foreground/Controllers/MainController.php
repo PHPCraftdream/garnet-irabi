@@ -634,13 +634,15 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
         public static function get__counts(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
             $account = Account::fromSession();
             if (!$account || !$account->id()) {
-                return ControllerTools::JSON(['bookingsPending' => 0, 'unreadIm' => 0, 'unreadSupport' => 0]);
+                return ControllerTools::JSON(['primaryBadgeCount' => 0, 'unreadIm' => 0, 'unreadSupport' => 0]);
             }
 
             $accountId = $account->id();
 
             return ControllerTools::JSON([
-                'bookingsPending' => Menu::expertPendingBookingsCount(),
+                // Wire name is app-agnostic (see liveCounts.ts::LiveCounts) — for
+                // IRabi the "primary" live-updated nav badge is pending bookings.
+                'primaryBadgeCount' => Menu::expertPendingBookingsCount(),
                 'unreadIm' => ImReadStatus::getUnreadCountForUser($accountId),
                 'unreadSupport' => SupportTickets::getUnreadCountForUser($accountId),
             ]);

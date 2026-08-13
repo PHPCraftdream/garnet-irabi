@@ -31,10 +31,38 @@ async function getUserId(): Promise<number> {
 	} finally { await conn.end(); }
 }
 
+async function getBalance(): Promise<number> {
+	const conn = await mysql.createConnection(DB);
+	try {
+		const userId = await getUserId();
+		const [rows] = await conn.execute<any[]>(
+			`SELECT balance FROM ${tn('account_balance')} WHERE account_id = ?`, [userId]
+		);
+		return rows.length ? Number(rows[0].balance) : 0;
+	} finally { await conn.end(); }
+}
+
+/**
+ * PHP's AccountBalance::recalculate() (run on every booking) rebuilds
+ * `account_balance.balance` from the running sum of `balance_ledger` — so
+ * just writing a fresh balance value isn't enough, the next money op on
+ * this shared fixture account resurrects whatever the ledger truly summed
+ * to. Clear the ledger first, then seed a single top-up row so the cache
+ * and ledger stay in sync (same pattern as moderator/booking-cancel.spec.ts).
+ */
 async function setUserBalance(amount: number) {
 	const conn = await mysql.createConnection(DB);
 	try {
 		const userId = await getUserId();
+		await conn.execute(`DELETE FROM ${tn('balance_ledger')} WHERE account_id = ?`, [userId]);
+		if (amount > 0) {
+			await conn.execute(
+				`INSERT INTO ${tn('balance_ledger')}
+				 (account_id, is_credit, amount, entry_type, note, created_at)
+				 VALUES (?, 1, ?, 'top_up', 'booking-guards.spec seed', UNIX_TIMESTAMP())`,
+				[userId, amount]
+			);
+		}
 		await conn.execute(
 			`INSERT INTO ${tn('account_balance')} (account_id, balance, updated_at)
 			 VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE balance = VALUES(balance), updated_at = VALUES(updated_at)`,
@@ -117,6 +145,11 @@ test.describe('G1: BookingSM guard -- slot not found (404)', () => {
 
 test.describe('G2: BookingSM guard -- insufficient balance', () => {
 	let expensiveSlotId = 0;
+	// The shared testuser_setup_user account's balance BEFORE this spec
+	// zeroes it out below — restored (ledger + cache) in afterAll so this
+	// spec doesn't permanently pin the shared fixture's balance for the
+	// rest of this worker's run.
+	let trueUserBalanceBefore = 0;
 
 	// beforeAll/afterAll (not plain tests) — serial mode skips every
 	// subsequent test once one fails, so a cleanup step written as a
@@ -125,6 +158,7 @@ test.describe('G2: BookingSM guard -- insufficient balance', () => {
 	// the rest of this worker's run. Hooks run regardless of test
 	// outcome.
 	test.beforeAll(async () => {
+		trueUserBalanceBefore = await getBalance();
 		const slot = await createFreeExpensiveSlot();
 		expensiveSlotId = slot.id;
 		await setUserBalance(0);
@@ -166,15 +200,7 @@ test.describe('G2: BookingSM guard -- insufficient balance', () => {
 	});
 
 	test.afterAll(async () => {
-		const userId = await getUserId();
-		const conn = await mysql.createConnection(DB);
-		try {
-			await conn.execute(
-				`INSERT INTO ${tn('account_balance')} (account_id, balance, updated_at)
-				 VALUES (?, 10000, ?) ON DUPLICATE KEY UPDATE balance = VALUES(balance), updated_at = VALUES(updated_at)`,
-				[userId, Math.floor(Date.now() / 1000)]
-			);
-		} finally { await conn.end(); }
+		await setUserBalance(trueUserBalanceBefore);
 		if (expensiveSlotId) await cleanup([expensiveSlotId]);
 	});
 });

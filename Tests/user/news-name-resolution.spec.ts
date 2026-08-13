@@ -108,7 +108,11 @@ test.describe('News feed -- actor name resolution', () => {
         ).catch(() => {});
 
         const eventRow = page.locator(`[data-test-id="news-event-${insertedEventId}"]`);
-        await expect(eventRow).toBeVisible({ timeout: 10_000 });
+        // Under full-suite 6-worker load the feed's XHR can queue behind
+        // other workers' php-cgi requests even after the earlier
+        // waitForResponse resolved (the feed re-fetches on some races) —
+        // 10s wasn't always enough margin for the row to actually paint.
+        await expect(eventRow).toBeVisible({ timeout: 20_000 });
 
         const text = await eventRow.textContent() ?? '';
         expect(text).toContain(RESOLVED_NAME);

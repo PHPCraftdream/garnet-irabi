@@ -89,30 +89,54 @@ async function getSlotStatus(slotId: number): Promise<string> {
 // DB-only top-up (not the UI topup flow) — beforeAll only has worker-scoped
 // fixtures (no authenticated `page`), so top up directly via the ledger,
 // matching the pattern used elsewhere in this suite (e.g. booking-guards.spec.ts).
-async function ensureBalance(minBalance: number) {
+// Returns the top-up amount actually added (0 if balance was already
+// sufficient) so the caller can reverse it in afterAll — otherwise the
+// shared testuser_setup_user fixture's balance permanently inflates by
+// this amount for the rest of the worker's run every time this spec runs.
+async function ensureBalance(minBalance: number): Promise<number> {
 	const current = await getUserBalance();
-	if (current < minBalance) {
-		const conn = await mysql.createConnection(DB);
-		try {
-			const [rows] = await conn.execute<any[]>(
-				`SELECT id FROM ${tn('accounts')} WHERE login = 'testuser_setup_user@irabi.test'`
-			);
-			const userId = rows[0]?.id;
-			if (!userId) return;
-			const topUp = minBalance - current + 1000;
-			await conn.execute(
-				`INSERT INTO ${tn('balance_ledger')} (account_id, is_credit, amount, entry_type, ref_type, ref_id, note, created_at)
-				 VALUES (?, 1, ?, 'top_up', '', 0, 'booking-cancel.spec top-up', UNIX_TIMESTAMP())`,
-				[userId, topUp]
-			);
-			await conn.execute(
-				`INSERT INTO ${tn('account_balance')} (account_id, balance, updated_at)
-				 VALUES (?, ?, UNIX_TIMESTAMP())
-				 ON DUPLICATE KEY UPDATE balance = balance + ?, updated_at = UNIX_TIMESTAMP()`,
-				[userId, topUp, topUp]
-			);
-		} finally { await conn.end(); }
-	}
+	if (current >= minBalance) return 0;
+	const conn = await mysql.createConnection(DB);
+	try {
+		const [rows] = await conn.execute<any[]>(
+			`SELECT id FROM ${tn('accounts')} WHERE login = 'testuser_setup_user@irabi.test'`
+		);
+		const userId = rows[0]?.id;
+		if (!userId) return 0;
+		const topUp = minBalance - current + 1000;
+		await conn.execute(
+			`INSERT INTO ${tn('balance_ledger')} (account_id, is_credit, amount, entry_type, ref_type, ref_id, note, created_at)
+			 VALUES (?, 1, ?, 'top_up', '', 0, 'booking-cancel.spec top-up', UNIX_TIMESTAMP())`,
+			[userId, topUp]
+		);
+		await conn.execute(
+			`INSERT INTO ${tn('account_balance')} (account_id, balance, updated_at)
+			 VALUES (?, ?, UNIX_TIMESTAMP())
+			 ON DUPLICATE KEY UPDATE balance = balance + ?, updated_at = UNIX_TIMESTAMP()`,
+			[userId, topUp, topUp]
+		);
+		return topUp;
+	} finally { await conn.end(); }
+}
+
+async function reverseTopUp(amount: number): Promise<void> {
+	if (amount <= 0) return;
+	const conn = await mysql.createConnection(DB);
+	try {
+		const [rows] = await conn.execute<any[]>(
+			`SELECT id FROM ${tn('accounts')} WHERE login = 'testuser_setup_user@irabi.test'`
+		);
+		const userId = rows[0]?.id;
+		if (!userId) return;
+		await conn.execute(
+			`DELETE FROM ${tn('balance_ledger')} WHERE account_id = ? AND note = 'booking-cancel.spec top-up' ORDER BY id DESC LIMIT 1`,
+			[userId]
+		);
+		await conn.execute(
+			`UPDATE ${tn('account_balance')} SET balance = balance - ?, updated_at = UNIX_TIMESTAMP() WHERE account_id = ?`,
+			[amount, userId]
+		);
+	} finally { await conn.end(); }
 }
 
 // -- Tests --
@@ -123,6 +147,7 @@ test.describe('BookingSM: pending -> cancelled (balance refund)', () => {
 	let slotCost = SLOT_COST;
 	let balanceBefore = 0;
 	let bookingId = 0;
+	let toppedUp = 0;
 
 	// beforeAll/afterAll (not plain tests) — serial mode skips every
 	// subsequent test once one fails, so a cleanup step written as a
@@ -134,7 +159,7 @@ test.describe('BookingSM: pending -> cancelled (balance refund)', () => {
 		expect(slotId).toBeGreaterThan(0);
 		slotCost = SLOT_COST;
 
-		await ensureBalance(SLOT_COST + 500);
+		toppedUp = await ensureBalance(SLOT_COST + 500);
 		balanceBefore = await getUserBalance();
 		expect(balanceBefore).toBeGreaterThanOrEqual(SLOT_COST);
 	});
@@ -248,5 +273,6 @@ test.describe('BookingSM: pending -> cancelled (balance refund)', () => {
 
 	test.afterAll(async () => {
 		if (slotId) await deleteTestSlot(slotId);
+		await reverseTopUp(toppedUp);
 	});
 });

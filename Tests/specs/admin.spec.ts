@@ -208,9 +208,21 @@ test.describe('Admin — command execution', () => {
 	});
 
 	test('Build command sends SSE request and shows output', async () => {
-		await page.route('/__garnet/api/exec*', async route => {
-			const url = route.request().url();
-			expect(url).toContain('cmd=build');
+		// exec is a two-step, ticket-based flow (AdminDashboard.tsx::runCmd):
+		// POST /api/exec-ticket {cmd, csrf} -> {ticket}, then the actual
+		// command streams over GET /api/exec?ticket=<ticket> via EventSource
+		// (which can't carry a body/headers, hence the CSRF-checked POST
+		// happening first). See AdminApp::handleExecTicket()/handleExec().
+		await page.route('/__garnet/api/exec-ticket', async route => {
+			const body = route.request().postDataJSON();
+			expect(body.cmd).toBe('build');
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({ ticket: 'test-ticket-build' }),
+			});
+		});
+		await page.route(/\/__garnet\/api\/exec\?ticket=/, async route => {
 			await route.fulfill({
 				status: 200,
 				contentType: 'text/event-stream',
@@ -231,9 +243,15 @@ test.describe('Admin — command execution', () => {
 
 	test('Migration command sends correct cmd param', async () => {
 		let capturedCmd = '';
-		await page.route('/__garnet/api/exec*', async route => {
-			const url = new URL(route.request().url());
-			capturedCmd = url.searchParams.get('cmd') ?? '';
+		await page.route('/__garnet/api/exec-ticket', async route => {
+			capturedCmd = route.request().postDataJSON()?.cmd ?? '';
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({ ticket: 'test-ticket-migration' }),
+			});
+		});
+		await page.route(/\/__garnet\/api\/exec\?ticket=/, async route => {
 			await route.fulfill({
 				status: 200,
 				contentType: 'text/event-stream',
@@ -244,7 +262,7 @@ test.describe('Admin — command execution', () => {
 		await page.goto('/__garnet/');
 		await btn(page, 'Migration').click({ timeout: 10000 });
 
-		// The click fires a fetch/EventSource asynchronously after the
+		// The click fires the exec-ticket fetch asynchronously after the
 		// handler returns. Under heavy parallel load the request may
 		// still be in flight by the time `expect` runs — poll instead
 		// of asserting synchronously.
@@ -318,9 +336,19 @@ test.describe('Admin — command execution', () => {
 	});
 
 	test('running new command replaces previous output', async () => {
-		await page.route('/__garnet/api/exec*', async route => {
-			const url = new URL(route.request().url());
-			const cmd = url.searchParams.get('cmd') ?? '';
+		// The ticket is opaque to the frontend, so echo the cmd back as the
+		// ticket value itself — the exec route below then just reads it
+		// straight out of the `ticket` query param to build per-command output.
+		await page.route('/__garnet/api/exec-ticket', async route => {
+			const cmd = route.request().postDataJSON()?.cmd ?? '';
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({ ticket: cmd }),
+			});
+		});
+		await page.route(/\/__garnet\/api\/exec\?ticket=/, async route => {
+			const cmd = new URL(route.request().url()).searchParams.get('ticket') ?? '';
 			await route.fulfill({
 				status: 200,
 				contentType: 'text/event-stream',

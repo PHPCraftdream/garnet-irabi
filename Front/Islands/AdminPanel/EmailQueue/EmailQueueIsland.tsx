@@ -79,7 +79,7 @@ export const EmailQueueIsland: React.FC<Props> = (props) => {
             if (!res.success) {
                 setError(labels.retryFail);
             }
-        } catch (e: any) {
+        } catch {
             setError(labels.retryFail);
         } finally {
             setRetryingId(null);

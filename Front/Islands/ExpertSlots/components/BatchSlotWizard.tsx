@@ -80,6 +80,7 @@ export const BatchSlotWizard: React.FC<Props> = ({onSuccess, onError, onConfirm,
             batch.setExistingSlots(data.existingSlots || []);
 
             const proposed = data.proposedDates.map(d => ({
+                id: crypto.randomUUID(),
                 date: d.date,
                 hebrewDate: d.hebrewDate,
                 time: batchTime,

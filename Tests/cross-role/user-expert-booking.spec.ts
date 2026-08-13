@@ -61,19 +61,6 @@ async function getSlotStatus(slotId: number): Promise<string> {
 	} finally { await conn.end(); }
 }
 
-async function getLatestSlotId(expertLogin: string): Promise<number> {
-	const conn = await mysql.createConnection(DB);
-	try {
-		const [rows] = await conn.execute<any[]>(
-			`SELECT ts.id FROM ${tn('time_slots')} ts
-			 JOIN ${tn('accounts')} a ON a.id = ts.expert_id
-			 WHERE a.login = ? AND ts.status = 'free'
-			 ORDER BY ts.created_at DESC LIMIT 1`, [expertLogin]
-		);
-		return rows[0]?.id ?? 0;
-	} finally { await conn.end(); }
-}
-
 async function getLedgerRefundCount(userLogin: string): Promise<number> {
 	const conn = await mysql.createConnection(DB);
 	try {
@@ -291,14 +278,25 @@ test.describe('Cross-role: user books slot, expert sees booking, user cancels', 
 		// Modal should close after success
 		await expect(modal).not.toBeVisible({ timeout: 10000 });
 
-		// Get the slot ID from DB
-		createdSlotId = await getLatestSlotId('testuser_setup_expert@irabi.test');
+		// Read the slot ID straight from the create API's own response
+		// instead of re-deriving it via a "latest free slot for this
+		// expert" DB query — that heuristic query raced under full-suite
+		// load (a fresh connection's SELECT sometimes ran before the
+		// server's INSERT was visible, or picked up a stale row), even
+		// though the API had already confirmed the slot was created.
+		let respJson: { success?: boolean; slot_id?: string | number } = {};
+		try { respJson = JSON.parse(respBody); } catch {}
+		createdSlotId = Number(respJson.slot_id ?? 0);
 		expect(createdSlotId).toBeGreaterThan(0);
 		console.log('Created slot ID:', createdSlotId);
 
-		// Verify slot appears in calendar
+		// Verify slot appears in calendar. Under full-suite 6-worker load the
+		// calendar's list fetch can queue behind other workers' php-cgi
+		// requests even after the create XHR itself already resolved —
+		// 20s wasn't always enough margin (matches the 25000ms used for
+		// the step-3 re-check below).
 		const slotCard = expertPage.locator(`[data-test-id="expert-slot-${createdSlotId}"]`);
-		await expect(slotCard).toBeVisible({ timeout: 20000 });
+		await expect(slotCard).toBeVisible({ timeout: 30000 });
 
 		// Verify slot is free in DB
 		const status = await getSlotStatus(createdSlotId);

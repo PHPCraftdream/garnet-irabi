@@ -100,7 +100,7 @@ export const BatchPreviewTable: React.FC<Props> = ({slots, startDate, endDate, h
                     const dayItems = getDayItems(s.date);
                     const hasWarning = overlap || pastDate || outOfRange;
                     return (
-                        <tr key={`${s.date}-${i}`} data-index={i} className={hasWarning ? 'table-warning' : ''}>
+                        <tr key={s.id} data-index={i} className={hasWarning ? 'table-warning' : ''}>
                             <td>
                                 <span className="text-muted text-xs mr-1">{getWeekdayName(s.date)}</span>
                                 <DateInput
@@ -130,8 +130,8 @@ export const BatchPreviewTable: React.FC<Props> = ({slots, startDate, endDate, h
                                 />
                             </td>
                             <td>
-                                {dayItems.map((item, di) => (
-                                    <span key={di} className="badge bg-secondary mr-1 mb-1" style={{fontSize: '0.7rem'}}>
+                                {dayItems.map(item => (
+                                    <span key={`${item.time}-${item.duration_min}`} className="badge bg-secondary mr-1 mb-1" style={{fontSize: '0.7rem'}}>
                                         {formatExistingItem(item)}
                                     </span>
                                 ))}

@@ -25,6 +25,7 @@ export interface ExistingItem {
 }
 
 export interface ProposedSlot {
+    id: string;
     date: string;
     hebrewDate: string;
     time: string;

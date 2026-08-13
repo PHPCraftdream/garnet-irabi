@@ -76,6 +76,18 @@ export async function roleLogin(page: Page, role: string): Promise<void> {
         }
         await emailLogin(page, login);
     } else {
+        // MUST run before the POST: contexts created via browser.newContext()
+        // (including "ephemeral" ones from newScopedContext()) INHERIT the
+        // project's storageState — so under a role-scoped project this page
+        // may already carry that role's per-worker session cookie.
+        // DevLoginController's dev-login POST does NOT rotate the session —
+        // it rebinds `auth_login` on whatever row the cookie already
+        // resolves to. Without clearing cookies first, calling roleLogin()
+        // for a DIFFERENT role here would silently convert the worker's
+        // shared session into that other role for the rest of the run
+        // (observed as intermittent "Нет доступа" on admin-only routes).
+        await page.context().clearCookies();
+
         // The dev-login POST is issued from the page context with a relative
         // URL, so the page must already be on the app origin — a freshly
         // created page is about:blank, where `fetch('/dev-login')` throws

@@ -180,6 +180,10 @@ test.describe('H-1: concurrent CAS-debit ↔ recalculate() race (balance must no
     let userId = 0;
     let expertId = 0;
     const slotIds: number[] = [];
+    // user1@dev.test's balance BEFORE this spec's repeated resetUserBalance()
+    // wipes — restored in afterAll so this spec doesn't permanently pin the
+    // shared dev-seed fixture's balance for the rest of this worker's run.
+    let trueUserBalanceBefore = 0;
 
     // beforeAll/afterAll (not plain tests) — serial mode skips every
     // subsequent test once one fails, so a cleanup step written as a
@@ -193,6 +197,8 @@ test.describe('H-1: concurrent CAS-debit ↔ recalculate() race (balance must no
         expect(userId).toBeGreaterThan(0);
         expect(expertId).toBeGreaterThan(0);
         expect(userId).not.toBe(expertId);
+
+        trueUserBalanceBefore = (await getBalanceAndLedgerSum(userId)).balance;
 
         ({ context: ctx, page } = await loginAs(browser, 'user1@dev.test'));
     });
@@ -252,5 +258,6 @@ test.describe('H-1: concurrent CAS-debit ↔ recalculate() race (balance must no
         await page?.close().catch(() => {});
         await ctx?.close().catch(() => {});
         await cleanupSlots(slotIds);
+        if (userId) await resetUserBalance(userId, trueUserBalanceBefore);
     });
 });

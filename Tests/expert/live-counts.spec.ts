@@ -23,7 +23,7 @@ test.describe('Live nav counters (~counts poll)', () => {
         expect(resp.status()).toBe(200);
 
         const json = await resp.json();
-        for (const key of ['bookingsPending', 'unreadIm', 'unreadSupport']) {
+        for (const key of ['primaryBadgeCount', 'unreadIm', 'unreadSupport']) {
             expect(typeof json[key], `${key} should be a number`).toBe('number');
             expect(json[key]).toBeGreaterThanOrEqual(0);
         }
@@ -42,7 +42,7 @@ test.describe('Live nav counters (~counts poll)', () => {
         await page.route(/\/~counts(\?|$)/, route => route.fulfill({
             status: 200,
             contentType: 'application/json',
-            body: JSON.stringify({ bookingsPending: 7, unreadIm: 3, unreadSupport: 4 }),
+            body: JSON.stringify({ primaryBadgeCount: 7, unreadIm: 3, unreadSupport: 4 }),
         }));
 
         await page.goto('/system/');

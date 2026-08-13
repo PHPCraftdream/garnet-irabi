@@ -28,6 +28,37 @@ let USER_ID = 0;
 let USER2_ID = 0;
 let EXPERT_ID = 0;
 
+/**
+ * `project` tags (cross-role / framework-bundle / booking) are only
+ * test-selection/reporting labels — they do NOT map to separate DB scopes.
+ * Any spec file can be scheduled onto the SAME physical worker (and
+ * therefore the SAME test_worker_N_* tables) as this file. A bare
+ * `DELETE FROM` with no WHERE on the IM tables would wipe every OTHER
+ * spec's IM fixtures (im-partner-name.spec.ts, email-notif-gate.spec.ts,
+ * blocked-user-display.spec.ts, etc.) for the rest of that worker's run —
+ * confirmed as a real corruption source this session (see the matching
+ * fix in specs/framework-bundle/finance-reconciliation.spec.ts). Snapshot
+ * every row before wiping, restore in afterAll.
+ */
+const IM_TABLES = ['im_read_status', 'im_attachments', 'im_messages', 'im_conversations'] as const;
+const imSnapshot: Partial<Record<typeof IM_TABLES[number], any[]>> = {};
+
+/**
+ * Real (non-generated) column names for a table, in ordinal order. Skips
+ * generated/virtual columns — MySQL refuses INSERT VALUES against them;
+ * see isolation-setup.ts::cloneTemplateTo() for the matching pattern.
+ */
+async function insertableColumns(conn: mysql.Connection, tableName: string): Promise<string[]> {
+    const [rows] = await conn.execute<any[]>(
+        `SELECT COLUMN_NAME FROM information_schema.columns
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
+               AND (EXTRA NOT LIKE '%GENERATED%' OR EXTRA IS NULL)
+         ORDER BY ORDINAL_POSITION`,
+        [tableName],
+    );
+    return rows.map((r) => r.COLUMN_NAME as string);
+}
+
 async function devLogin(context: BrowserContext, role: string): Promise<Page> {
     const page = await context.newPage();
     await page.goto(`${BASE_URL}/`);
@@ -96,12 +127,14 @@ test.describe('F-IM-01: /im/~send recipient allow-list', () => {
             await conn.end();
         }
 
-        // Clean IM data
+        // Snapshot + clean IM data (see IM_TABLES comment above for why the
+        // snapshot/restore is necessary — this is a shared, worker-wide wipe).
         await withConnection(async (c) => {
-            await c.execute(`DELETE FROM ${tn('im_read_status')}`);
-            await c.execute(`DELETE FROM ${tn('im_attachments')}`);
-            await c.execute(`DELETE FROM ${tn('im_messages')}`);
-            await c.execute(`DELETE FROM ${tn('im_conversations')}`);
+            for (const t of IM_TABLES) {
+                const [rows] = await c.execute<any[]>(`SELECT * FROM ${tn(t)}`);
+                imSnapshot[t] = rows;
+                await c.execute(`DELETE FROM ${tn(t)}`);
+            }
         });
 
         // Navigate to /im/ so CSRF is available on the page
@@ -113,6 +146,31 @@ test.describe('F-IM-01: /im/~send recipient allow-list', () => {
         await userContext?.close();
         await expertContext?.close();
         await user2Context?.close().catch(() => {});
+
+        // Restore the pre-wipe IM snapshot — see IM_TABLES comment above.
+        await withConnection(async (c) => {
+            await c.execute('SET FOREIGN_KEY_CHECKS = 0');
+            try {
+                for (const t of IM_TABLES) {
+                    await c.execute(`DELETE FROM ${tn(t)}`);
+                    const rows = imSnapshot[t] ?? [];
+                    if (!rows.length) continue;
+                    const realCols = await insertableColumns(c, tn(t));
+                    const cols = realCols.filter((col) => col in rows[0]);
+                    const colList = cols.map((col) => `\`${col}\``).join(', ');
+                    const rowPlaceholder = `(${cols.map(() => '?').join(', ')})`;
+                    const CHUNK = 500;
+                    for (let i = 0; i < rows.length; i += CHUNK) {
+                        const chunk = rows.slice(i, i + CHUNK);
+                        const sql = `INSERT INTO ${tn(t)} (${colList}) VALUES ${chunk.map(() => rowPlaceholder).join(', ')}`;
+                        const params = chunk.flatMap((row) => cols.map((col) => row[col]));
+                        await c.execute(sql, params);
+                    }
+                }
+            } finally {
+                await c.execute('SET FOREIGN_KEY_CHECKS = 1');
+            }
+        });
     });
 
     // ── Positive: user -> expert (allowed) ──────────────────────────

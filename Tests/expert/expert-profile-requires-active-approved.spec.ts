@@ -14,6 +14,7 @@
 import { test, expect, tn } from '../helpers/scoped-test';
 import { newScopedContext } from '../helpers/scoped-test';
 import { withConnection } from '../helpers/db';
+import { resolveStorageStatePath } from '../helpers/state';
 import type { BrowserContext, Page } from '@playwright/test';
 
 async function getExpertId(): Promise<number> {
@@ -74,7 +75,12 @@ test.describe('M-01: /expert/id~N requires an active approved expert', () => {
         slotId = await seedFreeSlot(expertId);
         expect(slotId).toBeGreaterThan(0);
 
-        ctx = await newScopedContext(browser);
+        // /expert/id~N requires authentication to view at all (anonymous
+        // visitors get redirected to the invite-only landing page) — this
+        // spec is about whether an authenticated OTHER user can still see a
+        // disabled/demoted expert's profile, so log in as a regular user,
+        // not the expert being tested against.
+        ctx = await newScopedContext(browser, { storageState: resolveStorageStatePath('user') });
         page = await ctx.newPage();
         await page.goto('/');
     });

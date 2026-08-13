@@ -44,15 +44,18 @@ test.describe('Profile-edit — hidden ID, My-profile link, notification prefs',
         await page.goto('/system/~profile_edit', { waitUntil: 'domcontentloaded' });
         await page.waitForSelector('[data-test-id="notif-prefs"]', { timeout: 15_000 });
 
-        // messages → hourly (triggers a save)
+        // messages → hourly (triggers a save). Explicit generous timeout —
+        // the default actionTimeout (10s) wasn't always enough under
+        // full-suite 6-worker load, where the XHR can queue behind other
+        // workers' php-cgi requests.
         await Promise.all([
-            page.waitForResponse(r => r.url().includes('/~saveNotifPrefs') && r.request().method() === 'POST' && r.status() === 200),
+            page.waitForResponse(r => r.url().includes('/~saveNotifPrefs') && r.request().method() === 'POST' && r.status() === 200, { timeout: 20_000 }),
             page.locator('[data-test-id="notif-freq-messages"]').selectOption('hourly'),
         ]);
 
         // bookings → off (uncheck the enable checkbox, triggers another save)
         await Promise.all([
-            page.waitForResponse(r => r.url().includes('/~saveNotifPrefs') && r.request().method() === 'POST' && r.status() === 200),
+            page.waitForResponse(r => r.url().includes('/~saveNotifPrefs') && r.request().method() === 'POST' && r.status() === 200, { timeout: 20_000 }),
             page.locator('[data-test-id="notif-enable-bookings"]').uncheck(),
         ]);
 

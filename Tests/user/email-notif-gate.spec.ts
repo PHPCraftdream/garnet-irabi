@@ -64,7 +64,10 @@ async function queueCount(): Promise<number> {
 async function sendMessage(page: Page, text: string): Promise<void> {
     await page.goto('/im/', { waitUntil: 'domcontentloaded' });
     const conv = page.locator(`[data-test-id="im-conversation-${convId}"]`);
-    await expect(conv).toBeVisible({ timeout: 15_000 });
+    // Under full-suite 6-worker load the conversation list's initial fetch
+    // can queue behind other workers' php-cgi requests — 15s wasn't always
+    // enough margin even though the row exists in DB from entry's seed.
+    await expect(conv).toBeVisible({ timeout: 25_000 });
     await conv.click();
     const input = page.locator('[data-test-id="im-reply-input"]');
     await expect(input).toBeVisible({ timeout: 10_000 });

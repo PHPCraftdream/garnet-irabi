@@ -31,7 +31,7 @@ export default function TicketContext({context}: Props) {
                         <div>
                             <span className="text-danger font-medium">{t.Support_Context_JsErrors()} ({context.jsErrors.length}):</span>
                             <ul className="list-disc ml-4 text-xs text-danger">
-                                {context.jsErrors.slice(0, 5).map((e, i) => <li key={i}>{e.message}</li>)}
+                                {context.jsErrors.slice(0, 5).map(e => <li key={e.time}>{e.message}</li>)}
                             </ul>
                         </div>
                     )}
@@ -39,7 +39,7 @@ export default function TicketContext({context}: Props) {
                         <div>
                             <span className="text-warning font-medium">{t.Support_Context_NetErrors()} ({context.netErrors.length}):</span>
                             <ul className="list-disc ml-4 text-xs text-warning">
-                                {context.netErrors.slice(0, 5).map((e, i) => <li key={i}>{e.status} {e.url}</li>)}
+                                {context.netErrors.slice(0, 5).map(e => <li key={e.time}>{e.status} {e.url}</li>)}
                             </ul>
                         </div>
                     )}
@@ -47,7 +47,7 @@ export default function TicketContext({context}: Props) {
                         <div>
                             <span className="text-muted">{t.Support_Context_Breadcrumb()}:</span>
                             <div className="text-xs text-secondary mt-1">
-                                {context.breadcrumb.map((b, i) => <div key={i}>{formatTs(b.time / 1000)} {'\u2192'} {b.url}</div>)}
+                                {context.breadcrumb.map(b => <div key={b.time}>{formatTs(b.time / 1000)} {'\u2192'} {b.url}</div>)}
                             </div>
                         </div>
                     )}

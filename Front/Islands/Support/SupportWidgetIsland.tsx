@@ -177,7 +177,7 @@ export const SupportWidgetIsland: React.FC<Props> = ({unreadCount, unreadSupport
 
     const handleScreenshot = (blob: Blob, name: string) => {
         D('support.screenshot', {name, size: blob.size, source: 'widget'});
-        const entry: PendingFile = {file: blob, name, preview: URL.createObjectURL(blob)};
+        const entry: PendingFile = {id: crypto.randomUUID(), file: blob, name, preview: URL.createObjectURL(blob)};
         setCreateFiles(prev => [...prev, entry]);
     };
 

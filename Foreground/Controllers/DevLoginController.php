@@ -62,6 +62,15 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 $account->readDataAsyncPollFinishAll();
 
                 $session = Session::get();
+                // Anonymous/other-account → authenticated transition: rotate
+                // the identifier, same as the real auth flow does on login
+                // success. Without this, a request that already carries a
+                // session cookie (e.g. a role-switch inside a test that
+                // reused a pre-authenticated context) gets its EXISTING
+                // session row silently rebound to this login instead of
+                // minting a fresh one — session fixation, and a silent
+                // account swap for anyone else still holding that cookie.
+                $session->rotate();
                 $session->setValue(IrabiAuthMiddleware::PHASE_KEY, IrabiAuthMiddleware::PHASE_DONE);
                 $session->setValue(Account::SESSION_AUTH_LOGIN, $loginParam);
                 $session->setValue(Account::SESSION_AUTH_LOGIN_TYPE, DbAccount::LOGIN_TYPE_EMAIL);
@@ -140,6 +149,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             }
 
             $session = Session::get();
+            // See the matching rotate() call in the `login` branch above —
+            // same session-fixation / silent-account-swap rationale.
+            $session->rotate();
             $session->setValue(IrabiAuthMiddleware::PHASE_KEY, IrabiAuthMiddleware::PHASE_DONE);
             $session->setValue(Account::SESSION_AUTH_LOGIN, $login);
             $session->setValue(Account::SESSION_AUTH_LOGIN_TYPE, DbAccount::LOGIN_TYPE_EMAIL);

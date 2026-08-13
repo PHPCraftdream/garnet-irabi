@@ -156,6 +156,12 @@ test.describe('Moderator: cancel user booking (with refund)', () => {
 	let bookingId = 0;
 	let userBalanceBefore = 0;
 	let expertBalanceBefore = 0;
+	// The shared testuser_setup_user/expert accounts' balances BEFORE this
+	// spec wipes their ledger to a deterministic FIXED_* value below —
+	// restored in afterAll so this spec doesn't permanently pin the shared
+	// fixtures' balance for the rest of this worker's run.
+	let trueUserBalanceBefore = 0;
+	let trueExpertBalanceBefore = 0;
 
 	// beforeAll/afterAll (not plain tests) — serial mode skips every
 	// subsequent test once one fails, so a cleanup step written as a
@@ -170,6 +176,9 @@ test.describe('Moderator: cancel user booking (with refund)', () => {
 		userId = await getAccountId('testuser_setup_user@irabi.test');
 		expect(expertId).toBeGreaterThan(0);
 		expect(userId).toBeGreaterThan(0);
+
+		trueUserBalanceBefore = await getBalance('testuser_setup_user@irabi.test');
+		trueExpertBalanceBefore = await getBalance('testuser_setup_expert@irabi.test');
 
 		slotId = await createPaidSlot(expertId, SLOT_COST);
 		expect(slotId).toBeGreaterThan(0);
@@ -319,5 +328,33 @@ test.describe('Moderator: cancel user booking (with refund)', () => {
 
 	test.afterAll(async () => {
 		if (slotId) await deleteSlot(slotId);
+
+		// Restore the shared accounts' ledger/balance to what they were
+		// before this spec's deterministic FIXED_* reset — otherwise every
+		// other spec sharing this worker inherits the FIXED_* value as its
+		// own starting balance instead of the account's real state.
+		if (userId || expertId) {
+			const conn = await mysql.createConnection(DB);
+			try {
+				for (const [accId, trueBal] of [[userId, trueUserBalanceBefore], [expertId, trueExpertBalanceBefore]] as const) {
+					if (!accId) continue;
+					await conn.execute(`DELETE FROM ${tn('balance_ledger')} WHERE account_id = ?`, [accId]);
+					if (trueBal > 0) {
+						await conn.execute(
+							`INSERT INTO ${tn('balance_ledger')}
+							 (account_id, is_credit, amount, entry_type, note, created_at)
+							 VALUES (?, 1, ?, 'top_up', 'booking-cancel.spec restore', UNIX_TIMESTAMP())`,
+							[accId, trueBal]
+						);
+					}
+					await conn.execute(
+						`INSERT INTO ${tn('account_balance')} (account_id, balance, updated_at)
+						 VALUES (?, ?, UNIX_TIMESTAMP())
+						 ON DUPLICATE KEY UPDATE balance = VALUES(balance), updated_at = VALUES(updated_at)`,
+						[accId, trueBal]
+					);
+				}
+			} finally { await conn.end(); }
+		}
 	});
 });

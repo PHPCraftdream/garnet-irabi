@@ -54,7 +54,11 @@ async function openStaticPages(page: any) {
 	// tests that read a specific slug use `waitForPageRow(slug)` (which
 	// has its own poll), tests that just check the toolbar / tabs don't
 	// pay for row-fetch settling at all.
-	await expect(page.locator('[data-test-id="admin-static-pages"]')).toBeVisible({ timeout: 20000 });
+	//
+	// Under full-suite 6-worker load this island's hydration can queue
+	// behind other workers' php-cgi requests — 20s wasn't always enough
+	// margin even though the file passes reliably standalone.
+	await expect(page.locator('[data-test-id="admin-static-pages"]')).toBeVisible({ timeout: 30000 });
 }
 
 // Helper: open pages list and wait for a specific row to appear in the table

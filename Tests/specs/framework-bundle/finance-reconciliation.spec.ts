@@ -33,6 +33,7 @@ import { test, expect, tn, getDbPrefix } from '../../helpers/scoped-test';
 import { spawnSync } from 'child_process';
 import * as path from 'node:path';
 import { withConnection } from '../../helpers/db';
+import type { Connection } from 'mysql2/promise';
 
 const APP_DIR = path.resolve(__dirname, '../../..');
 
@@ -188,25 +189,102 @@ async function seedBooking(
 // with seed data.
 const BASE = 2_000_000 + Math.floor(Math.random() * 100_000);
 
+/** The four tables the reconciliation reads. */
+const RECONCILED_TABLES = ['balance_ledger', 'account_balance', 'bookings', 'time_slots'] as const;
+
 /**
- * The four tables the reconciliation reads. Seeded worker tables come
- * pre-populated by the test:provision clone of the dev seed — which
- * itself contains ~12 known "cancelled_no_refund" orphans (the audit's
- * H-2 scenario, demonstrably present even in seed data). That seeded
- * state is exactly what the audit exists to surface, but it makes
+ * Seeded worker tables come pre-populated by the test:provision clone of the
+ * dev seed — which itself contains ~12 known "cancelled_no_refund" orphans
+ * (the audit's H-2 scenario, demonstrably present even in seed data). That
+ * seeded state is exactly what the audit exists to surface, but it makes
  * "clean worker → exit 0" assertions impossible without a controlled
- * baseline. None of the other specs in the framework-bundle project
- * touch these four tables (they live in cross-role / booking project
- * workers), so TRUNCATE here is safe and restores a deterministic
- * clean state for every test in this file.
+ * baseline.
+ *
+ * IMPORTANT: `project` tags (framework-bundle / cross-role / booking) are
+ * ONLY test-selection/reporting labels — they do NOT map to separate DB
+ * scopes. Any spec file, regardless of project, can be scheduled onto the
+ * SAME physical worker (and therefore the SAME test_worker_N_* tables) as
+ * this file over the course of one run. A bare `DELETE FROM` with no WHERE
+ * on these four tables would wipe every OTHER spec's shared fixture data
+ * (testuser_setup_* and user1@dev.test balances, bookings, slots) for the rest
+ * of that worker's run the moment this file happens to share a worker with
+ * them — confirmed as a real corruption source this session. So: snapshot
+ * every row before truncating, and restore the snapshot in a file-level
+ * afterAll once this file's own tests are done.
  */
+const snapshotRows: Partial<Record<typeof RECONCILED_TABLES[number], any[]>> = {};
+let snapshotTaken = false;
+
 async function truncateRelevantTables(): Promise<void> {
     await withConnection(async (conn) => {
-        for (const t of ['balance_ledger', 'account_balance', 'bookings', 'time_slots']) {
+        if (!snapshotTaken) {
+            for (const t of RECONCILED_TABLES) {
+                const [rows] = await conn.execute<any[]>(`SELECT * FROM ${tn(t)}`);
+                snapshotRows[t] = rows;
+            }
+            snapshotTaken = true;
+        }
+        for (const t of RECONCILED_TABLES) {
             await conn.execute(`DELETE FROM ${tn(t)}`);
         }
     });
 }
+
+/**
+ * Real (non-generated) column names for a table, in ordinal order. Skips
+ * generated/virtual columns (e.g. bookings.active_dup_key) — MySQL refuses
+ * INSERT VALUES against them; see isolation-setup.ts::cloneTemplateTo()
+ * for the matching pattern this mirrors.
+ */
+async function insertableColumns(conn: Connection, tableName: string): Promise<string[]> {
+    const [rows] = await conn.execute<any[]>(
+        `SELECT COLUMN_NAME FROM information_schema.columns
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
+               AND (EXTRA NOT LIKE '%GENERATED%' OR EXTRA IS NULL)
+         ORDER BY ORDINAL_POSITION`,
+        [tableName],
+    );
+    return rows.map((r) => r.COLUMN_NAME as string);
+}
+
+/** Restores the pre-truncate snapshot — see truncateRelevantTables() above. */
+async function restoreSnapshot(): Promise<void> {
+    if (!snapshotTaken) return;
+    await withConnection(async (conn) => {
+        await conn.execute('SET FOREIGN_KEY_CHECKS = 0');
+        try {
+            for (const t of RECONCILED_TABLES) {
+                await conn.execute(`DELETE FROM ${tn(t)}`);
+                const rows = snapshotRows[t] ?? [];
+                if (!rows.length) continue;
+                const realCols = await insertableColumns(conn, tn(t));
+                const cols = realCols.filter((c) => c in rows[0]);
+                const colList = cols.map((c) => `\`${c}\``).join(', ');
+                const rowPlaceholder = `(${cols.map(() => '?').join(', ')})`;
+                // Bulk-insert in chunks — row-by-row INSERTs would be far too
+                // slow when this file runs late in a full-suite run with
+                // thousands of accumulated rows across other specs' fixtures.
+                const CHUNK = 500;
+                for (let i = 0; i < rows.length; i += CHUNK) {
+                    const chunk = rows.slice(i, i + CHUNK);
+                    const sql = `INSERT INTO ${tn(t)} (${colList}) VALUES ${chunk.map(() => rowPlaceholder).join(', ')}`;
+                    const params = chunk.flatMap((row) => cols.map((c) => row[c]));
+                    await conn.execute(sql, params);
+                }
+            }
+        } finally {
+            await conn.execute('SET FOREIGN_KEY_CHECKS = 1');
+        }
+    });
+    snapshotTaken = false;
+}
+
+// File-level afterAll (not scoped to one describe) — restores the snapshot
+// once regardless of which of the 3 describes below actually ran/failed,
+// since truncateRelevantTables() only snapshots on its FIRST call.
+test.afterAll(async () => {
+    await restoreSnapshot();
+});
 
 // ─────────────────────────────────────────────────────────────────────────
 // 1. Per-category clean vs dirty detection

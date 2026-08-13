@@ -4,6 +4,7 @@ import {useBodyScrollLock} from '@common/hooks/useBodyScrollLock';
 import {I18nForeground as t} from '../I18nGen/I18nForeground';
 
 export interface PendingFile {
+    id: string;
     file: File | Blob;
     name: string;
     preview?: string; // object URL for images
@@ -14,6 +15,12 @@ interface Props {
     onChange: (files: PendingFile[]) => void;
     maxFiles?: number;
     accept?: string;
+}
+
+function formatSize(bytes: number): string {
+    if (bytes < 1024) return bytes + 'B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + 'KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + 'MB';
 }
 
 export default function AttachmentPicker({files, onChange, maxFiles = 5, accept}: Props) {
@@ -29,7 +36,7 @@ export default function AttachmentPicker({files, onChange, maxFiles = 5, accept}
         const pending: PendingFile[] = [];
 
         for (const file of toAdd) {
-            const entry: PendingFile = { file, name: file.name };
+            const entry: PendingFile = { id: crypto.randomUUID(), file, name: file.name };
             if (file.type.startsWith('image/')) {
                 entry.preview = URL.createObjectURL(file);
             }
@@ -50,12 +57,6 @@ export default function AttachmentPicker({files, onChange, maxFiles = 5, accept}
         if (lightboxIndex === index) setLightboxIndex(null);
     };
 
-    const formatSize = (bytes: number): string => {
-        if (bytes < 1024) return bytes + 'B';
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + 'KB';
-        return (bytes / (1024 * 1024)).toFixed(1) + 'MB';
-    };
-
     // Images with previews for lightbox navigation
     const previewFiles = files.map((f, i) => ({...f, index: i})).filter(f => f.preview);
 
@@ -65,7 +66,7 @@ export default function AttachmentPicker({files, onChange, maxFiles = 5, accept}
             {files.length > 0 && (
                 <div className="common-pick-grid">
                     {files.map((f, i) => (
-                        <div key={i} className="group common-pick-tile"
+                        <div key={f.id} className="group common-pick-tile"
                              style={{width: 80, height: 80}}
                              onClick={() => f.preview && setLightboxIndex(i)}
                         >

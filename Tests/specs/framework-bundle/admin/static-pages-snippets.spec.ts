@@ -43,7 +43,10 @@ const TS = `w${process.env.TEST_PARALLEL_INDEX ?? '0'}`;
 
 async function openStaticPages(page: Page) {
 	await page.goto('/admin/pages/', { waitUntil: 'domcontentloaded' });
-	await expect(page.locator('[data-test-id="admin-static-pages"]')).toBeVisible({ timeout: 20000 });
+	// Under full-suite 6-worker load this island's hydration can queue
+	// behind other workers' php-cgi requests — 20s wasn't always enough
+	// margin (same root cause as static-pages.spec.ts's identical helper).
+	await expect(page.locator('[data-test-id="admin-static-pages"]')).toBeVisible({ timeout: 30000 });
 }
 
 async function switchToSnippetsTab(page: Page) {

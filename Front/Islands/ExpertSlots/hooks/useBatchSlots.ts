@@ -46,7 +46,7 @@ export function useBatchSlots() {
         setBatchSlots(prev => {
             if (prev.some(s => s.date === date)) return prev;
             const hebrewDate = availableDates[date] || '';
-            return [...prev, {date, hebrewDate, time, duration}];
+            return [...prev, {id: crypto.randomUUID(), date, hebrewDate, time, duration}];
         });
     }, [availableDates]);
 

@@ -642,6 +642,10 @@ namespace PHPCraftdream\IRabi {
                     'utility' => $this->buildUtilityData(),
                     'support_widget' => $this->buildSupportWidget(),
                     'counts_url' => self::url('/~counts'),
+                    // Which top_menu_items entry gets the live ~counts poll's
+                    // primaryBadgeCount — the 'Брони' item (Menu::main()'s
+                    // 'bookings' id) badges pending bookings for experts.
+                    'primary_badge_item_id' => 'bookings',
                     'support_email' => Common\System\AppSettings::supportContacts()['email'],
                     'support_contact_label' => ForegroundI18n::getInstance()->Footer_Contact(),
                 ];

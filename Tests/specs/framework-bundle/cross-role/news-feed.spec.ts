@@ -92,6 +92,84 @@ let insertedEventId: number;
 let personalEventId: number;
 let broadcastOwnEventId: number;
 
+/**
+ * `project` tags (framework-bundle / cross-role / user / etc.) are only
+ * test-selection/reporting labels — they do NOT map to separate DB scopes.
+ * Any spec file can be scheduled onto the SAME physical worker (and
+ * therefore the SAME test_worker_N_* tables) as this file. The "empty
+ * state" test below unconditionally wipes ALL rows in these three tables
+ * (no WHERE clause) to force a clean feed — which would destroy every
+ * OTHER spec's news_events fixtures (news-name-resolution.spec.ts,
+ * approval-news.spec.ts, unapproved-expert.spec.ts, blocked-user-
+ * display.spec.ts, etc.) for the rest of that worker's run — confirmed as
+ * a real corruption source this session. Snapshot once, right before the
+ * first unscoped wipe, and restore in afterAll.
+ */
+const NEWS_TABLES = ['news_reads', 'news_archived', 'news_events'] as const;
+const newsSnapshot: Partial<Record<typeof NEWS_TABLES[number], any[]>> = {};
+let newsSnapshotTaken = false;
+
+/**
+ * Real (non-generated) column names for a table, in ordinal order. Skips
+ * generated/virtual columns — MySQL refuses INSERT VALUES against them;
+ * see isolation-setup.ts::cloneTemplateTo() for the matching pattern.
+ */
+async function insertableColumns(conn: mysql.Connection, tableName: string): Promise<string[]> {
+    const [rows] = await conn.execute<any[]>(
+        `SELECT COLUMN_NAME FROM information_schema.columns
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
+               AND (EXTRA NOT LIKE '%GENERATED%' OR EXTRA IS NULL)
+         ORDER BY ORDINAL_POSITION`,
+        [tableName],
+    );
+    return rows.map((r) => r.COLUMN_NAME as string);
+}
+
+async function snapshotNewsTablesOnce(): Promise<void> {
+    if (newsSnapshotTaken) return;
+    const conn = await mysql.createConnection(DB);
+    try {
+        for (const t of NEWS_TABLES) {
+            const [rows] = await conn.execute<any[]>(`SELECT * FROM ${tn(t)}`);
+            newsSnapshot[t] = rows;
+        }
+        newsSnapshotTaken = true;
+    } finally {
+        await conn.end();
+    }
+}
+
+async function restoreNewsSnapshot(): Promise<void> {
+    if (!newsSnapshotTaken) return;
+    const conn = await mysql.createConnection(DB);
+    try {
+        await conn.execute('SET FOREIGN_KEY_CHECKS = 0');
+        try {
+            for (const t of NEWS_TABLES) {
+                await conn.execute(`DELETE FROM ${tn(t)}`);
+                const rows = newsSnapshot[t] ?? [];
+                if (!rows.length) continue;
+                const realCols = await insertableColumns(conn, tn(t));
+                const cols = realCols.filter((c) => c in rows[0]);
+                const colList = cols.map((c) => `\`${c}\``).join(', ');
+                const rowPlaceholder = `(${cols.map(() => '?').join(', ')})`;
+                const CHUNK = 500;
+                for (let i = 0; i < rows.length; i += CHUNK) {
+                    const chunk = rows.slice(i, i + CHUNK);
+                    const sql = `INSERT INTO ${tn(t)} (${colList}) VALUES ${chunk.map(() => rowPlaceholder).join(', ')}`;
+                    const params = chunk.flatMap((row) => cols.map((c) => row[c]));
+                    await conn.execute(sql, params);
+                }
+            }
+        } finally {
+            await conn.execute('SET FOREIGN_KEY_CHECKS = 1');
+        }
+    } finally {
+        await conn.end();
+    }
+    newsSnapshotTaken = false;
+}
+
 test.describe('News Feed — cross-role flow', () => {
 
     test.beforeAll(async ({ browser }) => {
@@ -113,6 +191,7 @@ test.describe('News Feed — cross-role flow', () => {
     test.afterAll(async () => {
         await userContext?.close();
         await cleanupTestNews();
+        await restoreNewsSnapshot();
     });
 
     // ── Test 1: News feed renders on dashboard ──────────────────────
@@ -138,7 +217,10 @@ test.describe('News Feed — cross-role flow', () => {
         );
         // Also remove broadcasts where user IS the actor (user won't see own broadcasts)
         // But keep them — user won't see them anyway. Just make sure there are none visible.
-        // Actually, let's remove ALL events to guarantee empty state
+        // Actually, let's remove ALL events to guarantee empty state — snapshot
+        // first so afterAll can restore every OTHER spec's rows (see
+        // NEWS_TABLES comment above this describe).
+        await snapshotNewsTablesOnce();
         await dbExec(`DELETE FROM ${tn('news_reads')}`);
         await dbExec(`DELETE FROM ${tn('news_archived')}`);
         await dbExec(`DELETE FROM ${tn('news_events')}`);
