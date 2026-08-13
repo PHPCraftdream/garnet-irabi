@@ -33,7 +33,7 @@ async function devLogin(browser: any, role: string): Promise<{ context: BrowserC
     return { context, page };
 }
 
-async function postAssign(page: Page, ticketId: number, assigneeId: number): Promise<{ status: number; body: any }> {
+async function evaluateAssign(page: Page, ticketId: number, assigneeId: number): Promise<{ status: number; body: any }> {
     return page.evaluate(async ({ ticketId, assigneeId }) => {
         const csrf = (window as any).__GARNET_CSRF__ || '';
         const res = await fetch('/admin/support/~assign', {
@@ -44,6 +44,23 @@ async function postAssign(page: Page, ticketId: number, assigneeId: number): Pro
         const body = await res.json().catch(() => null);
         return { status: res.status, body };
     }, { ticketId, assigneeId });
+}
+
+/**
+ * `page.evaluate()` can lose its execution context if a navigation is still
+ * settling on prod (higher latency after `roleLogin`/`goto` than local dev),
+ * throwing "Execution context was destroyed, most likely because of a
+ * navigation" — not a real assertion failure, just a timing race. Retry once
+ * after letting the page settle instead of failing the whole test on it.
+ */
+async function postAssign(page: Page, ticketId: number, assigneeId: number): Promise<{ status: number; body: any }> {
+    try {
+        return await evaluateAssign(page, ticketId, assigneeId);
+    } catch (e) {
+        if (!/Execution context was destroyed/.test((e as Error)?.message ?? '')) throw e;
+        await page.waitForLoadState('networkidle').catch(() => {});
+        return evaluateAssign(page, ticketId, assigneeId);
+    }
 }
 
 async function seedTicket(userId: number): Promise<number> {
@@ -88,6 +105,9 @@ test.describe('M-02: /admin/support/~assign validates assignee_id', () => {
 
         ticketId = await seedTicket(regularUserId);
         await moderatorPage.goto('/admin/support/');
+        // Let any trailing client-side redirect/hydration settle before the
+        // first postAssign() evaluate() runs — see its own comment for why.
+        await moderatorPage.waitForLoadState('networkidle').catch(() => {});
     });
 
     test.afterAll(async () => {
