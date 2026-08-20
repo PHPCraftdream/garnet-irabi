@@ -71,6 +71,10 @@ $finder = PhpCsFixer\Finder::create()
     ->exclude('vendor')
     ->exclude('WorkDir')
     ->exclude('Spec')
+    // dist/ is a disposable `php garnet bundle` output (release review F-05):
+    // it contains copies of index.php etc. that don't match cs-fixer rules,
+    // making `composer check` flaky depending on whether a local build ran.
+    ->exclude('dist')
     // *Gen.php are gitignored build artifacts emitted by `garnet build`
     // (Foreground{Js,Css}Gen). Linting them makes cs:check flaky — green on a
     // clean tree, red right after a build.
