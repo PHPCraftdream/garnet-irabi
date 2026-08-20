@@ -23,6 +23,44 @@ test.describe.configure({ mode: 'serial' });
 
 const EXPERT_LOGIN = `testuser_batch_${process.env.TEST_PARALLEL_INDEX ?? "0"}@irabi.test`;
 
+/**
+ * Task #165: fixtures in this file used to be hardcoded calendar dates
+ * (e.g. '2026-04-06') that were future dates when the file was written but
+ * inevitably rot into the past as time passes — which now trips the F-02
+ * past-start-time rejection (task #164) for tests that need a FUTURE date.
+ *
+ * This helper computes a date `offsetDays` days from "now" (local time) and
+ * formats it as `YYYY-MM-DD`, matching the `input[type="date"]` fill()
+ * format used throughout this file. Pass a negative offset to deliberately
+ * get a PAST date (used only where a test's whole point is exercising the
+ * past-date rejection — see test 14).
+ */
+function dateOffsetDays(offsetDays: number): string {
+	const d = new Date();
+	d.setDate(d.getDate() + offsetDays);
+	const year = d.getFullYear();
+	const month = String(d.getMonth() + 1).padStart(2, '0');
+	const day = String(d.getDate()).padStart(2, '0');
+	return `${year}-${month}-${day}`;
+}
+
+/**
+ * Returns the 1st day of the month `monthsAhead` months from now, as
+ * `YYYY-MM-DD`. Batch previews that span multiple weeks (count/per_week)
+ * render one calendar `<table>` per visible month, so starting mid-month
+ * near a month boundary can make a 3-week proposal window spill into the
+ * next month and break single-table locator assumptions. Starting on the
+ * 1st keeps any window up to ~3 weeks safely within the same month.
+ */
+function firstOfMonthAhead(monthsAhead: number): string {
+	const d = new Date();
+	d.setDate(1);
+	d.setMonth(d.getMonth() + monthsAhead);
+	const year = d.getFullYear();
+	const month = String(d.getMonth() + 1).padStart(2, '0');
+	return `${year}-${month}-01`;
+}
+
 test.describe('iRabi Batch Slot Creation', () => {
 	let page: Page;
 
@@ -106,8 +144,11 @@ test.describe('iRabi Batch Slot Creation', () => {
 		// Batch modal should still be open from previous test
 		const batchModal = page.locator('[data-test-id="batch-slot-modal"]');
 
-		// Fill batch form: June 2026 (has Shavuot, all Saturdays are restricted)
-		await batchModal.locator('input[name="start_date"]').fill('2026-06-01');
+		// Fill batch form starting on the 1st of a month a few months out
+		// (Saturdays are always restricted, so any far-enough-future month
+		// works here; starting on the 1st keeps the whole proposal window
+		// within a single calendar table — see firstOfMonthAhead()).
+		await batchModal.locator('input[name="start_date"]').fill(firstOfMonthAhead(2));
 		// End date is computed from count + lessons-per-week (no manual end_date field).
 		await batchModal.locator('input[name="per_week"]').fill('2');
 		await batchModal.locator('input[name="count"]').fill('5');
@@ -300,8 +341,12 @@ test.describe('iRabi Batch Slot Creation', () => {
 		const createModal = page.locator('[data-test-id="create-slot-modal"]');
 		await expect(createModal).toBeVisible({ timeout: 5000 });
 
-		// Fill the create slot form inside the modal
-		await createModal.locator('input[name="date"]').fill('2026-04-06');
+		// Fill the create slot form inside the modal. This date must fall
+		// inside the batch preview window used by test 13 (start_date +
+		// ceil(count/per_week) weeks) so that test detects the overlap —
+		// use day 6 of the same future month test 13's start_date resolves
+		// to (mirrors the original fixed '2026-04-06' / '2026-04-01' pair).
+		await createModal.locator('input[name="date"]').fill(firstOfMonthAhead(4).replace(/-01$/, '-06'));
 		await createModal.locator('input[name="time"]').fill('10:00');
 		await createModal.locator('select[name="duration"]').selectOption('60');
 		await createModal.locator('input[name="cost"]').fill('500');
@@ -321,8 +366,10 @@ test.describe('iRabi Batch Slot Creation', () => {
 		const batchModal = page.locator('[data-test-id="batch-slot-modal"]');
 		await expect(batchModal).toBeVisible({ timeout: 5000 });
 
-		// Request batch preview for April that includes 2026-04-06
-		await batchModal.locator('input[name="start_date"]').fill('2026-04-01');
+		// Request batch preview for a window that includes the date test 12
+		// used to create its single slot on (start + ceil(5/2)=3 weeks span
+		// comfortably covers start+5 days). Same future month as test 12.
+		await batchModal.locator('input[name="start_date"]').fill(firstOfMonthAhead(4));
 		await batchModal.locator('input[name="per_week"]').fill('2');
 		await batchModal.locator('input[name="count"]').fill('5');
 		await batchModal.locator('input[name="batch_time"]').fill('10:00');
@@ -355,8 +402,12 @@ test.describe('iRabi Batch Slot Creation', () => {
 	test('14. Create batch is blocked when the proposed dates are in the past', async () => {
 		const batchModal = page.locator('[data-test-id="batch-slot-modal"]');
 
-		// Set up fresh preview with 3 slots, using a time that won't overlap
-		await batchModal.locator('input[name="start_date"]').fill('2026-04-01');
+		// Set up fresh preview with 3 slots, using a time that won't overlap.
+		// This date is DELIBERATELY in the past (task #164/#165) — the whole
+		// point of this test is proving past-dated proposed slots get
+		// blocked, so unlike the other fixtures in this file it must NOT be
+		// converted to a dynamic future date.
+		await batchModal.locator('input[name="start_date"]').fill(dateOffsetDays(-30));
 		await batchModal.locator('input[name="per_week"]').fill('2');
 		await batchModal.locator('input[name="count"]').fill('3');
 		await batchModal.locator('input[name="batch_time"]').fill('14:00');
@@ -441,7 +492,7 @@ test.describe('iRabi Batch Slot Creation', () => {
 		const batchModal = page.locator('[data-test-id="batch-slot-modal"]');
 		await expect(batchModal).toBeVisible({ timeout: 5000 });
 
-		await batchModal.locator('input[name="start_date"]').fill('2026-05-01');
+		await batchModal.locator('input[name="start_date"]').fill(firstOfMonthAhead(3));
 		await batchModal.locator('input[name="per_week"]').fill('2');
 		await batchModal.locator('input[name="count"]').fill('2');
 
@@ -475,7 +526,7 @@ test.describe('iRabi Batch Slot Creation', () => {
 		// by itself). Instead, edit the SECOND row's date to match the first
 		// row's date and its time to overlap — onDateChange/onTimeChange have
 		// no such guard.
-		await batchModal.locator('input[name="start_date"]').fill('2026-06-01');
+		await batchModal.locator('input[name="start_date"]').fill(firstOfMonthAhead(5));
 		await batchModal.locator('input[name="per_week"]').fill('1');
 		await batchModal.locator('input[name="count"]').fill('2');
 		await batchModal.locator('input[name="batch_time"]').fill('10:00');
