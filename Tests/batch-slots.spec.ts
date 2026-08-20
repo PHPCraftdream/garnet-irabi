@@ -144,10 +144,17 @@ test.describe('iRabi Batch Slot Creation', () => {
 		// Batch modal should still be open from previous test
 		const batchModal = page.locator('[data-test-id="batch-slot-modal"]');
 
-		// Fill batch form starting on the 1st of a month a few months out
-		// (Saturdays are always restricted, so any far-enough-future month
-		// works here; starting on the 1st keeps the whole proposal window
-		// within a single calendar table — see firstOfMonthAhead()).
+		// Fill batch form starting on the 1st of a month a few months out.
+		// Restrictions are NOT just "always Saturday" — they come from the
+		// framework's real Hebrew-calendar SlotDateFilter (shabbat, erev_shabbat,
+		// yom_tov/holidays like Shavuot, fasts, rosh_chodesh — see
+		// Kernel/Core/HCalendar/SlotDateFilter.php and
+		// Common/Calendar/SlotDateFilterLocalized.php), so a holiday-dense month
+		// can legitimately push a 5-slot proposal window past the month
+		// boundary into a second visible `[id^="batchCalendar"]` table even
+		// though start_date is the 1st. The assertions below therefore verify
+		// totals across however many calendar tables actually render, rather
+		// than assuming exactly one.
 		await batchModal.locator('input[name="start_date"]').fill(firstOfMonthAhead(2));
 		// End date is computed from count + lessons-per-week (no manual end_date field).
 		await batchModal.locator('input[name="per_week"]').fill('2');
@@ -158,24 +165,29 @@ test.describe('iRabi Batch Slot Creation', () => {
 		const preview = batchModal.locator('#batchPreview');
 		await expect(preview).toBeVisible({ timeout: 10000 });
 
-		// Calendar component renders with data-day-type="proposed"/"restricted"/"available"
-		const calendar = batchModal.locator('[id^="batchCalendar"]');
+		// Calendar component renders with data-day-type="proposed"/"restricted"/"available".
+		// There may be more than one `[id^="batchCalendar"]` table if the
+		// proposal window spans a month boundary (see comment above), so use
+		// a non-strict-mode-sensitive locator for all counts below.
+		const calendars = batchModal.locator('[id^="batchCalendar"]');
+		const calendarCount = await calendars.count();
+		expect(calendarCount).toBeGreaterThanOrEqual(1);
 		await Promise.all([
-			expect(calendar).toBeVisible(),
-			expect(calendar.locator('table')).toBeVisible(),
+			expect(calendars.first()).toBeVisible(),
+			expect(calendars.first().locator('table')).toBeVisible(),
 		]);
 
-		const restrictedCells = calendar.locator('[data-day-type="restricted"]');
+		const restrictedCells = calendars.locator('[data-day-type="restricted"]');
 		const restrictedCount = await restrictedCells.count();
 		expect(restrictedCount).toBeGreaterThan(0);
-		console.log(`Restricted days in April: ${restrictedCount}`);
+		console.log(`Restricted days across ${calendarCount} calendar table(s): ${restrictedCount}`);
 
-		const proposedCells = calendar.locator('[data-day-type="proposed"]');
+		const proposedCells = calendars.locator('[data-day-type="proposed"]');
 		const proposedCount = await proposedCells.count();
 		expect(proposedCount).toBe(5);
 		console.log(`Proposed days: ${proposedCount}`);
 
-		const availableCells = calendar.locator('[data-day-type="available"]');
+		const availableCells = calendars.locator('[data-day-type="available"]');
 		const availableCount = await availableCells.count();
 		expect(availableCount).toBeGreaterThan(0);
 		console.log(`Available days: ${availableCount}`);
@@ -390,11 +402,12 @@ test.describe('iRabi Batch Slot Creation', () => {
 		expect(rowCount).toBe(5);
 	});
 
-	// NOTE (F-02, task #164): this fixture's date (2026-04-01) is a FIXED
-	// past-looking date relative to "now" at the time this file was written.
-	// Server + client now both correctly refuse to create/submit slots whose
-	// start time is in the past (see ExpertSlotsService::createSlot/batchSlots
-	// and BatchSlotWizard's "Create all" disabled-state gate), so this test
+	// NOTE (F-02, task #164): this fixture's date (dateOffsetDays(-30), i.e.
+	// always 30 days before "now" — see task #165) is DELIBERATELY a past
+	// date relative to whenever the test runs. Server + client now both
+	// correctly refuse to create/submit slots whose start time is in the
+	// past (see ExpertSlotsService::createSlot/batchSlots and
+	// BatchSlotWizard's "Create all" disabled-state gate), so this test
 	// no longer exercises the happy path it originally intended to cover —
 	// it now asserts the (also correct) past-date rejection instead. Task
 	// #165 tracks converting this whole file's fixtures to dynamic future
