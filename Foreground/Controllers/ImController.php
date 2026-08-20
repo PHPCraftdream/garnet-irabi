@@ -252,15 +252,37 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             // Build a lookup of all approved active expert account IDs.
             // Security audit M-02: existence of an expert_profiles row alone
             // doesn't reflect account-level demotion/disable.
+            // Perf (review F-03): resolve this with ONE batched account
+            // lookup for the whole candidate id set instead of calling
+            // isApprovedActiveExpert() per expert (which used to cost 2
+            // queries — including a full accounts_data table scan — PER
+            // candidate, i.e. an N+1 query storm on every IM search).
             $allExperts = ExpertProfiles::get()->selectAll(function (SelectInterface $q): void {
                 $q->resetCols();
                 $q->cols(['account_id']);
             });
+            $candidateExpertIds = array_values(array_unique(array_map(
+                static fn ($expert) => (int)$expert['account_id'],
+                $allExperts,
+            )));
+
             $expertIds = [];
-            foreach ($allExperts as $expert) {
-                $expertId = (int)$expert['account_id'];
-                if (UserEntityConfig::isApprovedActiveExpert($expertId)) {
-                    $expertIds[] = $expertId;
+            if (!empty($candidateExpertIds)) {
+                $expertAccounts = Account::getAccounts(
+                    selectCallback: static function (SelectInterface $select) use ($candidateExpertIds): void {
+                        $select->resetCols();
+                        $select->cols(['id', 'type']);
+                        $select->where('id IN (?)', [$candidateExpertIds]);
+                    },
+                    accountDataFields: [Account::IS_APPROVED, Account::IS_DISABLED],
+                );
+                foreach ($expertAccounts as $a) {
+                    $isApprovedActive = ($a['type'] ?? '') === 'expert'
+                        && intval($a[Account::IS_APPROVED] ?? 0) > 0
+                        && intval($a[Account::IS_DISABLED] ?? 0) < 1;
+                    if ($isApprovedActive) {
+                        $expertIds[] = (int)$a['id'];
+                    }
                 }
             }
 
