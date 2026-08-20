@@ -44,6 +44,46 @@
  * under 20 statements) sits far below the ~100 the old N+1 code would add,
  * while comfortably above the handful of legitimate queries the fixed
  * batched lookup performs once regardless of N.
+ *
+ * ── Concurrency / flakiness note (follow-up review P2 fix) ─────────────
+ * `Questions` is a GLOBAL, process-wide MySQL counter. The Playwright
+ * suite runs `fullyParallel: true` against ONE SHARED MySQL instance —
+ * worker isolation here is per-table-prefix only, not a separate DB
+ * server per worker — so during the measurement window this counter also
+ * picks up every OTHER concurrently-running test's queries, in this file
+ * or anywhere else in the suite. That's a real source of both false
+ * failures (unrelated noise inflates a delta) and false passes (noise
+ * lands in the "before" sample instead of "after", making the delta look
+ * artificially small).
+ *
+ * Two mitigations, layered:
+ *   1. This spec is split into its own Playwright PROJECT
+ *      (`cross-role-query-count` in playwright.config.ts) with a
+ *      per-project `workers: 1` cap, so it no longer shares a worker pool
+ *      with the other ~20 `cross-role` specs (previously the single
+ *      biggest noise source). This does NOT fully isolate it from OTHER
+ *      projects (admin-tests, user-tests, …) that may still be mid-flight
+ *      in sibling workers during a plain `npm test` — Playwright has no
+ *      built-in way to pause unrelated projects for one project's
+ *      duration within a single invocation (only a separate, standalone
+ *      `--project=cross-role-query-count` run gets that guarantee).
+ *   2. As defense in depth against whatever residual noise still leaks in
+ *      during a full-suite run, the test below samples BOTH the baseline
+ *      delta and the large-batch delta `TRIALS` times each and takes the
+ *      MINIMUM of each side before diffing them. A genuine N+1 regression
+ *      inflates every large-batch trial by roughly the same (large)
+ *      amount, so the minimum still clears the threshold; transient
+ *      cross-worker/cross-project noise instead only inflates a handful
+ *      of individual samples and is unlikely to inflate the minimum of
+ *      either side.
+ *
+ * For a fully noise-free run (e.g. re-establishing the empirical baseline
+ * above), run this spec in isolation:
+ *   npm test -- --project=cross-role-query-count
+ * If the global `workers`/`fullyParallel` defaults in playwright.config.ts
+ * ever change, re-validate that TRIALS/MAX_ALLOWED_EXTRA_STATEMENTS still
+ * give enough margin — see playwright.config.ts's comment on this project
+ * for the scheduling details this relies on.
  */
 import { test, expect, tn } from '../helpers/scoped-test';
 import { newScopedContext } from '../helpers/scoped-test';
@@ -58,6 +98,13 @@ const LARGE_N = 50;
 // above legitimate constant-ish overhead while staying far below what
 // LARGE_N experts would add under the old code (~2 * LARGE_N = 100).
 const MAX_ALLOWED_EXTRA_STATEMENTS = 20;
+
+// Defense-in-depth against residual cross-project `Questions` noise (see
+// docblock above) — repeat the before/after pair this many times and keep
+// the MINIMUM observed extraStatements. A real N+1 regression reproduces
+// on every trial; transient noise from another project's concurrent
+// traffic does not reliably hit the noise floor on all of them.
+const TRIALS = 5;
 
 async function getAccountId(login: string): Promise<number> {
     return withConnection(async (c) => {
@@ -157,35 +204,64 @@ test.describe('Perf F-03: searchRecipients() query count does not scale with can
         await userCtx?.close().catch(() => {});
     });
 
+    /**
+     * Measure the statement cost of one `~searchRecipients` call, tightly
+     * bracketed by `Questions` samples immediately before/after — kept as a
+     * separate helper (rather than one inline before/after around 2N
+     * calls) to keep each individual measurement window as short as
+     * possible, minimizing exposure to noise from other concurrently
+     * running tests/projects (see file docblock).
+     */
+    async function measureOnce(query: string): Promise<{ delta: number; body: any }> {
+        const before = await questionsCounter();
+        const result = await searchRecipients(userPage, query);
+        const after = await questionsCounter();
+        expect(result.status).toBe(200);
+        return { delta: after - before, body: result.body };
+    }
+
     test('adding many candidate experts does not proportionally increase query volume', async () => {
         // Baseline: measure the statement cost of one search call against
         // whatever (small) default seed data this worker's template has.
-        const beforeBaseline = await questionsCounter();
-        const baselineResult = await searchRecipients(userPage, '');
-        const afterBaseline = await questionsCounter();
-        expect(baselineResult.status).toBe(200);
-        const deltaBaseline = afterBaseline - beforeBaseline;
+        // Repeated TRIALS times; the MINIMUM delta is used as the
+        // reference — see docblock's "defense in depth" note. A stray
+        // concurrent query inflating one baseline sample would otherwise
+        // make deltaBaseline look artificially high and mask a real
+        // regression in the extraStatements computation below.
+        const baselineDeltas: number[] = [];
+        for (let i = 0; i < TRIALS; i++) {
+            baselineDeltas.push((await measureOnce('')).delta);
+        }
+        const deltaBaseline = Math.min(...baselineDeltas);
 
         // Now add a large batch of additional approved/active experts and
-        // measure the SAME call again — isolated, not cumulative.
+        // measure the SAME call again — isolated, not cumulative. Also
+        // repeated TRIALS times, keeping the MINIMUM delta so transient
+        // noise can't inflate it; a real N+1 regression inflates every
+        // trial by roughly the same (large) amount, so the minimum still
+        // clears MAX_ALLOWED_EXTRA_STATEMENTS in that case.
         largeIds = await seedExperts('qcount-large', LARGE_N);
-        const beforeLarge = await questionsCounter();
-        const largeResult = await searchRecipients(userPage, '');
-        const afterLarge = await questionsCounter();
-        expect(largeResult.status).toBe(200);
-        const largeIdsInResults = (largeResult.body?.recipients ?? []).map((r: any) => Number(r.id));
+        const largeDeltas: number[] = [];
+        let largeIdsInResults: number[] = [];
+        for (let i = 0; i < TRIALS; i++) {
+            const { delta, body } = await measureOnce('');
+            largeDeltas.push(delta);
+            largeIdsInResults = (body?.recipients ?? []).map((r: any) => Number(r.id));
+        }
+        const deltaLarge = Math.min(...largeDeltas);
         for (const id of largeIds) {
             expect(largeIdsInResults).toContain(id);
         }
-        const deltaLarge = afterLarge - beforeLarge;
 
         const extraStatements = deltaLarge - deltaBaseline;
         expect(
             extraStatements,
             `Adding ${LARGE_N} candidate experts increased the search call's SQL statement ` +
-            `count from ${deltaBaseline} to ${deltaLarge} (+${extraStatements}) — looks like an ` +
-            `N+1 regression (old per-id isApprovedActiveExpert() loop cost ~2 statements/expert, ` +
-            `i.e. would add ~${LARGE_N * 2} here).`,
+            `count from ${deltaBaseline} to ${deltaLarge} (+${extraStatements}), using the best ` +
+            `of ${TRIALS} trials each (baseline trials: [${baselineDeltas.join(', ')}], large ` +
+            `trials: [${largeDeltas.join(', ')}]) — looks like an N+1 regression (old per-id ` +
+            `isApprovedActiveExpert() loop cost ~2 statements/expert, i.e. would add ` +
+            `~${LARGE_N * 2} here).`,
         ).toBeLessThan(MAX_ALLOWED_EXTRA_STATEMENTS);
     });
 });

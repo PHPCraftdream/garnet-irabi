@@ -213,6 +213,52 @@ export default defineConfig({
 		{
 			name: 'cross-role',
 			testMatch: `**/Tests/cross-role/**/*.spec.ts`,
+			// im-search-recipients-query-count.spec.ts is carved out into its
+			// own single-worker project below — see that project's comment
+			// for why. Keep this testIgnore in sync if that file is renamed.
+			testIgnore: `**/Tests/cross-role/im-search-recipients-query-count.spec.ts`,
+			dependencies: setupDeps('setup:admin', 'setup:expert', 'setup:user', 'setup:moderator', 'setup:owner'),
+			use: { ...devices['Desktop Chrome'] },
+		},
+		// ── Query-volume regression (Perf F-03) — wants true process isolation ─
+		// This spec measures MySQL's GLOBAL `SHOW GLOBAL STATUS LIKE
+		// 'Questions'` counter around a single HTTP call and asserts the
+		// delta stays small. That counter is process-wide on the MySQL
+		// server, not scoped to this test's worker — the rest of the suite
+		// shares ONE MySQL instance (isolation is only per-worker table
+		// prefix, not separate DB servers). Splitting it into its own
+		// project (own `workers: 1` cap) removes noise from the 5 OTHER
+		// `cross-role` specs that used to share this project's worker pool
+		// — that was the single biggest noise source, since `cross-role`
+		// runs 6-wide by default.
+		//
+		// IMPORTANT — this does NOT buy full isolation from the rest of the
+		// suite. Playwright schedules all non-dependent projects out of one
+		// shared worker pool sized by the top-level `workers` (verified
+		// against playwright/lib/runner/dispatcher.js: per-project
+		// `workers` only caps how many of the SHARED slots this project's
+		// own jobs may occupy — it does not pause other projects). So
+		// during a plain `npm test`, admin-tests/user-tests/etc. can still
+		// be mid-flight in sibling workers while this spec measures
+		// `Questions`, leaking a small amount of residual noise. Two
+		// mitigations, both required:
+		//   1. For a noise-free measurement, run this project standalone:
+		//      `npm test -- --project=cross-role-query-count`
+		//      (see Tests/TESTING.md). CI / local full-suite runs do NOT
+		//      get this guarantee automatically.
+		//   2. The spec itself (im-search-recipients-query-count.spec.ts)
+		//      takes the MINIMUM extra-statement delta across several
+		//      repeated trials as a defense-in-depth safety net against
+		//      whatever residual cross-project noise leaks into a plain
+		//      `npm test` run — a real N+1 regression inflates the delta
+		//      on every trial; transient noise does not.
+		// If someone changes `fullyParallel`/`workers` defaults later,
+		// re-check that mitigation #2's trial count/threshold still gives
+		// enough margin — see the spec's own docblock.
+		{
+			name: 'cross-role-query-count',
+			testMatch: `**/Tests/cross-role/im-search-recipients-query-count.spec.ts`,
+			workers: 1,
 			dependencies: setupDeps('setup:admin', 'setup:expert', 'setup:user', 'setup:moderator', 'setup:owner'),
 			use: { ...devices['Desktop Chrome'] },
 		},
