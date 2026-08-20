@@ -343,7 +343,16 @@ test.describe('iRabi Batch Slot Creation', () => {
 		expect(rowCount).toBe(5);
 	});
 
-	test('14. Create batch successfully', async () => {
+	// NOTE (F-02, task #164): this fixture's date (2026-04-01) is a FIXED
+	// past-looking date relative to "now" at the time this file was written.
+	// Server + client now both correctly refuse to create/submit slots whose
+	// start time is in the past (see ExpertSlotsService::createSlot/batchSlots
+	// and BatchSlotWizard's "Create all" disabled-state gate), so this test
+	// no longer exercises the happy path it originally intended to cover —
+	// it now asserts the (also correct) past-date rejection instead. Task
+	// #165 tracks converting this whole file's fixtures to dynamic future
+	// dates, which will restore a real happy-path assertion here.
+	test('14. Create batch is blocked when the proposed dates are in the past', async () => {
 		const batchModal = page.locator('[data-test-id="batch-slot-modal"]');
 
 		// Set up fresh preview with 3 slots, using a time that won't overlap
@@ -362,35 +371,24 @@ test.describe('iRabi Batch Slot Creation', () => {
 		// to land at count=3 before driving the confirm modal.
 		await expect(batchModal.locator('#proposedBody tr')).toHaveCount(3, { timeout: 8000 });
 
-		// Click "Create All" — triggers useConfirm flow
-		await batchModal.locator('#batchCreateBtn').click();
+		// All 3 proposed dates are in the past relative to "now" — the
+		// past-date warning gate must disable "Create All" client-side
+		// (F-02 fix) instead of letting the request reach the server.
+		const createBtn = batchModal.locator('#batchCreateBtn');
+		await expect(createBtn).toBeDisabled();
 
-		// ConfirmModal appears (rendered outside the batch modal)
-		const confirmModal = page.locator('#confirmModal');
-		await expect(confirmModal).toBeVisible({ timeout: 3000 });
+		// No batchSlots XHR should fire at all for a disabled button.
+		let batchRequestSeen = false;
+		page.on('request', (req) => {
+			if (req.url().includes('/expert/~batchSlots') && req.method() === 'POST') {
+				batchRequestSeen = true;
+			}
+		});
+		await createBtn.click({ force: true });
+		await page.waitForTimeout(500);
+		expect(batchRequestSeen).toBe(false);
 
-		const modalText = await page.locator('#confirmModalBody').textContent();
-		expect(modalText).toContain('3');
-
-		// Verify proposed dates list is shown in modal
-		const modalItems = page.locator('#confirmModalBody .list-group-item');
-		const modalItemCount = await modalItems.count();
-		expect(modalItemCount).toBe(3);
-		console.log('Confirm modal text:', modalText, 'with', modalItemCount, 'slots listed');
-
-		// Click OK and wait for the batch creation XHR
-		const [batchResponse] = await Promise.all([
-			page.waitForResponse(resp => resp.url().includes('/expert/~batchSlots') && resp.request().method() === 'POST'),
-			page.locator('#confirmModalOk').click(),
-		]);
-
-		// Verify batch creation response status
-		expect(batchResponse.status()).toBe(200);
-
-		// Batch modal should close on success
-		await expect(batchModal).not.toBeVisible({ timeout: 10000 });
-
-		console.log('Batch slots created successfully');
+		console.log('Batch create correctly blocked for past-dated proposed slots');
 	});
 
 	test('15. Batch end date is computed from count and lessons-per-week', async () => {

@@ -231,6 +231,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
             if ($startAt <= 0) {
                 return ControllerTools::JSON(['error' => 'Invalid date or time'], status: 400);
             }
+            if ($startAt < time()) {
+                return ControllerTools::JSON(['error' => 'Cannot create a slot in the past'], status: 400);
+            }
             $endAt = $startAt + $duration * 60;
 
             // Overlap check
@@ -411,6 +414,14 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 $proposedStart = DateUtils::parseUserDateTime($date, $time, $expertTz);
                 if ($proposedStart <= 0) {
                     continue;
+                }
+                // Whole-batch rejection, matching the overlap check below: a
+                // single past-time row must not silently drop that row while
+                // creating the rest — the caller gets a 400 and nothing is
+                // created (see the "Cannot create a slot in the past" gate
+                // in createSlot() above for the single-slot equivalent).
+                if ($proposedStart < time()) {
+                    return ControllerTools::JSON(['error' => 'Cannot create a slot in the past'], status: 400);
                 }
                 $proposedEnd = $proposedStart + $duration * 60;
 

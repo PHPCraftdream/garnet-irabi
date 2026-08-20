@@ -97,6 +97,7 @@ export const BatchSlotWizard: React.FC<Props> = ({onSuccess, onError, onConfirm,
 
     const handleCreate = async () => {
         if (!batch.batchSlots.length) return;
+        if (batch.hasPastDate()) return;
         D('teaching.batch.create', {slotsCount: batch.batchSlots.length, cost: batchCost});
 
         const items = batch.batchSlots.map(s => {
@@ -272,7 +273,15 @@ export const BatchSlotWizard: React.FC<Props> = ({onSuccess, onError, onConfirm,
                                 {t.Batch_Cancel()}
                             </button>
                         )}
-                        <button type="button" id="batchCreateBtn" data-test-id="batch-create-btn" className="btn btn-success" onClick={handleCreate}>{t.Batch_CreateAll()}</button>
+                        <button
+                            type="button"
+                            id="batchCreateBtn"
+                            data-test-id="batch-create-btn"
+                            className="btn btn-success"
+                            disabled={batch.hasPastDate()}
+                            title={batch.hasPastDate() ? t.Batch_PastDate() : undefined}
+                            onClick={handleCreate}
+                        >{t.Batch_CreateAll()}</button>
                     </div>
                 </div>
             )}

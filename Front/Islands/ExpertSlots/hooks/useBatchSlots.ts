@@ -6,6 +6,15 @@ function timeToMinutes(t: string): number {
     return parseInt(parts[0]) * 60 + parseInt(parts[1]);
 }
 
+/** Mirrors BatchPreviewTable's per-row isDateInPast — kept in one place so
+ * the "any row past" check used to gate submission matches exactly what
+ * the warning badge is based on. */
+function isDateInPast(date: string, time: string): boolean {
+    const now = new Date();
+    const slotDate = new Date(date + 'T' + (time || '00:00'));
+    return slotDate < now;
+}
+
 export function useBatchSlots() {
     const [batchSlots, setBatchSlots] = useState<ProposedSlot[]>([]);
     const [existingSlots, setExistingSlots] = useState<ExistingItem[]>([]);
@@ -40,6 +49,13 @@ export function useBatchSlots() {
 
     const isProposed = useCallback((date: string): boolean => {
         return batchSlots.some(s => s.date === date);
+    }, [batchSlots]);
+
+    // Server rejects the WHOLE batch (HTTP 400, nothing created) if any row
+    // has a past start time — block submission client-side too so the user
+    // gets immediate feedback instead of a round-trip failure.
+    const hasPastDate = useCallback((): boolean => {
+        return batchSlots.some(s => isDateInPast(s.date, s.time));
     }, [batchSlots]);
 
     const addSlot = useCallback((date: string, time: string, duration: number) => {
@@ -79,6 +95,7 @@ export function useBatchSlots() {
         hasProposedOverlap,
         getDayItems,
         isProposed,
+        hasPastDate,
         addSlot,
         removeSlot,
         updateSlotDate,
