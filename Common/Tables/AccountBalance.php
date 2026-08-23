@@ -39,16 +39,17 @@ namespace PHPCraftdream\IRabi\Common\Tables {
          * window: a concurrent recalculate() now blocks until the debit's
          * ledger row exists and the owning request has released the lock.
          *
-         * Reentrancy: GET_LOCK is reentrant per connection — a second
-         * GET_LOCK of the same name by the same mysqli link returns
-         * immediately and increments a hold count; RELEASE_LOCK decrements
-         * it. The framework's DbPool reuses a single free link for every
-         * synchronous query in a request (DbPool::getLink /
-         * DbMySQLiLink::query), and the debit critical sections in the
-         * controllers run only synchronous queries, so the connection that
-         * acquired the lock here is the same connection the closure runs
-         * on. A nested withAccountLock() / recalculate() for the same
-         * account is therefore acquired reentrantly and cannot deadlock.
+         * Reentrancy: NamedLock acquires every lock name on its own
+         * dedicated connection (self::$sharedLink), separate from
+         * DbPool::getLink()'s general pool — so reentrancy here does NOT
+         * come from the critical section's queries and the lock happening
+         * to share a connection. NamedLock tracks its own in-process hold
+         * count per lock name (see NamedLock::$owners): a second acquire()
+         * of the same name in this process just increments that count and
+         * returns immediately, without a real GET_LOCK round trip;
+         * release() only issues RELEASE_LOCK once the count reaches 0. A
+         * nested withAccountLock() / recalculate() for the same account is
+         * therefore acquired reentrantly and cannot deadlock.
          *
          * @template T
          * @param callable(): T $fn
