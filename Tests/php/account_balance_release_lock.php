@@ -43,17 +43,28 @@ function check(bool $condition, string $label): void {
     }
 }
 
-/** Steal $lockName from the connection NamedLock pinned as its owner. */
+/**
+ * Steal $lockName from the connection NamedLock pinned as its owner.
+ *
+ * Shape-agnostic: reads $owners[$lockName] as either a bare
+ * IDbMySQLiLink (framework <= v0.1.0-alpha27, currently vendored) or
+ * ['link' => IDbMySQLiLink, 'count' => int, ...] (framework HEAD as of
+ * the NamedLock reentrancy fix, task #170) -- so this script keeps
+ * working across a future composer update without needing a
+ * synchronized edit (task #189).
+ */
 function stealLock(string $lockName): void {
     $ownersProp = new ReflectionProperty(NamedLock::class, 'owners');
     $ownersProp->setAccessible(true);
 
     $owners = $ownersProp->getValue();
-    $ownerLink = $owners[$lockName] ?? null;
+    $entry = $owners[$lockName] ?? null;
 
-    if ($ownerLink === null) {
+    if ($entry === null) {
         throw new RuntimeException("No NamedLock owner recorded for '{$lockName}'");
     }
+
+    $ownerLink = is_array($entry) ? $entry['link'] : $entry;
 
     $ownerLink->query('SELECT RELEASE_LOCK(?)', [$lockName]);
 
