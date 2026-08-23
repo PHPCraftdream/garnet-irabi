@@ -5,7 +5,10 @@ namespace PHPCraftdream\IRabi\Common\Tables {
     use PHPCraftdream\Garnet\Bundle\Modules\Balance\Tables\FwBalanceLedger;
     use PHPCraftdream\Garnet\Kernel\Db\Link\NamedLock;
     use PHPCraftdream\Garnet\Kernel\Exceptions\DbException;
+    use PHPCraftdream\Garnet\Kernel\Io\ErrorCatcher\ErrorCatcher;
+    use PHPCraftdream\Garnet\Kernel\Io\Logs\Logger;
     use PHPCraftdream\IRabi\Common\Exceptions\AccountLockAcquireException;
+    use Throwable;
 
     class AccountBalance extends FwAccountBalance {
         protected string $tableName = 'account_balance';
@@ -128,8 +131,43 @@ namespace PHPCraftdream\IRabi\Common\Tables {
             }
         }
 
+        /**
+         * Release a named advisory lock, never letting a release failure
+         * escape to the caller.
+         *
+         * withAccountLock() calls this from its finally block, and
+         * releaseAccountLock() is called from SlotsController::post__book's
+         * own finally — in both places an exception thrown here would
+         * REPLACE the critical section's real outcome (PHP finally
+         * semantics): a successful booking result would turn into an
+         * uncaught 500 despite its writes being committed, or a real
+         * business exception would be silently masked by the release
+         * error. NamedLock::release() does throw DbException on genuine
+         * state errors (lock stolen on the owning connection, drain
+         * deadline timeouts), so the failure mode is real.
+         *
+         * Swallowing is safe specifically because the lock is not
+         * permanently leaked: MySQL auto-releases every named lock when
+         * its owning connection closes (see NamedLock's docblock), so a
+         * failed RELEASE_LOCK at worst delays the release until
+         * connection teardown — an acceptable degradation next to
+         * masking a committed money-path result or a root-cause
+         * exception. Log loudly instead.
+         */
         protected static function releaseLock(string $name): void {
-            NamedLock::release($name);
+            try {
+                NamedLock::release($name);
+            } catch (Throwable $e) {
+                try {
+                    Logger::get(Logger::ERROR_LOGGER)->write(
+                        'account_lock_release',
+                        "Failed to release account lock '{$name}': " . ErrorCatcher::getExceptionStrResult($e),
+                    );
+                } catch (Throwable) {
+                    // Logger unavailable — nothing more to do; never let
+                    // logging break the caller's real result/exception.
+                }
+            }
         }
     }
 }
