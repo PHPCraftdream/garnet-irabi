@@ -8,6 +8,8 @@ namespace PHPCraftdream\IRabi\Common\Services {
     use PHPCraftdream\Garnet\Bundle\Modules\Invite\FwInviteTokenService;
     use PHPCraftdream\Garnet\Kernel\Db\Link\NamedLock;
     use PHPCraftdream\Garnet\Kernel\Io\Cron\FwCronService;
+    use PHPCraftdream\Garnet\Kernel\Io\ErrorCatcher\ErrorCatcher;
+    use PHPCraftdream\Garnet\Kernel\Io\Logs\Logger;
     use PHPCraftdream\IRabi\Common\Tables\CronLog;
     use ReflectionClass;
     use RuntimeException;
@@ -37,9 +39,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
 
         public static function registerTasks(): void {
             static::registerTask('email-queue', function (Stdio $stdio): int {
-                if (!NamedLock::tryAcquire(self::EMAIL_QUEUE_LOCK)) {
-                    $stdio->outln('email-queue: previous run still active, skipping');
-
+                if (!static::acquireCronLockOrSkip('email-queue', self::EMAIL_QUEUE_LOCK, $stdio)) {
                     return 0;
                 }
 
@@ -66,7 +66,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
                     // processQueue itself had nothing to send afterwards.
                     return FwEmailQueueService::processQueue(50) + $recovery['recovered'];
                 } finally {
-                    NamedLock::release(self::EMAIL_QUEUE_LOCK);
+                    static::releaseCronLock(self::EMAIL_QUEUE_LOCK);
                 }
             }, 'Process email queue (send pending emails)');
 
@@ -130,16 +130,14 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 // via the wrapping CapturingStdio — the per-category
                 // counts are the useful signal; 0 across the board is
                 // the expected healthy-state result every tick.
-                if (!NamedLock::tryAcquire(self::FINANCE_AUDIT_LOCK)) {
-                    $stdio->outln('finance-audit: previous run still active, skipping');
-
+                if (!static::acquireCronLockOrSkip('finance-audit', self::FINANCE_AUDIT_LOCK, $stdio)) {
                     return 0;
                 }
 
                 try {
                     $report = BalanceReconciliationService::runAll();
                 } finally {
-                    NamedLock::release(self::FINANCE_AUDIT_LOCK);
+                    static::releaseCronLock(self::FINANCE_AUDIT_LOCK);
                 }
 
                 // Aggregate discrepancy count across every category: the
@@ -345,6 +343,70 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 throw new RuntimeException('Stdio formatter not accessible');
             }
             return $value;
+        }
+
+        /**
+         * NamedLock::tryAcquire() for cron task closures: acquire the
+         * non-blocking tick lock, or report why this tick is skipped.
+         *
+         * Despite its bool return type, the underlying acquire() can still
+         * throw (connection-recovery retry failure, drain timeout on the
+         * dedicated link) for reasons unrelated to "lock is held" — and
+         * then we cannot know whether the lock was taken. Treat that
+         * exactly like "not acquired": skip the tick rather than run
+         * unserialised, but with a distinguishing line so a real DB error
+         * is separable from a still-running previous tick in cron_log.
+         */
+        protected static function acquireCronLockOrSkip(string $taskName, string $lockName, Stdio $stdio): bool {
+            try {
+                if (NamedLock::tryAcquire($lockName)) {
+                    return true;
+                }
+
+                $stdio->outln("{$taskName}: previous run still active, skipping");
+            } catch (Throwable $e) {
+                $stdio->outln("{$taskName}: lock check failed, skipping this tick");
+                static::logCronLockFailure('cron_lock_acquire', $lockName, $e);
+            }
+
+            return false;
+        }
+
+        /**
+         * NamedLock::release() for cron task closures: never let a release
+         * failure escape the bare finally — by PHP's finally semantics it
+         * would REPLACE the task's real outcome (return value or original
+         * exception), masking whether the tick actually did its work.
+         * NamedLock::release() does throw DbException on genuine state
+         * errors. Swallowing is safe: MySQL auto-releases named locks when
+         * the owning connection closes, so a failed RELEASE_LOCK at worst
+         * delays the release until connection teardown. Mirrors
+         * AccountBalance::releaseLock() (task #190).
+         */
+        protected static function releaseCronLock(string $lockName): void {
+            try {
+                NamedLock::release($lockName);
+            } catch (Throwable $e) {
+                static::logCronLockFailure('cron_lock_release', $lockName, $e);
+            }
+        }
+
+        /**
+         * Best-effort error-log write for a failed cron named-lock
+         * operation. Logging itself is guarded too — a logger failure
+         * must never throw back into the caller's finally block.
+         */
+        protected static function logCronLockFailure(string $event, string $lockName, Throwable $e): void {
+            try {
+                Logger::get(Logger::ERROR_LOGGER)->write(
+                    $event,
+                    "Cron lock failure '{$lockName}' ({$event}): "
+                    . ErrorCatcher::getExceptionStrResult($e),
+                );
+            } catch (Throwable) {
+                // Logger unavailable — nothing more to do; never let
+                // logging break the caller's real result/exception.
+            }
         }
     }
 }
