@@ -151,10 +151,9 @@ test.describe('iRabi Batch Slot Creation', () => {
 		// Kernel/Core/HCalendar/SlotDateFilter.php and
 		// Common/Calendar/SlotDateFilterLocalized.php), so a holiday-dense month
 		// can legitimately push a 5-slot proposal window past the month
-		// boundary into a second visible `[id^="batchCalendar"]` table even
-		// though start_date is the 1st. The assertions below therefore verify
-		// totals across however many calendar tables actually render, rather
-		// than assuming exactly one.
+		// boundary into a second calendar month even though start_date is
+		// the 1st. The assertions below therefore verify totals across
+		// however many months actually render, rather than assuming one.
 		await batchModal.locator('input[name="start_date"]').fill(firstOfMonthAhead(2));
 		// End date is computed from count + lessons-per-week (no manual end_date field).
 		await batchModal.locator('input[name="per_week"]').fill('2');
@@ -166,15 +165,20 @@ test.describe('iRabi Batch Slot Creation', () => {
 		await expect(preview).toBeVisible({ timeout: 10000 });
 
 		// Calendar component renders with data-day-type="proposed"/"restricted"/"available".
-		// There may be more than one `[id^="batchCalendar"]` table if the
-		// proposal window spans a month boundary (see comment above), so use
-		// a non-strict-mode-sensitive locator for all counts below.
+		// The `idPrefix` sits on ONE outer <div> wrapping every month; each
+		// month renders as a <table> INSIDE that single container (see
+		// Calendar.tsx), so `[id^="batchCalendar"]` always matches exactly
+		// one element — but a proposal window spilling past a month boundary
+		// renders 2+ <table>s inside it. Hence `.locator('table').first()`
+		// below (`.first().locator('table')` is container-first and resolves
+		// to 2+ tables under strict mode); the cell counts below aggregate
+		// across the whole container, so they are spill-safe as-is.
 		const calendars = batchModal.locator('[id^="batchCalendar"]');
 		const calendarCount = await calendars.count();
 		expect(calendarCount).toBeGreaterThanOrEqual(1);
 		await Promise.all([
 			expect(calendars.first()).toBeVisible(),
-			expect(calendars.first().locator('table')).toBeVisible(),
+			expect(calendars.locator('table').first()).toBeVisible(),
 		]);
 
 		const restrictedCells = calendars.locator('[data-day-type="restricted"]');
