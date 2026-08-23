@@ -407,10 +407,6 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 $time = $slot['time'] ?? '10:00';
                 $duration = (int)($slot['duration'] ?? 60);
 
-                if (!in_array($date, $availableDateStrings, true)) {
-                    continue;
-                }
-
                 $proposedStart = DateUtils::parseUserDateTime($date, $time, $expertTz);
                 if ($proposedStart <= 0) {
                     continue;
@@ -420,9 +416,19 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 // creating the rest — the caller gets a 400 and nothing is
                 // created (see the "Cannot create a slot in the past" gate
                 // in createSlot() above for the single-slot equivalent).
+                // Must run BEFORE the availableDateStrings check below: a
+                // past date that also happens to fall on a calendar-
+                // restricted day (Shabbat, a holiday) would otherwise be
+                // silently `continue`d past this whole check, letting the
+                // rest of a batch containing a past row through with 200.
                 if ($proposedStart < time()) {
                     return ControllerTools::JSON(['error' => 'Cannot create a slot in the past'], status: 400);
                 }
+
+                if (!in_array($date, $availableDateStrings, true)) {
+                    continue;
+                }
+
                 $proposedEnd = $proposedStart + $duration * 60;
 
                 $proposedSlots[] = [
