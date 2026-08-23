@@ -88,8 +88,16 @@ namespace PHPCraftdream\IRabi\Common\Tables {
 
         /**
          * Release a lock previously acquired by acquireAccountLock() (or a
-         * reentrant hold from withAccountLock()). Safe to call when no lock
-         * is held — RELEASE_LOCK simply returns NULL in that case.
+         * reentrant hold from withAccountLock()). Safe to call when this
+         * process holds no record of the lock: NamedLock::release() tracks
+         * ownership in-process, and with no entry for the name it returns
+         * early without ever issuing RELEASE_LOCK (that is also the normal
+         * path on the outer leg of a nested reentrant hold — the inner
+         * release already dropped the ownership record). When an entry
+         * does exist but RELEASE_LOCK returns 0 or NULL, release() throws
+         * a DbException state error — something else already released or
+         * stole the lock; releaseLock() catches and logs it, so this
+         * method itself never throws.
          */
         public static function releaseAccountLock(int $accountId): void {
             self::releaseLock(self::lockNameFor($accountId));
@@ -148,11 +156,42 @@ namespace PHPCraftdream\IRabi\Common\Tables {
          *
          * Swallowing is safe specifically because the lock is not
          * permanently leaked: MySQL auto-releases every named lock when
-         * its owning connection closes (see NamedLock's docblock), so a
-         * failed RELEASE_LOCK at worst delays the release until
-         * connection teardown — an acceptable degradation next to
+         * its owning connection closes (see NamedLock's docblock). But
+         * "connection teardown" is not a quick cleanup: NamedLock pins
+         * the lock to a dedicated link that nothing closes at request
+         * end (DbPool only closes connections on explicit closeAll(),
+         * which the request lifecycle never calls), so under php-fpm the
+         * release is delayed until the worker process itself dies or
+         * recycles — typically minutes to hours away, during which every
+         * other request touching this account burns its full
+         * LOCK_TIMEOUT_SECONDS and then fails. Acceptable next to
          * masking a committed money-path result or a root-cause
-         * exception. Log loudly instead.
+         * exception — but a real, long-lived degradation. Log loudly.
+         *
+         * One swallowed case is materially more serious than the rest:
+         * when RELEASE_LOCK itself returns 0 or NULL,
+         * NamedLock::release() throws a deliberate state-error
+         * DbException — post-hoc proof that something outside this
+         * class already released or stole the lock while the critical
+         * section believed it held it, i.e. mutual exclusion around a
+         * money-affecting section was demonstrably violated. The other
+         * exceptions landing here (busy link, connection gone, mysqli
+         * transport errors on the release query) are infra noise by
+         * comparison.
+         *
+         * TODO: that lock-stolen case deserves a dedicated metric or
+         * alert, and this codebase has none — no metrics, counters, or
+         * error-tracking SDK anywhere (app or framework), only the
+         * file-based Logger, whose write() even dedupes an identical
+         * message to one file per day, so repeated thefts of the same
+         * lock leave no visible volume. It is also not structurally
+         * distinguishable: NamedLock::release() signals it with a plain
+         * DbException whose only marker is the "RELEASE_LOCK(...)
+         * returned ..." message text, so a future alerting hook here
+         * would have to match that string — minor fragility until the
+         * framework gives it a distinct class or code. Until then this
+         * single ERROR_LOGGER line is all the signal the event
+         * produces: a known, accepted gap, not a handled case.
          */
         protected static function releaseLock(string $name): void {
             try {
