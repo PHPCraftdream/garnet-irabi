@@ -18,6 +18,21 @@ Two knobs:
   poking at live data with the test harness). Defaults to ON; only
   safe with `PW_WORKERS=1` when off.
 
+### `cross-role-query-count` — standalone run for a noise-free measurement
+
+`cross-role/im-search-recipients-query-count.spec.ts` is a query-volume
+regression guard (IM recipient search) that asserts on MySQL's
+**global** `Questions` counter. Every concurrently running test
+increments that counter — the whole suite shares one MySQL instance —
+so a plain `npm test` leaves residual noise in the measurement. The
+spec survives that by taking the minimum delta across several trials
+(see its docblock), but to re-establish a truly clean baseline, run
+only that project:
+
+```bash
+npm test -- --project=cross-role-query-count
+```
+
 ---
 
 ## Greening Workflow — one full circle per iteration

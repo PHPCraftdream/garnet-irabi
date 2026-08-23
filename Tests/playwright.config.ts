@@ -227,7 +227,7 @@ export default defineConfig({
 		// server, not scoped to this test's worker — the rest of the suite
 		// shares ONE MySQL instance (isolation is only per-worker table
 		// prefix, not separate DB servers). Splitting it into its own
-		// project (own `workers: 1` cap) removes noise from the 5 OTHER
+		// project (own `workers: 1` cap) removes noise from the other
 		// `cross-role` specs that used to share this project's worker pool
 		// — that was the single biggest noise source, since `cross-role`
 		// runs 6-wide by default.
