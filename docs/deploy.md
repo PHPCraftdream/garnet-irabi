@@ -67,7 +67,45 @@ line — a one-off, safe, additive patch.
 
 ## Recommended workflow
 
-**First deploy to a fresh host:**
+**Full release — code + framework + migrations, one command (default
+for any release that touches the framework or has a pending schema
+change):**
+```bash
+php garnet deploy:full                 # --help for the full flag list
+```
+One atomic call, safe by construction: builds fresh (same code path as
+`bundle`), puts the host into maintenance, ships `public/` (merged,
+never wiped), `framework_dir`/`app_dir` (uploaded to a fresh staging
+name and swapped into place with a near-instant rename — never
+`rm -rf`'d first), syncs the runtime dir's `garnet` dispatcher +
+`_shared_index.php` (never `WorkDir/` — real `Config/*.ini`, DB
+backups, log journals stay untouched), runs a boot check
+(`php garnet noop` on the host), then triggers the same maintenance
+→backup→migrate→cache→off flow described below as its final step. Also
+advances the `.deploy-sha` marker `deploy:diff` reads (see below), so
+switching between the two stays consistent.
+
+Exists specifically because the alternative — `bundle` + several manual
+`ssh:put` calls + remembering to force a `deploy:diff --frontend` resync
++ remembering to SSH in afterwards for any pending migration — is the
+exact failure mode that broke production twice on this host in one
+session (see `GarnetDeployFullCommand`'s own doc comment in
+garnet-framework for both incidents: an interrupted framework-dir
+re-upload serving a raw `Class ... not found` fatal mid-transfer, and an
+`rm -rf` of the public dir silently deleting `.htaccess`, 404ing every
+non-root URL). Verified end-to-end against slotbook.ru itself, including
+a full 46-commit backlog release with a pending migration.
+
+Flags: `--skip-build` (assumes `Public/assets/` already built),
+`--no-boot-check`, `--skip-migrate` (ship code, review live before
+touching the schema — maintenance is lifted by this command itself in
+that case), `--skip-backup` (forwarded to the remote `php garnet
+deploy` step — discouraged, see below).
+
+**First deploy to a fresh host** (`deploy:full` assumes an *existing*
+host with a real runtime `WorkDir/Config/*.ini` already in place — for
+a genuinely empty host, ship the runtime dir's `WorkDir` skeleton
+wholesale first):
 ```bash
 php garnet ssh:test                      # verify SSH connectivity first
 php garnet bundle --no-phar --keep-dir   # build dist/IRabi/{public,framework,app,runtime}
@@ -76,22 +114,20 @@ php garnet ssh:put dist/IRabi/<framework_dir> "<framework_dir>" --cd-remote
 php garnet ssh:put dist/IRabi/<app_dir>       "<app_dir>"       --cd-remote
 php garnet ssh:put dist/IRabi/<runtime_dir>   "<runtime_dir>"   --cd-remote
 ```
+Once the host has real `WorkDir/Config/*.ini` in place, switch to
+`deploy:full` for every subsequent release.
 
-**Manual framework-only redeploy** (fallback — as of garnet-framework
-`v0.1.0-alpha17`, `php garnet bundle` works for this app's standalone
-layout too, sourcing the framework copy from `vendor/phpcraftdream/
-garnet-framework` (the exact tree `php garnet build` writes its
-asset-bridge files into, so it can never carry a stale one the way this
-manual path did — see the incident note below) and materialising its
-`vendor/` via a scoped `composer install` inside the disposable dist/
-copy. Verified locally end-to-end (CLI boot, real DB, real HTTP
-request) but not yet exercised against slotbook.ru itself — prefer
-`bundle` for the next fresh-host situation, and keep this manual path
-documented as the proven fallback until `bundle` has a real remote-host
-track record too). `deploy:diff` still can't reach `framework_dir` on
-its own — its `Framework/…` path mapping only matches files inside
-*this* app's own repo, and the framework lives in a separate sibling
-repo/checkout. Ship it directly with `ssh:put`
+**Manual framework-only redeploy** (legacy fallback — superseded by
+`deploy:full` for the normal case, since that command already ships
+`framework_dir` via the same safe atomic-swap and regenerates/reships
+the matching `Bundle/…Gen.php` pair as part of its own build step. Keep
+this manual path only for the narrower case of updating *just* the
+framework without touching app/public, or as an emergency path if
+`deploy:full`'s build/SSH tooling itself is unavailable. `deploy:diff`
+still can't reach `framework_dir` on its own — its `Framework/…` path
+mapping only matches files inside *this* app's own repo, and the
+framework lives in a separate sibling repo/checkout. Ship it directly
+with `ssh:put`
 (supports directories via `-r`, auto-detected when `<local>` is a dir):
 ```bash
 # Wipe the curated set first so deleted/renamed framework files don't
@@ -155,12 +191,12 @@ exactly the class of bug `bundle` (v0.1.0-alpha17+) fixes structurally:
 it always sources `framework_dir` from `vendor/phpcraftdream/
 garnet-framework`, the one tree `php garnet build` actually writes
 `*Gen.php` into, so there's no separate checkout to drift from in the
-first place. Once `bundle` has a track record on this exact host, this
-whole manual-redeploy section (and its failure mode) should be
-retireable.
+first place. `bundle` (via `deploy:full`) now has a real track record on
+this exact host, so this manual sequence is kept only as the documented
+fallback described above — reach for `deploy:full` first.
 
 **Routine code-only deploys** (fast — only the diff since the last
-deploy, not a full re-upload):
+deploy, not a full re-upload; no framework changes, no migration):
 ```bash
 php garnet deploy:diff --since=<git-ref>          # dry-run by default — review the plan first
 php garnet deploy:diff --since=<git-ref> --apply   # then actually ship it
@@ -170,16 +206,36 @@ php garnet deploy:diff --since=<git-ref> --apply   # then actually ship it
 auto-rebuilds the frontend when source files changed. Always read the
 dry-run output before `--apply` — it's cheap insurance.
 
-**Full deploy with migrations** (maintenance-wrapped, safe by design):
+**⚠️ `.deploy-sha` marker — keep it in mind when mixing `deploy:full` and
+`deploy:diff`.** `deploy:diff` (no selector) auto-resumes from
+`<runtime>/WorkDir/.deploy-sha`, advancing it on every successful
+`--apply`. `deploy:full` ships code through a completely different path
+(bundle + atomic swap, not a git diff) — it also advances the same
+marker after a successful release, so the two stay interchangeable
+release-to-release. If the marker write fails (rare —
+it's non-fatal by design, warns instead of failing an otherwise-successful
+release) or you're running an older framework version without this fix,
+reseed it manually: `php garnet deploy:diff --commit=HEAD --apply` once,
+or `echo -n <sha> > <runtime>/.../.deploy-sha` over SSH.
+
+**Full deploy with migrations, standalone** (maintenance-wrapped, safe by
+design — this is what `deploy:full` itself calls as its own final step;
+run it directly when code was already shipped separately, e.g. via
+`deploy:diff`, or by hand over SSH on the host for a migration-only
+hotfix):
 ```bash
-php garnet deploy
+php garnet deploy            # --help for the flag list
 ```
 Order: maintenance ON → DB backup → migrations → cache clear →
 maintenance OFF. If the backup or migration step fails, maintenance is
 **deliberately left ON** so a half-migrated site never goes live — fix
 forward or restore the backup, then re-run. Avoid `--skip-backup`
 except when you've already taken one manually; `--skip-migrate` is fine
-for a code-only release with no pending schema change.
+for a code-only release with no pending schema change. Operates on
+whatever is already on disk in the *current* working directory's app
+context (its own `WorkDir/Config/db.ini`) — on a production host that
+means running it from inside the runtime dir over SSH, not from a local
+dev machine.
 
 ## Migrations: forward-only, no rollback
 
@@ -212,7 +268,8 @@ DB from the backup taken immediately before. There is no in-place
 
 | Path | Backup | When it's used |
 |---|---|---|
-| `php garnet deploy` | **Automatic.** The flow is `maintenance ON → DB backup → migrations → cache clear → maintenance OFF` (see [Recommended workflow](#recommended-workflow) above); if the backup or migration step fails, maintenance is deliberately left ON so a half-migrated site never goes live. | Full release with code + schema changes. |
+| `php garnet deploy:full` | **Automatic** — ships code (framework/app/public) *and* triggers the same `php garnet deploy` flow below as its own final step. | Default: a release that touches the framework or has a pending schema change. Run locally; it drives everything over SSH itself. |
+| `php garnet deploy` | **Automatic.** The flow is `maintenance ON → DB backup → migrations → cache clear → maintenance OFF` (see [Recommended workflow](#recommended-workflow) above); if the backup or migration step fails, maintenance is deliberately left ON so a half-migrated site never goes live. | Migration-only, when code was already shipped separately (e.g. via `deploy:diff`) — run this from inside the runtime dir on the host itself (over SSH), not from a local dev machine, since it reads that directory's own `WorkDir/Config/db.ini`. |
 | `php run_cmd.php migration` (or the equivalent `php garnet migration`, `php garnet remote-migration`) | **NOT automatic.** `CMDMigration::migrate()` (`vendor/…/garnet-framework/Kernel/Db/Entity/Migration/CMDMigration.php`) runs `MigrationTable::init() → MigrationTable::afterInit() → Migration::migrate()` and nothing else — there is no backup step anywhere in this code path. | Point hotfix on the server via SSH, or any ad-hoc schema bump done without a full `garnet deploy`. |
 
 For the direct `php run_cmd.php migration` / `php garnet migration` path,
