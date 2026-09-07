@@ -271,6 +271,7 @@ export class I18nDataRU {
     static Balance_NoHistory = 'Транзакций пока нет';
     static Balance_TopUpAmount = 'Сумма';
     static Balance_TopUpPlaceholder = 'Введите сумму';
+    static Balance_TopUpNotice = 'Оплата картой пока не подключена: указанная сумма зачислится на баланс сразу, без списания с карты.';
     static Balance_TopUpSuccess = 'Баланс пополнен';
     static Balance_LedgerNote_TopUp = 'Пополнение баланса';
     static Dashboard_Balance = 'Баланс';
@@ -689,6 +690,7 @@ export class I18nDataRU {
     static Slot_BookError_NotUser = 'Бронировать слоты могут только пользователи';
     static Slot_BookError_Unavailable = 'Этот слот уже занят или недоступен';
     static Slot_BookError_Past = 'Это время уже прошло';
+    static Slot_BookError_Busy = 'Кошелёк сейчас занят другой операцией — повторите через мгновение';
     static News_Unread = 'новых';
     static News_Archived = 'Архив';
     static News_NewSlot_Action = ' открыл(а) ';

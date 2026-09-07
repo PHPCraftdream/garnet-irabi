@@ -645,6 +645,11 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 'primaryBadgeCount' => Menu::expertPendingBookingsCount(),
                 'unreadIm' => ImReadStatus::getUnreadCountForUser($accountId),
                 'unreadSupport' => SupportTickets::getUnreadCountForUser($accountId),
+                // The header's balance pill is rendered once with the page and
+                // then goes stale: money moves on top-up, on booking, on
+                // cancellation and on refund, none of which redraw the header.
+                // People topped up and saw "0 ₽" still sitting above them.
+                'balance' => AccountBalance::getBalance($accountId),
             ]);
         }
     }

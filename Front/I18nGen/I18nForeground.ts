@@ -277,6 +277,7 @@ class I18n extends I18nBase {
     Balance_NoHistory: t = (a = []) => this.t('Balance_NoHistory', a);
     Balance_TopUpAmount: t = (a = []) => this.t('Balance_TopUpAmount', a);
     Balance_TopUpPlaceholder: t = (a = []) => this.t('Balance_TopUpPlaceholder', a);
+    Balance_TopUpNotice: t = (a = []) => this.t('Balance_TopUpNotice', a);
     Balance_TopUpSuccess: t = (a = []) => this.t('Balance_TopUpSuccess', a);
     Balance_LedgerNote_TopUp: t = (a = []) => this.t('Balance_LedgerNote_TopUp', a);
     Dashboard_Balance: t = (a = []) => this.t('Dashboard_Balance', a);
@@ -695,6 +696,7 @@ class I18n extends I18nBase {
     Slot_BookError_NotUser: t = (a = []) => this.t('Slot_BookError_NotUser', a);
     Slot_BookError_Unavailable: t = (a = []) => this.t('Slot_BookError_Unavailable', a);
     Slot_BookError_Past: t = (a = []) => this.t('Slot_BookError_Past', a);
+    Slot_BookError_Busy: t = (a = []) => this.t('Slot_BookError_Busy', a);
     News_Unread: t = (a = []) => this.t('News_Unread', a);
     News_Archived: t = (a = []) => this.t('News_Archived', a);
     News_NewSlot_Action: t = (a = []) => this.t('News_NewSlot_Action', a);

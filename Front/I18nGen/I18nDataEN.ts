@@ -272,6 +272,7 @@ export class I18nDataEN {
     static Balance_NoHistory = 'No transactions yet';
     static Balance_TopUpAmount = 'Amount';
     static Balance_TopUpPlaceholder = 'Enter amount';
+    static Balance_TopUpNotice = 'Card payment is not connected yet: the amount is credited to your balance immediately, with nothing charged to a card.';
     static Balance_TopUpSuccess = 'Balance topped up';
     static Balance_LedgerNote_TopUp = 'Balance top-up';
     static Dashboard_Balance = 'Balance';
@@ -689,6 +690,7 @@ export class I18nDataEN {
     static Slot_BookError_NotUser = 'Only users can book slots';
     static Slot_BookError_Unavailable = 'This slot is already taken or unavailable';
     static Slot_BookError_Past = 'This time has already passed';
+    static Slot_BookError_Busy = 'The wallet is busy with another operation — try again in a moment';
     static News_Unread = 'new';
     static News_Archived = 'Archived';
     static News_NewSlot_Action = ' opened ';
