@@ -8,10 +8,14 @@ namespace PHPCraftdream\IRabi\Migrations\Helpers {
     /**
      * Canonical production seed for static pages, blocks and snippets.
      *
-     * Used by both M_0016 (initial seed on fresh install) and M_0018
-     * (hard-reset on environments that already crossed M_0016 with
-     * older content). Single source of truth for what the marketing
-     * surface ships with by default.
+     * Используется M_0002 — начальным сидом на чистой установке. Единый
+     * источник правды о том, с каким маркетинговым содержимым приложение
+     * ставится по умолчанию.
+     *
+     * Точечные правки уже установленных инсталляций живут в отдельных
+     * миграциях (M_0013 — ссылки в юридических страницах, M_0016 — подпись
+     * пункта меню) и не трогают контент, добавленный владельцем через
+     * админку.
      *
      * NOTE: Bypasses FwStaticPagesService for direct table writes — this
      * is intentional for migration code, where we want the canonical
@@ -31,7 +35,13 @@ namespace PHPCraftdream\IRabi\Migrations\Helpers {
                     ['type' => 'link', 'label' => 'Главная', 'url' => '/'],
                     ['type' => 'page', 'slug' => 'terms',   'label' => ''],
                     ['type' => 'page', 'slug' => 'privacy', 'label' => ''],
-                    ['type' => 'link', 'label' => 'Войти',   'url' => '/system/', 'external' => false],
+                    // Один и тот же адрес под двумя подписями, каждая для
+                    // своего посетителя: анонимному честно «Войти», вошедшему
+                    // — «Личный кабинет». Раньше пункт был один и говорил
+                    // «Войти» всем подряд, из-за чего авторизованный решал,
+                    // что его разлогинило, и шёл запрашивать код заново.
+                    ['type' => 'link', 'label' => 'Войти', 'url' => '/system/', 'external' => false, 'visibility' => 'guest'],
+                    ['type' => 'link', 'label' => 'Личный кабинет', 'url' => '/system/', 'external' => false, 'visibility' => 'auth'],
                 ],
                 'layout' => 'center',
                 'sticky' => false,
@@ -47,7 +57,8 @@ namespace PHPCraftdream\IRabi\Migrations\Helpers {
                             ['type' => 'link', 'label' => 'Главная', 'url' => '/'],
                             ['type' => 'page', 'slug' => 'terms',   'label' => ''],
                             ['type' => 'page', 'slug' => 'privacy', 'label' => ''],
-                            ['type' => 'link', 'label' => 'Войти',   'url' => '/system/', 'external' => false],
+                            ['type' => 'link', 'label' => 'Войти', 'url' => '/system/', 'external' => false, 'visibility' => 'guest'],
+                            ['type' => 'link', 'label' => 'Личный кабинет', 'url' => '/system/', 'external' => false, 'visibility' => 'auth'],
                         ],
                     ],
                     [

@@ -17,6 +17,10 @@ namespace PHPCraftdream\IRabi\Migrations {
     use PHPCraftdream\IRabi\Migrations\Items\M_0013;
     use PHPCraftdream\IRabi\Migrations\Items\M_0014;
     use PHPCraftdream\IRabi\Migrations\Items\M_0015;
+    use PHPCraftdream\IRabi\Migrations\Items\M_0016;
+    use PHPCraftdream\IRabi\Migrations\Items\M_0017;
+    use PHPCraftdream\IRabi\Migrations\Items\M_0018;
+    use PHPCraftdream\IRabi\Migrations\Items\M_0019;
 
     /**
      * Migration plan:
@@ -36,6 +40,11 @@ namespace PHPCraftdream\IRabi\Migrations {
      *   M_0013 — fix broken Privacy/Cookies cross-links (content audit B-1/B-2).
      *   M_0014 — consents consent-audit-trail table (legal finding F-04).
      *   M_0015 — magic_login_tokens table for one-click magic-login links.
+     *   M_0016 — rename the public menu entry «Войти» to «Личный кабинет».
+     *   M_0017 — split it into a guest/auth pair once menu items gained
+     *            per-item visibility.
+     *   M_0018 — home copy no longer names the button, only its place.
+     *   M_0019 — reminder-sent marks on bookings (student) and slots (expert).
      *
      * Historical M_0003..M_0019 were squashed into M_0002 in a one-time
      * consolidation pass. Existing prod DBs at version=19 keep their
@@ -43,7 +52,7 @@ namespace PHPCraftdream\IRabi\Migrations {
      * destructive ALTERs replayed).
      */
     class AppMigration extends Migration {
-        protected int $currentVersion = 15;
+        protected int $currentVersion = 19;
 
         /**
          * @var array|class-string[]
@@ -64,6 +73,10 @@ namespace PHPCraftdream\IRabi\Migrations {
             13 => M_0013::class,
             14 => M_0014::class,
             15 => M_0015::class,
+            16 => M_0016::class,
+            17 => M_0017::class,
+            18 => M_0018::class,
+            19 => M_0019::class,
         ];
     }
 }
