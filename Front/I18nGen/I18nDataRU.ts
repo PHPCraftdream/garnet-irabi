@@ -591,6 +591,11 @@ export class I18nDataRU {
     static Grid_PrevPage = 'Предыдущая страница';
     static Grid_NextPage = 'Следующая страница';
     static Grid_Items = 'записей';
+    static Attach_Hint = 'До %s файлов, каждый до %s МБ: изображения, PDF, TXT, LOG';
+    static Attach_TooLarge = '%s: файл больше %s МБ — не приложен';
+    static Attach_Empty = '%s: файл пустой — не приложен';
+    static Attach_ExtNotAllowed = '%s: такие файлы прикладывать нельзя — не приложен';
+    static Attach_TooMany = 'Приложить можно не больше %s файлов, остальные пропущены';
     static A11y_CloseModal = 'Закрыть диалог';
     static A11y_RemoveAttachment = 'Удалить вложение';
     static A11y_AttachFiles = 'Прикрепить файлы';

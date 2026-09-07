@@ -692,6 +692,14 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Grid_NextPage' => 'Next page',
             'Grid_Items' => 'items',
 
+            // Attachments: what may be attached, and why a given file was not.
+            // The refusal arrives before sending, so it names the file.
+            'Attach_Hint' => 'Up to %s files, %s MB each: images, PDF, TXT, LOG',
+            'Attach_TooLarge' => '%s: larger than %s MB — not attached',
+            'Attach_Empty' => '%s: the file is empty — not attached',
+            'Attach_ExtNotAllowed' => '%s: files of this kind cannot be attached — not attached',
+            'Attach_TooMany' => 'At most %s files can be attached, the rest were skipped',
+
             // Accessibility (A11y)
             'A11y_CloseModal' => 'Close dialog',
             'A11y_RemoveAttachment' => 'Remove attachment',

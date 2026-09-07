@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {useRef, useState} from 'react';
 import {useBodyScrollLock} from '@common/hooks/useBodyScrollLock';
+import {showToast} from '@common/Components/GlobalToast';
 import {I18nForeground as t} from '../I18nGen/I18nForeground';
 
 export interface PendingFile {
@@ -17,10 +18,40 @@ interface Props {
     accept?: string;
 }
 
+/**
+ * Mirrors UploadRules::documentsAndImages() on the server. Kept here as well
+ * so a refusal arrives while the sender is still looking at the form, instead
+ * of after they have pressed send and believed the file went along.
+ */
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_FILE_SIZE_MB = 5;
+const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'txt', 'log']);
+
 function formatSize(bytes: number): string {
     if (bytes < 1024) return bytes + 'B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + 'KB';
     return (bytes / (1024 * 1024)).toFixed(1) + 'MB';
+}
+
+/** The reason this file is not going, phrased for the person who picked it. */
+function refusalFor(file: File): string | null {
+    if (file.size > MAX_FILE_SIZE) {
+        return t.Attach_TooLarge([file.name, MAX_FILE_SIZE_MB]);
+    }
+
+    // An empty file used to pass every visible check and then disappear on the
+    // server, where finfo calls it application/x-empty. Name it here instead.
+    if (file.size <= 0) {
+        return t.Attach_Empty([file.name]);
+    }
+
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+
+    if (!ALLOWED_EXTENSIONS.has(ext)) {
+        return t.Attach_ExtNotAllowed([file.name]);
+    }
+
+    return null;
 }
 
 export default function AttachmentPicker({files, onChange, maxFiles = 5, accept}: Props) {
@@ -29,13 +60,27 @@ export default function AttachmentPicker({files, onChange, maxFiles = 5, accept}
     useBodyScrollLock(lightboxIndex !== null);
 
     const addFiles = (newFiles: FileList | File[]) => {
+        const picked = Array.from(newFiles);
         const remaining = maxFiles - files.length;
-        if (remaining <= 0) return;
-
-        const toAdd = Array.from(newFiles).slice(0, remaining);
         const pending: PendingFile[] = [];
 
-        for (const file of toAdd) {
+        for (const file of picked) {
+            const refusal = refusalFor(file);
+
+            if (refusal !== null) {
+                showToast(refusal, 'danger');
+
+                continue;
+            }
+
+            if (pending.length >= remaining) {
+                // Silently dropping the tail is how five picked files become
+                // three attached ones with nobody the wiser.
+                showToast(t.Attach_TooMany([maxFiles]), 'warning');
+
+                break;
+            }
+
             const entry: PendingFile = { id: crypto.randomUUID(), file, name: file.name };
             if (file.type.startsWith('image/')) {
                 entry.preview = URL.createObjectURL(file);
@@ -43,8 +88,10 @@ export default function AttachmentPicker({files, onChange, maxFiles = 5, accept}
             pending.push(entry);
         }
 
-        onChange([...files, ...pending]);
         if (inputRef.current) inputRef.current.value = '';
+        if (pending.length === 0) return;
+
+        onChange([...files, ...pending]);
     };
 
     const remove = (index: number) => {
@@ -108,19 +155,26 @@ export default function AttachmentPicker({files, onChange, maxFiles = 5, accept}
                         onChange={(e) => e.target.files && addFiles(e.target.files)}
                         data-test-id="attachment-input"
                     />
-                    <button
-                        type="button"
-                        className="btn btn-outline-secondary text-sm flex items-center gap-1"
-                        onClick={() => inputRef.current?.click()}
-                        data-test-id="attachment-btn"
-                        title={t.A11y_AttachFiles()}
-                        aria-label={t.A11y_AttachFiles()}
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                            <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
-                        </svg>
-                        {files.length > 0 ? `(${files.length}/${maxFiles})` : ''}
-                    </button>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                            type="button"
+                            className="btn btn-outline-secondary text-sm flex items-center gap-1"
+                            onClick={() => inputRef.current?.click()}
+                            data-test-id="attachment-btn"
+                            title={t.A11y_AttachFiles()}
+                            aria-label={t.A11y_AttachFiles()}
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                                <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
+                            </svg>
+                            {files.length > 0 ? `(${files.length}/${maxFiles})` : ''}
+                        </button>
+                        {/* The limits belong here, before a file is chosen — a
+                            rejection is a poor way to learn what was allowed. */}
+                        <span className="text-xs text-muted" data-test-id="attachment-hint">
+                            {t.Attach_Hint([maxFiles, MAX_FILE_SIZE_MB])}
+                        </span>
+                    </div>
                 </>
             )}
 

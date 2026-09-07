@@ -591,6 +591,11 @@ export class I18nDataEN {
     static Grid_PrevPage = 'Previous page';
     static Grid_NextPage = 'Next page';
     static Grid_Items = 'items';
+    static Attach_Hint = 'Up to %s files, %s MB each: images, PDF, TXT, LOG';
+    static Attach_TooLarge = '%s: larger than %s MB — not attached';
+    static Attach_Empty = '%s: the file is empty — not attached';
+    static Attach_ExtNotAllowed = '%s: files of this kind cannot be attached — not attached';
+    static Attach_TooMany = 'At most %s files can be attached, the rest were skipped';
     static A11y_CloseModal = 'Close dialog';
     static A11y_RemoveAttachment = 'Remove attachment';
     static A11y_AttachFiles = 'Attach files';

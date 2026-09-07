@@ -597,6 +597,11 @@ class I18n extends I18nBase {
     Grid_PrevPage: t = (a = []) => this.t('Grid_PrevPage', a);
     Grid_NextPage: t = (a = []) => this.t('Grid_NextPage', a);
     Grid_Items: t = (a = []) => this.t('Grid_Items', a);
+    Attach_Hint: t = (a = []) => this.t('Attach_Hint', a);
+    Attach_TooLarge: t = (a = []) => this.t('Attach_TooLarge', a);
+    Attach_Empty: t = (a = []) => this.t('Attach_Empty', a);
+    Attach_ExtNotAllowed: t = (a = []) => this.t('Attach_ExtNotAllowed', a);
+    Attach_TooMany: t = (a = []) => this.t('Attach_TooMany', a);
     A11y_CloseModal: t = (a = []) => this.t('A11y_CloseModal', a);
     A11y_RemoveAttachment: t = (a = []) => this.t('A11y_RemoveAttachment', a);
     A11y_AttachFiles: t = (a = []) => this.t('A11y_AttachFiles', a);
