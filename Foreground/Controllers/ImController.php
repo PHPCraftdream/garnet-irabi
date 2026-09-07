@@ -93,6 +93,34 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
         }
 
         /**
+         * Moderators, owners and admins are unrestricted in this module.
+         *
+         * Lives in one place because both halves of the rule need it: the
+         * permission check AND the recipient list. They used to answer
+         * differently — canMessage() let a moderator write to a student the
+         * search would not offer him.
+         */
+        protected static function isStaffAccount(int $accountId): bool {
+            $rows = Account::getAccounts(
+                selectCallback: static function (SelectInterface $select) use ($accountId): void {
+                    $select->resetCols();
+                    $select->cols(['id']);
+                    $select->where('id = ?', [$accountId]);
+                },
+                accountDataFields: [Account::IS_MODERATOR, Account::IS_OWNER, Account::IS_ADMIN],
+            );
+            $row = $rows[0] ?? null;
+
+            if (!$row) {
+                return false;
+            }
+
+            return intval($row[Account::IS_MODERATOR] ?? 0) > 0
+                || intval($row[Account::IS_OWNER] ?? 0) > 0
+                || intval($row[Account::IS_ADMIN] ?? 0) > 0;
+        }
+
+        /**
          * Check whether $senderId is allowed to message $recipientId.
          *
          * Rules (mirrors searchRecipients):
@@ -103,23 +131,8 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
          *    conversations are never broken by subsequent business-rule changes).
          */
         protected static function canMessage(int $senderId, int $recipientId): bool {
-            // Moderators / owners / admins — no restriction
-            $senderAccount = Account::getAccounts(
-                selectCallback: static function (SelectInterface $select) use ($senderId): void {
-                    $select->resetCols();
-                    $select->cols(['id']);
-                    $select->where('id = ?', [$senderId]);
-                },
-                accountDataFields: [Account::IS_MODERATOR, Account::IS_OWNER, Account::IS_ADMIN],
-            );
-            $senderRow = $senderAccount[0] ?? null;
-            if ($senderRow) {
-                $isMod = intval($senderRow[Account::IS_MODERATOR] ?? 0) > 0;
-                $isOwner = intval($senderRow[Account::IS_OWNER] ?? 0) > 0;
-                $isAdmin = intval($senderRow[Account::IS_ADMIN] ?? 0) > 0;
-                if ($isMod || $isOwner || $isAdmin) {
-                    return true;
-                }
+            if (static::isStaffAccount($senderId)) {
+                return true;
             }
 
             // Existing conversation — always allowed
@@ -239,6 +252,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             // predicate the booking path enforces.
             $isCurrentUserExpert = UserEntityConfig::isApprovedActiveExpert($accountId);
 
+            // Staff may message anyone — canMessage() has always said so, and
+            // this list did not. A moderator was told "no recipients found"
+            // for a user he was in fact allowed to write to: two halves of one
+            // rule, disagreeing.
+            $isCurrentUserStaff = static::isStaffAccount($accountId);
+
             // Fetch all accounts (excluding self) with moderator/owner flags
             $accs = Account::getAccounts(
                 selectCallback: static function (SelectInterface $select) use ($accountId): void {
@@ -327,8 +346,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 $isUser = in_array($id, $userIds, true);
                 $isConversationPartner = in_array($id, $conversationPartnerIds, true);
 
-                if ($isConversationPartner) {
-                    // Always include existing conversation partners
+                if ($isConversationPartner || $isCurrentUserStaff) {
+                    // Existing partners are always included; staff see everyone,
+                    // matching what canMessage() permits.
                 } elseif ($isCurrentUserExpert) {
                     // Experts see: their users + moderators + owners
                     if (!$isUser && !$isModerator && !$isOwner) {
