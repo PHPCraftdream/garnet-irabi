@@ -813,6 +813,7 @@ export class I18nDataEN {
     static Admin_Tokens_Empty = 'No invitations found';
     static Admin_Tokens_Label = 'Label';
     static Admin_Tokens_Link = 'Link';
+    static Admin_Tokens_ShowLink = 'Show link';
     static Admin_Tokens_Uses = 'Uses';
     static Admin_Tokens_Status = 'Status';
     static Admin_Tokens_CreatedAt = 'Created';

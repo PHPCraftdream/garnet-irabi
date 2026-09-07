@@ -813,6 +813,7 @@ export class I18nDataRU {
     static Admin_Tokens_Empty = 'Приглашений не найдено';
     static Admin_Tokens_Label = 'Название';
     static Admin_Tokens_Link = 'Ссылка';
+    static Admin_Tokens_ShowLink = 'Показать ссылку';
     static Admin_Tokens_Uses = 'Исп.';
     static Admin_Tokens_Status = 'Статус';
     static Admin_Tokens_CreatedAt = 'Создан';

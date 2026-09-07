@@ -277,7 +277,16 @@ export const AdminTokensSection: React.FC<AdminTokensSectionProps> = (props) => 
                                                 title={row.url}
                                                 data-test-id={`token-copy-${row.id}`}
                                             >
-                                                {t.Admin_Tokens_Link()}
+                                                {/*
+                                                  * Says what pressing it does.
+                                                  * It used to repeat the column
+                                                  * header — a noun — and the
+                                                  * owner pressed it expecting a
+                                                  * copy, then could not tell
+                                                  * whether anything had
+                                                  * happened at all.
+                                                  */}
+                                                {t.Admin_Tokens_ShowLink()}
                                             </button>
                                         </td>
                                         <td className="p-3 whitespace-nowrap">

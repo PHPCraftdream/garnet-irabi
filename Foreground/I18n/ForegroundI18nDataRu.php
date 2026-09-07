@@ -951,6 +951,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Admin_Tokens_Empty' => 'Приглашений не найдено',
             'Admin_Tokens_Label' => 'Название',
             'Admin_Tokens_Link' => 'Ссылка',
+            'Admin_Tokens_ShowLink' => 'Показать ссылку',
             'Admin_Tokens_Uses' => 'Исп.',
             'Admin_Tokens_Status' => 'Статус',
             'Admin_Tokens_CreatedAt' => 'Создан',

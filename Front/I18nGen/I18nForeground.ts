@@ -819,6 +819,7 @@ class I18n extends I18nBase {
     Admin_Tokens_Empty: t = (a = []) => this.t('Admin_Tokens_Empty', a);
     Admin_Tokens_Label: t = (a = []) => this.t('Admin_Tokens_Label', a);
     Admin_Tokens_Link: t = (a = []) => this.t('Admin_Tokens_Link', a);
+    Admin_Tokens_ShowLink: t = (a = []) => this.t('Admin_Tokens_ShowLink', a);
     Admin_Tokens_Uses: t = (a = []) => this.t('Admin_Tokens_Uses', a);
     Admin_Tokens_Status: t = (a = []) => this.t('Admin_Tokens_Status', a);
     Admin_Tokens_CreatedAt: t = (a = []) => this.t('Admin_Tokens_CreatedAt', a);
