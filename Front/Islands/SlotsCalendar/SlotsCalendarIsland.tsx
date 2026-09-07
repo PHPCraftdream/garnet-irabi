@@ -15,6 +15,7 @@ import {TimezoneNotice} from '@common/Components/TimezoneNotice';
 import {PageHeader} from '@common/Components/PageHeader';
 import {CalendarDays} from 'lucide-react';
 import {weekStartTs, addDaysTs, tsToInputDate, tsToHour} from '@common/Utils/DateUtils';
+import {refreshLiveCounts} from '@common/Utils/liveCounts';
 
 function buildWeekDays(weekStartUnix: number, nowSec: number): DayInfo[] {
     const todayStr = tsToInputDate(nowSec);
@@ -255,6 +256,9 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots, experts,
                         setBookedIds(prev => new Set([...prev, bookingSlot.id]));
                         setSlotStatuses(prev => ({...prev, [String(bookingSlot.id)]: 'pending'}));
                         setBookingSlot(null);
+                        // The cost has just left the account; the header still
+                        // shows what it held when the page loaded.
+                        refreshLiveCounts();
                     }}
                 />
             )}

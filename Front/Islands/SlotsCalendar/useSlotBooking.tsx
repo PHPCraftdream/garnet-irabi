@@ -5,6 +5,7 @@ import {showToast} from '@common/Components/GlobalToast';
 import {appUrl} from '@common/Utils/appUrl';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import BookingModal from './BookingModal';
+import {bookErrorCode, bookErrorMessage} from './bookingErrors';
 import {SlotItem, ExpertMap} from './types';
 
 export interface SlotBookingData {
@@ -20,26 +21,6 @@ interface UseSlotBookingOptions {
     onBooked?: () => void;
 }
 
-/** Pull the server's booking error code out of a thrown request error. */
-function bookErrorCode(e: any): string {
-    const resp = e?.response;
-    if (resp && typeof resp === 'object' && typeof resp.error === 'string') {
-        return resp.error;
-    }
-    const raw = typeof resp === 'string' ? resp : (e?.message ?? '');
-    return /not.?found/i.test(raw) ? 'not_found' : '';
-}
-
-/** Map a booking error code to a localized, user-facing message. */
-function bookErrorMessage(code: string): string {
-    switch (code) {
-        case 'self_slot':        return t.Slot_BookError_Self();
-        case 'not_user':         return t.Slot_BookError_NotUser();
-        case 'slot_unavailable': return t.Slot_BookError_Unavailable();
-        case 'slot_in_past':     return t.Slot_BookError_Past();
-        default:                 return t.News_SlotUnavailable();
-    }
-}
 
 /**
  * Centralised "open the booking modal for a slot" behaviour.

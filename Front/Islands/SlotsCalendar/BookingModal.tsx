@@ -5,6 +5,7 @@ import {D} from '@common/Debug/D';
 import {useSending} from '@common/hooks/useSending';
 import {useBodyScrollLock} from '@common/hooks/useBodyScrollLock';
 import {useShake} from '@common/hooks/useShake';
+import {bookErrorCode, bookErrorMessage} from './bookingErrors';
 import SendButton from '@common/Components/SendButton';
 import {Portal} from '@common/Components/Portal';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
@@ -98,7 +99,12 @@ export default function BookingModal({slot, allSlots, experts, bookedIds, balanc
                     onClose();
                 }
             } catch (e: any) {
-                setError(e?.message || t.General_Error());
+                // The refusal travels as a machine code in the response body,
+                // not in Error.message. Reading the message showed nothing
+                // useful, so a booking refused because the lesson had already
+                // started looked to the user like a button that did nothing.
+                const code = bookErrorCode(e);
+                setError(code ? bookErrorMessage(code) : (e?.message || t.General_Error()));
             }
         });
     };
