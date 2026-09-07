@@ -88,19 +88,23 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 // (action=reg_user) will be POSTed against MainController
                 // after the auth response navigates away from /first-step,
                 // so this is our only chance to apply the invite's type.
-                $tokenRow = $validation['token'];
-                $tokenType = (string)($tokenRow['account_type'] ?? 'user');
-                if (!in_array($tokenType, ['user', 'expert'], true)) {
-                    $tokenType = 'user';
-                }
-                $account = Account::fromSession();
-                if ($account && $account->id() && empty($account->readParam('type'))) {
-                    $account->setParam('type', $tokenType);
-                    $account->flush();
-                    $account->readDataAsyncPollFinishAll();
-                }
+                static::pinInvitedAccountType($validation['token']);
+
                 return $response;
             }
+
+            // Тот же тип нужно проставить и тем, кто пришёл сюда уже
+            // авторизованным. Письмо с кодом содержит ещё и кнопку входа по
+            // ссылке, и человек, нажавший её вместо ввода кода, завершает
+            // авторизацию в MagicLoginController — контроллере, который о
+            // приглашении не знает ничего. Он возвращается на эту страницу
+            // уже вошедшим, ветка выше не срабатывает, и приглашённый
+            // преподаватель молча остаётся обычным пользователем: слотов
+            // создать не может, а приглашение уже потрачено.
+            //
+            // Проверка на пустой тип оставляет поведение прежним для всех
+            // остальных: уже определившемуся аккаунту роль не переписывается.
+            static::pinInvitedAccountType($validation['token']);
 
             // Authenticated -- handle profile form submission
             if ($globals->readPostValue('action') === 'reg_user') {
@@ -142,6 +146,36 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             }
 
             return ControllerTools::redirect(IRabi::url('/'));
+        }
+
+        /**
+         * Проставить аккаунту тип, записанный в приглашении.
+         *
+         * Знание о том, какую роль обещает эта ссылка, живёт только здесь: в
+         * строке токена. Профиль дозаполняется уже на другом контроллере, а
+         * вход по кнопке из письма и вовсе завершается в третьем — поэтому
+         * тип пиннится в обеих точках, где мы держим токен в руках и видим
+         * авторизованного человека.
+         *
+         * Идемпотентно и не переписывает роль: аккаунту с уже определённым
+         * типом ничего не меняется, даже если он открыл чужое приглашение.
+         *
+         * @param array<string, mixed> $tokenRow
+         */
+        private static function pinInvitedAccountType(array $tokenRow): void {
+            $tokenType = (string)($tokenRow['account_type'] ?? 'user');
+
+            if (!in_array($tokenType, ['user', 'expert'], true)) {
+                $tokenType = 'user';
+            }
+            $account = Account::fromSession();
+
+            if (!$account || !$account->id() || !empty($account->readParam('type'))) {
+                return;
+            }
+            $account->setParam('type', $tokenType);
+            $account->flush();
+            $account->readDataAsyncPollFinishAll();
         }
     }
 }
