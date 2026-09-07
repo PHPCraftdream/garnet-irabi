@@ -254,7 +254,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                     'display_name' => $account->readParam('name') ?: '',
                     'bio' => '',
                     'specialization' => '',
-                    'is_approved' => 0,
+                    // Mirror the account flag rather than hardcoding 0. An
+                    // expert who was approved BEFORE creating their first slot
+                    // used to get an unapproved profile here, minted by their
+                    // own first slot — and the approval that had already
+                    // happened never came back to correct it.
+                    'is_approved' => $account->isApproved() ? 1 : 0,
                 ]);
             }
 
@@ -394,7 +399,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                     'display_name' => $account->readParam('name') ?: '',
                     'bio' => '',
                     'specialization' => '',
-                    'is_approved' => 0,
+                    // Mirror the account flag rather than hardcoding 0. An
+                    // expert who was approved BEFORE creating their first slot
+                    // used to get an unapproved profile here, minted by their
+                    // own first slot — and the approval that had already
+                    // happened never came back to correct it.
+                    'is_approved' => $account->isApproved() ? 1 : 0,
                 ]);
             }
 

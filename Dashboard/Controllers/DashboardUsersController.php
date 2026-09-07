@@ -115,10 +115,27 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
             // When approving/revoking an expert, cascade to their expert profile
             // and notify the expert by email (only on actual transitions of accounts of type=expert).
             if ($flag === Account::IS_APPROVED) {
-                ExpertProfiles::get()->updateByField(
-                    ['is_approved' => $value ? 1 : 0],
-                    'account_id', $userId,
-                );
+                // The profile row may not exist yet: it is created lazily, by
+                // the expert's first slot. Approving before that used to
+                // update nothing at all, silently — and the row minted later
+                // came out unapproved, so the approval was lost for good.
+                $profile = ExpertProfiles::get()->selectOneByField('account_id', $userId);
+
+                if ($profile) {
+                    ExpertProfiles::get()->updateByField(
+                        ['is_approved' => $value ? 1 : 0],
+                        'account_id', $userId,
+                    );
+                } else {
+                    $targetAccount = DbAccount::get()->selectById($userId);
+                    ExpertProfiles::get()->insert([
+                        'account_id' => $userId,
+                        'display_name' => (string)($targetAccount['name'] ?? ''),
+                        'bio' => '',
+                        'specialization' => '',
+                        'is_approved' => $value ? 1 : 0,
+                    ]);
+                }
 
                 if ($oldValue !== $newValue) {
                     $accountRow = DbAccount::get()->selectById($userId);

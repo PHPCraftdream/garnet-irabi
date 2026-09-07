@@ -116,9 +116,20 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             $expertIds = array_unique(array_column($slots, 'expert_id'));
             $experts = [];
             if (!empty($expertIds)) {
-                $expertsData = ExpertProfiles::get()->selectByField('account_id', $expertIds, function (SelectInterface $query): void {
-                    $query->where('is_approved = ?', [1]);
-                });
+                // No second approval filter here. Whose slots are listed was
+                // already decided above by getApprovedExpertIds(), which reads
+                // the account-level flag — the one the approval action writes
+                // and the booking path enforces. expert_profiles.is_approved is
+                // a copy of that fact and drifts out of step with it (security
+                // audit M-01 says as much, and the profile row is created by
+                // the first slot with the column hardcoded to 0).
+                //
+                // Filtering the NAME lookup by the stale copy could only ever
+                // hide a name that belongs to a slot already on the page. It
+                // did: every card and every booking dialog was anonymous, so
+                // people were booking lessons without being told who teaches
+                // them, and the teacher filter had nobody to offer.
+                $expertsData = ExpertProfiles::get()->selectByField('account_id', $expertIds);
                 foreach ($expertsData as $expert) {
                     $experts[$expert['account_id']] = $expert;
                 }
@@ -185,7 +196,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
 
             $slot = TimeSlots::get()->selectById($slotId);
             if (!$slot) {
-                return ControllerTools::JSON(['error' => 'Slot not found'], status: 404);
+                return ControllerTools::JSON(['error' => 'slot_unavailable'], status: 404);
             }
 
             // Self-cannot-book guard: experts can't book their own slots
@@ -257,7 +268,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             $slotIds = $globals->readPostValue('slot_ids', []);
             $slotUids = $globals->readPostValue('slot_uids', []);
             if (!is_array($slotIds) || empty($slotIds)) {
-                return ControllerTools::JSON(['error' => 'No slots selected'], status: 400);
+                return ControllerTools::JSON(['error' => 'slot_unavailable'], status: 400);
             }
             if (!is_array($slotUids)) {
                 $slotUids = [];
@@ -274,10 +285,10 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             foreach ($slotIds as $slotId) {
                 $slot = TimeSlots::get()->selectOneByField('id', $slotId);
                 if (!$slot || $slot['status'] !== 'free') {
-                    return ControllerTools::JSON(['error' => "Slot #{$slotId} is not available"], status: 400);
+                    return ControllerTools::JSON(['error' => 'slot_unavailable'], status: 400);
                 }
                 if ((int)($slot['expert_id'] ?? 0) === $accountId) {
-                    return ControllerTools::JSON(['error' => "Cannot book your own slot #{$slotId}"], status: 400);
+                    return ControllerTools::JSON(['error' => 'self_slot'], status: 400);
                 }
                 if ((int)$slot['start_at'] <= $now) {
                     return ControllerTools::JSON(['error' => 'slot_in_past', 'redirectUrl' => IRabi::url('/slots')], status: 409);
@@ -285,14 +296,14 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 // Approval gate inside the transaction: reject slots owned by an
                 // unapproved/disabled expert even when reached via a direct id.
                 if (!UserEntityConfig::isApprovedActiveExpert((int)($slot['expert_id'] ?? 0))) {
-                    return ControllerTools::JSON(['error' => "Slot #{$slotId} is not available"], status: 400);
+                    return ControllerTools::JSON(['error' => 'slot_unavailable'], status: 400);
                 }
                 // Concurrency guard: check id+uid pair
                 $expectedUid = (string)($slotUids[(string)$slotId] ?? '');
                 $actualUid = (string)($slot['uid'] ?? '');
                 if ($expectedUid !== '' && $actualUid !== '' && $expectedUid !== $actualUid) {
                     return ControllerTools::JSON([
-                        'error' => 'Slot has been rescheduled. Please refresh the page.',
+                        'error' => 'slot_rescheduled',
                         'stale' => true,
                     ], status: 409);
                 }
@@ -328,7 +339,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             try {
                 \PHPCraftdream\IRabi\Common\Tables\AccountBalance::acquireAccountLock($accountId);
             } catch (\PHPCraftdream\IRabi\Common\Exceptions\AccountLockAcquireException) {
-                return ControllerTools::JSON(['error' => 'Account is busy, please retry'], status: 503);
+                return ControllerTools::JSON(['error' => 'account_busy'], status: 503);
             }
 
             try {
@@ -339,7 +350,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                         [$totalCost, $now, $accountId, $totalCost]
                     );
                     if ($affected === 0) {
-                        return ControllerTools::JSON(['error' => 'Insufficient balance'], status: 400);
+                        return ControllerTools::JSON(['error' => 'insufficient_balance'], status: 400);
                     }
                 }
                 $slotsTbl = TimeSlots::get()->getTableName();
