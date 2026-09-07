@@ -300,6 +300,7 @@ export class I18nDataEN {
     static Support_InternalComment = 'Internal Comment';
     static Support_Assignee = 'Assignee';
     static Support_Unassigned = 'Unassigned';
+    static Support_HasAttachments = 'Attachments: %s';
     static Support_Assign = 'Assign';
     static Support_ChangeStatus = 'Change Status';
     static Support_AssignmentHistory = 'Assignment History';

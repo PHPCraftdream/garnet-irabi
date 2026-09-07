@@ -299,6 +299,7 @@ export class I18nDataRU {
     static Support_InternalComment = 'Внутренний комментарий';
     static Support_Assignee = 'Ответственный';
     static Support_Unassigned = 'Не назначен';
+    static Support_HasAttachments = 'Вложений: %s';
     static Support_Assign = 'Назначить';
     static Support_ChangeStatus = 'Изменить статус';
     static Support_AssignmentHistory = 'История назначений';

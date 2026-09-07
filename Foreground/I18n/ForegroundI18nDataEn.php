@@ -342,6 +342,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Support_InternalComment' => 'Internal Comment',
             'Support_Assignee' => 'Assignee',
             'Support_Unassigned' => 'Unassigned',
+            'Support_HasAttachments' => 'Attachments: %s',
             'Support_Assign' => 'Assign',
             'Support_ChangeStatus' => 'Change Status',
             'Support_AssignmentHistory' => 'Assignment History',

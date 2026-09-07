@@ -21,6 +21,7 @@ export interface SupportTicket {
     has_expert_profile?: boolean;
     assignee_login?: string;
     assignee_name?: string;
+    attachments_count?: number;
 }
 
 export interface SupportAttachment {

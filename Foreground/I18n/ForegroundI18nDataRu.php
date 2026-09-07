@@ -341,6 +341,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Support_InternalComment' => 'Внутренний комментарий',
             'Support_Assignee' => 'Ответственный',
             'Support_Unassigned' => 'Не назначен',
+            'Support_HasAttachments' => 'Вложений: %s',
             'Support_Assign' => 'Назначить',
             'Support_ChangeStatus' => 'Изменить статус',
             'Support_AssignmentHistory' => 'История назначений',

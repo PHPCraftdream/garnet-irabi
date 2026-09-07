@@ -15,7 +15,7 @@ import {useUserTabs} from './useUserTabs';
 import {ADMIN_URLS} from './AdminPageWrapper';
 import {Combobox} from '@common/Components/ui/Combobox';
 import {PageHeader} from '@common/Components/PageHeader';
-import {LifeBuoy} from 'lucide-react';
+import {LifeBuoy, Paperclip} from 'lucide-react';
 import {DateInput} from '@common/Components/ui/DateInput';
 
 const ASSIGNEE_UNASSIGNED = '__none__';
@@ -220,14 +220,28 @@ export const AdminSupportIsland: React.FC<Props> = ({
 
     const ticketRenders = {
         subject: (row: SupportTicket) => (
-            <button
-                type="button"
-                className="admin-link-btn-strong"
-                data-test-id={`support-ticket-${row.id}`}
-                onClick={e => { e.stopPropagation(); openTicket(row.id, row.subject); }}
-            >
-                {row.subject}
-            </button>
+            <span className="inline-flex items-center gap-1">
+                <button
+                    type="button"
+                    className="admin-link-btn-strong"
+                    data-test-id={`support-ticket-${row.id}`}
+                    onClick={e => { e.stopPropagation(); openTicket(row.id, row.subject); }}
+                >
+                    {row.subject}
+                </button>
+                {/* Whether a ticket carries files used to be discoverable only
+                    by opening it — a queue of two hundred rows said nothing. */}
+                {(row.attachments_count ?? 0) > 0 && (
+                    <span
+                        className="text-muted text-xs inline-flex items-center gap-0.5"
+                        data-test-id={`support-ticket-attachments-${row.id}`}
+                        title={t.Support_HasAttachments([row.attachments_count as number])}
+                    >
+                        <Paperclip size={12} aria-hidden="true" />
+                        {row.attachments_count}
+                    </span>
+                )}
+            </span>
         ),
         user_login: (row: SupportTicket) => (
             <AdminUserLink id={row.account_id} name={row.user_name || row.user_login} role={(row as any).user_role} />
