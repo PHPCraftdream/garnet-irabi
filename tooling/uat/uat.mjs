@@ -138,9 +138,27 @@ function extractLinks(html) {
 }
 
 /** Отдельно стоящие цифровые коды подтверждения. */
-function extractCodes(text) {
+/**
+ * Код из письма — то, ради чего курьер и нужен: персона его набирает руками.
+ *
+ * Основной источник — структурный: шаблон писем выделяет код жирным
+ * (`<b style="font-size: 20px">REVequAi</b>`), и это надёжнее любой догадки
+ * по тексту. Код авторизации буквенно-цифровой и разнорегистровый, поэтому
+ * прежний поиск одних лишь цифр его не видел вовсе.
+ *
+ * Обычные слова в <b> (заголовок «Slotbook») отсеиваем требованием, чтобы в
+ * токене была цифра либо больше одной заглавной не в начале.
+ */
+const looksLikeCode = (token) => /\d/.test(token) || (token.slice(1).match(/[A-ZА-Я]/g) ?? []).length >= 2;
+
+function extractCodes(html, text = htmlToText(html)) {
     const found = new Set();
+
+    for (const m of html.matchAll(/<(?:b|strong)\b[^>]*>\s*([\p{L}\d]{4,16})\s*<\/(?:b|strong)>/giu)) {
+        if (looksLikeCode(m[1])) found.add(m[1]);
+    }
     for (const m of text.matchAll(/(?<!\d)(\d{4,8})(?!\d)/g)) found.add(m[1]);
+
     return [...found];
 }
 
@@ -261,7 +279,7 @@ function fetchMail(roster, persona, opts = {}) {
     for (const row of list) {
         const text = htmlToText(row.body_html);
         const links = extractLinks(row.body_html);
-        const codes = extractCodes(text);
+        const codes = extractCodes(row.body_html, text);
 
         console.log(`\n── письмо #${row.id} [${row.status}] ${row.subject ?? ''}`);
         if (links.length) console.log(`   ссылки: ${links.join('\n           ')}`);
@@ -461,7 +479,7 @@ function printInbox(inbox, roster) {
         for (const row of box.mail) {
             const text = htmlToText(row.body_html);
             const links = extractLinks(row.body_html);
-            const codes = extractCodes(text);
+            const codes = extractCodes(row.body_html, text);
             console.log(`- письмо #${row.id} [${row.status}]: ${row.subject ?? ''}`);
             if (links.length) console.log(`  ссылка: ${links[0]}`);
             if (codes.length) console.log(`  код: ${codes.join(', ')}`);
@@ -735,8 +753,12 @@ const commands = {
 
     cols() {
         const roster = loadRoster();
-        const table = rest[0] ?? die('нужно имя таблицы');
-        printTable(rows(roster, `SHOW COLUMNS FROM ${table.replace(/[^A-Za-z0-9_]/g, '')}`));
+        const name = (rest[0] ?? die('нужно имя таблицы')).replace(/[^A-Za-z0-9_]/g, '');
+        // Имя даётся коротким (`mail_log`) — префикс навешиваем сами, как и
+        // везде. Уже префиксованное имя пропускаем: иначе `db_ir_mail_log`
+        // превратится в `db_ir_db_ir_mail_log`.
+        const table = name.startsWith(`${roster.env?.db_prefix}_`) ? name : tn(roster, name);
+        printTable(rows(roster, `SHOW COLUMNS FROM ${table}`));
     },
 };
 
