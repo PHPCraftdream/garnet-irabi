@@ -22,6 +22,9 @@
 # Per-environment app identity (commit .env.example instead).
 /.env
 
+# ── Build output (`garnet bundle`, deploy staging trees) ─────────────────
+/dist/
+
 # ── Generated assets ─────────────────────────────────────────────────────
 /Public/assets/
 /Public/upload/
