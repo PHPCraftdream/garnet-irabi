@@ -376,9 +376,10 @@ interface Props {
     setFlagUrl?: string;
     createTicketUrl?: string;
     callerIsOwner?: boolean;
+    callerIsAdmin?: boolean;
 }
 
-export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, createTicketUrl, callerIsOwner}: Props) {
+export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, createTicketUrl, callerIsOwner, callerIsAdmin}: Props) {
     const [data, setData]         = useState<UserDetailData | null>(null);
     const [error, setError]       = useState<string | null>(null);
     const [flagPending, setFlagPending] = useState(false);
@@ -545,6 +546,12 @@ export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, creat
                             disabled={flagPending}
                             onClick={() => setFlag('IS_DISABLED', flag(account.IS_DISABLED) ? 0 : 1)}
                         />
+                        {/* Переключатели ролей повторяют серверный список
+                            $allowed из post__setFlag: роль модератора выдаёт
+                            владелец, роли владельца и админа — только админ.
+                            Модератору они раньше отрисовывались рабочими, и
+                            интерфейс обещал то, что сервер отвергал с 400. */}
+                        {callerIsOwner && (
                         <FlagBtn
                             testId={`flag-IS_MODERATOR-${account.id}`}
                             label={t.Admin_Role_Moderator()}
@@ -554,6 +561,8 @@ export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, creat
                             disabled={flagPending}
                             onClick={() => setFlag('IS_MODERATOR', flag(account.IS_MODERATOR) ? 0 : 1)}
                         />
+                        )}
+                        {callerIsAdmin && (
                         <FlagBtn
                             testId={`flag-IS_OWNER-${account.id}`}
                             label={t.Admin_Role_Owner()}
@@ -563,6 +572,8 @@ export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, creat
                             disabled={flagPending}
                             onClick={() => setFlag('IS_OWNER', flag(account.IS_OWNER) ? 0 : 1)}
                         />
+                        )}
+                        {callerIsAdmin && (
                         <FlagBtn
                             testId={`flag-IS_ADMIN-${account.id}`}
                             label={t.Admin_Role_Admin()}
@@ -572,6 +583,7 @@ export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, creat
                             disabled={flagPending}
                             onClick={() => setFlag('IS_ADMIN', flag(account.IS_ADMIN) ? 0 : 1)}
                         />
+                        )}
                         {createTicketUrl && (
                             <button
                                 type="button"

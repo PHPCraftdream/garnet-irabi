@@ -398,7 +398,10 @@ interface CreateTokenModalProps {
 const CreateTokenModal: React.FC<CreateTokenModalProps> = ({createUrl, onCreated, onClose}) => {
     const [label, setLabel] = React.useState('');
     const [maxUses, setMaxUses] = React.useState(1);
-    const [ttl, setTtl] = React.useState(0);
+    // Неделя, а не «без срока»: приглашение выписывают конкретному человеку,
+    // и забытая бессрочная ссылка остаётся действующим входом в систему
+    // навсегда. Кому нужна вечная — выберет её осознанно, одним кликом.
+    const [ttl, setTtl] = React.useState(604800);
     const [accountType, setAccountType] = React.useState<'user' | 'expert'>('user');
     const [createdToken, setCreatedToken] = React.useState<TokenRow | null>(null);
     const {sending, withSending} = useSending();

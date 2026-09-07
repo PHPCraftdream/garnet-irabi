@@ -10,6 +10,12 @@ interface Props {
     setFlagUrl?: string;
     createTicketUrl?: string;
     callerIsOwner?: boolean;
+    /**
+     * Only an admin may grant or revoke the owner rank, so the panel needs
+     * to know this separately from callerIsOwner — an owner sees the same
+     * screen but must not be offered that particular switch.
+     */
+    callerIsAdmin?: boolean;
 }
 
 export const UserDetailTab: React.FC<Props> = (props) => (

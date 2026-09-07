@@ -772,11 +772,15 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
                 GridConfig::col('IS_APPROVED',      $t->User_Status_Approved(), shrink: true),
                 GridConfig::col('IS_DISABLED',      $t->Admin_Activity(), shrink: true),
             ];
+            // Колонки повторяют серверный список $allowed из post__setFlag:
+            // роль модератора выдаёт владелец, роли владельца и админа — только
+            // админ. Раньше колонка «Владелец» показывалась владельцу, который
+            // не админ, и её кнопки возвращали 400.
             if ($callerIsOwner) {
                 $columns[] = GridConfig::col('IS_MODERATOR', $t->Admin_Role_Moderator(), shrink: true);
-                $columns[] = GridConfig::col('IS_OWNER',     $t->Admin_Role_Owner(),     shrink: true);
             }
             if ($callerIsAdmin) {
+                $columns[] = GridConfig::col('IS_OWNER',     $t->Admin_Role_Owner(),     shrink: true);
                 $columns[] = GridConfig::col('IS_ADMIN',     $t->Admin_Role_Admin(),     shrink: true);
             }
 
@@ -803,6 +807,13 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
                 // re-checks isOwner() on click; this only hides the button
                 // from moderators to avoid false expectations.
                 'callerIsOwner' => $callerIsOwner,
+                // Ранг вызывающего нужен интерфейсу не только для кнопки
+                // очистки ПДн: карточка пользователя рисует переключатели
+                // ролей, и без этого признака она предлагала модератору
+                // «Назначить владельцем» — действие, которое сервер отвергает
+                // (см. $allowed в post__setFlag). Предлагать то, что не
+                // выполнится, хуже, чем не предлагать вовсе.
+                'callerIsAdmin' => $callerIsAdmin,
                 'gridConfig' => GridConfig::make(
                     columns:      $columns,
                     searchFields: ['login', 'name'],

@@ -25,6 +25,10 @@ interface Props {
     // "clear account (ПДн)" danger button. Computed server-side from
     // UserEntityConfig::isOwner() — admin OR owner, NOT plain moderator.
     callerIsOwner?: boolean;
+    // Отдельно от callerIsOwner: роли владельца и админа выдаёт только
+    // админ, и карточка обязана скрывать эти переключатели от всех
+    // остальных — иначе предлагает действие, которое сервер отвергнет.
+    callerIsAdmin?: boolean;
     // Comments tab data
     commentsPageUrl: string;
     commentsHideUrl: string;
@@ -75,6 +79,7 @@ export const AdminPanelIsland: React.FC<Props> = (props) => {
         userDetailUrl,
         createTicketUrl,
         callerIsOwner,
+        callerIsAdmin,
         commentsPageUrl,
         commentsHideUrl,
         commentsUnhideUrl,
@@ -201,6 +206,7 @@ export const AdminPanelIsland: React.FC<Props> = (props) => {
                     setFlagUrl={setFlagUrl ?? ADMIN_URLS.setFlagUrl}
                     createTicketUrl={createTicketUrl ?? ADMIN_URLS.createTicketUrl}
                     callerIsOwner={callerIsOwner}
+                    callerIsAdmin={callerIsAdmin}
                 />
             )}
             </div>

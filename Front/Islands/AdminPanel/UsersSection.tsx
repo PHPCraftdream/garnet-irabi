@@ -40,6 +40,22 @@ function filterByTab(users: AdminUser[], tab: UserTab): AdminUser[] {
     }
 }
 
+/**
+ * Подпись кнопки роли: «+ Модератор» / «− Модератор».
+ *
+ * Раньше во всех колонках-флагах стояло одинаковое «Назначить», и в тесной
+ * строке владелец, целясь в «Модератор», попадал в соседнюю колонку —
+ * ровно так один из наших владельцев случайно сделал человека
+ * преподавателем. Название роли прямо на кнопке снимает вопрос, а знак
+ * говорит, что произойдёт. Полная фраза остаётся в `title`.
+ *
+ * Собирается из существующих строк, а не из новых: знак и название роли
+ * читаются одинаково и по-русски, и по-английски.
+ */
+export function roleFlagLabel(role: string, granted: boolean): string {
+    return `${granted ? '−' : '+'} ${role}`;
+}
+
 export function FlagBtn({label, active, cls, disabled, onClick, testId, title}: {
     label: string;
     active: boolean;
@@ -188,7 +204,8 @@ export const UsersSection: React.FC<Props> = ({
                     IS_MODERATOR: r => (
                         <FlagBtn
                             testId={`flag-IS_MODERATOR-${r.id}`}
-                            label={flag(r.IS_MODERATOR) ? t.Admin_Revoke() : t.Admin_Grant()}
+                            label={roleFlagLabel(t.Admin_Role_Moderator(), flag(r.IS_MODERATOR))}
+                            title={flag(r.IS_MODERATOR) ? t.Admin_Flag_RevokeModerator() : t.Admin_Flag_GrantModerator()}
                             active={flag(r.IS_MODERATOR)}
                             cls={['btn-outline-danger', 'btn-outline-primary']}
                             disabled={pending[r.id] || flag(r.IS_ADMIN) || flag(r.IS_OWNER)}
@@ -198,7 +215,8 @@ export const UsersSection: React.FC<Props> = ({
                     IS_OWNER: r => (
                         <FlagBtn
                             testId={`flag-IS_OWNER-${r.id}`}
-                            label={flag(r.IS_OWNER) ? t.Admin_Revoke() : t.Admin_Grant()}
+                            label={roleFlagLabel(t.Admin_Role_Owner(), flag(r.IS_OWNER))}
+                            title={flag(r.IS_OWNER) ? t.Admin_Flag_RevokeOwner() : t.Admin_Flag_GrantOwner()}
                             active={flag(r.IS_OWNER)}
                             cls={['btn-outline-danger', 'btn-outline-primary']}
                             disabled={pending[r.id] || flag(r.IS_ADMIN)}
@@ -208,7 +226,8 @@ export const UsersSection: React.FC<Props> = ({
                     IS_ADMIN: r => (
                         <FlagBtn
                             testId={`flag-IS_ADMIN-${r.id}`}
-                            label={flag(r.IS_ADMIN) ? t.Admin_Revoke() : t.Admin_Grant()}
+                            label={roleFlagLabel(t.Admin_Role_Admin(), flag(r.IS_ADMIN))}
+                            title={flag(r.IS_ADMIN) ? t.Admin_Flag_RevokeAdmin() : t.Admin_Flag_GrantAdmin()}
                             active={flag(r.IS_ADMIN)}
                             cls={['btn-outline-danger', 'btn-outline-primary']}
                             disabled={pending[r.id]}
