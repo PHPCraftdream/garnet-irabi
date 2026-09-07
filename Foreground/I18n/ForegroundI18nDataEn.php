@@ -572,6 +572,28 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
 
             'Slot_OverlapError' => 'Slot overlaps with an existing slot',
 
+            // Slot refusals. These used to reach the browser as hardcoded
+            // English regardless of the interface language.
+            'Slot_Created' => 'Slot created',
+            'Slot_Error_DateTimeRequired' => 'Enter a date and a time',
+            'Slot_Error_RangeRequired' => 'Enter the start and the end of the period',
+            'Slot_Error_InvalidCost' => 'That cost is not valid',
+            'Slot_Error_InvalidDateTime' => 'That date or time is not valid',
+            'Slot_Error_PastSlot' => 'A slot cannot start in the past',
+            'Slot_Error_NoSlots' => 'No slots were selected',
+            'Slot_Error_AccessDenied' => 'This slot is not yours',
+            'Slot_Error_OnlyFreeEditable' => 'Only a free slot can be edited',
+            'Slot_Error_PastNotEditable' => 'A slot that has already passed cannot be changed',
+            'Slot_Error_CostLockedByBookings' => 'While the slot has bookings, its cost and penalty cannot change',
+            'Slot_Error_PastReschedule' => 'A slot cannot be moved into the past',
+            'Slot_Error_SlotTaken' => 'Someone has just booked this slot — refresh the page',
+            'Slot_Error_OnlyFreeDeletable' => 'Only a free slot can be deleted',
+            'Slot_Error_PastNotDeletable' => 'A slot that has already passed cannot be deleted',
+            'Slot_Error_DeleteLockedByBookings' => 'The slot has active bookings — cancel them first',
+            'Slot_Error_MaxUsersBelowBooked' => 'There cannot be fewer seats than people already booked (%s)',
+            'Filter_NoResults' => 'Nothing found',
+            'Slots_OwnHiddenNotice' => 'Your own sessions are not listed here — you cannot book yourself. They live under "My slots".',
+
             'Slot_Moved' => 'Slot moved successfully',
             'Slot_DragHint' => 'Drag free slots to move them to another day',
             'Slot_CannotDropPast' => 'Cannot move a slot to a past date',
@@ -807,6 +829,17 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Email_BookingCancelled_Subject' => 'Booking cancelled on %s',
             'Email_BookingCancelled_Title' => 'Booking cancelled',
             'Email_BookingCancelled_Body' => 'Booking cancelled (%s).',
+            // Lesson reminders. The subject says how far ahead it is: a
+            // recipient gets two of them, and the inbox must show which.
+            'Email_Reminder_Subject_1d' => 'Lesson tomorrow — %s',
+            'Email_Reminder_Subject_2h' => 'Lesson in two hours — %s',
+            'Email_Reminder_Title_1d' => 'Reminder: your lesson is tomorrow',
+            'Email_Reminder_Title_2h' => 'Reminder: your lesson starts in two hours',
+            'Email_Reminder_Body_Student' => 'Please remember your lesson. If your plans changed, cancel the booking in advance so the expert can offer the time to someone else.',
+            'Email_Reminder_Body_Expert' => 'A reminder about your lesson. The people who booked it are expecting you at the scheduled time.',
+            'Email_Row_Students' => 'Booked by',
+            'Email_Cta_OpenSlot' => 'Open the lesson',
+
             'Email_NewMessage_Subject' => 'New message from %s',
             'Email_NewMessage_Title' => 'New message from %s',
             'Email_NewMessage_Title_Plain' => 'New message',
@@ -879,6 +912,13 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Invite_Error_ContactSupport' => 'Contact us for a new link:',
             'Invite_Contact_Phone' => 'Phone',
 
+            // A login link from an email is not a registration, so its failure
+            // screen gets its own title: whoever follows it already has an
+            // account, and "Registration unavailable" only confuses them.
+            'MagicLink_Error_Title' => 'This login link is no longer valid',
+            'MagicLink_Error_Guidance' => 'Request a new login code on the login page — the old link is no longer needed.',
+            'MagicLink_Error_ContactSupport' => 'If the code never arrives, contact us:',
+
             // Support contacts settings
             'Admin_SupportContacts_Tab' => 'Contacts',
             'Admin_SupportContacts_Title' => 'Support Contacts',
@@ -899,9 +939,9 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Admin_SystemSettings_History_Field' => 'Field',
 
             // Admin: Tokens
-            'Admin_Tokens' => 'Registration Tokens',
-            'Admin_Tokens_Title' => 'Invite Tokens',
-            'Admin_Tokens_Empty' => 'No tokens found',
+            'Admin_Tokens' => 'Invitations',
+            'Admin_Tokens_Title' => 'Invitations',
+            'Admin_Tokens_Empty' => 'No invitations found',
             'Admin_Tokens_Label' => 'Label',
             'Admin_Tokens_Link' => 'Link',
             'Admin_Tokens_Uses' => 'Uses',
@@ -910,9 +950,9 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Admin_Tokens_CreatedBy' => 'By',
             'Admin_Tokens_ExpiresAt' => 'Expires',
             'Admin_Tokens_Actions' => 'Actions',
-            'Admin_Tokens_Create' => 'Create Token',
-            'Admin_Tokens_CreateTitle' => 'New Invite Token',
-            'Admin_Tokens_LabelPlaceholder' => 'Token description...',
+            'Admin_Tokens_Create' => 'Create invitation',
+            'Admin_Tokens_CreateTitle' => 'New invitation',
+            'Admin_Tokens_LabelPlaceholder' => 'Who is this invitation for…',
             'Admin_Tokens_MaxUses' => 'Max registrations',
             'Admin_Tokens_AccountType' => 'Account type',
             'Admin_Tokens_AccountTypeUser' => 'User',
@@ -926,10 +966,10 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Admin_Tokens_Copied' => 'Link copied',
             'Admin_Tokens_Disable' => 'Disable',
             'Admin_Tokens_Enable' => 'Enable',
-            'Admin_Tokens_DisableConfirm' => 'Disable this token?',
-            'Admin_Tokens_DeleteConfirm' => 'Delete token? This action cannot be undone.',
+            'Admin_Tokens_DisableConfirm' => 'Disable this invitation?',
+            'Admin_Tokens_DeleteConfirm' => 'Delete invitation? This action cannot be undone.',
             'Admin_Tokens_Registrations' => 'Registrations',
-            'Admin_Tokens_RegEmpty' => 'No registrations for this token',
+            'Admin_Tokens_RegEmpty' => 'No registrations for this invitation',
             'Admin_Tokens_RegAccount' => 'Account',
             'Admin_Tokens_RegDate' => 'Date',
             'Admin_Tokens_RegIp' => 'IP',

@@ -571,6 +571,32 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
 
             'Slot_OverlapError' => 'Слот пересекается с существующим занятием',
 
+            // Отказы при работе со слотами. Раньше сервер отдавал их
+            // по-английски, и в русском интерфейсе преподаватель получал
+            // «Cannot create a slot in the past» — единственную английскую
+            // фразу на экране.
+            'Slot_Created' => 'Слот создан',
+            'Slot_Error_DateTimeRequired' => 'Укажите дату и время',
+            'Slot_Error_RangeRequired' => 'Укажите начало и конец периода',
+            'Slot_Error_InvalidCost' => 'Стоимость указана неверно',
+            'Slot_Error_InvalidDateTime' => 'Дата или время указаны неверно',
+            'Slot_Error_PastSlot' => 'Нельзя создать слот в прошлом',
+            'Slot_Error_NoSlots' => 'Не выбрано ни одного слота',
+            'Slot_Error_AccessDenied' => 'Это не ваш слот',
+            'Slot_Error_OnlyFreeEditable' => 'Редактировать можно только свободный слот',
+            'Slot_Error_PastNotEditable' => 'Прошедший слот изменить нельзя',
+            'Slot_Error_CostLockedByBookings' => 'Пока на слот есть брони, стоимость и неустойку менять нельзя',
+            'Slot_Error_PastReschedule' => 'Нельзя перенести слот в прошлое',
+            'Slot_Error_SlotTaken' => 'Слот уже забронировали — обновите страницу',
+            'Slot_Error_OnlyFreeDeletable' => 'Удалить можно только свободный слот',
+            'Slot_Error_PastNotDeletable' => 'Прошедший слот удалить нельзя',
+            'Slot_Error_DeleteLockedByBookings' => 'На слот есть активные брони — сначала отмените их',
+            'Slot_Error_MaxUsersBelowBooked' => 'Мест не может быть меньше, чем уже записалось (%s)',
+            // Пустой результат в выпадающих списках с поиском. Без него
+            // подставлялась английская строка по умолчанию из компонента.
+            'Filter_NoResults' => 'Ничего не найдено',
+            'Slots_OwnHiddenNotice' => 'Ваши собственные занятия здесь не показываются — забронировать себя нельзя. Они в разделе «Мои слоты».',
+
             'Slot_Moved' => 'Слот успешно перемещён',
             'Slot_DragHint' => 'Перетащите свободные слоты на другой день',
             'Slot_CannotDropPast' => 'Нельзя перенести слот на прошедшую дату',
@@ -807,6 +833,18 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Email_BookingCancelled_Subject' => 'Бронь отменена на %s',
             'Email_BookingCancelled_Title' => 'Бронь отменена',
             'Email_BookingCancelled_Body' => 'Бронь отменена (%s).',
+            // Напоминания о занятии. Тема называет, за сколько до начала
+            // письмо пришло: у человека в ящике их два, и по теме должно быть
+            // видно, суточное это или «уже скоро».
+            'Email_Reminder_Subject_1d' => 'Завтра занятие — %s',
+            'Email_Reminder_Subject_2h' => 'Занятие через два часа — %s',
+            'Email_Reminder_Title_1d' => 'Напоминаем: занятие завтра',
+            'Email_Reminder_Title_2h' => 'Напоминаем: занятие через два часа',
+            'Email_Reminder_Body_Student' => 'Не забудьте о занятии. Если планы изменились, отмените бронь заранее — так преподаватель успеет предложить время другому.',
+            'Email_Reminder_Body_Expert' => 'Напоминаем о вашем занятии. Записавшиеся ждут вас в назначенное время.',
+            'Email_Row_Students' => 'Записались',
+            'Email_Cta_OpenSlot' => 'Открыть занятие',
+
             'Email_NewMessage_Subject' => 'Новое сообщение от %s',
             'Email_NewMessage_Title' => 'Новое сообщение от %s',
             'Email_NewMessage_Title_Plain' => 'Новое сообщение',
@@ -879,6 +917,13 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Invite_Error_ContactSupport' => 'Свяжитесь с нами для получения новой ссылки:',
             'Invite_Contact_Phone' => 'Телефон',
 
+            // Ссылка входа из письма — это не регистрация, поэтому у отказа
+            // свой заголовок: по ссылке приходит уже зарегистрированный
+            // человек, и «Регистрация недоступна» сбивает его с толку.
+            'MagicLink_Error_Title' => 'Ссылка для входа недействительна',
+            'MagicLink_Error_Guidance' => 'Запросите новый код входа на странице входа — старая ссылка больше не нужна.',
+            'MagicLink_Error_ContactSupport' => 'Если код так и не приходит, свяжитесь с нами:',
+
             // Support contacts settings
             'Admin_SupportContacts_Tab' => 'Контакты',
             'Admin_SupportContacts_Title' => 'Контакты поддержки',
@@ -899,9 +944,9 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Admin_SystemSettings_History_Field' => 'Поле',
 
             // Admin: Tokens
-            'Admin_Tokens' => 'Токены регистрации',
-            'Admin_Tokens_Title' => 'Токены приглашений',
-            'Admin_Tokens_Empty' => 'Токенов не найдено',
+            'Admin_Tokens' => 'Приглашения',
+            'Admin_Tokens_Title' => 'Приглашения',
+            'Admin_Tokens_Empty' => 'Приглашений не найдено',
             'Admin_Tokens_Label' => 'Название',
             'Admin_Tokens_Link' => 'Ссылка',
             'Admin_Tokens_Uses' => 'Исп.',
@@ -910,9 +955,9 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Admin_Tokens_CreatedBy' => 'Кем',
             'Admin_Tokens_ExpiresAt' => 'Истекает',
             'Admin_Tokens_Actions' => 'Действия',
-            'Admin_Tokens_Create' => 'Создать токен',
-            'Admin_Tokens_CreateTitle' => 'Новый токен приглашения',
-            'Admin_Tokens_LabelPlaceholder' => 'Описание токена...',
+            'Admin_Tokens_Create' => 'Создать приглашение',
+            'Admin_Tokens_CreateTitle' => 'Новое приглашение',
+            'Admin_Tokens_LabelPlaceholder' => 'Для кого это приглашение…',
             'Admin_Tokens_MaxUses' => 'Количество регистраций',
             'Admin_Tokens_AccountType' => 'Тип аккаунта',
             'Admin_Tokens_AccountTypeUser' => 'Пользователь',
@@ -926,10 +971,10 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Admin_Tokens_Copied' => 'Ссылка скопирована',
             'Admin_Tokens_Disable' => 'Деактивировать',
             'Admin_Tokens_Enable' => 'Активировать',
-            'Admin_Tokens_DisableConfirm' => 'Деактивировать токен?',
-            'Admin_Tokens_DeleteConfirm' => 'Удалить токен? Это действие необратимо.',
+            'Admin_Tokens_DisableConfirm' => 'Деактивировать приглашение?',
+            'Admin_Tokens_DeleteConfirm' => 'Удалить приглашение? Это действие необратимо.',
             'Admin_Tokens_Registrations' => 'Регистрации',
-            'Admin_Tokens_RegEmpty' => 'Регистраций по этому токену нет',
+            'Admin_Tokens_RegEmpty' => 'Регистраций по этому приглашению нет',
             'Admin_Tokens_RegAccount' => 'Аккаунт',
             'Admin_Tokens_RegDate' => 'Дата',
             'Admin_Tokens_RegIp' => 'IP',
