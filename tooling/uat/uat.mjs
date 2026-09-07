@@ -149,32 +149,34 @@ function clip(text, limit = 600) {
 
 // ------------------------------------------------------------- channels
 
-/**
- * Описание канала: где таблица, по какому полю адресат, что показывать.
- * Схема очереди писем известна из Bundle/Modules/Email/Tables/FwEmailQueue.php.
- * Для IM и поддержки имена таблиц/колонок берутся из реестра (roster.tables) —
- * угадывать их нельзя, узнаются один раз через `uat tables` / `uat cols`.
- */
-function channelConfig(roster, channel) {
-    const table = roster.tables?.[channel];
-    if (!table || !table.name) {
+/** Имя таблицы из реестра; угадывать нельзя — узнаётся через `tables`/`cols`. */
+function table(roster, key) {
+    const name = roster.tables?.[key]?.name;
+    if (!name) {
         die(
-            `Канал "${channel}" не настроен в реестре (tables.${channel}.name пуст).\n` +
-            `Найдите таблицу: node tooling/uat/uat.mjs tables ${channel === 'email_queue' ? 'email' : channel}\n` +
-            `Колонки:        node tooling/uat/uat.mjs cols <таблица>`
+            `tables.${key}.name не заполнен в реестре.\n` +
+            `Найдите таблицу: node tooling/uat/uat.mjs tables <часть-имени>`
         );
     }
-    return table;
+    return name;
 }
 
-function fetchMail(roster, persona) {
-    const t = channelConfig(roster, 'email_queue');
-    const since = flags.has('--all') ? 0 : persona.last_seen.email_id ?? 0;
+function requireAccountId(persona) {
+    if (!persona.account_id) {
+        die(`У персоны ${persona.id} нет account_id — сначала \`uat sync\` (и она должна быть зарегистрирована).`);
+    }
+    return Number(persona.account_id);
+}
+
+function fetchMail(roster, persona, opts = {}) {
+    const since = opts.all || flags.has('--all') ? 0 : persona.last_seen.email_id ?? 0;
     const list = rows(
         roster,
-        `SELECT id, subject, body_html, status, created_at FROM ${t.name} ` +
+        `SELECT id, subject, body_html, status, created_at FROM ${table(roster, 'email_queue')} ` +
         `WHERE recipient_email = ${shqSql(persona.email)} AND id > ${Number(since)} ORDER BY id`
     );
+
+    if (opts.silent) return list;
 
     for (const row of list) {
         const text = htmlToText(row.body_html);
@@ -191,27 +193,65 @@ function fetchMail(roster, persona) {
     return list;
 }
 
-function fetchGeneric(roster, persona, channel, label) {
-    const t = channelConfig(roster, channel);
-    const seenKey = channel === 'im_messages' ? 'im_id' : 'support_id';
-    const since = flags.has('--all') ? 0 : persona.last_seen[seenKey] ?? 0;
-
-    const who = t.recipient_is_account_id
-        ? `${t.recipient} = ${Number(persona.account_id)}`
-        : `${t.recipient} = ${shqSql(persona.email)}`;
+/**
+ * Личные сообщения. У `im_messages` нет колонки получателя — адресат
+ * выводится через беседу: персона участник, а автор — не она.
+ */
+function fetchIm(roster, persona, opts = {}) {
+    const me = requireAccountId(persona);
+    const since = opts.all || flags.has('--all') ? 0 : persona.last_seen.im_id ?? 0;
 
     const list = rows(
         roster,
-        `SELECT ${t.id} AS id, ${t.body} AS body${t.extra ? `, ${t.extra}` : ''} ` +
-        `FROM ${t.name} WHERE ${who} AND ${t.id} > ${Number(since)} ORDER BY ${t.id}`
+        `SELECT m.id AS id, m.body AS body, m.sender_id AS sender_id, a.name AS sender_name ` +
+        `FROM ${table(roster, 'im_messages')} m ` +
+        `JOIN ${table(roster, 'im_conversations')} c ON c.id = m.conversation_id ` +
+        `LEFT JOIN ${table(roster, 'accounts')} a ON a.id = m.sender_id ` +
+        `WHERE (c.participant_a = ${me} OR c.participant_b = ${me}) ` +
+        `AND m.sender_id <> ${me} AND m.id > ${Number(since)} ORDER BY m.id`
     );
 
     for (const row of list) {
-        console.log(`\n── ${label} #${row.id}`);
+        console.log(`\n── сообщение #${row.id} от ${row.sender_name ?? row.sender_id}`);
         console.log(indent(clip(htmlToText(row.body))));
     }
 
-    if (!list.length) console.log(`  ${label}: пусто`);
+    if (!list.length) console.log('  личных сообщений нет');
+    return list;
+}
+
+/**
+ * Поддержка. Для клиента — сообщения в его тикетах, кроме внутренних заметок
+ * персонала. Для сотрудника (модератор/владелец) — тикеты, назначенные на
+ * него, плюс ещё не назначенные: внутренние заметки ему видны.
+ */
+function fetchSupport(roster, persona, opts = {}) {
+    const me = requireAccountId(persona);
+    const since = opts.all || flags.has('--all') ? 0 : persona.last_seen.support_id ?? 0;
+    const staff = persona.role === 'moderator' || persona.role === 'owner';
+
+    const scope = staff
+        ? `(t.assignee_id = ${me} OR t.assignee_id IS NULL)`
+        : `t.account_id = ${me} AND m.is_internal = 0`;
+
+    const list = rows(
+        roster,
+        `SELECT m.id AS id, m.body AS body, m.msg_type AS msg_type, m.is_internal AS is_internal, ` +
+        `t.id AS ticket_id, t.subject AS subject, t.status AS status ` +
+        `FROM ${table(roster, 'support_messages')} m ` +
+        `JOIN ${table(roster, 'support_tickets')} t ON t.id = m.ticket_id ` +
+        `WHERE ${scope} AND m.author_id <> ${me} AND m.id > ${Number(since)} ORDER BY m.id`
+    );
+
+    if (opts.silent) return list;
+
+    for (const row of list) {
+        const mark = Number(row.is_internal) ? ' [внутренняя заметка]' : '';
+        console.log(`\n── тикет #${row.ticket_id} «${row.subject}» [${row.status}] · ${row.msg_type}${mark}`);
+        console.log(indent(clip(htmlToText(row.body))));
+    }
+
+    if (!list.length) console.log('  сообщений поддержки нет');
     return list;
 }
 
@@ -282,7 +322,7 @@ const commands = {
         const roster = loadRoster();
         const persona = findPersona(roster, rest[0] ?? die('нужен id персоны'));
         console.log(`# ${persona.id} — личные сообщения`);
-        advance(persona, 'im_id', fetchGeneric(roster, persona, 'im_messages', 'сообщение'));
+        advance(persona, 'im_id', fetchIm(roster, persona));
         saveRoster(roster);
     },
 
@@ -290,7 +330,7 @@ const commands = {
         const roster = loadRoster();
         const persona = findPersona(roster, rest[0] ?? die('нужен id персоны'));
         console.log(`# ${persona.id} — поддержка`);
-        advance(persona, 'support_id', fetchGeneric(roster, persona, 'support_messages', 'тикет'));
+        advance(persona, 'support_id', fetchSupport(roster, persona));
         saveRoster(roster);
     },
 
@@ -299,37 +339,34 @@ const commands = {
         const persona = findPersona(roster, rest[0] ?? die('нужен id персоны'));
         console.log(`# ${persona.id} <${persona.email}>`);
         advance(persona, 'email_id', fetchMail(roster, persona));
-        if (roster.tables?.im_messages?.name) {
-            advance(persona, 'im_id', fetchGeneric(roster, persona, 'im_messages', 'сообщение'));
-        }
-        if (roster.tables?.support_messages?.name) {
-            advance(persona, 'support_id', fetchGeneric(roster, persona, 'support_messages', 'тикет'));
+        if (persona.account_id) {
+            advance(persona, 'im_id', fetchIm(roster, persona));
+            advance(persona, 'support_id', fetchSupport(roster, persona));
+        } else {
+            console.log('  IM и поддержка пропущены: нет account_id (нужен `uat sync`)');
         }
         saveRoster(roster);
     },
 
+    /**
+     * Отметить прочитанным без вывода: те же выборки, что и у чтения,
+     * но молча — берём максимальный id, до которого «всё видено».
+     */
     ack() {
         const roster = loadRoster();
         const persona = findPersona(roster, rest[0] ?? die('нужен id персоны'));
         const what = rest[1] ?? 'all';
+        const opts = { silent: true, all: true };
 
-        const bump = (channel, key) => {
-            const t = roster.tables?.[channel];
-            if (!t?.name) return;
-            const col = channel === 'email_queue' ? 'recipient_email' : t.recipient;
-            const value = channel === 'email_queue' || !t.recipient_is_account_id
-                ? shqSql(persona.email)
-                : Number(persona.account_id);
-            const [{ max_id = 0 } = {}] = rows(
-                roster,
-                `SELECT MAX(${t.id ?? 'id'}) AS max_id FROM ${t.name} WHERE ${col} = ${value}`
-            );
-            persona.last_seen[key] = Number(max_id ?? 0);
+        const bump = (key, list) => {
+            if (list.length) persona.last_seen[key] = Math.max(...list.map((r) => Number(r.id)));
         };
 
-        if (what === 'all' || what === 'mail') bump('email_queue', 'email_id');
-        if (what === 'all' || what === 'im') bump('im_messages', 'im_id');
-        if (what === 'all' || what === 'support') bump('support_messages', 'support_id');
+        if (what === 'all' || what === 'mail') bump('email_id', fetchMail(roster, persona, opts));
+        if (persona.account_id) {
+            if (what === 'all' || what === 'im') bump('im_id', fetchIm(roster, persona, opts));
+            if (what === 'all' || what === 'support') bump('support_id', fetchSupport(roster, persona, opts));
+        }
 
         saveRoster(roster);
         console.log(`${persona.id}: отметки прочтения обновлены — ${JSON.stringify(persona.last_seen)}`);
