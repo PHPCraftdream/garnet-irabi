@@ -64,3 +64,6 @@ errors.log
 
 # ── AI session checkpoints (local working notes) ───────────────────────────
 /docs/checkpoints/
+
+# Дерево персистентных агентов (в ячейках лежат пароли тестовых персон)
+/.agents/
