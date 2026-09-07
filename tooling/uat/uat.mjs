@@ -63,7 +63,7 @@ function findPersona(roster, id) {
     if (!persona) {
         die(`Персона "${id}" не найдена. Есть: ${roster.personas.map((p) => p.id).join(', ')}`);
     }
-    persona.last_seen ??= { email_id: 0, im_id: 0, support_id: 0 };
+    persona.last_seen ??= { mail_log_id: 0, email_id: 0, im_id: 0, support_id: 0 };
     return persona;
 }
 
