@@ -19,6 +19,12 @@ namespace PHPCraftdream\IRabi\Common\Tables {
                 ->addColumn(column: 'created_at',   type: 'INT', length: '11', null: false, default: '0')
                 ->addColumn(column: 'confirmed_at', type: 'INT', length: '11', null: true)
                 ->addColumn(column: 'cancelled_at', type: 'INT', length: '11', null: true)
+                // Отметки об отправленных напоминаниях ученику: NULL — ещё не
+                // отправляли. Отметка нужна именно в брони, а не в слоте:
+                // напоминание адресовано конкретному записавшемуся, и отмена
+                // его брони не должна влиять на остальных.
+                ->addColumn(column: 'reminded_1d_at', type: 'INT', length: '11', null: true)
+                ->addColumn(column: 'reminded_2h_at', type: 'INT', length: '11', null: true)
                 ->addIndex(indexName: 'user_id', indexes: ['user_id'])
                 ->addIndex(indexName: 'user_status', indexes: ['user_id', 'status'])
                 ->addIndex(indexName: 'bookable', indexes: ['bookable_type', 'bookable_id'])

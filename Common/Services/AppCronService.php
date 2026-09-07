@@ -79,6 +79,17 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 return array_sum($stats);
             }, 'Mark expired slots and bookings as completed');
 
+            // Ставим сразу после complete-expired: обе задачи ходят по слотам
+            // около «сейчас», и держать их рядом дешевле для понимания, чем
+            // экономить на порядке. Функциональный блокер, как и email-queue:
+            // без неё напоминания не уходят вовсе.
+            static::registerTask('booking-reminders', function (Stdio $stdio): int {
+                $stats = CronReminderService::sendDue(500);
+                $stdio->outln("Reminders queued: {$stats['students']} to students, {$stats['experts']} to experts");
+
+                return array_sum($stats);
+            }, 'Queue lesson reminders a day and two hours before the start');
+
             static::registerTask('disable-stale-tokens', function (Stdio $stdio): int {
                 $stats = FwInviteTokenService::disableStale(500);
                 $stdio->outln("Disabled tokens: {$stats['expired']} expired, {$stats['exhausted']} exhausted");

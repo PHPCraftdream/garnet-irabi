@@ -62,6 +62,12 @@ namespace PHPCraftdream\IRabi\Common\Tables {
                 ->addColumn(column: 'uid', type: 'VARCHAR', length: '16', null: false, default: '')
                 ->addColumn(column: 'created_at', type: 'INT', length: '11', null: false, default: '0')
                 ->addColumn(column: 'cancellation_penalty_percent', type: 'TINYINT', length: '3', null: false, default: '0')
+                // Отметки об отправленных напоминаниях преподавателю. Живут в
+                // слоте, а не в бронях: у слота может быть несколько
+                // записавшихся, а преподавателю нужно одно письмо про занятие,
+                // а не по одному на каждого.
+                ->addColumn(column: 'reminded_1d_at', type: 'INT', length: '11', null: true)
+                ->addColumn(column: 'reminded_2h_at', type: 'INT', length: '11', null: true)
                 ->addIndex(indexName: 'expert_id', indexes: ['expert_id'])
                 ->addIndex(indexName: 'expert_status', indexes: ['expert_id', 'status', 'start_at'])
                 ->addIndex(indexName: 'status_start', indexes: ['status', 'start_at'])

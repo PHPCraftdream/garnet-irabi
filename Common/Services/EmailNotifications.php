@@ -48,6 +48,8 @@ namespace PHPCraftdream\IRabi\Common\Services {
         public const TYPE_SUPPORT_TICKET_CREATED = 'supportTicketCreated';
         public const TYPE_SUPPORT_REPLY_TO_USER = 'supportReplyToUser';
         public const TYPE_SUPPORT_USER_REPLY = 'supportUserReply';
+        public const TYPE_BOOKING_REMINDER_1D = 'bookingReminder1d';
+        public const TYPE_BOOKING_REMINDER_2H = 'bookingReminder2h';
         public const TYPE_EXPERT_APPROVED = 'expertApproved';
         public const TYPE_EXPERT_REJECTED = 'expertRejected';
 
@@ -65,6 +67,8 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 ['id' => static::TYPE_BOOKING_CONFIRMED, 'label' => $t->Email_BookingConfirmed_Title()],
                 ['id' => static::TYPE_BOOKING_REJECTED, 'label' => $t->Email_BookingRejected_Title()],
                 ['id' => static::TYPE_BOOKING_CANCELLED, 'label' => $t->Email_BookingCancelled_Title()],
+                ['id' => static::TYPE_BOOKING_REMINDER_1D, 'label' => $t->Email_Reminder_Title_1d()],
+                ['id' => static::TYPE_BOOKING_REMINDER_2H, 'label' => $t->Email_Reminder_Title_2h()],
                 ['id' => static::TYPE_NEW_MESSAGE, 'label' => $t->Email_NewMessage_Title_Plain()],
                 ['id' => static::TYPE_SUPPORT_TICKET_CREATED, 'label' => $t->Email_SupportNewTicket_Title()],
                 ['id' => static::TYPE_SUPPORT_REPLY_TO_USER, 'label' => $t->Email_SupportReply_Title()],
@@ -155,6 +159,16 @@ namespace PHPCraftdream\IRabi\Common\Services {
         private static function getAccountEmail(int $accountId): ?string {
             $row = DbAccount::get()->selectById($accountId);
             return $row ? $row['login'] : null;
+        }
+
+        /**
+         * Имя для показа в письме. Публичная обёртка нужна тем, кто собирает
+         * список получателей снаружи (напоминание преподавателю перечисляет
+         * записавшихся) — чтобы имя бралось из одного места, а не из второго
+         * запроса к аккаунтам с другой логикой отката на логин.
+         */
+        public static function accountDisplayName(int $accountId): string {
+            return static::getAccountName($accountId);
         }
 
         private static function getAccountName(int $accountId): string {
@@ -272,6 +286,57 @@ namespace PHPCraftdream\IRabi\Common\Services {
         /**
          * @return array{subject: string, body: string}
          */
+        /**
+         * Общее тело напоминания для обеих ролей.
+         *
+         * $lead — насколько заранее письмо: '1d' или '2h'. От него зависят и
+         * тема, и заголовок, потому что получатель видит два письма про одно
+         * занятие и должен различать их в списке, не открывая.
+         *
+         * @return array{subject: string, body: string}
+         */
+        private static function buildReminder(
+            int $recipientId,
+            string $lead,
+            string $expertName,
+            int $startAt,
+            int $durationMin,
+            string $bodyText,
+            string $ctaPath,
+            string $students = '',
+        ): array {
+            $t = ForegroundI18n::getInstance();
+
+            $rows = [
+                ['raw' => Twig::get()->render('Email/Row.twig', [
+                    'row' => htmlspecialchars($bodyText, ENT_QUOTES | ENT_SUBSTITUTE),
+                    'align' => 'left',
+                ])],
+            ];
+
+            if ($expertName !== '') {
+                $rows[] = ['label' => $t->Email_Row_Expert(), 'value' => $expertName];
+            }
+            $rows[] = ['label' => $t->Email_Row_DateTime(), 'value' => static::formatSlotInfo($recipientId, $startAt, $durationMin)];
+
+            if ($students !== '') {
+                $rows[] = ['label' => $t->Email_Row_Students(), 'value' => $students];
+            }
+            $brand = FwAppSettings::brandName();
+
+            return [
+                'subject' => $lead === '1d' ? $t->Email_Reminder_Subject_1d($brand) : $t->Email_Reminder_Subject_2h($brand),
+                'body' => static::renderEmail(
+                    $lead === '1d' ? $t->Email_Reminder_Title_1d() : $t->Email_Reminder_Title_2h(),
+                    $rows,
+                    [
+                        'text' => $ctaPath === '/bookings/' ? $t->Email_Cta_OpenBooking() : $t->Email_Cta_OpenSlot(),
+                        'href' => static::absoluteUrl($ctaPath),
+                    ],
+                ),
+            ];
+        }
+
         private static function buildBookingConfirmed(int $recipientId, string $expertName, int $startAt, int $durationMin): array {
             $t = ForegroundI18n::getInstance();
             $rows = [];
@@ -517,6 +582,59 @@ namespace PHPCraftdream\IRabi\Common\Services {
             FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body'], self::MAX_SEND_ATTEMPTS);
         }
 
+        /**
+         * Напоминание о занятии ученику.
+         *
+         * Сознательно мимо gate(): тот подавляет письма по частоте на аккаунт
+         * и категорию, а напоминание привязано к моменту. Подавленное
+         * «занятие через два часа» приходит уже после занятия — то есть
+         * никогда, и человек не приходит на урок из-за настройки частоты
+         * писем, которую он выставлял совсем для другого.
+         *
+         * Полное отключение уведомлений о бронях («off») уважается: это уже не
+         * частота, а явный отказ получать письма этой категории.
+         */
+        public static function bookingReminder(int $studentId, int $startAt, int $durationMin, int $expertId, string $lead): void {
+            $email = static::getAccountEmail($studentId);
+
+            if (!$email || static::frequencyFor($studentId, self::CAT_BOOKINGS) === 'off') {
+                return;
+            }
+            $rendered = static::buildReminder(
+                $studentId,
+                $lead,
+                static::getAccountName($expertId),
+                $startAt,
+                $durationMin,
+                ForegroundI18n::getInstance()->Email_Reminder_Body_Student(),
+                '/bookings/',
+            );
+            FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body'], self::MAX_SEND_ATTEMPTS);
+        }
+
+        /**
+         * Напоминание о занятии преподавателю — одно на слот, а не на бронь:
+         * записавшихся может быть несколько, а занятие у него одно.
+         */
+        public static function slotReminder(int $expertId, int $startAt, int $durationMin, string $lead, string $students): void {
+            $email = static::getAccountEmail($expertId);
+
+            if (!$email || static::frequencyFor($expertId, self::CAT_BOOKINGS) === 'off') {
+                return;
+            }
+            $rendered = static::buildReminder(
+                $expertId,
+                $lead,
+                '',
+                $startAt,
+                $durationMin,
+                ForegroundI18n::getInstance()->Email_Reminder_Body_Expert(),
+                '/teaching/slots',
+                $students,
+            );
+            FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body'], self::MAX_SEND_ATTEMPTS);
+        }
+
         public static function bookingCancelled(int $recipientId, int $startAt, int $durationMin, string $cancelledBy): void {
             $email = static::getAccountEmail($recipientId);
             if (!$email) {
@@ -630,6 +748,8 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 static::TYPE_BOOKING_CONFIRMED => static::buildBookingConfirmed($recipientId, $stubExpert, $startAt, $durationMin),
                 static::TYPE_BOOKING_REJECTED => static::buildBookingRejected($recipientId, $stubExpert, $startAt, $durationMin, $stubReason),
                 static::TYPE_BOOKING_CANCELLED => static::buildBookingCancelled($recipientId, $startAt, $durationMin, $stubActor),
+                static::TYPE_BOOKING_REMINDER_1D => static::buildReminder($recipientId, '1d', $stubExpert, $startAt, $durationMin, $t->Email_Reminder_Body_Student(), '/bookings/'),
+                static::TYPE_BOOKING_REMINDER_2H => static::buildReminder($recipientId, '2h', $stubExpert, $startAt, $durationMin, $t->Email_Reminder_Body_Student(), '/bookings/'),
                 static::TYPE_NEW_MESSAGE => static::buildNewMessage($stubUser, $stubMessage),
                 static::TYPE_SUPPORT_TICKET_CREATED => static::buildSupportTicketCreated($ticketId, $stubSubject, $stubUser),
                 static::TYPE_SUPPORT_REPLY_TO_USER => static::buildSupportReplyToUser($ticketId, $stubSubject),
@@ -646,6 +766,8 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 static::TYPE_BOOKING_CONFIRMED,
                 static::TYPE_BOOKING_REJECTED,
                 static::TYPE_BOOKING_CANCELLED,
+                static::TYPE_BOOKING_REMINDER_1D,
+                static::TYPE_BOOKING_REMINDER_2H,
                 static::TYPE_NEW_MESSAGE,
                 static::TYPE_SUPPORT_TICKET_CREATED,
                 static::TYPE_SUPPORT_REPLY_TO_USER,
