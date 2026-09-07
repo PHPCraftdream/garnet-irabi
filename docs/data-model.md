@@ -311,6 +311,8 @@ account+param)*.
 | `uid` | varchar(16) | NO | '' | 64-бит энтропии; сверка актуальности в `SlotsController` |
 | `created_at` | int(11) | NO | 0 | Unix-ts создания |
 | `cancellation_penalty_percent` | tinyint(3) | NO | 0 | Процент штрафа за отмену |
+| `reminded_1d_at` | int(11) | YES | NULL | Преподавателю отправлено суточное напоминание *(M_0019)* |
+| `reminded_2h_at` | int(11) | YES | NULL | Преподавателю отправлено двухчасовое напоминание *(M_0019)* |
 | `booked_count` | int(11) | NO | 0 | Атомарный счётчик занятых мест (M_0012) |
 
 **Индексы:** PK(`id`); `expert_id`; `expert_status`(`expert_id`,
@@ -332,6 +334,8 @@ account+param)*.
 | `created_at` | int(11) | NO | 0 | Unix-ts создания |
 | `confirmed_at` | int(11) | YES | NULL | Unix-ts подтверждения |
 | `cancelled_at` | int(11) | YES | NULL | Unix-ts отмены |
+| `reminded_1d_at` | int(11) | YES | NULL | Ученику отправлено суточное напоминание *(M_0019)* |
+| `reminded_2h_at` | int(11) | YES | NULL | Ученику отправлено двухчасовое напоминание *(M_0019)* |
 | `active_dup_key` | varchar(64) | — | GENERATED | `VIRTUAL`: `CONCAT(user_id,':',bookable_type,':',bookable_id)` для `status IN ('pending','confirmed')`, иначе `NULL` |
 
 **Индексы:** PK(`id`); UNIQUE `uq_active_booking`(`active_dup_key`);

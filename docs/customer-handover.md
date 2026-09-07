@@ -123,7 +123,7 @@ php garnet deploy:diff --apply
 ## Что ещё должно быть передано заказчику
 
 - контакт для incident escalation и сроки реакции;
-- список cron jobs и расписание — см. [`deploy.md` → Cron](deploy.md#cron): семь задач (`email-queue`, `complete-expired`, `disable-stale-tokens`, `db-backup`, `log-rotation`, `session-retention`, `finance-audit`) с точными crontab-строками для прода; операционные сценарии «что делать когда сломалось» — в [`runbook.md`](runbook.md);
+- список cron jobs и расписание — см. [`deploy.md` → Cron](deploy.md#cron): восемь задач (`email-queue`, `complete-expired`, `booking-reminders`, `disable-stale-tokens`, `db-backup`, `log-rotation`, `session-retention`, `finance-audit`) с точными crontab-строками для прода; операционные сценарии «что делать когда сломалось» — в [`runbook.md`](runbook.md);
 - схема backup retention и ручная процедура restore (миграции строго forward-only: интерфейс `IMigrationItem` содержит только `update()`, `down()`/rollback отсутствуют на любом уровне — restore из бэкапа единственный путь назад, см. [`deploy.md` → Migrations: forward-only, no rollback](deploy.md#migrations-forward-only-no-rollback));
 - матрица ролей и процедура отзыва admin/owner доступа;
 - список персональных данных, сроки хранения и legal sign-off; (политика удаления/блокировки аккаунтов и отсутствие `FOREIGN KEY` в схеме — см. [`architecture.md` → Database](architecture.md#database): три механизма работы с данными — блокировка, жёсткое удаление и известные краевые случаи осиротевших записей);

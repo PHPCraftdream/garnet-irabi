@@ -307,11 +307,14 @@ starting.
 
 ## Cron
 
-IRabi ships **seven** cron tasks, registered in
+IRabi ships **eight** cron tasks, registered in
 `Common/Services/AppCronService.php`. Two of them are **functional
 blockers** if crontab is not set up on the host: without `email-queue`
 no email is ever sent (the queue just grows), and without
 `complete-expired` slots/bookings never transition to `completed`.
+A third, `booking-reminders`, is functional in the same sense: without
+it nobody is ever reminded of a lesson, and the platform silently loses
+the attendance the reminders exist to protect.
 The other five (`disable-stale-tokens`, `db-backup`, `log-rotation`,
 `session-retention`, `finance-audit`) are hygiene/retention/audit.
 **Configure crontab on every host you deploy
@@ -343,12 +346,13 @@ most once per UTC day per task as a heartbeat, so a daily row for each
 task is the normal "cron is alive" signal — its absence for >24h means
 cron is broken.
 
-### The seven registered tasks
+### The eight registered tasks
 
 | Task | What it does | Cadence rationale |
 |---|---|---|
 | `email-queue` | Sends pending emails (`FwEmailQueueService::processQueue`, batch of 50/tick). | Needs to be frequent — users wait on these emails. Safe to run every minute (see lock note below). |
 | `complete-expired` | Marks expired slots/bookings as `completed` and auto-cancels stale `pending` bookings (`CronCompletionService::completeExpired`). | Functional; run every ~10 min. |
+| `booking-reminders` | Queues lesson reminders a day and two hours before the start (`CronReminderService::sendDue`) — to every confirmed student, and once per slot to the expert. | Functional; run every ~5 min. Later ticks are cheap (marks are stored per booking/slot), but a long gap shifts reminders late: the two-hour one has no value once the lesson began. |
 | `disable-stale-tokens` | Disables expired/exhausted invite tokens (`FwInviteTokenService::disableStale`). | Hygiene; run every ~10–15 min. |
 | `db-backup` | Daily local DB snapshot + 7-day/4-week retention + best-effort off-site WebDAV upload (`DbBackupCronTask`). See `WorkDir/ConfigExample/backup.ini` for the off-site config template. | Once a day, at night. Produces one timestamped dump per run, so running it frequently floods `WorkDir/Backups/`. |
 | `log-rotation` | Prunes `WorkDir/LogJournal` file journals and the 5 operational log tables older than 365 days (`LogRotationCronTask` → `LogRotationService`). Mirrors the 1-year retention promised in the privacy policy (152-ФЗ). | Once a day, at night. Can share the `db-backup` tick or be a separate line. |
@@ -376,6 +380,12 @@ the correct trade-off here.
 
 # ── complete-expired: every 10 min ───────────────────────────────────
 */10 * * * *  cd /var/www/<host>/data/www/<app-dir> && php run_cmd.php cron complete-expired >> WorkDir/Logs/cron-complete-expired.log 2>&1
+
+# ── booking-reminders: every 5 min ───────────────────────────────────
+# The window matters more than the frequency: a reminder that fires late
+# is worthless (nobody needs "in two hours" once the lesson started), so
+# keep the gap well under the smallest lead time.
+*/5 * * * *  cd /var/www/<host>/data/www/<app-dir> && php run_cmd.php cron booking-reminders >> WorkDir/Logs/cron-booking-reminders.log 2>&1
 
 # ── disable-stale-tokens: every 15 min ───────────────────────────────
 */15 * * * *  cd /var/www/<host>/data/www/<app-dir> && php run_cmd.php cron disable-stale-tokens >> WorkDir/Logs/cron-disable-stale-tokens.log 2>&1
@@ -447,7 +457,7 @@ pattern to copy).
 1. **List tasks** to confirm registration:
    ```bash
    php run_cmd.php cron list
-   # Expect: email-queue, complete-expired, disable-stale-tokens, db-backup,
+   # Expect: email-queue, complete-expired, booking-reminders, disable-stale-tokens, db-backup,
    #         log-rotation, session-retention, finance-audit
    ```
 2. **Run each task once by hand** and confirm exit 0 + sane output:
