@@ -18,6 +18,7 @@ import AttachmentPicker, {PendingFile} from '../../Common/AttachmentPicker';
 import AttachmentDisplay from '../../Common/AttachmentDisplay';
 import {initAutoContext, collectContext} from './autoContext';
 import {PageHeader} from '@common/Components/PageHeader';
+import {reportAttachmentErrors} from '../../Common/attachmentErrors';
 import {LifeBuoy, ChevronLeft} from 'lucide-react';
 
 interface Props {
@@ -129,6 +130,7 @@ export const SupportPageIsland: React.FC<Props> = ({ticketsPagination, ticketPag
                     setSelectedId(r.ticket.id);
                     fetchMessages(r.ticket.id);
                     showToast(t.Support_TicketCreated(), 'success');
+                    reportAttachmentErrors(r);
                 }
             } catch (err: any) {
                 D('support.error', {action: 'create', error: err});
@@ -148,10 +150,14 @@ export const SupportPageIsland: React.FC<Props> = ({ticketsPagination, ticketPag
                 for (const f of replyFiles) {
                     fd.append('attachments[]', f.file, f.name);
                 }
-                await sendPostFormData<FormData, any>(replyUrl, fd);
+                const resp = await sendPostFormData<FormData, any>(replyUrl, fd);
                 setReplyText('');
                 setReplyFiles([]);
                 fetchMessages(selectedId!);
+                // The message can be accepted while a file on it is refused —
+                // too large, wrong type. Saying nothing leaves the sender
+                // certain the file went with it.
+                reportAttachmentErrors(resp);
             } catch (err: any) {
                 D('support.error', {action: 'reply', error: err});
                 showToast(err?.message || t.General_Error(), 'danger');

@@ -13,6 +13,7 @@ import {useCtrlEnter, CTRL_ENTER_HINT} from '@common/hooks/useCtrlEnter';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {SupportTicket, SupportMessage} from './supportTypes';
 import {StatusBadge} from './supportRenders';
+import {reportAttachmentErrors} from '../../Common/attachmentErrors';
 import AttachmentDisplay from '../../Common/AttachmentDisplay';
 import AttachmentPicker, {PendingFile} from '../../Common/AttachmentPicker';
 import ScreenshotButton from '../../Common/ScreenshotButton';
@@ -142,7 +143,7 @@ export const SupportWidgetIsland: React.FC<Props> = ({unreadCount, unreadSupport
                 for (const f of createFiles) {
                     fd.append('attachments[]', f.file, f.name);
                 }
-                await sendPostFormData<FormData, any>(createUrl, fd);
+                const resp = await sendPostFormData<FormData, any>(createUrl, fd);
                 D('support.created', {source: 'widget'});
                 setSubject('');
                 setMessage('');
@@ -150,6 +151,7 @@ export const SupportWidgetIsland: React.FC<Props> = ({unreadCount, unreadSupport
                 setView('list');
                 fetchTickets();
                 showToast(t.Support_TicketCreated(), 'success');
+                reportAttachmentErrors(resp);
             } catch (err: any) {
                 D('support.error', {action: 'create', error: err});
                 showToast(err?.message || t.General_Error(), 'danger');

@@ -9,6 +9,7 @@ import {showToast} from '@common/Components/GlobalToast';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {SupportTicket, SupportMessage, SupportStatus, AssignmentLogEntry, AutoContext} from '../Support/supportTypes';
 import {PendingFile} from '../../Common/AttachmentPicker';
+import {reportAttachmentErrors} from '../../Common/attachmentErrors';
 import TicketHeader from './SupportTicket/TicketHeader';
 import TicketContext from './SupportTicket/TicketContext';
 import TicketAttachments from './SupportTicket/TicketAttachments';
@@ -78,10 +79,11 @@ export default function SupportTicketTab({ticketId, ticketDetailUrl, replyUrl, i
                 fd.append('ticket_id', String(ticketId));
                 fd.append('message', replyText.trim());
                 for (const f of replyFiles) fd.append('attachments[]', f.file, f.name);
-                await sendPostFormData<FormData, any>(replyUrl, fd);
+                const resp = await sendPostFormData<FormData, any>(replyUrl, fd);
                 setReplyText('');
                 setReplyFiles([]);
                 loadDetail();
+                reportAttachmentErrors(resp);
             } catch (err: any) {
                 D('support.error', {action: 'admin.reply', error: err});
                 showToast(err?.message || t.General_Error(), 'danger');
@@ -98,10 +100,11 @@ export default function SupportTicketTab({ticketId, ticketDetailUrl, replyUrl, i
                 fd.append('ticket_id', String(ticketId));
                 fd.append('message', internalText.trim());
                 for (const f of internalFiles) fd.append('attachments[]', f.file, f.name);
-                await sendPostFormData<FormData, any>(internalCommentUrl, fd);
+                const resp = await sendPostFormData<FormData, any>(internalCommentUrl, fd);
                 setInternalText('');
                 setInternalFiles([]);
                 loadDetail();
+                reportAttachmentErrors(resp);
             } catch (err: any) {
                 D('support.error', {action: 'admin.internal', error: err});
                 showToast(err?.message || t.General_Error(), 'danger');

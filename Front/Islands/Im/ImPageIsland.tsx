@@ -9,6 +9,7 @@ import {showToast} from '@common/Components/GlobalToast';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {ImConversation, ImMessage} from './imTypes';
 import {PendingFile} from '../../Common/AttachmentPicker';
+import {reportAttachmentErrors} from '../../Common/attachmentErrors';
 
 const getSendErrorMessage = (err: unknown): string => {
     if (err instanceof ApiError) {
@@ -167,6 +168,7 @@ const ImPageIslandInner: React.FC<Props> = ({
                     setSelectedId(r.conversation_id);
                     fetchMessages(r.conversation_id);
                 }
+                reportAttachmentErrors(r);
             } catch (err: unknown) {
                 const msg = getSendErrorMessage(err);
                 D('im.error', {action: 'sendNew', error: msg});
@@ -198,6 +200,7 @@ const ImPageIslandInner: React.FC<Props> = ({
                 setReplyFiles([]);
                 fetchMessages(selectedId!);
                 refreshConversations();
+                reportAttachmentErrors(r);
             } catch (err: unknown) {
                 const msg = getSendErrorMessage(err);
                 D('im.error', {action: 'reply', error: msg});
