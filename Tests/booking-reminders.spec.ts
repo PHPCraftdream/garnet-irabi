@@ -19,14 +19,20 @@
  */
 import { execFileSync } from 'node:child_process';
 import * as path from 'node:path';
-import { test, expect, tn } from './helpers/scoped-test';
+import { test, expect, tn, getDbPrefix } from './helpers/scoped-test';
 import { withConnection } from './helpers/db';
 
 const APP_DIR = path.resolve(__dirname, '..');
 
 function runReminderCron(): void {
+    // Без DB_PREFIX_OVERRIDE крон ходит в общие таблицы, а спек засеивает
+    // изолированные для своего воркера. Первая проверка от этого падала, а
+    // вторая — «суточное не ушло» — проходила ВХОЛОСТУЮ: не ушло ничего
+    // вообще, потому что крон не видел ни одной засеянной строки. Пустой
+    // прогон, подтверждающий отрицание, — худший вид зелёного теста.
     execFileSync('php', ['run_cmd.php', 'cron', 'booking-reminders'], {
         cwd: APP_DIR,
+        env: { ...process.env, DB_PREFIX_OVERRIDE: getDbPrefix() },
         encoding: 'utf8',
     });
 }
