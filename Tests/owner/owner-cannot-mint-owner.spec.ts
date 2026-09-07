@@ -1,6 +1,6 @@
 /**
  * A-01 regression (docs/security-audit/11-ms-postfix-authorization-review.md):
- * docs/roles.md §4 states "Только Администратор может назначить Владельца"
+ * docs/roles.md §5 states "Назначение владельца (IS_OWNER) — только админ"
  * (only an Admin may appoint an Owner), but DashboardUsersController::
  * post__setUserFlag() let any owner (isOwner() true, which also covers
  * admin) set IS_OWNER on a target — a plain owner without IS_ADMIN could
