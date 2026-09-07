@@ -152,7 +152,9 @@ namespace PHPCraftdream\IRabi\Foreground\Params {
         }
 
         public static function isExpert(): bool {
-            return Account::fromSession()->readParam('type') === 'expert';
+            $account = Account::fromSession();
+
+            return $account !== null && $account->readParam('type') === 'expert';
         }
 
         /**
@@ -171,7 +173,9 @@ namespace PHPCraftdream\IRabi\Foreground\Params {
         }
 
         public static function isApproved(): bool {
-            return Account::fromSession()->isApproved();
+            $account = Account::fromSession();
+
+            return $account !== null && $account->isApproved();
         }
 
         /**
@@ -180,23 +184,29 @@ namespace PHPCraftdream\IRabi\Foreground\Params {
          * moderator for moderator-gated staff routes, etc.). These gate
          * staff UI/routes ONLY; they must not be used to hide business UI
          * from staff members — see isUser()/isExpert() for that.
+         *
+         * Все предикаты роли отвечают `false`, когда сессии нет. Раньше они
+         * разыменовывали null и роняли страницу: вопрос «модератор ли
+         * пользователь» для анонима имеет ответ «нет», а не «ошибка сервера».
+         * Достаточно было позвать их с публичной страницы — Menu::main()
+         * зовёт isModerator() безусловно, — и любой такой экран отдавал 500.
          */
         public static function isModerator(): bool {
             $account = Account::fromSession();
 
-            return $account->isAdmin() || $account->isOwner() || $account->isModerator();
+            return $account !== null && ($account->isAdmin() || $account->isOwner() || $account->isModerator());
         }
 
         public static function isOwner(): bool {
             $account = Account::fromSession();
 
-            return $account->isAdmin() || $account->isOwner();
+            return $account !== null && ($account->isAdmin() || $account->isOwner());
         }
 
         public static function isAdmin(): bool {
             $account = Account::fromSession();
 
-            return $account->isAdmin();
+            return $account !== null && $account->isAdmin();
         }
 
         /**
