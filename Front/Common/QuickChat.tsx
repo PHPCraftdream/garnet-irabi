@@ -6,6 +6,8 @@ import {useCtrlEnter, CTRL_ENTER_HINT} from '@common/hooks/useCtrlEnter';
 import SendButton from '@common/Components/SendButton';
 import {I18nForeground as t} from '../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/DateUtils';
+import AttachmentDisplay from './AttachmentDisplay';
+import type {SupportAttachment} from '../Islands/Support/supportTypes';
 
 interface QuickMessage {
     id: number;
@@ -13,6 +15,7 @@ interface QuickMessage {
     sender_name?: string;
     body: string;
     created_at: number;
+    attachments?: SupportAttachment[];
 }
 
 interface Props {
@@ -103,6 +106,14 @@ export default function QuickChat({partnerId, quickChatUrl, sendUrl, currentAcco
                                         <div className="text-[10px] font-medium text-muted mb-0.5">{msg.sender_name}</div>
                                     )}
                                     <div className="whitespace-pre-wrap break-words">{msg.body}</div>
+                                    {/* The server has always sent these; this view
+                                        used to drop them, so a message with a file
+                                        read here as a message without one. */}
+                                    {msg.attachments && msg.attachments.length > 0 && (
+                                        <div className="mt-1">
+                                            <AttachmentDisplay attachments={msg.attachments} />
+                                        </div>
+                                    )}
                                     <div className="text-[10px] mt-0.5 text-muted">{formatTs(msg.created_at)}</div>
                                 </div>
                             </div>

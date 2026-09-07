@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {Paperclip} from 'lucide-react';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {ImConversation} from '../imTypes';
 import {formatTs} from '@common/Utils/DateUtils';
@@ -67,6 +68,19 @@ export default function ConversationList({conversations, selectedId, onSelectCon
                                     </div>
                                     <div className="support-ticket-row-meta">
                                         <span className="im-conv-snippet">{conv.last_message_snippet}</span>
+                                        {/* Whether a conversation holds files was
+                                            invisible from the list — the only way
+                                            to find out was to open every one. */}
+                                        {(conv.attachments_count ?? 0) > 0 && (
+                                            <span
+                                                className="text-muted text-xs inline-flex items-center gap-0.5 shrink-0"
+                                                data-test-id={`im-conv-attachments-${conv.id}`}
+                                                title={t.Support_HasAttachments([conv.attachments_count as number])}
+                                            >
+                                                <Paperclip size={12} aria-hidden="true" />
+                                                {conv.attachments_count}
+                                            </span>
+                                        )}
                                         <span className="im-conv-time">{formatTs(conv.last_message_at)}</span>
                                     </div>
                                 </div>

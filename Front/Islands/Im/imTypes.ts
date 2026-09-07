@@ -8,6 +8,7 @@ export interface ImConversation {
     last_message_snippet: string;
     last_message_at: number;
     unread_count: number;
+    attachments_count?: number;
 }
 
 export interface ImMessage {
