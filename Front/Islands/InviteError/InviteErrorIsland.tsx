@@ -10,19 +10,29 @@ interface SupportContacts {
 interface Props {
     title: string;
     reason: string;
+    /**
+     * Что человеку делать дальше. Показывается всегда и потому обязано быть
+     * самодостаточным: раньше единственная подсказка жила внутри блока
+     * контактов, и на установке без заполненных контактов поддержки человек
+     * узнавал, что ссылка мертва, но не узнавал, что с этим делать.
+     */
+    guidance?: string;
+    /** Приглашение к контактам — только вместе с самими контактами. */
     contactMessage: string;
     supportContacts: SupportContacts;
 }
 
-export const InviteErrorIsland: React.FC<Props> = ({title, reason, contactMessage, supportContacts}) => {
+export const InviteErrorIsland: React.FC<Props> = ({title, reason, guidance, contactMessage, supportContacts}) => {
     const hasContacts = supportContacts.email || supportContacts.phone || supportContacts.telegram;
 
     return (
-        <div className="max-w-lg mx-auto mt-12">
+        <div className="max-w-lg mx-auto mt-12" data-test-id="invite-error">
             <div className="rounded-lg border border-default bg-surface p-8 text-center">
                 <div className="mb-4 text-4xl text-warning" aria-hidden="true">!</div>
                 <h1 className="text-xl font-semibold text-on-surface mb-3">{title}</h1>
                 <p className="text-secondary mb-6">{reason}</p>
+
+                {guidance && <p className="text-on-surface mb-6">{guidance}</p>}
 
                 {hasContacts && (
                     <div className="border-t border-subtle pt-5">

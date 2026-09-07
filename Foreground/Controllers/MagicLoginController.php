@@ -9,6 +9,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
     use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
     use PHPCraftdream\Garnet\Kernel\Io\Twig\TwigParams;
+    use PHPCraftdream\IRabi\Common\Services\StaticPagesService;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
     use PHPCraftdream\IRabi\Foreground\Middlewares\IrabiAuthMiddleware;
 
@@ -59,18 +60,38 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 'used' => FwI18n::t('Auth_MagicLink_Error_Used'),
             ];
 
+            // Остров общий с приглашением, а тексты — свои: по ссылке из
+            // письма приходит уже зарегистрированный человек, и заголовок
+            // «Регистрация недоступна» отвечает не на его вопрос.
             $content = RenderIsland::render('invite-error', [
                 'reason' => $reasonLabels[$reason] ?? $reasonLabels['unknown'],
-                'title' => $t->Invite_Error_Title(),
-                'contactMessage' => $t->Invite_Error_ContactSupport(),
+                'title' => $t->MagicLink_Error_Title(),
+                // Подсказка и приглашение к контактам — разные сообщения:
+                // контакты поддержки на установке могут быть не заполнены, и
+                // тогда блок с ними не рисуется целиком. Раньше вместе с ним
+                // пропадало и единственное указание, что делать дальше.
+                'guidance' => $t->MagicLink_Error_Guidance(),
+                'contactMessage' => $t->MagicLink_Error_ContactSupport(),
                 'supportContacts' => $supportContacts,
             ]);
+
+            // Оборачиваем в публичную оболочку сайта — ту же, что у главной и
+            // юридических страниц. Раньше здесь был голый экран: ни шапки, ни
+            // подвала, только одиноко висящий баннер часового пояса, — человек
+            // видел не сообщение об ошибке, а сломанный сайт, уйти с которого
+            // некуда.
+            //
+            // Меню приложения (Menu::main) сюда не годится: по мёртвой ссылке
+            // приходит неавторизованный, а оно показало бы ему «Обзор слотов»,
+            // «Брони» и «Выйти». Публичная шапка сама покажет то, что нужно
+            // гостю, — «Войти».
+            $shell = StaticPagesService::renderSiteShell($content, '3xl');
 
             return ControllerTools::ok(HtmlLayout::render(
                 TwigParams::init()->get(TwigParams::DEF_LAYOUT_PARAMS, [
                     'top_menu_items' => [],
                     'side_menu_items' => [],
-                    'content' => $content,
+                    'content' => $shell,
                 ])
             ));
         }
