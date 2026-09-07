@@ -3,6 +3,7 @@
 namespace PHPCraftdream\IRabi\Common\Services;
 
 use Aura\SqlQuery\Common\SelectInterface;
+use PHPCraftdream\IRabi\Common\System\LessonPhase;
 use PHPCraftdream\IRabi\Common\Tables\Bookings;
 use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
 
@@ -19,11 +20,16 @@ use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
  * получивший одно и то же письмо трижды, перестаёт читать все письма разом.
  */
 class CronReminderService {
-    /** За сколько до начала шлём напоминания. Порядок важен: от дальнего к ближнему. */
-    private const LEADS = [
-        '1d' => ['column' => 'reminded_1d_at', 'seconds' => 86400],
-        '2h' => ['column' => 'reminded_2h_at', 'seconds' => 7200],
-    ];
+    /**
+     * За сколько до начала шлём напоминания. Порядок важен: от дальнего к
+     * ближнему.
+     *
+     * Числа живут в LessonPhase — там же, где определение фаз занятия и
+     * якоря инструмента сдвига. Два списка одних и тех же границ неизбежно
+     * разъезжаются, и молча: крон продолжает работать по своим, инструмент
+     * рапортует по своим, а видно это только когда письмо не пришло.
+     */
+    private const LEADS = LessonPhase::LEADS;
 
     /**
      * Окно, в котором напоминание ещё уместно отправить.
@@ -34,25 +40,37 @@ class CronReminderService {
      * срока есть нижняя граница: суточное отправляется, пока до занятия
      * больше двух часов, двухчасовое — пока занятие не началось.
      */
-    private const FLOOR = ['1d' => 7200, '2h' => 0];
+    private const FLOOR = LessonPhase::FLOOR;
 
     /**
+     * @param list<int>|null $slotIds ограничить перечисленными занятиями;
+     *                                null — все, как при обычном тике крона
      * @return array{students: int, experts: int}
      */
-    public static function sendDue(int $limit = 500): array {
+    public static function sendDue(int $limit = 500, ?array $slotIds = null): array {
         $stats = ['students' => 0, 'experts' => 0];
         $now = time();
+
+        // Пустой список — это «ни одного», а не «все»: иначе инструмент,
+        // которому нечего обрабатывать, разослал бы письма всей базе.
+        if ($slotIds !== null && $slotIds === []) {
+            return $stats;
+        }
 
         foreach (self::LEADS as $lead => $cfg) {
             $until = $now + $cfg['seconds'];
             $floor = $now + self::FLOOR[$lead];
 
             $slots = TimeSlots::get()->selectAll(
-                static function (SelectInterface $q) use ($until, $floor, $limit): void {
+                static function (SelectInterface $q) use ($until, $floor, $limit, $slotIds): void {
                     $q->where('start_at > ?', [$floor])
                         ->where('start_at <= ?', [$until])
                         ->where("status NOT IN ('cancelled', 'completed')")
                         ->limit($limit);
+
+                    if ($slotIds !== null) {
+                        $q->where('id IN (?)', [$slotIds]);
+                    }
                 }
             );
 

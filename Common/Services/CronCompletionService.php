@@ -9,16 +9,30 @@ use PHPCraftdream\IRabi\Common\Tables\Bookings;
 use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
 
 class CronCompletionService {
-    public static function completeExpired(int $limit = 500): array {
+    /**
+     * @param list<int>|null $slotIds ограничить перечисленными занятиями;
+     *                                null — все, как при обычном тике крона
+     */
+    public static function completeExpired(int $limit = 500, ?array $slotIds = null): array {
         $stats = ['slots' => 0, 'bookings' => 0, 'pending_expired' => 0];
 
         $now = time();
 
-        $slots = TimeSlots::get()->selectAll(function (SelectInterface $q) use ($now, $limit): void {
+        // Пустой список — «ни одного», а не «все»: иначе вызов, которому
+        // нечего завершать, завершил бы всё подряд.
+        if ($slotIds !== null && $slotIds === []) {
+            return $stats;
+        }
+
+        $slots = TimeSlots::get()->selectAll(function (SelectInterface $q) use ($now, $limit, $slotIds): void {
             $q->where("status = 'booked'")
                 ->where('end_at > 0')
                 ->where('end_at < ?', [$now])
                 ->limit($limit);
+
+            if ($slotIds !== null) {
+                $q->where('id IN (?)', [$slotIds]);
+            }
         });
 
         $completedSlotIds = [];
@@ -46,11 +60,15 @@ class CronCompletionService {
         // but whose session time has passed. Without this, under-subscribed group slots leave
         // their confirmed bookings cancelable indefinitely with a full refund.
         // The 'booked' slots are already handled above, so exclude them here.
-        $expiredOpenSlots = TimeSlots::get()->selectAll(function (SelectInterface $q) use ($now, $limit): void {
+        $expiredOpenSlots = TimeSlots::get()->selectAll(function (SelectInterface $q) use ($now, $limit, $slotIds): void {
             $q->where('end_at > 0')
                 ->where('end_at < ?', [$now])
                 ->where("status NOT IN ('completed', 'cancelled', 'booked')")
                 ->limit($limit);
+
+            if ($slotIds !== null) {
+                $q->where('id IN (?)', [$slotIds]);
+            }
         });
 
         $expiredOpenSlotIds = array_map(fn (array $s): int => (int)$s['id'], $expiredOpenSlots);
@@ -78,11 +96,15 @@ class CronCompletionService {
         // and notify the user. Slots already cancelled are skipped — their
         // bookings are cancelled by the slot-cancellation flow. Idempotent: a
         // re-run finds no status='pending' row and is a no-op.
-        $expiredNotCancelledSlots = TimeSlots::get()->selectAll(function (SelectInterface $q) use ($now, $limit): void {
+        $expiredNotCancelledSlots = TimeSlots::get()->selectAll(function (SelectInterface $q) use ($now, $limit, $slotIds): void {
             $q->where('end_at > 0')
                 ->where('end_at < ?', [$now])
                 ->where("status != 'cancelled'")
                 ->limit($limit);
+
+            if ($slotIds !== null) {
+                $q->where('id IN (?)', [$slotIds]);
+            }
         });
 
         $expiredSlotIds = array_map(fn (array $s): int => (int)$s['id'], $expiredNotCancelledSlots);

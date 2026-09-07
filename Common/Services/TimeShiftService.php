@@ -3,31 +3,23 @@
 namespace PHPCraftdream\IRabi\Common\Services {
     use Aura\SqlQuery\Common\SelectInterface;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\DbAccount;
+    use PHPCraftdream\IRabi\Common\System\LessonPhase;
     use PHPCraftdream\IRabi\Common\Tables\Bookings;
     use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
-use RuntimeException;
+    use PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel\ExpertHelpers;
+    use RuntimeException;
 
     /**
-     * Двигает занятия во времени, чтобы можно было увидеть их поздние фазы,
-     * не дожидаясь этих фаз по-настоящему.
+     * Двигает тестовые занятия во времени, чтобы можно было увидеть их поздние
+     * фазы, не дожидаясь этих фаз по-настоящему.
      *
      * Часы системы не трогаются: единственное «сейчас» — это `time()` и
      * `UNIX_TIMESTAMP()`, и подводить их на боевом сайте значило бы менять
-     * поведение для настоящих людей. Вместо этого двигаются метки самих
-     * строк — тогда сдвиг затрагивает ровно то занятие, которое назвали.
+     * поведение для настоящих людей. Двигаются метки самих строк — тогда
+     * сдвиг затрагивает ровно то занятие, которое назвали.
      *
-     * Что именно читает время и что меняется на каждой границе фаз —
-     * `docs/booking-time-phases.md`. Оттуда же три правила, которые здесь
-     * соблюдаются:
-     *
-     *  - `start_at` и `end_at` двигаются одной дельтой: их читают разные
-     *    проверки, и рассинхрон дал бы занятие, которое началось, но никогда
-     *    не кончается;
-     *  - отметки о напоминаниях сбрасываются вместе со сдвигом, иначе слот,
-     *    однажды прошедший окно, вернётся в будущее уже помеченным и второго
-     *    письма не пришлёт — сдвиг будет выглядеть неработающим;
-     *  - сам сдвиг ничего не отправляет: письма идут из крона, и дёргать его
-     *    приходится отдельно.
+     * Границы фаз и якоря живут в {@see LessonPhase}; здесь только запись и
+     * проверки. Что читает время — `docs/booking-time-phases.md`.
      */
     class TimeShiftService {
         /**
@@ -52,30 +44,21 @@ use RuntimeException;
             $slot = TimeSlots::get()->selectById($slotId);
 
             if (!$slot) {
-                return ["слота #{$slotId} нет"];
+                return ["занятия #{$slotId} нет"];
             }
 
             $reasons = [];
             $expertId = (int)($slot['expert_id'] ?? 0);
 
             if (!static::isTestAccount($expertId)) {
-                $reasons[] = "слот #{$slotId} ведёт не тестовый преподаватель (#{$expertId})";
+                $reasons[] = "занятие #{$slotId} ведёт не тестовый преподаватель (#{$expertId})";
             }
 
-            $bookings = Bookings::get()->selectAll(
-                static function (SelectInterface $q) use ($slotId): void {
-                    $q->where(
-                        'bookable_type = :type AND bookable_id = :slot_id',
-                        ['type' => 'time_slot', 'slot_id' => $slotId]
-                    );
-                }
-            );
-
-            foreach ($bookings as $booking) {
+            foreach (static::bookingsOf($slotId) as $booking) {
                 $userId = (int)($booking['user_id'] ?? 0);
 
                 if (!static::isTestAccount($userId)) {
-                    $reasons[] = "на слот #{$slotId} записан не тестовый ученик (#{$userId})";
+                    $reasons[] = "на занятие #{$slotId} записан не тестовый ученик (#{$userId})";
                 }
             }
 
@@ -83,64 +66,106 @@ use RuntimeException;
         }
 
         /**
-         * Сдвигает одно занятие на $deltaSec секунд вместе с его бронями.
+         * Всё, что мешает поставить занятие на новое место.
          *
-         * Отрицательная дельта двигает в прошлое. Проверка владельца делается
-         * здесь же, а не только в вызывающем коде: команда — не единственный
-         * возможный вызов, а запрет должен держаться независимо от того, кто
-         * попросил.
+         * Проверяется до первой записи и целиком: половина сдвига хуже отказа —
+         * данные остаются в состоянии, которого система сама породить не может,
+         * и наблюдать на нём поведение бессмысленно.
          *
-         * @return array{slot:int, bookings:int, start_at:int, end_at:int}
-         * @throws RuntimeException если занятие трогать нельзя
+         * @return list<string> причины отказа; пустой список — можно
          */
-        public static function shiftSlot(int $slotId, int $deltaSec): array {
-            $refusals = static::refusalsFor($slotId);
+        public static function refusalsForMove(int $slotId, int $newStartAt, int $newEndAt): array {
+            $reasons = static::refusalsFor($slotId);
 
-            if ($refusals !== []) {
-                throw new RuntimeException(implode('; ', $refusals));
+            if ($reasons !== []) {
+                return $reasons;
             }
 
             $slot = TimeSlots::get()->selectById($slotId);
-            $startAt = (int)($slot['start_at'] ?? 0) + $deltaSec;
-            $endAt = (int)($slot['end_at'] ?? 0) + $deltaSec;
+            $status = (string)($slot['status'] ?? '');
 
-            TimeSlots::get()->updateById([
-                'start_at' => $startAt,
-                'end_at' => $endAt,
-                // Слот «не получал» напоминаний в своей новой фазе.
-                'reminded_1d_at' => null,
-                'reminded_2h_at' => null,
-            ], $slotId);
-
-            $bookingIds = array_map(
-                static fn (array $b): int => (int)$b['id'],
-                Bookings::get()->selectAll(
-                    static function (SelectInterface $q) use ($slotId): void {
-                        $q->where(
-                            'bookable_type = :type AND bookable_id = :slot_id',
-                            ['type' => 'time_slot', 'slot_id' => $slotId]
-                        );
-                    }
-                )
-            );
-
-            if ($bookingIds !== []) {
-                Bookings::get()->updateById([
-                    'reminded_1d_at' => null,
-                    'reminded_2h_at' => null,
-                ], $bookingIds);
+            // Необратимость формализуется здесь, и читается она из данных, а не
+            // из имени фазы. Крон завершения уже переписал статусы и, возможно,
+            // вернул деньги; вернуть занятие в будущее можно, расколдовать
+            // статусы — нет. Раньше инструмент такое занятие охотно «двигал» и
+            // рапортовал об успехе.
+            if (!in_array($status, ['free', 'booked'], true)) {
+                $reasons[] = "занятие #{$slotId} уже в состоянии «{$status}» — обратного пути нет, нужно новое";
             }
 
-            return [
-                'slot' => $slotId,
-                'bookings' => count($bookingIds),
-                'start_at' => $startAt,
-                'end_at' => $endAt,
-            ];
+            $completed = array_filter(
+                static::bookingsOf($slotId),
+                static fn (array $b): bool => (string)($b['status'] ?? '') === 'completed',
+            );
+
+            if ($completed !== []) {
+                $reasons[] = "у занятия #{$slotId} есть завершённые брони — их не отменить";
+            }
+
+            if ($newEndAt <= $newStartAt) {
+                $reasons[] = "конец занятия #{$slotId} оказался бы не позже начала";
+            }
+
+            // Тот же запрет, что и на путях записи: два занятия одного
+            // преподавателя внахлёст система сама создать не даёт.
+            $overlap = ExpertHelpers::findOverlap(
+                (int)($slot['expert_id'] ?? 0),
+                $newStartAt,
+                $newEndAt,
+                $slotId,
+            );
+
+            if ($overlap !== null) {
+                $reasons[] = "занятие #{$slotId} наложилось бы на другое занятие того же преподавателя";
+            }
+
+            return $reasons;
         }
 
         /**
-         * Идентификаторы всех занятий, которые вообще разрешено двигать.
+         * Ставит занятие туда, где оно окажется в нужной фазе.
+         *
+         * @return array{slot:int, bookings:int, from:string, to:string, start_at:int, end_at:int, cleared:list<string>}
+         * @throws RuntimeException если так поставить нельзя
+         */
+        public static function moveToPhase(int $slotId, LessonPhase $phase, ?int $now = null): array {
+            $now ??= time();
+            $slot = TimeSlots::get()->selectById($slotId);
+
+            if (!$slot) {
+                throw new RuntimeException("занятия #{$slotId} нет");
+            }
+
+            $duration = (int)$slot['end_at'] - (int)$slot['start_at'];
+            $newStart = $phase->anchorStart($now, $duration);
+
+            return static::applyMove($slotId, $newStart, $newStart + $duration, $now);
+        }
+
+        /**
+         * Сдвигает занятие на заданное число секунд; минус — в прошлое.
+         *
+         * @return array{slot:int, bookings:int, from:string, to:string, start_at:int, end_at:int, cleared:list<string>}
+         * @throws RuntimeException если так поставить нельзя
+         */
+        public static function shiftSlot(int $slotId, int $deltaSec, ?int $now = null): array {
+            $now ??= time();
+            $slot = TimeSlots::get()->selectById($slotId);
+
+            if (!$slot) {
+                throw new RuntimeException("занятия #{$slotId} нет");
+            }
+
+            return static::applyMove(
+                $slotId,
+                (int)$slot['start_at'] + $deltaSec,
+                (int)$slot['end_at'] + $deltaSec,
+                $now,
+            );
+        }
+
+        /**
+         * Идентификаторы занятий, которые вообще разрешено двигать.
          *
          * @return list<int>
          */
@@ -160,9 +185,6 @@ use RuntimeException;
 
         /**
          * Разбирает человеческую длительность: `90m`, `-2h`, `+1d`, `3600`.
-         *
-         * Голые секунды тоже принимаются, но писать их руками неудобно и легко
-         * ошибиться на порядок — а ошибка здесь двигает чужое занятие.
          */
         public static function parseDuration(string $text): ?int {
             $text = trim($text);
@@ -176,6 +198,77 @@ use RuntimeException;
             $value = (int)$m[2] * $multiplier;
 
             return $m[1] === '-' ? -$value : $value;
+        }
+
+        /**
+         * Общая запись для обоих способов адресации.
+         *
+         * @return array{slot:int, bookings:int, from:string, to:string, start_at:int, end_at:int, cleared:list<string>}
+         * @throws RuntimeException
+         */
+        private static function applyMove(int $slotId, int $newStart, int $newEnd, int $now): array {
+            $refusals = static::refusalsForMove($slotId, $newStart, $newEnd);
+
+            if ($refusals !== []) {
+                throw new RuntimeException(implode('; ', $refusals));
+            }
+
+            $slot = TimeSlots::get()->selectById($slotId);
+            $from = LessonPhase::of((int)$slot['start_at'], (int)$slot['end_at'], $now);
+            $to = LessonPhase::of($newStart, $newEnd, $now);
+
+            $update = ['start_at' => $newStart, 'end_at' => $newEnd];
+            $cleared = [];
+
+            // Отметку снимаем только там, где окно этого срока ещё впереди: в
+            // новой фазе занятие честно «не получало» такого письма. Стирать
+            // всё подряд значило бы терять историю — вопрос «суточное уже
+            // отправляли?» становится неотвечаемым.
+            foreach (LessonPhase::LEADS as $lead => $cfg) {
+                if ($to->resetsMark($lead, $newStart, $now)) {
+                    $update[$cfg['column']] = null;
+                    $cleared[] = $lead;
+                }
+            }
+
+            TimeSlots::get()->updateById($update, $slotId);
+
+            $bookingIds = array_map(
+                static fn (array $b): int => (int)$b['id'],
+                static::bookingsOf($slotId),
+            );
+
+            if ($bookingIds !== [] && $cleared !== []) {
+                $bookingUpdate = [];
+
+                foreach ($cleared as $lead) {
+                    $bookingUpdate[LessonPhase::LEADS[$lead]['column']] = null;
+                }
+
+                Bookings::get()->updateById($bookingUpdate, $bookingIds);
+            }
+
+            return [
+                'slot' => $slotId,
+                'bookings' => count($bookingIds),
+                'from' => $from->value,
+                'to' => $to->value,
+                'start_at' => $newStart,
+                'end_at' => $newEnd,
+                'cleared' => $cleared,
+            ];
+        }
+
+        /** @return list<array<string, mixed>> */
+        private static function bookingsOf(int $slotId): array {
+            return Bookings::get()->selectAll(
+                static function (SelectInterface $q) use ($slotId): void {
+                    $q->where(
+                        'bookable_type = :type AND bookable_id = :slot_id',
+                        ['type' => 'time_slot', 'slot_id' => $slotId]
+                    );
+                }
+            );
         }
 
         /** Аккаунт существует и живёт в зарезервированной тестовой зоне. */
