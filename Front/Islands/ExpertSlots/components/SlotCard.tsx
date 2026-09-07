@@ -57,6 +57,18 @@ export const SlotCard: React.FC<Props> = ({slot, onCancel, onEdit, onComplete, o
                     <p className="card-text mb-2">
                         <strong>{t.Slot_Cost()}:</strong> {slot.cost} &#8381;
                     </p>
+                    {/*
+                      * Only for group slots. A single-seat slot is the norm,
+                      * so "seats: 1" on every card would be noise; a slot with
+                      * room for several people looked identical to a private
+                      * one, and its capacity appeared nowhere at all.
+                      */}
+                    {(slot.max_users ?? 1) > 1 && (
+                        <p className="card-text mb-2" data-test-id="slot-seats">
+                            <strong>{t.Slot_MaxUsers()}:</strong>{' '}
+                            {slot.booked_count ?? 0} / {slot.max_users}
+                        </p>
+                    )}
                     <p className="card-text mb-0">
                         <strong>{t.Slot_Status()}:</strong>{' '}
                         <span className={`badge ${statusBadgeClass(slot.status)}`}>

@@ -219,20 +219,20 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
             }
 
             if (!$date || !$time) {
-                return ControllerTools::JSON(['error' => 'Date and time required'], status: 400);
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_DateTimeRequired()], status: 400);
             }
 
             if ($cost < 0) {
-                return ControllerTools::JSON(['error' => 'Invalid cost'], status: 400);
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_InvalidCost()], status: 400);
             }
 
             $expertTz = $account->readParam('time_zone') ?: 'UTC';
             $startAt = DateUtils::parseUserDateTime($date, $time, $expertTz);
             if ($startAt <= 0) {
-                return ControllerTools::JSON(['error' => 'Invalid date or time'], status: 400);
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_InvalidDateTime()], status: 400);
             }
             if ($startAt < time()) {
-                return ControllerTools::JSON(['error' => 'Cannot create a slot in the past'], status: 400);
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_PastSlot()], status: 400);
             }
             $endAt = $startAt + $duration * 60;
 
@@ -311,14 +311,14 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
             $duration = (int)$globals->readPostValue('duration', 60);
 
             if (!$startDate || !$endDate) {
-                return ControllerTools::JSON(['error' => 'Start date and end date required'], status: 400);
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_RangeRequired()], status: 400);
             }
 
             $expertTz = $account->readParam('time_zone') ?: 'UTC';
             $rangeStart = DateUtils::startOfDayForUser($startDate, $expertTz);
             $rangeEnd = DateUtils::endOfDayForUser($endDate, $expertTz);
             if ($rangeStart <= 0 || $rangeEnd <= 0) {
-                return ControllerTools::JSON(['error' => 'Invalid date or time'], status: 400);
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_InvalidDateTime()], status: 400);
             }
 
             $analysis = SlotDateFilter::analyzeDateRange($startDate, $endDate);
@@ -359,12 +359,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
             }
 
             if ($cost < 0) {
-                return ControllerTools::JSON(['error' => 'Invalid cost'], status: 400);
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_InvalidCost()], status: 400);
             }
 
             $slots = json_decode($slotsJson, true);
             if (!is_array($slots) || empty($slots)) {
-                return ControllerTools::JSON(['error' => 'No slots provided'], status: 400);
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_NoSlots()], status: 400);
             }
 
             $allDates = array_column($slots, 'date');
@@ -379,7 +379,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
             $rangeStart = DateUtils::startOfDayForUser($minDate, $expertTz);
             $rangeEnd = DateUtils::endOfDayForUser($maxDate, $expertTz);
             if ($rangeStart <= 0 || $rangeEnd <= 0) {
-                return ControllerTools::JSON(['error' => 'Invalid date or time'], status: 400);
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_InvalidDateTime()], status: 400);
             }
 
             $existing = TimeSlots::get()->selectByField('expert_id', $expertId, function (SelectInterface $q) use ($rangeStart, $rangeEnd): void {
@@ -422,7 +422,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 // silently `continue`d past this whole check, letting the
                 // rest of a batch containing a past row through with 200.
                 if ($proposedStart < time()) {
-                    return ControllerTools::JSON(['error' => 'Cannot create a slot in the past'], status: 400);
+                    return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_PastSlot()], status: 400);
                 }
 
                 if (!in_array($date, $availableDateStrings, true)) {
@@ -524,15 +524,15 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
 
             $slot = TimeSlots::get()->selectOneByField('id', $slotId);
             if (!$slot || (int)$slot['expert_id'] !== $account->id()) {
-                return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_AccessDenied()], status: 403);
             }
 
             if ($slot['status'] !== 'free') {
-                return ControllerTools::JSON(['error' => 'Only free slots can be edited'], status: 400);
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_OnlyFreeEditable()], status: 400);
             }
 
             if ((int)$slot['start_at'] < time()) {
-                return ControllerTools::JSON(['error' => 'Cannot edit past slots'], status: 400);
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_PastNotEditable()], status: 400);
             }
 
             // Audit C-2: a partially-booked multi-slot stays status='free'
@@ -552,17 +552,21 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
             $changesPenalty = $penaltyRaw !== null && (int)$penaltyRaw !== (int)$slot['cancellation_penalty_percent'];
             if (($changesCost || $changesPenalty) && (int)$slot['booked_count'] > 0) {
                 return ControllerTools::JSON(
-                    ['error' => 'Cannot change cost or penalty while the slot has active bookings'],
+                    ['error' => ForegroundI18n::getInstance()->Slot_Error_CostLockedByBookings()],
                     status: 400,
                 );
             }
 
             $date = $globals->readPostValue('date', '');
             $time = $globals->readPostValue('time', '');
-            $durationMin = (int)$globals->readPostValue('duration_min', '0');
+            // Both spellings: the edit modal posts `duration`, the same name
+            // the create form uses, while this handler only ever read
+            // `duration_min`. Changing a slot's length therefore did nothing
+            // and reported success.
+            $durationMin = (int)$globals->readPostValue('duration_min', $globals->readPostValue('duration', '0'));
             $cost = (int)$globals->readPostValue('cost', '0');
             if ($cost < 0) {
-                return ControllerTools::JSON(['error' => 'Invalid cost'], status: 400);
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_InvalidCost()], status: 400);
             }
             $maxUsers = (int)$globals->readPostValue('max_users', '1');
             $isOnline = (int)$globals->readPostValue('is_online', '0');
@@ -574,10 +578,10 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 $expertTz = $account->readParam('time_zone') ?: 'UTC';
                 $startAt = DateUtils::parseUserDateTime($date, $time, $expertTz);
                 if ($startAt <= 0) {
-                    return ControllerTools::JSON(['error' => 'Invalid date/time'], status: 400);
+                    return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_InvalidDateTime()], status: 400);
                 }
                 if ($startAt < time()) {
-                    return ControllerTools::JSON(['error' => 'Cannot reschedule to a past time'], status: 400);
+                    return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_PastReschedule()], status: 400);
                 }
                 $updateData['start_at'] = $startAt;
 
@@ -613,7 +617,18 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 $updateData['cost'] = $cost;
             }
             if ($globals->readPostValue('max_users') !== null) {
-                $updateData['max_users'] = $maxUsers;
+                // Capacity can never drop below the seats already taken —
+                // otherwise people who booked in good faith would be sitting
+                // in a slot that no longer has room for them, and the
+                // free/booked bookkeeping would disagree with the bookings.
+                $bookedCount = (int)($slot['booked_count'] ?? 0);
+                if ($maxUsers < $bookedCount) {
+                    return ControllerTools::JSON(
+                        ['error' => ForegroundI18n::getInstance()->Slot_Error_MaxUsersBelowBooked([$bookedCount])],
+                        status: 400,
+                    );
+                }
+                $updateData['max_users'] = max(1, $maxUsers);
             }
             if ($globals->readPostValue('is_online') !== null) {
                 $updateData['is_online'] = $isOnline;
@@ -653,7 +668,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                     . " WHERE id = ? AND status = 'free'" . $whereExtra;
                 $affected = CasUpdate::exec($sql, $params);
                 if ($affected === 0) {
-                    return ControllerTools::JSON(['error' => 'Slot has been booked, refresh and retry'], status: 409);
+                    return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_SlotTaken()], status: 409);
                 }
             }
 
@@ -669,15 +684,15 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
 
             $slot = TimeSlots::get()->selectOneByField('id', $slotId);
             if (!$slot || (int)$slot['expert_id'] !== $account->id()) {
-                return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_AccessDenied()], status: 403);
             }
 
             if ($slot['status'] !== 'free') {
-                return ControllerTools::JSON(['error' => 'Only free slots can be deleted'], status: 400);
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_OnlyFreeDeletable()], status: 400);
             }
 
             if ((int)$slot['start_at'] < time()) {
-                return ControllerTools::JSON(['error' => 'Cannot delete past slots'], status: 400);
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_PastNotDeletable()], status: 400);
             }
 
             $activeBookings = Bookings::get()->selectAll(function (SelectInterface $query) use ($slotId): void {
@@ -687,7 +702,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
             });
 
             if (!empty($activeBookings)) {
-                return ControllerTools::JSON(['error' => 'Cannot delete slot with active bookings'], status: 400);
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_DeleteLockedByBookings()], status: 400);
             }
 
             TimeSlots::get()->deleteById($slotId);

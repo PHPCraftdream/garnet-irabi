@@ -8,6 +8,7 @@ export interface Slot {
     status: string;
     uid?: string;
     max_users?: number;
+    booked_count?: number;
     is_online?: number;
     location?: string;
     user_id?: number;

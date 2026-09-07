@@ -39,6 +39,7 @@ const EditSlotModal: React.FC<EditSlotModalProps> = ({slot, onClose, onSaved, on
     const [editTime, setEditTime] = React.useState(() => tsToInputTime(slot.start_at));
     const [editDuration, setEditDuration] = React.useState(slot.duration_min ?? 60);
     const [editCost, setEditCost] = React.useState(slot.cost);
+    const [editMaxUsers, setEditMaxUsers] = React.useState(slot.max_users ?? 1);
     const [editPenaltyPercent, setEditPenaltyPercent] = React.useState(slot.cancellation_penalty_percent ?? 0);
     const [editIsOnline, setEditIsOnline] = React.useState(Number(slot.is_online ?? 1) === 1);
     const [editLocation, setEditLocation] = React.useState(slot.location ?? '');
@@ -78,6 +79,7 @@ const EditSlotModal: React.FC<EditSlotModalProps> = ({slot, onClose, onSaved, on
                     time: editTime,
                     duration: editDuration,
                     cost: editCost,
+                    max_users: editMaxUsers,
                     cancellation_penalty_percent: editPenaltyPercent,
                     is_online: editIsOnline ? 1 : 0,
                     location: editLocation,
@@ -165,6 +167,25 @@ const EditSlotModal: React.FC<EditSlotModalProps> = ({slot, onClose, onSaved, on
                             data-test-id="edit-slot-cost"
                         />
                     </div>
+                    {/*
+                      * Capacity was missing here entirely: a group slot could
+                      * be created with several seats and then never inspected
+                      * or corrected, and the number appeared nowhere in the
+                      * interface afterwards. The lower bound is the seats
+                      * already taken — the server enforces the same rule.
+                      */}
+                    <div>
+                        <label className="text-sm text-secondary mb-1 block">{t.Slot_MaxUsers()}</label>
+                        <input
+                            type="number"
+                            className="form-control"
+                            value={editMaxUsers}
+                            onChange={e => setEditMaxUsers(Number(e.target.value))}
+                            min={Math.max(1, slot.booked_count ?? 0)}
+                            max={100}
+                            data-test-id="edit-slot-max-users"
+                        />
+                    </div>
                     <div>
                         <label className="text-sm text-secondary mb-1 block">{t.Slot_PenaltyPercent()}</label>
                         <input
@@ -236,7 +257,10 @@ const ExpertSlotsIslandInner: React.FC<ExpertSlotsProps> = (props) => {
             setSlots(prev => [...prev, newSlot]);
         }
         setShowCreateModal(false);
-        showToast(t.Batch_Created(), 'success');
+        // Batch_Created is a counter label ("Slots created: ") meant to be
+        // followed by a number, as the batch wizard does. Creating one slot
+        // has no number to append, so it showed as a dangling "Created:".
+        showToast(t.Slot_Created(), 'success');
     };
 
     const handleBatchSuccess = (msg: string, newSlots?: Slot[]) => {
