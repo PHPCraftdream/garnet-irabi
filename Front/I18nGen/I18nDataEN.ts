@@ -596,7 +596,7 @@ export class I18nDataEN {
     static Attach_TooLarge = '%s: larger than %s MB — not attached';
     static Attach_Empty = '%s: the file is empty — not attached';
     static Attach_ExtNotAllowed = '%s: files of this kind cannot be attached — not attached';
-    static Attach_TooMany = 'At most %s files can be attached, the rest were skipped';
+    static Attach_TooMany = 'At most %s files can be attached — not attached: %s';
     static A11y_CloseModal = 'Close dialog';
     static A11y_RemoveAttachment = 'Remove attachment';
     static A11y_AttachFiles = 'Attach files';

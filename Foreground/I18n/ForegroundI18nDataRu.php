@@ -703,7 +703,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Attach_TooLarge' => '%s: файл больше %s МБ — не приложен',
             'Attach_Empty' => '%s: файл пустой — не приложен',
             'Attach_ExtNotAllowed' => '%s: такие файлы прикладывать нельзя — не приложен',
-            'Attach_TooMany' => 'Приложить можно не больше %s файлов, остальные пропущены',
+            'Attach_TooMany' => 'Приложить можно не больше %s файлов — не приложены: %s',
 
             // Accessibility (A11y)
             'A11y_CloseModal' => 'Закрыть диалог',

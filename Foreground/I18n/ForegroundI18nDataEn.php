@@ -699,7 +699,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Attach_TooLarge' => '%s: larger than %s MB — not attached',
             'Attach_Empty' => '%s: the file is empty — not attached',
             'Attach_ExtNotAllowed' => '%s: files of this kind cannot be attached — not attached',
-            'Attach_TooMany' => 'At most %s files can be attached, the rest were skipped',
+            'Attach_TooMany' => 'At most %s files can be attached — not attached: %s',
 
             // Accessibility (A11y)
             'A11y_CloseModal' => 'Close dialog',

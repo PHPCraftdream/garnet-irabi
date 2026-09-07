@@ -596,7 +596,7 @@ export class I18nDataRU {
     static Attach_TooLarge = '%s: файл больше %s МБ — не приложен';
     static Attach_Empty = '%s: файл пустой — не приложен';
     static Attach_ExtNotAllowed = '%s: такие файлы прикладывать нельзя — не приложен';
-    static Attach_TooMany = 'Приложить можно не больше %s файлов, остальные пропущены';
+    static Attach_TooMany = 'Приложить можно не больше %s файлов — не приложены: %s';
     static A11y_CloseModal = 'Закрыть диалог';
     static A11y_RemoveAttachment = 'Удалить вложение';
     static A11y_AttachFiles = 'Прикрепить файлы';

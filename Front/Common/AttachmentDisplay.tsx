@@ -53,13 +53,16 @@ export default function AttachmentDisplay({attachments}: Props) {
                             rel="noopener noreferrer"
                             className="common-attach-file"
                             data-test-id={`attachment-${att.id}`}
+                            title={att.original_name}
                         >
                             <div className="common-attach-file-inner">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
                                     <polyline points="14,2 14,8 20,8" />
                                 </svg>
-                                <span className="truncate max-w-32">{att.original_name}</span>
+                                {/* The name is truncated to fit; hovering has to
+                                    be able to reveal the rest of it. */}
+                                <span className="truncate max-w-32" title={att.original_name}>{att.original_name}</span>
                                 <span className="text-xs text-muted">{formatSize(att.size)}</span>
                             </div>
                         </a>

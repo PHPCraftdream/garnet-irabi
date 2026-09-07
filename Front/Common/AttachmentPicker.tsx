@@ -64,6 +64,8 @@ export default function AttachmentPicker({files, onChange, maxFiles = 5, accept}
         const remaining = maxFiles - files.length;
         const pending: PendingFile[] = [];
 
+        const overflow: string[] = [];
+
         for (const file of picked) {
             const refusal = refusalFor(file);
 
@@ -74,11 +76,9 @@ export default function AttachmentPicker({files, onChange, maxFiles = 5, accept}
             }
 
             if (pending.length >= remaining) {
-                // Silently dropping the tail is how five picked files become
-                // three attached ones with nobody the wiser.
-                showToast(t.Attach_TooMany([maxFiles]), 'warning');
+                overflow.push(file.name);
 
-                break;
+                continue;
             }
 
             const entry: PendingFile = { id: crypto.randomUUID(), file, name: file.name };
@@ -86,6 +86,12 @@ export default function AttachmentPicker({files, onChange, maxFiles = 5, accept}
                 entry.preview = URL.createObjectURL(file);
             }
             pending.push(entry);
+        }
+
+        if (overflow.length > 0) {
+            // Naming them matters once there is more than one: "the rest were
+            // skipped" leaves the sender guessing which of the six went.
+            showToast(t.Attach_TooMany([maxFiles, overflow.join(', ')]), 'warning');
         }
 
         if (inputRef.current) inputRef.current.value = '';
