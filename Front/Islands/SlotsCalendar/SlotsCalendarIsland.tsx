@@ -44,7 +44,7 @@ const DEFAULT_FILTERS: FiltersState = {
     onlineFilter: 'all',
 };
 
-const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots, experts, title, bookedSlotIds = [], bookedSlotStatuses = {}, bookedSlotBookingIds = {}, csrf = '', balance = 0, bookUrl = '/slots/~book', isModerator = false, canBook = false, quickChatUrl, sendUrl, currentAccountId, cancelReasons = {}}) => {
+const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots, experts, title, bookedSlotIds = [], bookedSlotStatuses = {}, bookedSlotBookingIds = {}, csrf = '', balance = 0, bookUrl = '/slots/~book', isModerator = false, canBook = false, isExpertViewer = false, quickChatUrl, sendUrl, currentAccountId, cancelReasons = {}}) => {
     const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
     const [bookingSlot, setBookingSlot] = useState<SlotItem | null>(null);
     const [detailSlot, setDetailSlot] = useState<SlotItem | null>(null);
@@ -189,6 +189,11 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots, experts,
 
                 <div>
                     <TimezoneNotice infoOnly />
+                    {isExpertViewer && (
+                        <p className="text-sm text-secondary mb-3" data-test-id="own-slots-hidden-notice">
+                            {t.Slots_OwnHiddenNotice()}
+                        </p>
+                    )}
                 <WeekNavigation
                     weekStartUnix={weekData.weekStartUnix}
                     weekEndUnix={weekData.weekEndUnix}

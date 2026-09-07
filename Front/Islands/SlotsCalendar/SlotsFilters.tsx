@@ -45,6 +45,7 @@ export const SlotsFilters: React.FC<SlotsFiltersProps> = ({filters, experts, onC
                         onChange={val => updateFilter('expertIds', val ? new Set([val]) : new Set())}
                         placeholder={t.Slots_AllExperts()}
                         searchPlaceholder={t.IM_Search() + '...'}
+                        emptyText={t.Filter_NoResults()}
                         testId="filter-expert"
                     />
                 </div>

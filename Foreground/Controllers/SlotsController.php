@@ -155,6 +155,10 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 // bookable is your own slot, and those are filtered out of the
                 // listing below (expert_id <> self).
                 'canBook' => $account !== null,
+                // Their own slots are filtered out below; say so on the page,
+                // otherwise an expert looking for them concludes the listing
+                // is broken.
+                'isExpertViewer' => $account !== null && $account->readParam('type') === 'expert',
                 'quickChatUrl' => IRabi::url('/im/~quickChat'),
                 'sendUrl' => IRabi::url('/im/~send'),
                 'currentAccountId' => $accountId,

@@ -39,6 +39,13 @@ export interface SlotsCalendarProps {
     bookUrl?: string;
     isModerator?: boolean;
     canBook?: boolean;
+    /**
+     * The viewer teaches here. The catalog deliberately hides their own
+     * slots — nobody books themselves — but without a word about it the
+     * page reads as "my slots vanished", which is exactly how every expert
+     * who looked at it during testing read it.
+     */
+    isExpertViewer?: boolean;
     quickChatUrl?: string;
     sendUrl?: string;
     currentAccountId?: number;
