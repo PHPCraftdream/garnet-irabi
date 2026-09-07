@@ -32,11 +32,20 @@ function getInitials(name: string): string {
     return src.split(' ').map(w => w[0]?.toUpperCase() || '').slice(0, 2).join('');
 }
 
-const ROLE_LABELS: Record<string, string> = {
-    expert: '👩‍🏫',
-    moderator: '🛡️',
-    owner: '👑',
-};
+/**
+ * A role marker says what someone does. The emoji said more than that: the
+ * teacher glyph carried a gender, and put a woman's face next to every male
+ * expert's name. A crown and a shield carry their own connotations too.
+ * The word for the role says exactly the intended thing and nothing else.
+ */
+function roleLabel(role: string): string {
+    switch (role) {
+        case 'expert': return t.Reg_AccountTypeExpert();
+        case 'moderator': return t.Admin_Role_Moderator();
+        case 'owner': return t.Admin_Role_Owner();
+        default: return '';
+    }
+}
 
 export default function NewMessageForm({
     searchRecipientsUrl, recipientId, onRecipientIdChange,
@@ -96,7 +105,7 @@ export default function NewMessageForm({
                                         {getInitials(selected.name)}
                                     </span>
                                     <span className="truncate">{selected.name || t.User_Anonymous()}</span>
-                                    <span className="text-xs">{ROLE_LABELS[selected.role] || ''}</span>
+                                    <span className="text-xs text-muted shrink-0">{roleLabel(selected.role)}</span>
                                 </span>
                             ) : (
                                 <span>{loading ? t.User_Loading() : t.IM_Search() + '...'}</span>
@@ -147,7 +156,7 @@ export default function NewMessageForm({
                                             <span className="flex-1 text-left truncate">
                                                 <span className="font-medium">{r.name || t.User_Anonymous()}</span>
                                             </span>
-                                            <span className="text-xs shrink-0">{ROLE_LABELS[r.role] || ''}</span>
+                                            <span className="text-xs text-muted shrink-0">{roleLabel(r.role)}</span>
                                         </button>
                                     ))
                                 )}
