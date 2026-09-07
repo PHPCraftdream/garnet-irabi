@@ -183,9 +183,26 @@ async function act(name, args) {
             await page.waitForTimeout(Number(args[0] ?? 2000));
             return;
 
+        // У поля ввода нет видимого текста: innerText на нём — пустая строка.
+        // Молча отдать пустоту хуже всего: агент читает это как «на странице
+        // ничего нет» и уходит искать несуществующую поломку вместо того, чтобы
+        // взять значение другой командой. Поэтому говорим прямо, какой.
         case 'text': {
             const target = args[0] ?? 'body';
-            const value = await page.locator(target).first().innerText({ timeout: 15000 });
+            const locator = page.locator(target).first();
+            const value = await locator.innerText({ timeout: 15000 });
+
+            if (value.trim() === '') {
+                const isField = await locator
+                    .evaluate((n) => ['INPUT', 'TEXTAREA', 'SELECT'].includes(n.tagName))
+                    .catch(() => false);
+
+                if (isField) {
+                    console.log(`(это поле ввода, текста у него нет — возьми значение: value ${target})`);
+                    return;
+                }
+            }
+
             console.log(value.replace(/\n{3,}/g, '\n\n').trim());
             return;
         }
