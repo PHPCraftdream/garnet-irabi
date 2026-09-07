@@ -47,6 +47,7 @@ namespace PHPCraftdream\IRabi {
     use PHPCraftdream\IRabi\Common\Commands\CMDTestMode;
     use PHPCraftdream\IRabi\Common\Commands\CMDTestProvision;
     use PHPCraftdream\IRabi\Common\Commands\CMDTestTeardown;
+    use PHPCraftdream\IRabi\Common\Commands\CMDTimeShift;
     use PHPCraftdream\IRabi\Common\Mail\AppMailer;
     use PHPCraftdream\IRabi\Common\Services\AppCronService;
     use PHPCraftdream\IRabi\Common\Services\StaticPagesService;
@@ -502,6 +503,7 @@ namespace PHPCraftdream\IRabi {
             CommandClasses::set('test:provision', CMDTestProvision::class);
             CommandClasses::set('test:teardown', CMDTestTeardown::class);
             CommandClasses::set('test-mode', CMDTestMode::class);
+            CommandClasses::set('time-shift', CMDTimeShift::class);
             CommandClasses::set('clear-user', CMDClearUser::class);
             CommandClasses::set('clear-logs', CMDClearLogs::class);
             CommandClasses::set('finance-audit', CMDFinanceAudit::class);
