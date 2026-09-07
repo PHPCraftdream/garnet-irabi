@@ -67,3 +67,13 @@ errors.log
 
 # Дерево персистентных агентов (в ячейках лежат пароли тестовых персон)
 /.agents/
+
+# agent-tree: cell bookkeeping (auto-maintained — do not hand-edit below)
+agents/**/.git/
+agents/_meta/**/locks/
+.rush/
+.crush/
+.codex/
+.gemini/
+.opencode/
+.dsh/
