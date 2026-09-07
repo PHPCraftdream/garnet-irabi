@@ -310,6 +310,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Balance_NoHistory' => 'No transactions yet',
             'Balance_TopUpAmount' => 'Amount',
             'Balance_TopUpPlaceholder' => 'Enter amount',
+            'Balance_TopUpNotice' => 'Card payment is not connected yet: the amount is credited to your balance immediately, with nothing charged to a card.',
             'Balance_TopUpSuccess' => 'Balance topped up',
             'Balance_LedgerNote_TopUp' => 'Balance top-up',
 
@@ -796,6 +797,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Slot_BookError_NotUser' => 'Only users can book slots',
             'Slot_BookError_Unavailable' => 'This slot is already taken or unavailable',
             'Slot_BookError_Past' => 'This time has already passed',
+            'Slot_BookError_Busy' => 'The wallet is busy with another operation — try again in a moment',
             'News_Unread' => 'new',
             'News_Archived' => 'Archived',
             'News_NewSlot_Action' => ' opened ',

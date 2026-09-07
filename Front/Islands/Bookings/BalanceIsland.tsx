@@ -9,6 +9,7 @@ import {usePagination, PageResponse} from '@common/hooks/usePagination';
 import Pagination from '@common/Components/Pagination';
 import {PageHeader} from '@common/Components/PageHeader';
 import {Wallet} from 'lucide-react';
+import {refreshLiveCounts} from '@common/Utils/liveCounts';
 
 interface LedgerEntry {
     id: number;
@@ -66,6 +67,10 @@ export const BalanceIsland: React.FC<BalanceIslandProps> = ({balance: initialBal
                     setTopupAmount('');
                     showToast(t.Balance_TopUpSuccess(), 'success');
                     ledger.refresh();
+                    // The header pill holds the balance the page was rendered
+                    // with. Without this it keeps showing the old amount —
+                    // "0 ₽" right above the money that just arrived.
+                    refreshLiveCounts();
                 } else {
                     showToast(result?.error || t.General_Error(), 'danger');
                 }
@@ -96,7 +101,17 @@ export const BalanceIsland: React.FC<BalanceIslandProps> = ({balance: initialBal
             {/* Top-up form */}
             <div className="card mb-6" data-test-id="topup-form">
                 <div className="card-body">
-                    <h5 className="card-title mb-4">{t.Balance_TopUp()}</h5>
+                    <h5 className="card-title mb-2">{t.Balance_TopUp()}</h5>
+                    {/*
+                      * Say what the button does before it is pressed. There is
+                      * no payment provider wired up yet, so the amount is
+                      * simply credited — and everyone who tried it expected a
+                      * card form instead and was left unsure whether real
+                      * money had moved.
+                      */}
+                    <p className="text-sm text-secondary mb-4" data-test-id="topup-notice">
+                        {t.Balance_TopUpNotice()}
+                    </p>
                     <div className="flex gap-3 items-end">
                         <div className="flex-1">
                             <label className="form-label text-sm text-secondary mb-1">{t.Balance_TopUpAmount()}</label>

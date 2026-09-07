@@ -309,6 +309,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Balance_NoHistory' => 'Транзакций пока нет',
             'Balance_TopUpAmount' => 'Сумма',
             'Balance_TopUpPlaceholder' => 'Введите сумму',
+            'Balance_TopUpNotice' => 'Оплата картой пока не подключена: указанная сумма зачислится на баланс сразу, без списания с карты.',
             'Balance_TopUpSuccess' => 'Баланс пополнен',
             'Balance_LedgerNote_TopUp' => 'Пополнение баланса',
 
@@ -800,6 +801,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Slot_BookError_NotUser' => 'Бронировать слоты могут только пользователи',
             'Slot_BookError_Unavailable' => 'Этот слот уже занят или недоступен',
             'Slot_BookError_Past' => 'Это время уже прошло',
+            'Slot_BookError_Busy' => 'Кошелёк сейчас занят другой операцией — повторите через мгновение',
             'News_Unread' => 'новых',
             'News_Archived' => 'Архив',
             'News_NewSlot_Action' => ' открыл(а) ',
