@@ -480,6 +480,27 @@ pattern to copy).
    (or no row at all after the expected interval) = investigate
    (`error_message` column, plus the `WorkDir/Logs/cron-*.log` redirect).
 
+   **A missing row usually means the crontab LINE is broken, not the
+   task.** Compare the line character by character with a working
+   neighbour. The trap seen in practice: ampersands arriving escaped —
+   `cd <path> \&\& php garnet cron <task> ... 2>\&1` instead of
+   `&&` / `2>&1`. `sh` reads `\&` as a literal, so the line becomes `cd`
+   with extra arguments and nothing after it ever runs; the broken
+   redirect means the failure is not logged either. It happens when the
+   line is installed through a shell layer that escapes for you. Editing
+   the crontab through a file avoids it entirely:
+
+   ```bash
+   crontab -l > /tmp/ct && cp /tmp/ct /tmp/ct.bak
+   # edit /tmp/ct with a real editor, then:
+   crontab /tmp/ct && crontab -l | tail -5
+   ```
+
+   This exact break silenced `booking-reminders` completely: the feature
+   was written, deployed and believed working, while no reminder was ever
+   sent. From the outside it was indistinguishable from "the window has
+   not come round yet".
+
 ## Historical migration record: 3-folder → 4-folder layout
 
 Assumes the server already has a 3-folder layout
