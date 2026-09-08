@@ -535,9 +535,23 @@ namespace PHPCraftdream\IRabi {
             FwMagicLoginService::setTableClasses(MagicLoginTokens::class);
         }
 
-        protected function defineTwigParams(): void {
-            Mailer::setInstance(new AppMailer(Mailer::get()));
+        /**
+         * Wraps the mailer so every send lands in the mail log.
+         *
+         * Lives here rather than in defineTwigParams() because only webInit()
+         * calls that one: the log held auth codes sent during a request and
+         * not a single reminder sent by cron, which made "Mail log" answer
+         * "what did we send" with a convincing, incomplete silence.
+         */
+        protected function defineMailer(): void {
+            if (Mailer::get() instanceof AppMailer) {
+                return;
+            }
 
+            Mailer::setInstance(new AppMailer(Mailer::get()));
+        }
+
+        protected function defineTwigParams(): void {
             $lang = 'RU';
             FwI18n::getInstance()->setLang($lang);
             ForegroundI18n::getInstance()->setLang($lang);
