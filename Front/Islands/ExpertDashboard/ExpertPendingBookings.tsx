@@ -24,6 +24,16 @@ export interface PendingBookingItem {
 
 interface Props {
     bookings: PendingBookingItem[];
+    /**
+     * Confirming used to remove the card from THIS list and tell nobody else.
+     * The confirmed-bookings list and the stats counter kept their own copies
+     * of the same fact and went on showing the old one, so three places on one
+     * page disagreed until the page was reloaded by hand.
+     *
+     * The list now lives in the parent; these say what happened to it.
+     */
+    onConfirmed: (booking: PendingBookingItem) => void;
+    onRejected: (bookingId: number) => void;
 }
 
 function getInitials(name: string): string {
@@ -32,8 +42,7 @@ function getInitials(name: string): string {
     return (name[0] || '?').toUpperCase();
 }
 
-export const ExpertPendingBookings: React.FC<Props> = ({bookings: initialBookings}) => {
-    const [bookings, setBookings] = React.useState<PendingBookingItem[]>(initialBookings);
+export const ExpertPendingBookings: React.FC<Props> = ({bookings, onConfirmed, onRejected}) => {
     const {sending: confirmSending, withSending: withConfirmSending} = useSending();
     const {sending: rejectSending, withSending: withRejectSending} = useSending();
     
@@ -66,7 +75,12 @@ export const ExpertPendingBookings: React.FC<Props> = ({bookings: initialBooking
             try {
                 const csrf = (window as any).__GARNET_CSRF__ ?? '';
                 await sendPost(appUrl('/expert/~confirmBooking'), {CSRF_TOKEN: csrf, booking_id: bookingId});
-                setBookings(prev => prev.filter(b => b.booking_id !== bookingId));
+
+                const confirmed = bookings.find(b => b.booking_id === bookingId);
+
+                if (confirmed) {
+                    onConfirmed(confirmed);
+                }
             } catch (e: any) {
                 D('teaching.pendingBookings.error', {action: 'confirm', bookingId, error: e?.message});
                 showToast(e?.message || t.General_Error(), 'danger');
@@ -90,7 +104,7 @@ export const ExpertPendingBookings: React.FC<Props> = ({bookings: initialBooking
             try {
                 const csrf = (window as any).__GARNET_CSRF__ ?? '';
                 await sendPost(appUrl('/expert/~cancelBooking'), {CSRF_TOKEN: csrf, booking_id: bookingId, reason: rejectReason.trim()});
-                setBookings(prev => prev.filter(b => b.booking_id !== bookingId));
+                onRejected(bookingId);
                 setRejectId(null);
                 setRejectReason('');
             } catch (e: any) {

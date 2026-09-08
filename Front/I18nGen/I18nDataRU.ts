@@ -701,7 +701,7 @@ export class I18nDataRU {
     static News_Archived = 'Архив';
     static News_NewSlot_Action = ' открыл(а) ';
     static News_NewSlot_Link = 'новый слот';
-    static News_SlotBooked_Action = ' забронировал(а) ваш ';
+    static News_SlotBooked_Action = ' — новая бронь на ваш ';
     static News_SlotBooked_Link = 'слот';
     static News_BookingConfirmed_Action = ' подтвердил(а) вашу ';
     static News_BookingConfirmed_Link = 'бронь';
@@ -716,7 +716,7 @@ export class I18nDataRU {
     static Booking_InsufficientBalance = 'Недостаточно средств на балансе.';
     static Email_BookingCreated_Subject = 'Новая бронь на %s';
     static Email_BookingCreated_Title = 'У вас новая бронь';
-    static Email_BookingCreated_Body = 'Пользователь %s забронировал ваше занятие.';
+    static Email_BookingCreated_Body = 'Новая бронь на ваше занятие. Ученик: %s.';
     static Email_BookingConfirmed_Subject = 'Бронь подтверждена на %s';
     static Email_BookingConfirmed_Title = 'Ваша бронь подтверждена';
     static Email_BookingConfirmed_Body = 'Ваша бронь подтверждена экспертом.';

@@ -83,6 +83,24 @@ export const DashboardIsland: React.FC<DashboardProps> = (props) => {
         newsUrl, unreadNews,
     } = props;
 
+    // One fact, one place. The pending list, the confirmed list and the stats
+    // counter each held their own copy and were updated separately — so
+    // confirming a booking left three views of the same page disagreeing until
+    // it was reloaded by hand. Now they all read this.
+    const [pending, setPending] = React.useState<PendingBookingItem[]>(expertPendingBookingsList ?? []);
+    const [confirmed, setConfirmed] = React.useState<ConfirmedBookingItem[]>(expertConfirmedBookingsList ?? []);
+
+    const handleConfirmed = React.useCallback((booking: PendingBookingItem): void => {
+        setPending(prev => prev.filter(b => b.booking_id !== booking.booking_id));
+        // Inserted in start order, the same order the server sends them in, so
+        // a confirmed booking does not jump to the end of the list.
+        setConfirmed(prev => [...prev, booking].sort((a, b) => a.start_at - b.start_at));
+    }, []);
+
+    const handleRejected = React.useCallback((bookingId: number): void => {
+        setPending(prev => prev.filter(b => b.booking_id !== bookingId));
+    }, []);
+
     return (
         <IrabiPreviewProvider>
         <div className="page-narrow space-y-6" data-test-id="dashboard">
@@ -103,7 +121,7 @@ export const DashboardIsland: React.FC<DashboardProps> = (props) => {
 
             {isExpert && (
                 <ExpertStats
-                    pendingBookings={pendingBookings ?? 0}
+                    pendingBookings={pending.length}
                     usersThisMonth={usersThisMonth ?? 0}
                     earningsThisMonth={earningsThisMonth ?? 0}
                     declines={declines ?? 0}
@@ -112,11 +130,15 @@ export const DashboardIsland: React.FC<DashboardProps> = (props) => {
             )}
 
             {isExpert && expertPendingBookingsList && (
-                <ExpertPendingBookings bookings={expertPendingBookingsList} />
+                <ExpertPendingBookings
+                    bookings={pending}
+                    onConfirmed={handleConfirmed}
+                    onRejected={handleRejected}
+                />
             )}
 
             {isExpert && expertConfirmedBookingsList && (
-                <ExpertConfirmedBookings bookings={expertConfirmedBookingsList} />
+                <ExpertConfirmedBookings bookings={confirmed} />
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

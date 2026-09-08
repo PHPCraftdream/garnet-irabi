@@ -815,7 +815,9 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'News_Archived' => 'Архив',
             'News_NewSlot_Action' => ' открыл(а) ',
             'News_NewSlot_Link' => 'новый слот',
-            'News_SlotBooked_Action' => ' забронировал(а) ваш ',
+            // Без глагола: у него есть род, а у имени в ленте — нет.
+            // «забронировал(а)» — незаполненный плейсхолдер на видном месте.
+            'News_SlotBooked_Action' => ' — новая бронь на ваш ',
             'News_SlotBooked_Link' => 'слот',
             'News_BookingConfirmed_Action' => ' подтвердил(а) вашу ',
             'News_BookingConfirmed_Link' => 'бронь',
@@ -834,7 +836,8 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             // Email notifications
             'Email_BookingCreated_Subject' => 'Новая бронь на %s',
             'Email_BookingCreated_Title' => 'У вас новая бронь',
-            'Email_BookingCreated_Body' => 'Пользователь %s забронировал ваше занятие.',
+            // Тоже без глагола: «записался» так же имеет род, как и «забронировал».
+            'Email_BookingCreated_Body' => 'Новая бронь на ваше занятие. Ученик: %s.',
             'Email_BookingConfirmed_Subject' => 'Бронь подтверждена на %s',
             'Email_BookingConfirmed_Title' => 'Ваша бронь подтверждена',
             'Email_BookingConfirmed_Body' => 'Ваша бронь подтверждена экспертом.',
