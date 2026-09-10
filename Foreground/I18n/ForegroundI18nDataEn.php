@@ -480,6 +480,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Study_NoBookings' => 'No upcoming bookings',
             'Study_TotalBookings' => 'Total Bookings',
             'Study_CompletedBookings' => 'Completed Bookings',
+            'Study_ActiveBookings' => 'In Progress',
 
             // Admin Dashboard
             'Admin_Dashboard' => 'Overview',

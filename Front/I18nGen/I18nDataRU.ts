@@ -427,6 +427,7 @@ export class I18nDataRU {
     static Study_NoBookings = 'Бронирований пока нет';
     static Study_TotalBookings = 'Всего бронирований';
     static Study_CompletedBookings = 'Завершено бронирований';
+    static Study_ActiveBookings = 'В процессе';
     static Admin_Dashboard = 'Обзор';
     static Admin_OpenTickets = 'Открытые тикеты';
     static Admin_PendingApprovals = 'Эксперты на одобрении';

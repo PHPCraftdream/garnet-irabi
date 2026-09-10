@@ -56,6 +56,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
                     'totalBookings' => $counts['total'],
                     'userCancellations' => $counts['cancellations'],
                     'userDeclines' => $counts['declines'],
+                    'activeBookings' => $counts['active'],
                 ],
                 'isModerator' => $isModerator,
                 'isOwnProfile' => $isOwnProfile,

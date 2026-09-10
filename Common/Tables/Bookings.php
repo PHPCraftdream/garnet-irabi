@@ -27,7 +27,7 @@ namespace PHPCraftdream\IRabi\Common\Tables {
          * только при подтверждении), поэтому именно он, а не отдельный
          * журнал, решает «сняла заявку» vs «отменили подтверждённую бронь».
          *
-         * @return array{completed:int,total:int,cancellations:int,declines:int}
+         * @return array{completed:int,total:int,cancellations:int,declines:int,active:int}
          */
         public static function userOutcomeCounts(int $userId): array {
             $completed = static::get()->getCount(function (SelectInterface $q) use ($userId): void {
@@ -43,11 +43,20 @@ namespace PHPCraftdream\IRabi\Common\Tables {
                 $q->where('user_id = ? AND status = ? AND confirmed_at IS NULL', [$userId, 'cancelled']);
             });
 
+            // D-160: the profile page showed "Всего"/"Завершено"/"Отмен"/"Снятий"
+            // side by side, and none of those four summed to "Всего" whenever the
+            // user had a still-open booking (pending, or confirmed but the lesson
+            // hasn't happened yet) — the arithmetic looked broken. Derived, not a
+            // fifth query: guaranteed to reconcile with the other three by
+            // construction instead of racing a separate COUNT against them.
+            $active = $total - $completed - $cancellations - $declines;
+
             return [
                 'completed' => $completed,
                 'total' => $total,
                 'cancellations' => $cancellations,
                 'declines' => $declines,
+                'active' => $active,
             ];
         }
 

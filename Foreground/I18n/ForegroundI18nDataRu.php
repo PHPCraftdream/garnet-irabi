@@ -494,6 +494,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Study_NoBookings' => 'Бронирований пока нет',
             'Study_TotalBookings' => 'Всего бронирований',
             'Study_CompletedBookings' => 'Завершено бронирований',
+            'Study_ActiveBookings' => 'В процессе',
 
             // Admin Dashboard
             'Admin_Dashboard' => 'Обзор',

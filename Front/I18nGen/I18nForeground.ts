@@ -433,6 +433,7 @@ class I18n extends I18nBase {
     Study_NoBookings: t = (a = []) => this.t('Study_NoBookings', a);
     Study_TotalBookings: t = (a = []) => this.t('Study_TotalBookings', a);
     Study_CompletedBookings: t = (a = []) => this.t('Study_CompletedBookings', a);
+    Study_ActiveBookings: t = (a = []) => this.t('Study_ActiveBookings', a);
     Admin_Dashboard: t = (a = []) => this.t('Admin_Dashboard', a);
     Admin_OpenTickets: t = (a = []) => this.t('Admin_OpenTickets', a);
     Admin_PendingApprovals: t = (a = []) => this.t('Admin_PendingApprovals', a);

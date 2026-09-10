@@ -428,6 +428,7 @@ export class I18nDataEN {
     static Study_NoBookings = 'No upcoming bookings';
     static Study_TotalBookings = 'Total Bookings';
     static Study_CompletedBookings = 'Completed Bookings';
+    static Study_ActiveBookings = 'In Progress';
     static Admin_Dashboard = 'Overview';
     static Admin_OpenTickets = 'Open Tickets';
     static Admin_PendingApprovals = 'Experts Pending Approval';

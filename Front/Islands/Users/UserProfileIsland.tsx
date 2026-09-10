@@ -17,6 +17,7 @@ interface Props {
         totalBookings: number;
         userCancellations: number;
         userDeclines: number;
+        activeBookings: number;
     };
     isModerator: boolean;
     isOwnProfile?: boolean;
@@ -93,10 +94,19 @@ export const UserProfileIsland: React.FC<Props> = ({user, isModerator, isOwnProf
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 border-t border-default">
+                <div className="grid grid-cols-2 md:grid-cols-5 border-t border-default">
                     <div className="profile-stat-cell">
                         <div className="profile-stat-value" data-test-id="user-stat-completed">{user.completedBookings}</div>
                         <div className="stat-tile-label">{t.Study_CompletedBookings()}</div>
+                    </div>
+                    {/* D-160: "Всего" used to sit next to Завершено/Отказов/Отмен
+                        without a category for a still-open booking (pending, or
+                        confirmed but not yet happened) — the four numbers never
+                        summed to "Всего" whenever one existed, reading as broken
+                        arithmetic rather than a missing category. */}
+                    <div className="profile-stat-cell">
+                        <div className="profile-stat-value" data-test-id="user-stat-active">{user.activeBookings}</div>
+                        <div className="stat-tile-label">{t.Study_ActiveBookings()}</div>
                     </div>
                     <div className="profile-stat-cell">
                         <div className="profile-stat-value" data-test-id="user-stat-total">{user.totalBookings}</div>
