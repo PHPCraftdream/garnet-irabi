@@ -254,12 +254,17 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 });
                 $usersThisMonth = (int)($monthUsers[0]['cnt'] ?? 0);
 
+                // D-156: summed only booking_payment credits — a booking paid
+                // and refunded within the same month still showed its full
+                // payment here after the refund had already taken the money
+                // back out (баланс/«Доход за месяц» разошлись на ровно сумму
+                // возврата). Net against booking_refund debits, same as the
+                // balance itself is derived from the full ledger.
                 $monthEarnings = BalanceLedger::get()->selectAll(function (SelectInterface $q) use ($accountId, $monthStart): void {
                     $q->resetCols();
-                    $q->cols(['COALESCE(SUM(amount), 0) as total']);
+                    $q->cols(['COALESCE(SUM(CASE WHEN is_credit = 1 THEN amount ELSE -amount END), 0) as total']);
                     $q->where('account_id = ?', [$accountId])
-                        ->where('is_credit = 1')
-                        ->where('entry_type IN (?)', [['booking_payment']])
+                        ->where('entry_type IN (?)', [['booking_payment', 'booking_refund']])
                         ->where('created_at >= ?', [$monthStart]);
                 });
                 $earningsThisMonth = (int)($monthEarnings[0]['total'] ?? 0);

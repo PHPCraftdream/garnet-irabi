@@ -24,7 +24,7 @@ export const ExpertStats: React.FC<ExpertStatsProps> = ({pendingBookings, usersT
                 <div className="stat-tile-label">{t.Dash_UsersThisMonth()}</div>
             </div>
             <div className="stat-tile">
-                <div className="expert-stat-value-warning">{earningsThisMonth} &#8381;</div>
+                <div className="expert-stat-value-warning" data-test-id="expert-stat-earnings">{earningsThisMonth} &#8381;</div>
                 <div className="stat-tile-label">{t.Dash_EarningsThisMonth()}</div>
             </div>
             <div className="stat-tile">

@@ -105,11 +105,24 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
                 $q->where('created_at >= ?', [$monthStart]);
             });
 
-            // Revenue this month (sum of debit entries = booking_payment)
+            // D-156: same gap as the expert's own "Доход за месяц" — summed
+            // only booking_payment credits, so a booking paid and refunded
+            // within the same month still counted its full payment here.
+            // Unlike the per-expert query (MainController), this one has no
+            // account_id filter — a plain is_credit net-sum would also pick
+            // up the STUDENT's refund credit (same entry_type, opposite
+            // account) and cancel the correction back out. Only the debit
+            // side of booking_refund (money leaving the expert) belongs in
+            // platform revenue.
             $monthRevenue = BalanceLedger::get()->selectAll(function (SelectInterface $q) use ($monthStart): void {
                 $q->resetCols();
-                $q->cols(['COALESCE(SUM(amount), 0) as total']);
-                $q->where("entry_type = 'booking_payment'");
+                $q->cols([
+                    'COALESCE(SUM(CASE' .
+                    " WHEN entry_type = 'booking_payment' AND is_credit = 1 THEN amount" .
+                    " WHEN entry_type = 'booking_refund' AND is_credit = 0 THEN -amount" .
+                    ' ELSE 0 END), 0) as total',
+                ]);
+                $q->where("entry_type IN ('booking_payment', 'booking_refund')");
                 $q->where('created_at >= ?', [$monthStart]);
             });
             $revenueThisMonth = (int)($monthRevenue[0]['total'] ?? 0);
