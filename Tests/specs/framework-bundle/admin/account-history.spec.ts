@@ -248,10 +248,6 @@ test.describe('EntityHistory: account flag toggle is recorded and visible in UI'
 					 ON DUPLICATE KEY UPDATE value = '1'`,
 					[targetId]
 				);
-				await conn.execute(
-					`UPDATE ${tn('expert_profiles')} SET is_approved = 1 WHERE account_id = ?`,
-					[targetId]
-				);
 			}
 		} finally { await conn.end(); }
 

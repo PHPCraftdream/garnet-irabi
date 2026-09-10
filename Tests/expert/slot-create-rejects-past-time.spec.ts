@@ -152,7 +152,8 @@ test.describe('F-02: createSlot refuses a past start time', () => {
 		});
 
 		expect(status).toBe(400);
-		expect(body?.error).toMatch(/past/i);
+		// Сообщение отдаётся на языке интерфейса.
+		expect(body?.error).toMatch(/past|в прошлом/i);
 
 		const created = await countSlotsForExpert(expertId, markCreatedAt);
 		expect(created).toBe(0);
@@ -196,7 +197,8 @@ test.describe('F-02: batchSlots refuses the WHOLE batch when any row is past', (
 		});
 
 		expect(status).toBe(400);
-		expect(body?.error).toMatch(/past/i);
+		// Сообщение отдаётся на языке интерфейса.
+		expect(body?.error).toMatch(/past|в прошлом/i);
 
 		// Whole-batch rejection: the two otherwise-valid future rows must
 		// NOT have been created either.
@@ -237,7 +239,8 @@ test.describe('F-02: createSlot boundary around "now"', () => {
 		});
 
 		expect(status).toBe(400);
-		expect(body?.error).toMatch(/past/i);
+		// Сообщение отдаётся на языке интерфейса.
+		expect(body?.error).toMatch(/past|в прошлом/i);
 	});
 
 	test('start time comfortably in the future (5 min) → 200, slot created', async ({ page }) => {

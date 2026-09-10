@@ -70,7 +70,11 @@ test.describe('php garnet cron — CLI boot wires service tables', () => {
         expect(result.stdout).toContain('[log-rotation]');
         expect(result.stdout).toContain('[session-retention]');
         expect(result.stdout).toContain('[finance-audit]');
-        expect(result.stdout).toMatch(/Done:\s*7\/7 tasks completed/);
+        // Число задач меняется вместе с приложением; важно, что все
+        // зарегистрированные отработали, а не то, что их ровно семь.
+        const done = result.stdout.match(/Done:\s*(\d+)\/(\d+) tasks completed/);
+        expect(done, result.stdout).not.toBeNull();
+        expect(done![1]).toBe(done![2]);
         expect(result.stdout).not.toMatch(/ERROR:/);
         expect(result.exitCode).toBe(0);
 

@@ -25,8 +25,6 @@ let userId: number;
 let actorId: number;
 let insertedEventId: number;
 let prevAccountName: string;
-let prevDisplayName: string | null = null;
-let hadExpertProfile = false;
 
 test.describe('News feed -- actor name resolution', () => {
 
@@ -34,7 +32,6 @@ test.describe('News feed -- actor name resolution', () => {
     // subsequent test once one fails, so a cleanup step written as a
     // regular test never runs after the middle assertion fails, leaving
     // the shared testuser_setup_expert fixture's accounts.name /
-    // expert_profiles.display_name mutated for the rest of this
     // worker's run. Hooks run regardless of test outcome.
     test.beforeAll(async () => {
         const conn = await mysql.createConnection(DB);
@@ -58,20 +55,6 @@ test.describe('News feed -- actor name resolution', () => {
                 `UPDATE ${tn('accounts')} SET name = ? WHERE id = ?`,
                 [RESOLVED_NAME, actorId],
             );
-
-            // Update expert_profiles.display_name if the row exists
-            const [epRows] = await conn.execute<any[]>(
-                `SELECT display_name FROM ${tn('expert_profiles')} WHERE account_id = ?`,
-                [actorId],
-            );
-            if (epRows.length > 0) {
-                hadExpertProfile = true;
-                prevDisplayName = epRows[0].display_name;
-                await conn.execute(
-                    `UPDATE ${tn('expert_profiles')} SET display_name = ? WHERE account_id = ?`,
-                    [RESOLVED_NAME, actorId],
-                );
-            }
 
             // Insert a personal new_message event with a STALE name in payload
             const now = Math.floor(Date.now() / 1000);
@@ -135,14 +118,6 @@ test.describe('News feed -- actor name resolution', () => {
                 await conn.execute(
                     `UPDATE ${tn('accounts')} SET name = ? WHERE id = ?`,
                     [prevAccountName, actorId],
-                );
-            }
-
-            // Restore expert_profiles.display_name
-            if (hadExpertProfile && actorId) {
-                await conn.execute(
-                    `UPDATE ${tn('expert_profiles')} SET display_name = ? WHERE account_id = ?`,
-                    [prevDisplayName, actorId],
                 );
             }
         } finally {

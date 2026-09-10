@@ -39,17 +39,30 @@
 import { test, expect, tn, getDbPrefix } from '../../helpers/scoped-test';
 import { spawnSync } from 'child_process';
 import * as path from 'node:path';
+import * as fs from 'node:fs';
 import { withConnection } from '../../helpers/db';
 
 const APP_DIR = path.resolve(__dirname, '../../..');
 
 /**
- * Final filesystem version (Migrations/AppMigration.php::$currentVersion).
- * The tracker must return here after the replayed run. Read from the
- * constant rather than hard-coding so a future bump doesn't silently
- * stale this assertion — the runner itself reports fsVersion in output.
+ * Final filesystem version — читается прямо из
+ * `Migrations/AppMigration.php::$currentVersion`.
+ *
+ * Здесь стояло число, и комментарий рядом обещал, что оно берётся из
+ * исходника «чтобы будущий подъём версии не протух незаметно». Обещание
+ * не выполнялось, и на версии 23 тест лёг, ожидая 15. Теперь читаем.
  */
-const FS_VERSION = 15;
+const FS_VERSION = (() => {
+    const src = fs.readFileSync(
+        path.resolve(__dirname, '../../../Migrations/AppMigration.php'),
+        'utf-8',
+    );
+    const m = src.match(/\$currentVersion\s*=\s*(\d+)/);
+
+    if (!m) throw new Error('AppMigration::$currentVersion not found');
+
+    return Number(m[1]);
+})();
 
 /**
  * Run the migration the same way `php garnet migration` does, but pointed

@@ -54,10 +54,10 @@ setup('create expert user', async ({ page }) => {
 		}
 		const expertId: number = row.id;
 
+		// Профиль преподавателя больше не отдельная таблица: имя берётся из
+		// аккаунта, «о себе» — из `accounts.about`.
 		await conn.execute(
-			`INSERT INTO ${tn('expert_profiles')} (account_id, display_name, bio, specialization, is_approved)
-			 VALUES (?, 'Setup Expert', 'Test expert bio', 'Mathematics', 1)
-			 ON DUPLICATE KEY UPDATE display_name = 'Setup Expert', is_approved = 1`,
+			`UPDATE ${tn('accounts')} SET about = 'Test expert bio' WHERE id = ?`,
 			[expertId]
 		);
 
@@ -65,7 +65,12 @@ setup('create expert user', async ({ page }) => {
 		const day = 86400;
 
 		for (let i = 1; i <= 3; i++) {
-			const startAt = now + day * i + 36000;
+			// Слоты фикстуры привязаны к полуночи UTC, а не к моменту запуска.
+		// Раньше было `now + 36000`, и время слота ехало вместе с часом
+		// прогона: под утро оно доезжало до 14:00 и накладывалось на слот,
+		// который создаёт expert-onboarding, — тест падал только ночью.
+		const midnightUtc = Math.floor(now / day) * day;
+		const startAt = midnightUtc + day * i + 36000;
 			const uid = [...Array(16)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
 			await conn.execute(
 				`INSERT INTO ${tn('time_slots')}

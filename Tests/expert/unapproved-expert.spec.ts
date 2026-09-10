@@ -42,20 +42,19 @@ test.describe('Unapproved expert — banner & news suppression', () => {
         const conn = await mysql.createConnection(DB);
         try {
             const [rows] = await conn.execute<any[]>(
-                `SELECT is_approved FROM ${tn('expert_profiles')}
-                 WHERE account_id = (SELECT id FROM ${tn('accounts')} WHERE login = 'testuser_setup_expert@irabi.test')`
+                `SELECT value AS is_approved FROM ${tn('accounts_data')}
+                  WHERE param = 'IS_APPROVED'
+                    AND account_id = (SELECT id FROM ${tn('accounts')} WHERE login = 'testuser_setup_expert@irabi.test')`
             );
-            return rows[0]?.is_approved ?? 0;
+            // accounts_data хранит значение строкой — приводим к числу,
+            // иначе сравнение с 1 не сходится.
+            return Number(rows[0]?.is_approved ?? 0);
         } finally { await conn.end(); }
     }
 
     async function setApprovalState(state: number): Promise<void> {
         const conn = await mysql.createConnection(DB);
         try {
-            await conn.execute(
-                `UPDATE ${tn('expert_profiles')} SET is_approved = ?
-                 WHERE account_id = ?`, [state, expertId]
-            );
             await conn.execute(
                 `INSERT INTO ${tn('accounts_data')} (account_id, param, value)
                  SELECT id, 'IS_APPROVED', ? FROM ${tn('accounts')} WHERE login = 'testuser_setup_expert@irabi.test'

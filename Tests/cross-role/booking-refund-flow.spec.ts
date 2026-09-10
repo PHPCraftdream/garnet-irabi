@@ -351,7 +351,7 @@ test.describe('Cross-role: booking + expert cancels + refund', () => {
 		await expect(modal).toBeVisible({ timeout: 5000 });
 
 		// Fill reason
-		const reasonInput = expertPage.locator('[data-test-id="cancel-booking-reason"]');
+		const reasonInput = expertPage.locator('[data-test-id="cancel-booking-modal-reason"]');
 		await expect(reasonInput).toBeVisible();
 		await reasonInput.fill(CANCEL_REASON);
 
@@ -361,7 +361,7 @@ test.describe('Cross-role: booking + expert cancels + refund', () => {
 				resp => resp.url().includes('/expert/~cancelBookedSlot'),
 				{ timeout: 12000 }
 			),
-			expertPage.locator('[data-test-id="cancel-booking-submit"]').click(),
+			expertPage.locator('[data-test-id="cancel-booking-modal-submit"]').click(),
 		]);
 
 		expect(response.ok()).toBe(true);

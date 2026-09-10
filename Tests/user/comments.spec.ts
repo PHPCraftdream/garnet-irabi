@@ -26,7 +26,8 @@ test.describe('Comments on expert profile', () => {
         const conn = await mysql.createConnection(DB);
         try {
             const [rows] = await conn.execute<any[]>(
-                `SELECT account_id FROM ${tn('expert_profiles')} LIMIT 1`
+                `SELECT id AS account_id FROM ${tn('accounts')}
+            WHERE type = 'expert' LIMIT 1`
             );
             if (rows.length > 0) {
                 expertAccountId = Number(rows[0].account_id);

@@ -329,7 +329,9 @@ test.describe('Cross-role: cancellation penalty on user-initiated cancel', () =>
 		expect(userRefund).not.toBeNull();
 		expect(Number(userRefund.is_credit)).toBe(1);
 		expect(Number(userRefund.amount)).toBe(EXPECTED_REFUND);
-		expect(String(userRefund.note)).toContain(`penalty ${PENALTY_PCT}%`);
+		// Примечание читает человек, и оно на языке интерфейса:
+		// «удержана неустойка 20%», а не отладочное «penalty 20%».
+		expect(String(userRefund.note)).toContain(`${PENALTY_PCT}%`);
 
 		// Exactly one expert-side refund entry, debit, amount = 800
 		expect(await getRefundEntriesCount(expertId, bookingId)).toBe(1);
@@ -337,7 +339,14 @@ test.describe('Cross-role: cancellation penalty on user-initiated cancel', () =>
 		expect(expertRefund).not.toBeNull();
 		expect(Number(expertRefund.is_credit)).toBe(0);
 		expect(Number(expertRefund.amount)).toBe(EXPECTED_REFUND);
-		expect(String(expertRefund.note)).toContain(`penalty ${PENALTY_PCT}%`);
+		expect(String(expertRefund.note)).toContain(`${PENALTY_PCT}%`);
+		// D-140: this row debits the expert, but the penalty portion
+		// (SLOT_COST - EXPECTED_REFUND) stays with them — the note must
+		// say so explicitly, not read like a plain "Возврат" that leaves
+		// the reader to guess whether they came out ahead or behind.
+		expect(String(expertRefund.note)).toMatch(/сохраня/i);
+		expect(String(expertRefund.note)).toContain(`${SLOT_COST - EXPECTED_REFUND}`);
+		expect(String(expertRefund.note)).not.toBe(String(userRefund.note));
 
 		// Balances: user paid 1000 -> got 800 back -> net -200 (= penalty)
 		const userBalanceAfter = await getBalance(userId);
@@ -390,14 +399,14 @@ test.describe('Cross-role: cancellation penalty on user-initiated cancel', () =>
 		const userRefund = await getRefundEntry(userId, bookingId);
 		expect(Number(userRefund.is_credit)).toBe(1);
 		expect(Number(userRefund.amount)).toBe(SLOT_COST);
-		// No penalty suffix on full refund
-		expect(String(userRefund.note)).not.toContain('penalty');
+		// При полном возврате приписки про неустойку нет.
+		expect(String(userRefund.note)).not.toMatch(/penalty|неустойк/i);
 
 		expect(await getRefundEntriesCount(expertId, bookingId)).toBe(1);
 		const expertRefund = await getRefundEntry(expertId, bookingId);
 		expect(Number(expertRefund.is_credit)).toBe(0);
 		expect(Number(expertRefund.amount)).toBe(SLOT_COST);
-		expect(String(expertRefund.note)).not.toContain('penalty');
+		expect(String(expertRefund.note)).not.toMatch(/penalty|неустойк/i);
 
 		// Balances back to where they were before the booking.
 		expect(await getBalance(userId)).toBe(userBalanceBefore);

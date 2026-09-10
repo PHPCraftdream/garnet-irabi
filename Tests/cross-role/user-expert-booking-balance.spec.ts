@@ -287,7 +287,7 @@ test.describe('BalanceSM(User) × BalanceSM(Expert) × TimeSlotSM', () => {
 			await expect(userPage.locator('[data-test-id="user-cancel-modal"]')).toBeVisible({ timeout: 5000 });
 
 			// Fill the reason textarea (required)
-			await userPage.locator('[data-test-id="user-cancel-reason"]').fill('E2E test: cancellation reason');
+			await userPage.locator('[data-test-id="user-cancel-modal-reason"]').fill('E2E test: cancellation reason');
 
 			// Submit cancellation
 			const [response] = await Promise.all([
@@ -295,7 +295,7 @@ test.describe('BalanceSM(User) × BalanceSM(Expert) × TimeSlotSM', () => {
 					resp => resp.url().includes(`/bookings/id~${bookingId}/~cancel`),
 					{ timeout: 12000 }
 				),
-				userPage.locator('[data-test-id="user-cancel-submit"]').click(),
+				userPage.locator('[data-test-id="user-cancel-modal-submit"]').click(),
 			]);
 			expect(response.ok()).toBe(true);
 

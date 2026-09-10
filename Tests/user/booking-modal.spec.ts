@@ -35,7 +35,10 @@ async function dbExec(sql: string, params: any[] = []): Promise<void> {
 }
 
 async function approvedExpertId(): Promise<number> {
-    const rows = await dbQuery(`SELECT account_id FROM ${tn('expert_profiles')} WHERE is_approved = 1 LIMIT 1`);
+    const rows = await dbQuery(`SELECT a.id AS account_id FROM ${tn('accounts')} a
+             JOIN ${tn('accounts_data')} d ON d.account_id = a.id
+              AND d.param = 'IS_APPROVED' AND d.value > 0
+            WHERE a.type = 'expert' LIMIT 1`);
     return Number(rows[0]?.account_id ?? 0);
 }
 

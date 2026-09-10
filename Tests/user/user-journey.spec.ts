@@ -48,7 +48,10 @@ async function getExpertId(): Promise<number> {
     const conn = await mysql.createConnection(DB);
     try {
         const [rows] = await conn.execute<any[]>(
-            `SELECT account_id FROM ${tn('expert_profiles')} WHERE is_approved = 1 LIMIT 1`
+            `SELECT a.id AS account_id FROM ${tn('accounts')} a
+             JOIN ${tn('accounts_data')} d ON d.account_id = a.id
+              AND d.param = 'IS_APPROVED' AND d.value > 0
+            WHERE a.type = 'expert' LIMIT 1`
         );
         return rows[0]?.account_id ?? 0;
     } finally { await conn.end(); }
@@ -170,12 +173,12 @@ test.describe('User Journey: full end-to-end', () => {
         await expect(cancelModal).toBeVisible({ timeout: 5000 });
 
         // Fill required reason
-        const reasonTextarea = page.locator('[data-test-id="user-cancel-reason"]');
+        const reasonTextarea = page.locator('[data-test-id="user-cancel-modal-reason"]');
         await expect(reasonTextarea).toBeVisible();
         await reasonTextarea.fill('Journey test cancellation');
 
         // Submit cancellation
-        await page.locator('[data-test-id="user-cancel-submit"]').click();
+        await page.locator('[data-test-id="user-cancel-modal-submit"]').click();
 
         // Modal closes after XHR
         await expect(cancelModal).not.toBeVisible({ timeout: 10000 });

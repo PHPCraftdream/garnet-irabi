@@ -179,7 +179,8 @@ test.describe('C-2: editSlot refuses cost/penalty change when booked_count > 0',
 		const { status, body } = await postEditSlot(page, { slot_id: slotId, cost: 999 });
 
 		expect(status).toBe(400);
-		expect(body?.error).toMatch(/active bookings/);
+		// Сообщение отдаётся на языке интерфейса (Slot_Error_CostLockedByBookings).
+		expect(body?.error).toMatch(/стоимость и неустойку менять нельзя/);
 
 		const slot = await getSlot(slotId);
 		expect(Number(slot.cost)).toBe(ORIGINAL_COST);
@@ -196,7 +197,8 @@ test.describe('C-2: editSlot refuses cost/penalty change when booked_count > 0',
 		});
 
 		expect(status).toBe(400);
-		expect(body?.error).toMatch(/active bookings/);
+		// Сообщение отдаётся на языке интерфейса (Slot_Error_CostLockedByBookings).
+		expect(body?.error).toMatch(/стоимость и неустойку менять нельзя/);
 
 		const slot = await getSlot(slotId);
 		expect(Number(slot.cancellation_penalty_percent)).toBe(ORIGINAL_PENALTY);
@@ -214,7 +216,8 @@ test.describe('C-2: editSlot refuses cost/penalty change when booked_count > 0',
 		});
 
 		expect(status).toBe(400);
-		expect(body?.error).toMatch(/active bookings/);
+		// Сообщение отдаётся на языке интерфейса (Slot_Error_CostLockedByBookings).
+		expect(body?.error).toMatch(/стоимость и неустойку менять нельзя/);
 
 		const slot = await getSlot(slotId);
 		expect(Number(slot.cost)).toBe(ORIGINAL_COST);

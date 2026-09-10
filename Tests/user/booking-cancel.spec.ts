@@ -14,7 +14,7 @@
  *
  * UI changes:
  *   - Cancel is via a modal (user-cancel-modal) with required reason
- *     textarea (user-cancel-reason) and submit button (user-cancel-submit)
+ *     textarea (user-cancel-modal-reason) and submit button (user-cancel-modal-submit)
  *   - No more window.confirm() dialog
  *   - Cancel is XHR-based, reactive state update (no page reload)
  *   - Toast shows descriptive success message
@@ -231,17 +231,39 @@ test.describe('BookingSM: pending -> cancelled (balance refund)', () => {
 		await expect(cancelModal).toBeVisible({ timeout: 5000 });
 
 		// Fill in the required reason
-		const reasonTextarea = page.locator('[data-test-id="user-cancel-reason"]');
+		const reasonTextarea = page.locator('[data-test-id="user-cancel-modal-reason"]');
 		await expect(reasonTextarea).toBeVisible();
 		await reasonTextarea.fill('Test cancellation reason');
 
 		// Submit the cancellation
-		const submitBtn = page.locator('[data-test-id="user-cancel-submit"]');
+		const submitBtn = page.locator('[data-test-id="user-cancel-modal-submit"]');
 		await expect(submitBtn).toBeVisible();
 		await submitBtn.click();
 
 		// Wait for XHR and reactive update -- modal closes, booking status changes
 		await expect(cancelModal).not.toBeVisible({ timeout: 10000 });
+	});
+
+	// D-135: вход и выход должны говорить одним словом. Заявку, которую так и не
+	// подтвердили, снимают -- а не отменяют. Кнопка называлась "Снять заявку",
+	// а через секунду карточка объявляла "Отменён", и было непонятно, одно это
+	// действие или два разных.
+	test('BookingSM cancelled: an unconfirmed request reads as withdrawn, not cancelled', async ({ page }) => {
+		if (!bookingId) { test.skip(); return; }
+
+		await page.goto('/system/bookings');
+
+		// Снятая заявка не показывается в списке по умолчанию -- открываем её
+		// вкладку. Без этого проверка прошла бы мимо карточки и ничего не
+		// сказала бы о надписи.
+		await page.locator('[data-test-id="bookings-filter-cancelled"]').click();
+
+		const statusBadge = page.locator(`[data-test-id="booking-status-${bookingId}"]`);
+		await expect(statusBadge).toBeVisible({ timeout: 8000 });
+		await expect(statusBadge).toHaveText('Снят');
+
+		const cause = page.locator(`[data-test-id="booking-cancel-cause-${bookingId}"]`);
+		await expect(cause).toContainText('Вы сняли эту заявку');
 	});
 
 	test('BookingSM cancelled: cancel button gone (booking no longer active)', async ({ page }) => {

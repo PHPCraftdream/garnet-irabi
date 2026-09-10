@@ -42,7 +42,6 @@ async function setApproved(expertId: number, approved: boolean): Promise<void> {
              ON DUPLICATE KEY UPDATE value = VALUES(value)`,
             [expertId, approved ? '1' : '0'],
         );
-        await c.execute(`UPDATE ${tn('expert_profiles')} SET is_approved = ? WHERE account_id = ?`, [approved ? 1 : 0, expertId]);
     });
 }
 

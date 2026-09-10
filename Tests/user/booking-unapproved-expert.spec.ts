@@ -48,14 +48,10 @@ async function getUserId(): Promise<number> {
     } finally { await conn.end(); }
 }
 
-/** Set is_approved in both expert_profiles AND accounts_data. */
+/** Поднять или опустить флаг одобрения у аккаунта. */
 async function setApproval(expertId: number, state: number): Promise<void> {
     const conn = await mysql.createConnection(DB);
     try {
-        await conn.execute(
-            `UPDATE ${tn('expert_profiles')} SET is_approved = ? WHERE account_id = ?`,
-            [state, expertId]
-        );
         await conn.execute(
             `INSERT INTO ${tn('accounts_data')} (account_id, param, value)
              VALUES (?, 'IS_APPROVED', ?)
@@ -137,10 +133,11 @@ test.describe('G4: Booking gate — unapproved expert (BookingsController)', () 
         const conn = await mysql.createConnection(DB);
         try {
             const [rows] = await conn.execute<any[]>(
-                `SELECT is_approved FROM ${tn('expert_profiles')} WHERE account_id = ?`,
+                `SELECT value AS is_approved FROM ${tn('accounts_data')}
+             WHERE account_id = ? AND param = 'IS_APPROVED'`,
                 [expertId]
             );
-            initialApproval = rows[0]?.is_approved ?? 0;
+            initialApproval = Number(rows[0]?.is_approved ?? 0);
         } finally { await conn.end(); }
 
         slotId = await createFreeSlot(expertId, 0);
@@ -222,10 +219,11 @@ test.describe('G6: Booking gate — unapproved expert (SlotsController::bookData
         const conn = await mysql.createConnection(DB);
         try {
             const [rows] = await conn.execute<any[]>(
-                `SELECT is_approved FROM ${tn('expert_profiles')} WHERE account_id = ?`,
+                `SELECT value AS is_approved FROM ${tn('accounts_data')}
+             WHERE account_id = ? AND param = 'IS_APPROVED'`,
                 [expertId]
             );
-            initialApproval = rows[0]?.is_approved ?? 0;
+            initialApproval = Number(rows[0]?.is_approved ?? 0);
         } finally { await conn.end(); }
 
         slotId = await createFreeSlot(expertId, 0);

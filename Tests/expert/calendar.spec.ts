@@ -170,12 +170,6 @@ test.describe('Calendar slot filtering with @hebcal/core cross-check', () => {
             );
             if (rows.length > 0) {
                 await conn.execute(
-                    `INSERT INTO ${tn('expert_profiles')} (account_id, is_approved)
-                     VALUES (?, 1)
-                     ON DUPLICATE KEY UPDATE is_approved = 1`,
-                    [rows[0].id]
-                );
-                await conn.execute(
                     `INSERT INTO ${tn('accounts_data')} (account_id, param, value)
                      VALUES (?, 'IS_APPROVED', '1')
                      ON DUPLICATE KEY UPDATE value = '1'`,

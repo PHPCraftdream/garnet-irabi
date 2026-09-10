@@ -138,7 +138,7 @@ async function cleanupScratchByEmail(email: string): Promise<void> {
         // only matters when a test failed mid-flight and left rows behind.
         for (const t of [
             'accounts_data', 'bookings', 'support_tickets', 'payments',
-            'account_balance', 'balance_ledger', 'expert_profiles',
+            'account_balance', 'balance_ledger',
         ]) {
             try {
                 await conn.execute(

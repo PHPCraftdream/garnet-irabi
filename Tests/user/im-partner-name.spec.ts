@@ -1,14 +1,13 @@
 /**
- * User -- IM: partner name resolution in conversation list
+ * User -- IM: имя собеседника в списке переписок.
  *
- * The IM conversation list used to show empty/"#id" when a partner's
- * accounts.name was blank. Now ImController::enrichConversation re-resolves
- * partner_name via NewsService::resolveDisplayNames: expert display_name →
- * accounts.name → "#id".
+ * Имя приходит из `accounts.name`. Отдельного имени преподавателя больше
+ * нет: оно жило в `expert_profiles.display_name`, было снимком того же
+ * `accounts.name`, снятым один раз при одобрении, и переставало совпадать
+ * с тем, как человек себя назвал.
  *
- * This spec blanks the partner's accounts.name, sets a known expert
- * display_name, seeds a conversation, and asserts the rendered list shows
- * the expert display_name (not "#id").
+ * Спека ставит собеседнику известное имя, заводит переписку и проверяет,
+ * что список показывает именно его — не пусто и не «#id».
  */
 
 import { test, expect, tn } from '../helpers/scoped-test';
@@ -27,8 +26,6 @@ let convId = 0;
 let msgId = 0;
 let weCreatedConversation = false;
 let prevAccountName = '';
-let prevDisplayName: string | null = null;
-let hadExpertProfile = false;
 
 test.describe('IM -- partner name resolution', () => {
 
@@ -36,7 +33,7 @@ test.describe('IM -- partner name resolution', () => {
     // subsequent test once one fails, so a cleanup step written as a
     // regular test never runs after the middle assertion times out,
     // leaving the shared testuser_setup_expert fixture's accounts.name
-    // blanked and expert_profiles.display_name corrupted for the rest
+    // испорченным на весь оставшийся прогон воркера
     // of this worker's run (poisoning unrelated later specs). Hooks run
     // regardless of test outcome.
     test.beforeAll(async () => {
@@ -56,31 +53,11 @@ test.describe('IM -- partner name resolution', () => {
             partnerId = Number(partnerRows[0].id);
             prevAccountName = partnerRows[0].name ?? '';
 
-            // Blank the partner's accounts.name
+            // Имя собеседника — одно, и живёт в аккаунте.
             await conn.execute(
-                `UPDATE ${tn('accounts')} SET name = '' WHERE id = ?`,
-                [partnerId],
+                `UPDATE ${tn('accounts')} SET name = ? WHERE id = ?`,
+                [PARTNER_DISPLAY_NAME, partnerId],
             );
-
-            // Ensure expert_profiles row exists and set display_name
-            const [epRows] = await conn.execute<any[]>(
-                `SELECT display_name FROM ${tn('expert_profiles')} WHERE account_id = ?`,
-                [partnerId],
-            );
-            if (epRows.length > 0) {
-                hadExpertProfile = true;
-                prevDisplayName = epRows[0].display_name;
-                await conn.execute(
-                    `UPDATE ${tn('expert_profiles')} SET display_name = ? WHERE account_id = ?`,
-                    [PARTNER_DISPLAY_NAME, partnerId],
-                );
-            } else {
-                hadExpertProfile = false;
-                await conn.execute(
-                    `INSERT INTO ${tn('expert_profiles')} (account_id, display_name, is_approved) VALUES (?, ?, 1)`,
-                    [partnerId, PARTNER_DISPLAY_NAME],
-                );
-            }
 
             // Upsert a conversation between user and partner
             const a = Math.min(userId, partnerId);
@@ -178,22 +155,6 @@ test.describe('IM -- partner name resolution', () => {
                     `UPDATE ${tn('accounts')} SET name = ? WHERE id = ?`,
                     [prevAccountName, partnerId],
                 );
-            }
-
-            // Restore expert_profiles
-            if (partnerId) {
-                if (hadExpertProfile) {
-                    await conn.execute(
-                        `UPDATE ${tn('expert_profiles')} SET display_name = ? WHERE account_id = ?`,
-                        [prevDisplayName, partnerId],
-                    );
-                } else {
-                    // We inserted the row; remove it
-                    await conn.execute(
-                        `DELETE FROM ${tn('expert_profiles')} WHERE account_id = ?`,
-                        [partnerId],
-                    );
-                }
             }
         } finally {
             await conn.end();

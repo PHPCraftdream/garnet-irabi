@@ -199,10 +199,6 @@ test.describe('Cross-role: user books slot, expert sees booking, user cancels', 
 					 ON DUPLICATE KEY UPDATE value = '1'`,
 					[expert.id]
 				);
-				await conn2.execute(
-					`UPDATE ${tn('expert_profiles')} SET is_approved = 1 WHERE account_id = ?`,
-					[expert.id]
-				);
 			}
 		} finally { await conn2.end(); }
 	});
@@ -458,12 +454,12 @@ test.describe('Cross-role: user books slot, expert sees booking, user cancels', 
 		await expect(modal).toBeVisible({ timeout: 5000 });
 
 		// Fill reason
-		const reasonInput = userPage.locator('[data-test-id="user-cancel-reason"]');
+		const reasonInput = userPage.locator('[data-test-id="user-cancel-modal-reason"]');
 		await expect(reasonInput).toBeVisible();
 		await reasonInput.fill('Не могу прийти');
 
 		// Submit cancellation
-		const submitBtn = userPage.locator('[data-test-id="user-cancel-submit"]');
+		const submitBtn = userPage.locator('[data-test-id="user-cancel-modal-submit"]');
 		await expect(submitBtn).toBeVisible();
 		await submitBtn.click();
 

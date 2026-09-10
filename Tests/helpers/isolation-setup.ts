@@ -209,21 +209,25 @@ async function registerSetupAccount(_browser: Browser, account: SeedAccount): Pr
         }
 
         if (account.accountType === 'expert' && accountId) {
-            // Mirror legacy expert.setup.ts: a real `ir_expert_profiles`
-            // row + a few free future slots, otherwise admin grids and
-            // /slots views hide the expert and any test asserting on
-            // slot visibility fails before it starts.
+            // Преподаватель узнаётся по аккаунту: тип и флаг одобрения ставит
+            // общий код регистрации выше. Отдельной строки профиля больше нет —
+            // она была копией аккаунта и расходилась с ним. «О себе» живёт там
+            // же, где его пишет форма профиля.
             await conn.execute(
-                `INSERT INTO \`${TEMPLATE_PREFIX}_expert_profiles\`
-                 (account_id, display_name, bio, specialization, is_approved)
-                 VALUES (?, ?, 'Test expert bio', 'Mathematics', 1)
-                 ON DUPLICATE KEY UPDATE display_name = VALUES(display_name), is_approved = 1`,
-                [accountId, account.name]
+                `UPDATE \`${TEMPLATE_PREFIX}_accounts\` SET about = 'Test expert bio' WHERE id = ?`,
+                [accountId]
             );
+            // Несколько свободных будущих слотов: без них админские таблицы и
+            // /slots не показывают преподавателя, и тест падает ещё до начала.
             const now = Math.floor(Date.now() / 1000);
             const day = 86400;
             for (let i = 1; i <= 3; i++) {
-                const startAt = now + day * i + 36000;
+                // Слоты фикстуры привязаны к полуночи UTC, а не к моменту запуска.
+            // Раньше было `now + 36000`, и время слота ехало вместе с часом
+            // прогона: под утро оно доезжало до 14:00 и накладывалось на слот,
+            // который создаёт expert-onboarding, — тест падал только ночью.
+            const midnightUtc = Math.floor(now / day) * day;
+            const startAt = midnightUtc + day * i + 36000;
                 const uid = [...Array(16)]
                     .map(() => Math.floor(Math.random() * 16).toString(16))
                     .join('');

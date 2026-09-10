@@ -115,14 +115,14 @@ test.describe('Expert cancellation kind — decline vs cancel', () => {
         await rejectBtn.click();
 
         // Assert the decline-impact warning is shown in the reject modal.
-        const impactWarning = page.locator('[data-test-id="reject-impact"]');
+        const impactWarning = page.locator('[data-test-id="reject-modal-impact"]');
         await expect(impactWarning).toBeVisible({ timeout: 10000 });
         const warningText = await impactWarning.textContent();
         expect(warningText?.trim().length).toBeGreaterThan(0);
 
         // Fill reason and confirm.
-        await page.locator('[data-test-id="reject-reason-input"]').fill('qa decline');
-        await page.locator('[data-test-id="reject-modal-confirm"]').click();
+        await page.locator('[data-test-id="reject-modal-reason"]').fill('qa decline');
+        await page.locator('[data-test-id="reject-modal-submit"]').click();
 
         // Wait for the server round-trip, then verify the DB row.
         await page.waitForTimeout(2000);
@@ -163,14 +163,14 @@ test.describe('Expert cancellation kind — decline vs cancel', () => {
         const modal = page.locator('[data-test-id="cancel-booking-modal"]');
         await expect(modal).toBeVisible({ timeout: 10000 });
 
-        const impactWarning = page.locator('[data-test-id="cancel-booking-impact"]');
+        const impactWarning = page.locator('[data-test-id="cancel-booking-modal-impact"]');
         await expect(impactWarning).toBeVisible({ timeout: 10000 });
         const warningText = await impactWarning.textContent();
         expect(warningText?.trim().length).toBeGreaterThan(0);
 
         // Fill reason and submit.
-        await page.locator('[data-test-id="cancel-booking-reason"]').fill('qa cancel');
-        await page.locator('[data-test-id="cancel-booking-submit"]').click();
+        await page.locator('[data-test-id="cancel-booking-modal-reason"]').fill('qa cancel');
+        await page.locator('[data-test-id="cancel-booking-modal-submit"]').click();
 
         // Wait for the server round-trip, then verify the DB row.
         await page.waitForTimeout(2000);

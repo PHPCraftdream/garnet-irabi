@@ -75,7 +75,10 @@ async function createFullSlot(): Promise<number> {
 	const conn = await mysql.createConnection(DB);
 	try {
 		const [[expertRow]]: any = await conn.execute(
-			`SELECT account_id FROM ${tn('expert_profiles')} WHERE is_approved = 1 LIMIT 1`
+			`SELECT a.id AS account_id FROM ${tn('accounts')} a
+             JOIN ${tn('accounts_data')} d ON d.account_id = a.id
+              AND d.param = 'IS_APPROVED' AND d.value > 0
+            WHERE a.type = 'expert' LIMIT 1`
 		);
 		if (!expertRow) return 0;
 		const expertId = expertRow.account_id;
@@ -106,7 +109,10 @@ async function createFreeExpensiveSlot(): Promise<{ id: number; cost: number }> 
 	const conn = await mysql.createConnection(DB);
 	try {
 		const [[expertRow]]: any = await conn.execute(
-			`SELECT account_id FROM ${tn('expert_profiles')} WHERE is_approved = 1 LIMIT 1`
+			`SELECT a.id AS account_id FROM ${tn('accounts')} a
+             JOIN ${tn('accounts_data')} d ON d.account_id = a.id
+              AND d.param = 'IS_APPROVED' AND d.value > 0
+            WHERE a.type = 'expert' LIMIT 1`
 		);
 		const expertId = expertRow.account_id;
 		const startAt = Math.floor(Date.now() / 1000) + 86400 * 4 + 10 * 3600;

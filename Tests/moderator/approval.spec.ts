@@ -31,10 +31,13 @@ async function getExpertApprovalState(): Promise<number> {
 	const conn = await mysql.createConnection(DB);
 	try {
 		const [rows] = await conn.execute<any[]>(
-			`SELECT is_approved FROM ${tn('expert_profiles')}
-			 WHERE account_id = (SELECT id FROM ${tn('accounts')} WHERE login = 'testuser_setup_expert@irabi.test')`
+			`SELECT value AS is_approved FROM ${tn('accounts_data')}
+			 WHERE param = 'IS_APPROVED'
+			   AND account_id = (SELECT id FROM ${tn('accounts')} WHERE login = 'testuser_setup_expert@irabi.test')`
 		);
-		return rows[0]?.is_approved ?? 0;
+		// accounts_data хранит значение строкой — приводим к числу,
+		// иначе сравнение с 1 не сходится.
+		return Number(rows[0]?.is_approved ?? 0);
 	} finally { await conn.end(); }
 }
 
@@ -73,10 +76,6 @@ test.describe('ExpertProfileSM: not_approved → approved → not_approved', () 
 		// Set to not_approved for clean test start
 		const conn = await mysql.createConnection(DB);
 		try {
-			await conn.execute(
-				`UPDATE ${tn('expert_profiles')} SET is_approved = 0
-				 WHERE account_id = ?`, [expertId]
-			);
 			await conn.execute(
 				`INSERT INTO ${tn('accounts_data')} (account_id, param, value)
 				 SELECT id, 'IS_APPROVED', '0' FROM ${tn('accounts')} WHERE login = 'testuser_setup_expert@irabi.test'
@@ -159,10 +158,6 @@ test.describe('ExpertProfileSM: not_approved → approved → not_approved', () 
 		if (!expertId) return;
 		const conn = await mysql.createConnection(DB);
 		try {
-			await conn.execute(
-				`UPDATE ${tn('expert_profiles')} SET is_approved = ? WHERE account_id = ?`,
-				[initialApprovalState, expertId]
-			);
 			await conn.execute(
 				`INSERT INTO ${tn('accounts_data')} (account_id, param, value)
 				 SELECT id, 'IS_APPROVED', ? FROM ${tn('accounts')} WHERE login = 'testuser_setup_expert@irabi.test'

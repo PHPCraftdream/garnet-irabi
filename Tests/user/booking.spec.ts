@@ -33,12 +33,13 @@ async function getFreeSlot(): Promise<{ id: number; expertName: string; location
     const conn = await mysql.createConnection(DB_CONFIG);
     try {
         const [rows] = await conn.execute<any[]>(
-            `SELECT ts.id, ts.location, ts.is_online, tp.display_name AS expert_name
+            `SELECT ts.id, ts.location, ts.is_online, a.name AS expert_name
              FROM ${tn('time_slots')} ts
-             JOIN ${tn('expert_profiles')} tp ON tp.account_id = ts.expert_id
+             JOIN ${tn('accounts')} a ON a.id = ts.expert_id
+             JOIN ${tn('accounts_data')} d ON d.account_id = a.id
+              AND d.param = 'IS_APPROVED' AND d.value > 0
              WHERE ts.status = 'free'
                AND ts.start_at > UNIX_TIMESTAMP()
-               AND tp.is_approved = 1
                AND NOT EXISTS (
                  SELECT 1 FROM ${tn('bookings')} b
                  WHERE b.bookable_type = 'time_slot'
@@ -135,10 +136,11 @@ test.describe('Booking form -- submit', () => {
             const conn = await mysql.createConnection(DB_CONFIG);
             try {
                 const [rows] = await conn.execute<any[]>(
-                    `SELECT ts.id, ts.location, ts.is_online, tp.display_name AS expert_name
+                    `SELECT ts.id, ts.location, ts.is_online, a.name AS expert_name
                      FROM ${tn('time_slots')} ts
-                     JOIN ${tn('expert_profiles')} tp ON tp.account_id = ts.expert_id
-                     WHERE tp.is_approved = 1
+                     JOIN ${tn('accounts')} a ON a.id = ts.expert_id
+                     JOIN ${tn('accounts_data')} d ON d.account_id = a.id
+                      AND d.param = 'IS_APPROVED' AND d.value > 0
                      LIMIT 1`
                 );
                 if (rows.length === 0) return null;
@@ -175,7 +177,10 @@ test.describe('Expert profile page', () => {
         let expertId: number | null = null;
         try {
             const [rows] = await conn.execute<any[]>(
-                `SELECT account_id FROM ${tn('expert_profiles')} WHERE is_approved = 1 LIMIT 1`
+                `SELECT a.id AS account_id FROM ${tn('accounts')} a
+             JOIN ${tn('accounts_data')} d ON d.account_id = a.id
+              AND d.param = 'IS_APPROVED' AND d.value > 0
+            WHERE a.type = 'expert' LIMIT 1`
             );
             expertId = rows.length > 0 ? (rows[0].account_id as number) : null;
         } finally {

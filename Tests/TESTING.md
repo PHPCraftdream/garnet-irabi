@@ -637,8 +637,8 @@ mock.
 ### Trust globalSetup — don't pre-warm what's already seeded
 
 `isolation-setup.ts` registers the setup-* accounts in every worker's
-DB scope, mirrors them into `ir_expert_profiles` where relevant, and
-saves dev-login storage states. A "warm-up" `devLogin(browser, role)`
+DB scope, fills `accounts.about` for expert accounts, and saves
+dev-login storage states. A "warm-up" `devLogin(browser, role)`
 + immediate `context.close()` in an entry test is pure overhead — the
 account is already there and the next real test will open its own
 context with the saved storageState.

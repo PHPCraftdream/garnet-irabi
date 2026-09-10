@@ -132,11 +132,6 @@ async function seedExperts(prefix: string, count: number): Promise<number[]> {
                  ON DUPLICATE KEY UPDATE value = VALUES(value)`,
                 [id, id],
             );
-
-            await c.execute(
-                `INSERT INTO ${tn('expert_profiles')} (account_id, display_name, is_approved) VALUES (?, ?, 1)`,
-                [id, `${prefix} Expert ${i}`],
-            );
         }
         return ids;
     });
@@ -146,7 +141,6 @@ async function cleanupExperts(prefix: string, ids: number[]): Promise<void> {
     if (ids.length === 0) return;
     await withConnection(async (c) => {
         const placeholders = ids.map(() => '?').join(',');
-        await c.execute(`DELETE FROM ${tn('expert_profiles')} WHERE account_id IN (${placeholders})`, ids);
         await c.execute(`DELETE FROM ${tn('accounts_data')} WHERE account_id IN (${placeholders})`, ids);
         await c.execute(`DELETE FROM ${tn('accounts')} WHERE id IN (${placeholders})`, ids);
     });

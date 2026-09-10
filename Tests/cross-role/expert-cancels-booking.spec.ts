@@ -312,7 +312,7 @@ test.describe('Expert cancels booking — cross-role (dev-login)', () => {
 			await expect(cancelModal).toBeVisible({ timeout: 5000 });
 
 			// Fill reason
-			const reasonInput = page.locator('[data-test-id="cancel-booking-reason"]');
+			const reasonInput = page.locator('[data-test-id="cancel-booking-modal-reason"]');
 			await expect(reasonInput).toBeVisible();
 			await reasonInput.fill(CANCEL_REASON);
 
@@ -322,7 +322,7 @@ test.describe('Expert cancels booking — cross-role (dev-login)', () => {
 					resp => resp.url().includes('/expert/~cancelBookedSlot'),
 					{ timeout: 12000 }
 				),
-				page.locator('[data-test-id="cancel-booking-submit"]').click(),
+				page.locator('[data-test-id="cancel-booking-modal-submit"]').click(),
 			]);
 			expect(response.ok()).toBe(true);
 
@@ -431,9 +431,10 @@ test.describe('Expert cancels booking — cross-role (dev-login)', () => {
 			await expect(ledgerRows.first()).toBeVisible({ timeout: 8000 });
 
 			const allRows = await ledgerRows.allTextContents();
-			const hasRefund = allRows.some(text =>
-				text.includes('refund') || text.includes('Refund') || text.includes('#' + bookingId)
-			);
+			// Строка истории теперь называет повод словами («Занятие с …»),
+			// а не внутренним номером брони. Проверяем тип операции — это
+			// и есть то, что тест хочет знать: возврат виден.
+			const hasRefund = allRows.some(text => /Возврат|[Rr]efund/.test(text));
 			expect(hasRefund).toBe(true);
 		} finally {
 			await page.close();

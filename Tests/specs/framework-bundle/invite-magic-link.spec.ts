@@ -335,8 +335,10 @@ test.describe('Invite-flow magic-login — one-click token', () => {
         // after the request-code POST above) — type the 8-digit code by
         // hand and submit, exactly like a user copying it out of the
         // email instead of clicking the button.
-        await expect(page.locator('[data-test-id="auth-login-input"]')).toBeVisible({ timeout: 10000 });
-        await page.locator('[data-test-id="auth-login-input"]').fill(code as string);
+        // На шаге ввода кода у поля своё имя: `auth-code-input`.
+        // `auth-login-input` — это шаг ввода почты, и на этой фазе его нет.
+        await expect(page.locator('[data-test-id="auth-code-input"]')).toBeVisible({ timeout: 10000 });
+        await page.locator('[data-test-id="auth-code-input"]').fill(code as string);
 
         const [verifyResp] = await Promise.all([
             page.waitForResponse(

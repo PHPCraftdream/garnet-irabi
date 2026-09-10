@@ -35,20 +35,19 @@ async function getExpertApprovalState(id: number): Promise<number> {
 	const conn = await mysql.createConnection(DB);
 	try {
 		const [rows] = await conn.execute<any[]>(
-			`SELECT is_approved FROM ${tn('expert_profiles')} WHERE account_id = ?`,
+			`SELECT value AS is_approved FROM ${tn('accounts_data')}
+             WHERE account_id = ? AND param = 'IS_APPROVED'`,
 			[id]
 		);
-		return rows[0]?.is_approved ?? 0;
+		// accounts_data хранит значение строкой — приводим к числу,
+		// иначе сравнение с 1 не сходится.
+		return Number(rows[0]?.is_approved ?? 0);
 	} finally { await conn.end(); }
 }
 
 async function setExpertUnapproved(id: number): Promise<void> {
 	const conn = await mysql.createConnection(DB);
 	try {
-		await conn.execute(
-			`UPDATE ${tn('expert_profiles')} SET is_approved = 0 WHERE account_id = ?`,
-			[id]
-		);
 		await conn.execute(
 			`INSERT INTO ${tn('accounts_data')} (account_id, param, value)
 			 SELECT id, 'IS_APPROVED', '0' FROM ${tn('accounts')} WHERE id = ?
@@ -61,10 +60,6 @@ async function setExpertUnapproved(id: number): Promise<void> {
 async function restoreExpertApproval(id: number, state: number): Promise<void> {
 	const conn = await mysql.createConnection(DB);
 	try {
-		await conn.execute(
-			`UPDATE ${tn('expert_profiles')} SET is_approved = ? WHERE account_id = ?`,
-			[state, id]
-		);
 		await conn.execute(
 			`INSERT INTO ${tn('accounts_data')} (account_id, param, value)
 			 SELECT id, 'IS_APPROVED', ? FROM ${tn('accounts')} WHERE id = ?

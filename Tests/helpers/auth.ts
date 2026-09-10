@@ -30,10 +30,6 @@ export async function clearTestData(login?: string) {
 			`DELETE FROM ${tn('time_slots')} WHERE expert_id IN (SELECT id FROM ${tn('accounts')} WHERE login ${op} ?)`,
 			[pattern]
 		);
-		await connection.execute(
-			`DELETE FROM ${tn('expert_profiles')} WHERE account_id IN (SELECT id FROM ${tn('accounts')} WHERE login ${op} ?)`,
-			[pattern]
-		);
 		// Delete sessions belonging to test accounts
 		try {
 			const [sessionRows] = await connection.execute<any[]>(

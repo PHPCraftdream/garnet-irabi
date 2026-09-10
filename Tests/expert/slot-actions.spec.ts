@@ -64,7 +64,23 @@ async function getBalance(login: string): Promise<number> {
 async function createFreeSlot(expertId: number, cost: number = 0, futureOffsetSec: number = 86400 * 3): Promise<number> {
 	const conn = await mysql.createConnection(DB);
 	try {
-		const startAt = Math.floor(Date.now() / 1000) + futureOffsetSec;
+		// `php garnet seed` (isolation-setup) plants fixture slots for this
+		// same expert account at real-clock-relative times moments before
+		// this runs. A raw "now + N days" here landed inside a seeded slot's
+		// hour window often enough to fail "edit slot" with "Слот
+		// пересекается с существующим занятием" — a genuine collision, not
+		// flakiness. Nudge forward past whatever's already there instead of
+		// trusting a fixed offset to stay clear.
+		let startAt = Math.floor(Date.now() / 1000) + futureOffsetSec;
+		for (let i = 0; i < 24; i++) {
+			const [rows] = await conn.execute<any[]>(
+				`SELECT id FROM ${tn('time_slots')}
+				 WHERE expert_id = ? AND status != 'cancelled' AND start_at < ? AND end_at > ?`,
+				[expertId, startAt + 3600, startAt],
+			);
+			if (rows.length === 0) break;
+			startAt += 3600;
+		}
 		const uid = [...Array(16)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
 		const [result]: any = await conn.execute(
 			`INSERT INTO ${tn('time_slots')}
@@ -136,6 +152,9 @@ async function getBookingStatus(bookingId: number): Promise<string> {
 async function deleteSlot(slotId: number) {
 	const conn = await mysql.createConnection(DB);
 	try {
+		// D-155's cancelBookedSlot test now leaves a booking_cancelled news
+		// event behind on purpose (that's the fix) — purge it on cleanup.
+		await conn.execute(`DELETE FROM ${tn('news_events')} WHERE target_key = ?`, [`slot:${slotId}`]);
 		await conn.execute(`DELETE FROM ${tn('bookings')} WHERE bookable_type='time_slot' AND bookable_id=?`, [slotId]);
 		await conn.execute(`DELETE FROM ${tn('time_slots')} WHERE id=?`, [slotId]);
 	} finally { await conn.end(); }
@@ -384,11 +403,11 @@ test.describe('TimeSlotSM: booked → cancelled (refund via cancel-booking-modal
 		const modal = page.locator('[data-test-id="cancel-booking-modal"]');
 		await expect(modal).toBeVisible({ timeout: 8000 });
 
-		const reasonInput = page.locator('[data-test-id="cancel-booking-reason"]');
+		const reasonInput = page.locator('[data-test-id="cancel-booking-modal-reason"]');
 		await expect(reasonInput).toBeVisible();
 		await reasonInput.fill('Testing: expert cancels booked slot');
 
-		const submitBtn = page.locator('[data-test-id="cancel-booking-submit"]');
+		const submitBtn = page.locator('[data-test-id="cancel-booking-modal-submit"]');
 		// Wait for the cancel-XHR before the next test reads DB.
 		await Promise.all([
 			page.waitForResponse(r => r.request().method() === 'POST' && r.status() < 500, { timeout: 10000 }),
@@ -421,6 +440,38 @@ test.describe('TimeSlotSM: booked → cancelled (refund via cancel-booking-modal
 		if (!slotId || !SLOT_COST || !bookingId || !expertBalanceBefore) { test.skip(); return; }
 		const expertBalanceAfter = await getBalance('testuser_setup_expert@irabi.test');
 		expect(expertBalanceAfter).toBe(expertBalanceBefore);
+	});
+
+	// D-155: cancelBookedSlot() used to run its own CAS/refund loop and only
+	// fire BookingChatNotifier — no news feed entry, no email, unlike every
+	// other cancellation path. It now delegates to cancelSlotInternal(),
+	// which was already covered by cancelSlot()/cancelAllFutureSlotsForExpert().
+	test('D-155: student gets a booking_cancelled news event (previously chat-only)', async () => {
+		if (!slotId || !userId) { test.skip(); return; }
+		const conn = await mysql.createConnection(DB);
+		try {
+			const [rows] = await conn.execute<any[]>(
+				`SELECT id FROM ${tn('news_events')}
+				 WHERE event_type = 'booking_cancelled' AND audience_type = 'personal'
+				 AND audience_id = ? AND target_key = ?`,
+				[userId, `slot:${slotId}`]
+			);
+			expect(rows.length).toBeGreaterThan(0);
+		} finally { await conn.end(); }
+	});
+
+	// D-155: cancelSlotInternal() also purges the slot's own announcements
+	// (new_slot / slot_booked) — cancelBookedSlot() never did this either.
+	test('D-155: stale slot_booked announcement purged after cancelBookedSlot', async () => {
+		if (!slotId) { test.skip(); return; }
+		const conn = await mysql.createConnection(DB);
+		try {
+			const [rows] = await conn.execute<any[]>(
+				`SELECT id FROM ${tn('news_events')} WHERE event_type = 'slot_booked' AND target_key = ?`,
+				[`slot:${slotId}`]
+			);
+			expect(rows.length).toBe(0);
+		} finally { await conn.end(); }
 	});
 
 	test.afterAll(async () => {

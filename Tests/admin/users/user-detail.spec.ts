@@ -167,9 +167,13 @@ test.describe('UserDetail — expert profile', () => {
 
     test('expert detail shows personal section and expert profile', async ({ page }) => {
         if (!await openExpertDetail(page)) return;
-        // Panel renders flat: personal section (ledger/tickets) and expert section (profile/slots)
-        // Just verify expert profile info is visible
-        await expect(page.locator('text=/Mathematics|Программирование|Математика|Иностранные языки/i').first())
+        // Panel renders flat: personal section (ledger/tickets) and expert section (profile/slots).
+        //
+        // Раньше признаком блока была специализация — её удалили вместе с
+        // таблицей профилей (M_0023): заполнять её было негде. Осталось «о
+        // себе», и живёт оно в `accounts.about`; фикстура кладёт туда
+        // «Test expert bio».
+        await expect(page.locator('text=/Test expert bio/i').first())
             .toBeVisible({ timeout: 8000 });
     });
 

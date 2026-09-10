@@ -161,10 +161,6 @@ async function restoreExpertFlags(expertId: number): Promise<void> {
 			`DELETE FROM ${tn('accounts_data')} WHERE account_id = ? AND param = 'IS_DISABLED'`,
 			[expertId]
 		);
-		await conn.execute(
-			`UPDATE ${tn('expert_profiles')} SET is_approved = 1 WHERE account_id = ?`,
-			[expertId]
-		);
 	} finally { await conn.end(); }
 }
 

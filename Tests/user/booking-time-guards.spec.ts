@@ -9,6 +9,13 @@
  * Fix 6: ExpertBookingsService::cancelBooking returns 400 for confirmed + past slot.
  * Fix 7: CronCompletionService::completeExpired completes orphan confirmed bookings;
  *         after completion the booking is no longer cancellable by the user.
+ * Fix 8 (D-144): the SAME cron pass also flips the under-subscribed slot's own
+ *         status to 'completed' — before this fix only the booking changed,
+ *         the slot itself stayed 'free' forever with active Edit/Delete.
+ * Fix 9 (D-146): the auto-cancel-pending-booking branch now also writes a
+ *         user_cancellations row (kind='decline') — before this fix the
+ *         profile counters ("Снятий"/"Отмен") never saw this outcome at all,
+ *         while "Всего бронирований" still counted it.
  *
  * Seeding: direct MySQL — bypasses controller validation deliberately.
  * Cleanup: each test or describe block removes its own rows.
@@ -202,6 +209,26 @@ async function getBookingStatus(bookingId: number): Promise<string> {
 	try {
 		const [rows] = await conn.execute<any[]>(
 			`SELECT status FROM ${tn('bookings')} WHERE id = ?`, [bookingId]
+		);
+		return rows[0]?.status ?? 'not_found';
+	} finally { await conn.end(); }
+}
+
+async function getUserCancellationKind(bookingId: number): Promise<string | null> {
+	const conn = await mysql.createConnection(DB);
+	try {
+		const [rows] = await conn.execute<any[]>(
+			`SELECT kind FROM ${tn('user_cancellations')} WHERE booking_id = ?`, [bookingId]
+		);
+		return rows[0]?.kind ?? null;
+	} finally { await conn.end(); }
+}
+
+async function getSlotStatus(slotId: number): Promise<string> {
+	const conn = await mysql.createConnection(DB);
+	try {
+		const [rows] = await conn.execute<any[]>(
+			`SELECT status FROM ${tn('time_slots')} WHERE id = ?`, [slotId]
 		);
 		return rows[0]?.status ?? 'not_found';
 	} finally { await conn.end(); }
@@ -810,9 +837,19 @@ test.describe('Fix 7: cron complete-expired completes orphan confirmed booking; 
 		expect(await getBookingStatus(targetBookingId)).toBe('completed');
 	});
 
+	test('D-144: target SLOT itself (under-subscribed group, past) is now completed, not stuck free', async () => {
+		if (!targetSlotId) { test.skip(); return; }
+		expect(await getSlotStatus(targetSlotId)).toBe('completed');
+	});
+
 	test('DB control (a): future free-slot confirmed booking stays confirmed', async () => {
 		if (!futureBookingId) { test.skip(); return; }
 		expect(await getBookingStatus(futureBookingId)).toBe('confirmed');
+	});
+
+	test('DB control (a): future free-slot itself stays free (not touched)', async () => {
+		if (!futureSlotId) { test.skip(); return; }
+		expect(await getSlotStatus(futureSlotId)).toBe('free');
 	});
 
 	test('DB: past free-slot PENDING booking is auto-cancelled with full refund + email', async () => {
@@ -834,6 +871,11 @@ test.describe('Fix 7: cron complete-expired completes orphan confirmed booking; 
 		// A rejection email was enqueued to the user (bookingRejected path).
 		const userEmailMaxIdAfter = await emailQueueMaxId('user1@dev.test');
 		expect(userEmailMaxIdAfter).toBeGreaterThan(userEmailMaxIdBefore);
+	});
+
+	test('D-146: auto-cancelled pending booking gets a user_cancellations row (kind=decline)', async () => {
+		if (!pastPendingBookingId) { test.skip(); return; }
+		expect(await getUserCancellationKind(pastPendingBookingId)).toBe('decline');
 	});
 
 	test('after cron: user cannot cancel completed booking (returns 400)', async ({ browser }) => {
@@ -870,5 +912,109 @@ test.describe('Fix 7: cron complete-expired completes orphan confirmed booking; 
 		}
 		if (userId) await recalcBalance(userId);
 		if (expertId) await recalcBalance(expertId);
+	});
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// D-147: BookingsController::buildAuxMaps() only revealed slot.location while
+// booking.status stayed literally 'confirmed'. A booking flips to 'completed'
+// once the session's end_at passes — at that exact moment the meeting link
+// used to disappear from the student's own booking card, replaced by a bare
+// platform-name string. Found live on production (support ticket #4).
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function postBookingsPage(page: Page): Promise<{ status: number; body: any }> {
+	return await page.evaluate(async () => {
+		const csrf = (window as any).__GARNET_CSRF__ || '';
+		const fd = new FormData();
+		fd.append('CSRF_TOKEN', csrf);
+		fd.append('status', '');
+		fd.append('showPast', 'true');
+		const res = await fetch('/bookings/~page', { method: 'POST', body: fd });
+		const text = await res.text();
+		let body: any = null;
+		try { body = JSON.parse(text); } catch { body = text; }
+		return { status: res.status, body };
+	});
+}
+
+test.describe('D-147: meeting link stays visible after the session (booked slot) completes', () => {
+	let userId = 0;
+	let expertId = 0;
+	let slotId = 0;
+	let bookingId = 0;
+	const MEETING_URL = 'https://meet.example.com/d147-test';
+
+	test.beforeAll(async () => {
+		userId = await getAccountId('user1@dev.test');
+		expertId = await getAccountId('expert1@dev.test');
+		expect(userId).toBeGreaterThan(0);
+		expect(expertId).toBeGreaterThan(0);
+
+		const now = Math.floor(Date.now() / 1000);
+		const pastStart = now - 7200;
+		const pastEnd = now - 3600;
+
+		// status='booked' (max_users=1, fully booked) — takes the FIRST cron
+		// branch (slots.where status='booked'), NOT the D-144 under-subscribed
+		// path, keeping this test focused on the confirmed->completed status
+		// transition alone.
+		const conn = await mysql.createConnection(DB);
+		try {
+			const [res]: any = await conn.execute(
+				`INSERT INTO ${tn('time_slots')}
+				 (expert_id, start_at, end_at, duration_min, cost, is_online, location, max_users, booked_count, status, uid, created_at)
+				 VALUES (?, ?, ?, 60, 0, 1, ?, 1, 1, 'booked', ?, ?)`,
+				[expertId, pastStart, pastEnd, MEETING_URL, generateUid(), Math.floor(Date.now() / 1000)],
+			);
+			slotId = res.insertId;
+		} finally { await conn.end(); }
+		expect(slotId).toBeGreaterThan(0);
+
+		bookingId = await seedBooking({ userId, slotId, status: 'confirmed' });
+		expect(bookingId).toBeGreaterThan(0);
+	});
+
+	test('before cron: booking confirmed, /bookings/~page already shows the real link', async ({ browser }) => {
+		if (!bookingId) { test.skip(); return; }
+		expect(await getBookingStatus(bookingId)).toBe('confirmed');
+
+		const { context, page } = await devLogin(browser, 'user');
+		try {
+			const result = await postBookingsPage(page);
+			expect(result.status).toBe(200);
+			expect(result.body.slots[String(slotId)].location).toBe(MEETING_URL);
+		} finally {
+			await context.close();
+		}
+	});
+
+	test('run real cron complete-expired', () => {
+		const prefix = getDbPrefix();
+		const res = spawnSync('php', ['run_cmd.php', 'cron', 'complete-expired'], {
+			cwd: APP_DIR,
+			env: { ...process.env, DB_PREFIX_OVERRIDE: prefix },
+			encoding: 'utf8',
+		});
+		const out = (res.stdout ?? '') + (res.stderr ?? '');
+		expect(out).toContain('Completed:');
+	});
+
+	test('after cron: booking is completed, but /bookings/~page STILL shows the real link', async ({ browser }) => {
+		if (!bookingId) { test.skip(); return; }
+		expect(await getBookingStatus(bookingId)).toBe('completed');
+
+		const { context, page } = await devLogin(browser, 'user');
+		try {
+			const result = await postBookingsPage(page);
+			expect(result.status).toBe(200);
+			expect(result.body.slots[String(slotId)].location).toBe(MEETING_URL);
+		} finally {
+			await context.close();
+		}
+	});
+
+	test.afterAll(async () => {
+		if (slotId) await cleanupSlot(slotId);
 	});
 });

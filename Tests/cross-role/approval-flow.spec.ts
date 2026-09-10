@@ -28,17 +28,11 @@ async function getExpertId(): Promise<number> {
 }
 
 async function setExpertApproval(expertId: number, approved: number) {
-	// The /slots-side predicate
-	// (UserEntityConfig::getApprovedExpertIds) reads ONLY
-	// accounts_data.IS_APPROVED + IS_DISABLED, not ir_expert_profiles.
-	// Mirror to ir_expert_profiles anyway — other call sites and the
-	// admin grid filter on that column.
+	// Одобрение живёт в одном месте — accounts_data.IS_APPROVED.
+	// Раньше рядом стояла зеркальная запись в ir_expert_profiles; таблица
+	// была копией аккаунта и разошлась с ним, поэтому её больше нет.
 	const conn = await mysql.createConnection(DB);
 	try {
-		await conn.execute(
-			`UPDATE ${tn('expert_profiles')} SET is_approved = ? WHERE account_id = ?`,
-			[approved, expertId]
-		);
 		await conn.execute(
 			`INSERT INTO ${tn('accounts_data')} (account_id, param, value)
 			 SELECT id, 'IS_APPROVED', ? FROM ${tn('accounts')} WHERE id = ?
