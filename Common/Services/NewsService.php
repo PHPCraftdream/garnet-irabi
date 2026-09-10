@@ -76,6 +76,32 @@ namespace PHPCraftdream\IRabi\Common\Services {
         }
 
         /**
+         * D-161: открыв переписку, человек прочитал и сообщение, и — по любому
+         * разумному ожиданию — новость о нём. Счётчик непрочитанного в чате
+         * (`ImReadStatus`) и в «Новости» (`NewsReads`) — два независимых
+         * журнала без общего ключа: `createMessageEvent` не передаёт
+         * `target_key`, поэтому обычный `deleteByTargetKey` тут не подходит.
+         * Вместо этого — прямая связь по паре (кто мне писал, кто я):
+         * `event_type='new_message'` этого отправителя мне же и есть та самая
+         * новость, что должна погаснуть вместе с чатом (нашла user-6).
+         */
+        public static function markMessagesRead(int $accountId, int $senderId): void {
+            $eventIds = array_map(
+                static fn (array $e): int => (int)$e['id'],
+                static::eventsTable()->selectAll(function (SelectInterface $q) use ($accountId, $senderId): void {
+                    $q->resetCols();
+                    $q->cols(['id']);
+                    $q->where('event_type = ?', [self::TYPE_NEW_MESSAGE])
+                        ->where('audience_type = ?', [self::AUDIENCE_PERSONAL])
+                        ->where('audience_id = ?', [$accountId])
+                        ->where('actor_id = ?', [$senderId]);
+                }),
+            );
+
+            static::markRead($accountId, $eventIds);
+        }
+
+        /**
          * Re-resolve the actor's CURRENT display name for every feed item, overriding
          * any stale or "#id" name captured in the payload at creation time. In every
          * IRabi news type the displayed person is the event actor, so resolving by

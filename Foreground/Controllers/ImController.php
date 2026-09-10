@@ -65,6 +65,36 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
         }
 
         /**
+         * D-161: opening a conversation marks it read in the messaging
+         * module (parent::post__messages already calls ImReadStatus::markRead)
+         * but never touched the "new message" news item the same message
+         * spawned — the feed kept insisting an already-read conversation was
+         * still unread. Clear it here, same request, for the actual partner
+         * of this conversation.
+         */
+        public static function post__messages(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
+            $result = parent::post__messages($globals, $params);
+
+            if ($result->getStatusCode() !== 200) {
+                return $result;
+            }
+
+            $account = Account::fromSession();
+            if ($account) {
+                $conversationId = (int)$globals->readPostValue('conversation_id', '0');
+                if ($conversationId > 0) {
+                    $conv = ImConversations::get()->selectOneByField('id', $conversationId);
+                    if ($conv) {
+                        $senderId = ImConversations::getPartnerId($conv, $account->id());
+                        NewsService::markMessagesRead($account->id(), $senderId);
+                    }
+                }
+            }
+
+            return $result;
+        }
+
+        /**
          * Enrich conversation with IRabi-specific fields.
          * Adds partner_has_expert_profile flag.
          */
