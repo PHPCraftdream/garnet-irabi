@@ -79,6 +79,15 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 return array_sum($stats);
             }, 'Mark expired slots and bookings as completed');
 
+            // D-163: heals a slot's booked_count/status after a crash mid-booking
+            // (reserveSeat() committed, the bookings INSERT never ran) leaves a
+            // seat permanently — and silently — stuck as taken.
+            static::registerTask('reconcile-slot-seats', function (Stdio $stdio): int {
+                $stats = CronCompletionService::reconcileSeats(500);
+                $stdio->outln("Reconciled: {$stats['fixed']} of {$stats['checked']} slot(s) had drifted booked_count");
+                return $stats['fixed'];
+            }, 'Resync time_slots.booked_count/status from actual active bookings');
+
             // Ставим сразу после complete-expired: обе задачи ходят по слотам
             // около «сейчас», и держать их рядом дешевле для понимания, чем
             // экономить на порядке. Функциональный блокер, как и email-queue:

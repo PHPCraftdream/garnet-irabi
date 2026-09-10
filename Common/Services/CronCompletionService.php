@@ -208,4 +208,79 @@ class CronCompletionService {
 
         return $stats;
     }
+
+    /**
+     * D-163: `time_slots.booked_count` is a cached counter maintained by
+     * paired reserveSeat()/releaseSeat() calls around every booking write.
+     * A crash between reserveSeat() succeeding and the following
+     * `bookings` INSERT (a killed worker, OOM — anything PHP's own
+     * try/catch can't intercept, unlike every ordinary failure path in
+     * BookingsController/SlotsController, which already compensate
+     * correctly) leaves the counter incremented forever with no booking
+     * row left to ever release it: the seat looks permanently taken, the
+     * slot still shows `status='free'` everywhere (the CAS flip to
+     * 'booked' only runs AFTER a successful insert, which never
+     * happened), and nothing revisits booked_count again on its own. A
+     * live incident (support ticket #3) traced back to exactly this: a
+     * hung booking request, no charge, no booking created, and the
+     * expert's own slot list never showed the seat as free again.
+     *
+     * Recompute booked_count from what actually holds a seat right now —
+     * active (pending/confirmed) bookings — for every non-terminal slot,
+     * and resync status to match. The CAS write only applies if
+     * booked_count still matches what we just read, so a booking that
+     * reserves a seat between our read and our write is left untouched —
+     * same safety margin as every other CAS update in this codebase.
+     * Idempotent; a tick with nothing to fix is a no-op.
+     *
+     * @return array{checked:int,fixed:int}
+     */
+    public static function reconcileSeats(int $limit = 500): array {
+        $stats = ['checked' => 0, 'fixed' => 0];
+
+        $slots = TimeSlots::get()->selectAll(function (SelectInterface $q) use ($limit): void {
+            $q->where("status IN ('free', 'booked')")->limit($limit);
+        });
+        $stats['checked'] = count($slots);
+        if (empty($slots)) {
+            return $stats;
+        }
+
+        $slotIds = array_map(fn (array $s): int => (int)$s['id'], $slots);
+        $counts = Bookings::get()->selectAll(function (SelectInterface $q) use ($slotIds): void {
+            $q->resetCols();
+            $q->cols(['bookable_id', 'COUNT(*) as cnt']);
+            $q->where("bookable_type = 'time_slot'")
+                ->where('bookable_id IN (?)', [$slotIds])
+                ->where("status IN ('pending', 'confirmed')")
+                ->groupBy(['bookable_id']);
+        });
+        $activeCountBySlot = [];
+        foreach ($counts as $row) {
+            $activeCountBySlot[(int)$row['bookable_id']] = (int)$row['cnt'];
+        }
+
+        $slotsTbl = TimeSlots::get()->getTableName();
+        foreach ($slots as $slot) {
+            $slotId = (int)$slot['id'];
+            $cachedCount = (int)$slot['booked_count'];
+            $trueCount = $activeCountBySlot[$slotId] ?? 0;
+            if ($trueCount === $cachedCount) {
+                continue;
+            }
+
+            $maxUsers = max(1, (int)($slot['max_users'] ?? 1));
+            $newStatus = $trueCount >= $maxUsers ? 'booked' : 'free';
+
+            $affected = CasUpdate::exec(
+                "UPDATE {$slotsTbl} SET booked_count = ?, status = ? WHERE id = ? AND booked_count = ?",
+                [$trueCount, $newStatus, $slotId, $cachedCount]
+            );
+            if ($affected === 1) {
+                $stats['fixed']++;
+            }
+        }
+
+        return $stats;
+    }
 }

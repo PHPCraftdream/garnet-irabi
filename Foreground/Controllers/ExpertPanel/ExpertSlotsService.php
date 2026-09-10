@@ -771,7 +771,17 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 $query->where("status IN ('pending', 'confirmed')");
             });
 
-            if (!empty($activeBookings)) {
+            // D-163: this used to check ONLY the `bookings` table. A booking
+            // write reserves capacity first (TimeSlots::reserveSeat() —
+            // booked_count+1) and only inserts the `bookings` row a moment
+            // later — the real concurrency boundary is booked_count, same as
+            // every booking controller already treats it. A delete landing in
+            // that window saw zero active bookings, deleted the row out from
+            // under the in-flight request, and the booking write that followed
+            // had nowhere left to record itself: no charge, no booking, the
+            // slot just gone (support ticket #3, traced from "confirm button
+            // hung, no response").
+            if (!empty($activeBookings) || (int)($slot['booked_count'] ?? 0) > 0) {
                 return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_DeleteLockedByBookings()], status: 400);
             }
 
