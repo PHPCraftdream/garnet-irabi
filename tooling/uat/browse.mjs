@@ -81,7 +81,20 @@ const baseUrl = `https://${roster.env?.host ?? 'slotbook.ru'}`;
 const profileDir = resolve(BROWSERS_DIR, persona.id);
 const statePath = resolve(profileDir, 'last-state.json');
 const storagePath = resolve(profileDir, 'storage.json');
-const shotPath = resolve(profileDir, 'last.png');
+const shotPath = resolve(profileDir, 'last.jpg');
+
+/**
+ * Скриншоты пишутся JPEG, а не PNG, и это не про место на диске.
+ *
+ * Персона смотрит снимок глазами — то есть картинка попадает в её
+ * транскрипт в base64. PNG страницы весит 300-600 КБ, и за пару десятков
+ * шагов транскрипт вырастал до 15-35 МБ; на таком файле процесс падал с
+ * `API Error: Out of memory` посреди работы, теряя весь ход (по цене
+ * полноценного вызова). JPEG качества 60 весит в 5-10 раз меньше и на
+ * разборчивость интерфейса не влияет: мы читаем подписи и расположение,
+ * а не пиксельную точность.
+ */
+const SHOT = { type: 'jpeg', quality: 60 };
 
 mkdirSync(profileDir, { recursive: true });
 
@@ -301,15 +314,15 @@ try {
 
         if (steps.length > 1) {
             await page.waitForTimeout(400);
-            const stepShot = resolve(profileDir, `step-${index + 1}.png`);
-            await page.screenshot({ path: stepShot, fullPage: false });
+            const stepShot = resolve(profileDir, `step-${index + 1}.jpg`);
+            await page.screenshot({ path: stepShot, fullPage: false, ...SHOT });
             console.log(`скриншот шага: ${stepShot}`);
         }
     }
     /* eslint-enable no-await-in-loop */
 
     await page.waitForTimeout(400);
-    await page.screenshot({ path: shotPath, fullPage: false });
+    await page.screenshot({ path: shotPath, fullPage: false, ...SHOT });
     writeFileSync(statePath, JSON.stringify({ url: page.url(), at: Date.now() }, null, 2));
 
     console.log(`\n[${persona.id} ${width}x${height}] ${page.url()}`);
@@ -317,7 +330,7 @@ try {
     console.log(`скриншот: ${shotPath}  ← открой и посмотри глазами`);
 } catch (error) {
     failure = error.message;
-    await page.screenshot({ path: shotPath, fullPage: false }).catch(() => {});
+    await page.screenshot({ path: shotPath, fullPage: false, ...SHOT }).catch(() => {});
     console.error(`\n[${persona.id}] ОШИБКА: ${error.message}`);
     console.error(`скриншот момента ошибки: ${shotPath}`);
 } finally {
