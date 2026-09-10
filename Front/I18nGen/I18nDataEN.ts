@@ -333,6 +333,7 @@ export class I18nDataEN {
     static Support_Reply = 'Reply';
     static Support_NoTickets = 'No tickets yet';
     static Support_NoMessages = 'No messages yet';
+    static Support_SelectTicket = 'Select a ticket from the list on the left';
     static Support_InternalComment = 'Internal Comment';
     static Support_Assignee = 'Assignee';
     static Support_Unassigned = 'Unassigned';

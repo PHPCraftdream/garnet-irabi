@@ -387,6 +387,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Support_Reply' => 'Ответить',
             'Support_NoTickets' => 'Обращений пока нет',
             'Support_NoMessages' => 'Сообщений пока нет',
+            'Support_SelectTicket' => 'Выберите обращение из списка слева',
             'Support_InternalComment' => 'Внутренний комментарий',
             'Support_Assignee' => 'Ответственный',
             'Support_Unassigned' => 'Не назначен',

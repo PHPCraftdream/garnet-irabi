@@ -338,6 +338,7 @@ class I18n extends I18nBase {
     Support_Reply: t = (a = []) => this.t('Support_Reply', a);
     Support_NoTickets: t = (a = []) => this.t('Support_NoTickets', a);
     Support_NoMessages: t = (a = []) => this.t('Support_NoMessages', a);
+    Support_SelectTicket: t = (a = []) => this.t('Support_SelectTicket', a);
     Support_InternalComment: t = (a = []) => this.t('Support_InternalComment', a);
     Support_Assignee: t = (a = []) => this.t('Support_Assignee', a);
     Support_Unassigned: t = (a = []) => this.t('Support_Unassigned', a);

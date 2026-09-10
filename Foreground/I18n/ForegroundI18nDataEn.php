@@ -375,6 +375,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Support_Reply' => 'Reply',
             'Support_NoTickets' => 'No tickets yet',
             'Support_NoMessages' => 'No messages yet',
+            'Support_SelectTicket' => 'Select a ticket from the list on the left',
             'Support_InternalComment' => 'Internal Comment',
             'Support_Assignee' => 'Assignee',
             'Support_Unassigned' => 'Unassigned',

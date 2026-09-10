@@ -332,6 +332,7 @@ export class I18nDataRU {
     static Support_Reply = 'Ответить';
     static Support_NoTickets = 'Обращений пока нет';
     static Support_NoMessages = 'Сообщений пока нет';
+    static Support_SelectTicket = 'Выберите обращение из списка слева';
     static Support_InternalComment = 'Внутренний комментарий';
     static Support_Assignee = 'Ответственный';
     static Support_Unassigned = 'Не назначен';
