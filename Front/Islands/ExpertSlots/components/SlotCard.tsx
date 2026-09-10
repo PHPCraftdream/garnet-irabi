@@ -41,6 +41,59 @@ function borderClass(status: string): string {
     }
 }
 
+interface ActionsProps {
+    slot: Slot;
+    canComplete: boolean;
+    onCancel?: (id: number) => void;
+    onEdit?: (slot: Slot) => void;
+    onComplete?: (id: number) => void;
+    onDelete?: (id: number) => void;
+}
+
+const ActionButton: React.FC<{cls: string; testId: string; label: string; onClick: () => void}> = ({
+    cls,
+    testId,
+    label,
+    onClick,
+}) => (
+    <button className={`btn btn-sm ${cls}`} data-test-id={testId} onClick={onClick}>
+        {label}
+    </button>
+);
+
+/**
+ * Что можно сделать с занятием — зависит от его состояния.
+ *
+ * Свободное правят, снимают и удаляют. Забронированное удалять нельзя: за ним
+ * стоит человек, который записался. Завершить можно только то, что уже
+ * началось, — иначе занятие «состоялось» до того, как состоялось.
+ */
+const SlotActions: React.FC<ActionsProps> = ({slot, canComplete, onCancel, onEdit, onComplete, onDelete}) => {
+    if (slot.status === 'free') {
+        if (!onEdit && !onCancel && !onDelete) return null;
+
+        return (
+            <div className="mt-3 flex gap-2">
+                {onEdit && <ActionButton cls="btn-outline-primary" testId={`slot-edit-${slot.id}`} label={t.Slot_Edit()} onClick={() => onEdit(slot)} />}
+                {onCancel && <ActionButton cls="btn-outline-warning" testId={`slot-cancel-${slot.id}`} label={t.Slot_Cancel()} onClick={() => onCancel(slot.id)} />}
+                {onDelete && <ActionButton cls="btn-outline-danger" testId={`slot-delete-${slot.id}`} label={t.Slot_Delete()} onClick={() => onDelete(slot.id)} />}
+            </div>
+        );
+    }
+
+    if (slot.status !== 'booked') return null;
+    if (!onCancel && !(onComplete && canComplete)) return null;
+
+    return (
+        <div className="mt-3 flex gap-2">
+            {onCancel && <ActionButton cls="btn-outline-warning" testId={`slot-cancel-${slot.id}`} label={t.Slot_Cancel()} onClick={() => onCancel(slot.id)} />}
+            {onComplete && canComplete && (
+                <ActionButton cls="btn-success" testId={`slot-complete-${slot.id}`} label={t.Slot_Complete()} onClick={() => onComplete(slot.id)} />
+            )}
+        </div>
+    );
+};
+
 export const SlotCard: React.FC<Props> = ({slot, onCancel, onEdit, onComplete, onDelete}) => {
     const formattedDate = formatTs(slot.start_at, {dateOnly: true});
     const formattedTime = formatTime(slot.start_at);
@@ -76,60 +129,14 @@ export const SlotCard: React.FC<Props> = ({slot, onCancel, onEdit, onComplete, o
                         </span>
                     </p>
 
-                    {slot.status === 'free' && (onEdit || onCancel || onDelete) && (
-                        <div className="mt-3 flex gap-2">
-                            {onEdit && (
-                                <button
-                                    className="btn btn-sm btn-outline-primary"
-                                    data-test-id={`slot-edit-${slot.id}`}
-                                    onClick={() => onEdit(slot)}
-                                >
-                                    {t.Slot_Edit()}
-                                </button>
-                            )}
-                            {onCancel && (
-                                <button
-                                    className="btn btn-sm btn-outline-warning"
-                                    data-test-id={`slot-cancel-${slot.id}`}
-                                    onClick={() => onCancel(slot.id)}
-                                >
-                                    {t.Slot_Cancel()}
-                                </button>
-                            )}
-                            {onDelete && (
-                                <button
-                                    className="btn btn-sm btn-outline-danger"
-                                    data-test-id={`slot-delete-${slot.id}`}
-                                    onClick={() => onDelete(slot.id)}
-                                >
-                                    {t.Slot_Delete()}
-                                </button>
-                            )}
-                        </div>
-                    )}
-
-                    {slot.status === 'booked' && (onCancel || (onComplete && canComplete)) && (
-                        <div className="mt-3 flex gap-2">
-                            {onCancel && (
-                                <button
-                                    className="btn btn-sm btn-outline-warning"
-                                    data-test-id={`slot-cancel-${slot.id}`}
-                                    onClick={() => onCancel(slot.id)}
-                                >
-                                    {t.Slot_Cancel()}
-                                </button>
-                            )}
-                            {onComplete && canComplete && (
-                                <button
-                                    className="btn btn-sm btn-success"
-                                    data-test-id={`slot-complete-${slot.id}`}
-                                    onClick={() => onComplete(slot.id)}
-                                >
-                                    {t.Slot_Complete()}
-                                </button>
-                            )}
-                        </div>
-                    )}
+                    <SlotActions
+                        slot={slot}
+                        canComplete={canComplete}
+                        onCancel={onCancel}
+                        onEdit={onEdit}
+                        onComplete={onComplete}
+                        onDelete={onDelete}
+                    />
                 </div>
             </div>
         </div>

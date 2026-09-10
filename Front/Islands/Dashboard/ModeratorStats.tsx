@@ -19,7 +19,7 @@ export const ModeratorStats: React.FC<ModeratorStatsProps> = ({openTickets, pend
                 <div className="stat-tile-label">{t.Dash_OpenTickets()}</div>
             </div>
             <div className="stat-tile">
-                <div className="user-dash-stat-value-warning">{pendingApprovals}</div>
+                <div className="user-dash-stat-value-warning" data-test-id="moderator-pending-approvals">{pendingApprovals}</div>
                 <div className="stat-tile-label">{t.Dash_PendingApprovals()}</div>
             </div>
             <div className="stat-tile">

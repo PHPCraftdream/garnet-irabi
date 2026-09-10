@@ -15,14 +15,45 @@ interface SlotTeaser {
     label: string;
 }
 
-interface RecommendedSlotsProps {
-    slots: SlotTeaser[];
-}
+const SlotTeaserRow: React.FC<{slot: SlotTeaser; onBook: (id: number) => void}> = ({slot, onBook}) => (
+    <div className="booking-row">
+        <div className="min-w-0 flex-1">
+            <div className="text-sm font-medium text-on-surface">{slot.label}</div>
+            <div className="text-sm text-muted">
+                {slot.expert_id > 0
+                    ? (
+                        <UserLink
+                            id={slot.expert_id}
+                            name={slot.expert_name}
+                            isExpert
+                            className="text-accent hover:underline"
+                            onClick={e => e.stopPropagation()}
+                        />
+                    )
+                    : slot.expert_name}
+                {' '}&middot; {formatTs(slot.start_at, {weekday: true})}
+            </div>
+            <div className="text-sm text-muted">{slot.duration_min} {t.Slot_Duration_Min()}</div>
+        </div>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+            <span className="text-sm font-medium text-secondary whitespace-nowrap">{slot.cost} &#8381;</span>
+            <button
+                type="button"
+                onClick={() => onBook(slot.id)}
+                className="btn btn-sm btn-primary whitespace-nowrap"
+                data-test-id="book-btn"
+            >
+                {t.Slot_Book()}
+            </button>
+        </div>
+    </div>
+);
 
-export const RecommendedSlots: React.FC<RecommendedSlotsProps> = ({slots}) => {
-    // Shared booking-modal flow — open the slot in a modal instead of
-    // hard-navigating to a separate booking page. Reload on success so the
-    // dashboard (upcoming bookings, balance) reflects the new booking.
+/** Подборка занятий на главной. */
+export const RecommendedSlots: React.FC<{slots: SlotTeaser[]}> = ({slots}) => {
+    // Общий поток бронирования: занятие открывается окном, а не уводит на
+    // отдельную страницу. После успеха страница перезагружается, чтобы
+    // ближайшие занятия и баланс показали новую бронь.
     const {openBooking, bookingModal} = useSlotBooking({onBooked: () => window.location.reload()});
 
     if (slots.length === 0) return null;
@@ -34,32 +65,7 @@ export const RecommendedSlots: React.FC<RecommendedSlotsProps> = ({slots}) => {
                 <a href={appUrl('/slots')} className="view-all-link">{t.Dash_ViewAll()}</a>
             </div>
             <div className="space-y-2">
-                {slots.map(slot => (
-                    <div key={slot.id} className="booking-row">
-                        <div className="min-w-0 flex-1">
-                            <div className="text-sm font-medium text-on-surface">{slot.label}</div>
-                            <div className="text-sm text-muted">
-                                {slot.expert_id > 0 ? (
-                                    <UserLink id={slot.expert_id} name={slot.expert_name} isExpert className="text-accent hover:underline" onClick={e => e.stopPropagation()} />
-                                ) : slot.expert_name} &middot; {formatTs(slot.start_at, {weekday: true})}
-                            </div>
-                            <div className="text-sm text-muted">
-                                {slot.duration_min} {t.Slot_Duration_Min()}
-                            </div>
-                        </div>
-                        <div className="flex flex-col items-end gap-1 shrink-0">
-                            <span className="text-sm font-medium text-secondary whitespace-nowrap">{slot.cost} &#8381;</span>
-                            <button
-                                type="button"
-                                onClick={() => openBooking(slot.id)}
-                                className="btn btn-sm btn-primary whitespace-nowrap"
-                                data-test-id="book-btn"
-                            >
-                                {t.Slot_Book()}
-                            </button>
-                        </div>
-                    </div>
-                ))}
+                {slots.map(slot => <SlotTeaserRow key={slot.id} slot={slot} onBook={openBooking} />)}
             </div>
             {bookingModal}
         </div>

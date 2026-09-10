@@ -115,6 +115,7 @@ export const SlotsFilters: React.FC<SlotsFiltersProps> = ({filters, experts, onC
                         {([
                             ['all', t.Admin_Tab_All()],
                             ['individual', t.Slots_Individual()],
+                            ['group', t.Slots_Group()],
                         ] as [SlotType, string][]).map(([val, label]) => (
                             <button
                                 key={val}

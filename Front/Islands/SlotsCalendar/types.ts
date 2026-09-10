@@ -7,7 +7,10 @@ export interface SlotItem {
     cost: number;
     cancellation_penalty_percent: number;
     is_online: number;
+    /** Адрес очного занятия. У онлайнового пусто: ссылка на встречу наружу не отдаётся. */
     location: string;
+    /** Публичное имя площадки онлайн-занятия («Zoom»). Пусто у очного. */
+    platform?: string;
     max_users: number;
     status: string;
     uid?: string;
@@ -55,7 +58,7 @@ export interface SlotsCalendarProps {
 export type SlotStatusFilter = 'all' | 'free' | 'mine' | 'pending' | 'confirmed' | 'cancelled' | 'past';
 
 export type TimeOfDay = 'all' | 'morning' | 'day' | 'evening';
-export type SlotType = 'all' | 'individual';
+export type SlotType = 'all' | 'individual' | 'group';
 export type OnlineFilter = 'all' | 'online' | 'offline';
 
 export interface FiltersState {

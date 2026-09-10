@@ -76,6 +76,13 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots, experts,
                 if (filters.onlineFilter === 'online' && !slot.is_online) return false;
                 if (filters.onlineFilter === 'offline' && slot.is_online) return false;
             }
+            // D-149: the "Тип" filter existed on screen but never actually
+            // filtered anything — a group option wasn't even offered.
+            if (filters.slotType !== 'all') {
+                const isGroup = (slot.max_users || 1) > 1;
+                if (filters.slotType === 'individual' && isGroup) return false;
+                if (filters.slotType === 'group' && !isGroup) return false;
+            }
             return true;
         });
     }, [slots, filters]);

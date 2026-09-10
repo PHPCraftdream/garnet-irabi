@@ -6,231 +6,29 @@ import {useSending} from '@common/hooks/useSending';
 import {useBodyScrollLock} from '@common/hooks/useBodyScrollLock';
 import {showToast} from '@common/Components/GlobalToast';
 import {ConfirmModal} from '@common/Components/ConfirmModal';
-import SendButton from '@common/Components/SendButton';
 import {Portal} from '@common/Components/Portal';
 import {sendPost} from '@common/Api/sendPost';
 import {appUrl} from '@common/Utils/appUrl';
-import {DateInput} from '@common/Components/ui/DateInput';
-import {tsToInputDate, tsToInputTime} from '@common/Utils/DateUtils';
+import {tsToInputTime} from '@common/Utils/DateUtils';
 import {TimezoneNotice} from '@common/Components/TimezoneNotice';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
+import {
+    actionImpact,
+    actionReasonLabel,
+    actionReasonPlaceholder,
+    actionSubmitLabel,
+    actionTitle,
+} from '../../Common/bookingAction';
+import {ReasonModal} from '../../Common/Components/ReasonModal';
+import {EditSlotModal} from './components/EditSlotModal';
 import {Slot, ExpertSlotsProps} from './types';
 import {CreateSlotForm} from './components/CreateSlotForm';
 import {BatchSlotWizard} from './components/BatchSlotWizard';
 import {ExpertCalendar} from './components/ExpertCalendar';
-import {SlotFormatFields} from './components/SlotFormatFields';
 import {IrabiPreviewProvider} from '../../Common/IrabiPreviewProvider';
 import {usePreview} from '@common/Components/UserPreviewModal/PreviewContext';
 import {PageHeader} from '@common/Components/PageHeader';
 import {CalendarClock} from 'lucide-react';
-
-interface EditSlotModalProps {
-    slot: Slot;
-    onClose: () => void;
-    onSaved: (updated: Slot) => void;
-    onError: (msg: string) => void;
-}
-
-const EditSlotModal: React.FC<EditSlotModalProps> = ({slot, onClose, onSaved, onError}) => {
-    useBodyScrollLock(true);
-    const {sending, withSending} = useSending();
-
-    const [editDate, setEditDate] = React.useState(() => tsToInputDate(slot.start_at));
-    const [editTime, setEditTime] = React.useState(() => tsToInputTime(slot.start_at));
-    const [editDuration, setEditDuration] = React.useState(slot.duration_min ?? 60);
-    const [editCost, setEditCost] = React.useState(slot.cost);
-    const [editMaxUsers, setEditMaxUsers] = React.useState(slot.max_users ?? 1);
-    const [editPenaltyPercent, setEditPenaltyPercent] = React.useState(slot.cancellation_penalty_percent ?? 0);
-    const [editIsOnline, setEditIsOnline] = React.useState(Number(slot.is_online ?? 1) === 1);
-    const [editLocation, setEditLocation] = React.useState(slot.location ?? '');
-    const [validationError, setValidationError] = React.useState('');
-
-    // Close on Escape
-    React.useEffect(() => {
-        const handler = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose();
-        };
-        document.addEventListener('keydown', handler);
-        return () => document.removeEventListener('keydown', handler);
-    }, [onClose]);
-
-    const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (e.target === e.currentTarget) onClose();
-    };
-
-    const handleSave = () => {
-        setValidationError('');
-
-        // Past-time validation is performed on the backend in the expert's TZ
-        // (see ExpertSlotsService::editSlot → DateUtils::parseUserDateTime). The
-        // server rejects with "Cannot reschedule to a past time" and that error
-        // surfaces via onError → showToast, so no client-side wall-clock check
-        // is needed (and a client-side `new Date(date+T+time)` would parse in
-        // the browser's TZ, violating AGENTS.md §12).
-
-        withSending(async () => {
-            D('teaching.slot.edit', {slotId: slot.id, date: editDate, time: editTime});
-            try {
-                const csrf = (window as any).__GARNET_CSRF__ ?? '';
-                const resp = await sendPost(appUrl('/expert/~editSlot'), {
-                    CSRF_TOKEN: csrf,
-                    slot_id: slot.id,
-                    date: editDate,
-                    time: editTime,
-                    duration: editDuration,
-                    cost: editCost,
-                    max_users: editMaxUsers,
-                    cancellation_penalty_percent: editPenaltyPercent,
-                    is_online: editIsOnline ? 1 : 0,
-                    location: editLocation,
-                });
-                const updated = (resp as any)?.slot ?? slot;
-                onSaved(updated);
-            } catch (e: any) {
-                D('teaching.error', {action: 'editSlot', slotId: slot.id, error: e?.message});
-                // Show overlap errors inline instead of toast
-                const resp = e?.response;
-                if (resp && typeof resp === 'object' && resp.overlap) {
-                    setValidationError(resp.error || t.Slot_OverlapError());
-                } else {
-                    const msg = (resp && typeof resp === 'object' && resp.error) ? resp.error : (e?.message || t.General_Error());
-                    onError(msg);
-                }
-            }
-        });
-    };
-
-    return (
-        <Portal><div
-            className="fg-modal-overlay"
-            onClick={handleOverlayClick}
-            data-test-id="edit-slot-modal"
-        >
-            <div className="fg-modal-card fg-modal-card-md">
-                {/* Header */}
-                <div className="fg-modal-header-row">
-                    <h3 className="fg-modal-title">{t.Slot_EditTitle()}</h3>
-                    <button
-                        type="button"
-                        className="fg-modal-close-x"
-                        onClick={onClose}
-                        title={t.Action_Close()}
-                        data-test-id="edit-slot-close"
-                    >
-                        &times;
-                    </button>
-                </div>
-
-                {/* Validation error */}
-                {validationError && (
-                    <div className="mb-3 text-sm text-danger">{validationError}</div>
-                )}
-
-                {/* Form fields */}
-                <div className="space-y-3 mb-4">
-                    <div>
-                        <label className="text-sm text-secondary mb-1 block">{t.Slot_Date()}</label>
-                        <DateInput
-                            value={editDate}
-                            onChange={e => setEditDate(e.target.value)}
-                            data-test-id="edit-slot-date"
-                        />
-                    </div>
-                    <div>
-                        <label className="text-sm text-secondary mb-1 block">{t.Slot_Time()}</label>
-                        <DateInput
-                            type="time"
-                            value={editTime}
-                            onChange={e => setEditTime(e.target.value)}
-                            data-test-id="edit-slot-time"
-                        />
-                    </div>
-                    <div>
-                        <label className="text-sm text-secondary mb-1 block">{t.Slot_Duration()}</label>
-                        <input
-                            type="number"
-                            className="form-control"
-                            value={editDuration}
-                            onChange={e => setEditDuration(Number(e.target.value))}
-                            min={15}
-                            data-test-id="edit-slot-duration"
-                        />
-                    </div>
-                    <div>
-                        <label className="text-sm text-secondary mb-1 block">{t.Slot_Cost()}</label>
-                        <input
-                            type="number"
-                            className="form-control"
-                            value={editCost}
-                            onChange={e => setEditCost(Number(e.target.value))}
-                            min={0}
-                            data-test-id="edit-slot-cost"
-                        />
-                    </div>
-                    {/*
-                      * Capacity was missing here entirely: a group slot could
-                      * be created with several seats and then never inspected
-                      * or corrected, and the number appeared nowhere in the
-                      * interface afterwards. The lower bound is the seats
-                      * already taken — the server enforces the same rule.
-                      */}
-                    <div>
-                        <label className="text-sm text-secondary mb-1 block">{t.Slot_MaxUsers()}</label>
-                        <input
-                            type="number"
-                            className="form-control"
-                            value={editMaxUsers}
-                            onChange={e => setEditMaxUsers(Number(e.target.value))}
-                            min={Math.max(1, slot.booked_count ?? 0)}
-                            max={100}
-                            data-test-id="edit-slot-max-users"
-                        />
-                    </div>
-                    <div>
-                        <label className="text-sm text-secondary mb-1 block">{t.Slot_PenaltyPercent()}</label>
-                        <input
-                            type="number"
-                            className="form-control"
-                            value={editPenaltyPercent}
-                            onChange={e => setEditPenaltyPercent(Number(e.target.value))}
-                            min={0}
-                            max={100}
-                            data-test-id="edit-slot-penalty-percent"
-                        />
-                        <div className="text-xs text-muted mt-1">{t.Slot_PenaltyHelp()}</div>
-                    </div>
-                    <SlotFormatFields
-                        isOnline={editIsOnline}
-                        location={editLocation}
-                        onIsOnlineChange={setEditIsOnline}
-                        onLocationChange={setEditLocation}
-                        idPrefix="edit-slot"
-                        labelClassName="text-sm text-secondary mb-1 block"
-                    />
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-2 justify-end">
-                    <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={onClose}
-                        disabled={sending}
-                        data-test-id="edit-slot-cancel"
-                    >
-                        {t.Batch_Cancel()}
-                    </button>
-                    <SendButton
-                        onClick={handleSave}
-                        sending={sending}
-                        label={t.Slot_Save()}
-                        testId="edit-slot-save"
-                    />
-                </div>
-            </div>
-        </div></Portal>
-    );
-};
 
 const ExpertSlotsIslandInner: React.FC<ExpertSlotsProps> = (props) => {
     const preview = usePreview();
@@ -300,12 +98,11 @@ const ExpertSlotsIslandInner: React.FC<ExpertSlotsProps> = (props) => {
         }
     };
 
-    // Cancel booking modal state
+    // Снаружи остаётся только «какая бронь открыта»: текст причины, его
+    // проверка, Escape и блокировка прокрутки живут внутри ReasonModal.
     const [cancelBookingSlotId, setCancelBookingSlotId] = React.useState<number | null>(null);
-    const [cancelReason, setCancelReason] = React.useState('');
-    const [cancelReasonError, setCancelReasonError] = React.useState('');
     const {sending: cancelSending, withSending: withCancelSending} = useSending();
-    useBodyScrollLock(cancelBookingSlotId !== null);
+    const cancelSlotStatus = slots.find(s => s.id === cancelBookingSlotId)?.booking_status;
 
     const handleConfirmBooking = async (slot: Slot) => {
         if (!slot.booking_id) return;
@@ -321,41 +118,25 @@ const ExpertSlotsIslandInner: React.FC<ExpertSlotsProps> = (props) => {
         }
     };
 
-    const handleCancelBookingOpen = (id: number) => {
-        setCancelBookingSlotId(id);
-        setCancelReason('');
-        setCancelReasonError('');
-    };
+    const handleCancelBookingOpen = (id: number) => setCancelBookingSlotId(id);
+    const handleCancelBookingClose = () => setCancelBookingSlotId(null);
 
-    const handleCancelBookingClose = () => {
-        setCancelBookingSlotId(null);
-        setCancelReason('');
-        setCancelReasonError('');
-    };
-
-    // Close cancel booking modal on Escape
-    React.useEffect(() => {
-        if (cancelBookingSlotId === null) return;
-        const handler = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') handleCancelBookingClose();
-        };
-        document.addEventListener('keydown', handler);
-        return () => document.removeEventListener('keydown', handler);
-    }, [cancelBookingSlotId]);
-
-    const handleCancelBookingSubmit = () => {
-        if (!cancelReason.trim()) {
-            setCancelReasonError(t.Cancel_ReasonRequired());
-            return;
-        }
+    const handleCancelBookingSubmit = (reason: string) => {
         withCancelSending(async () => {
-            D('teaching.slot.cancelBooking', {slotId: cancelBookingSlotId, reason: cancelReason});
+            D('teaching.slot.cancelBooking', {slotId: cancelBookingSlotId, reason});
             try {
                 const csrf = (window as any).__GARNET_CSRF__ ?? '';
-                await sendPost(appUrl('/expert/~cancelBookedSlot'), {
+                // D-130: a group slot with open seats stays status='free'
+                // even with active bookings on it (fills to 'booked' only
+                // once max_users is reached) — cancelBookedSlot() refuses
+                // anything but a full slot, so this path needs the other
+                // endpoint. Both now collect and store the same reason.
+                const targetStatus = slots.find(s => s.id === cancelBookingSlotId)?.status;
+                const endpoint = targetStatus === 'free' ? '/expert/~cancelSlot' : '/expert/~cancelBookedSlot';
+                await sendPost(appUrl(endpoint), {
                     CSRF_TOKEN: csrf,
                     slot_id: cancelBookingSlotId,
-                    reason: cancelReason.trim(),
+                    reason,
                 });
                 setSlots(prev => prev.map(s => s.id === cancelBookingSlotId ? {...s, status: 'cancelled'} : s));
                 showToast(t.Cancel_Success(), 'success');
@@ -372,9 +153,18 @@ const ExpertSlotsIslandInner: React.FC<ExpertSlotsProps> = (props) => {
     };
 
     const handleEditSaved = (updated: Slot) => {
-        setSlots(prev => prev.map(s => s.id === updated.id ? updated : s));
+        // Сервер отдаёт сырую строку слота — без имени записавшегося и без
+        // статуса его брони, которые подмешиваются при выборке списка. Если
+        // подставить её целиком, карточка на миг теряет бронь и показывает
+        // «Ждёт подтверждения» вместо «Подтверждено» (заметил expert-3).
+        setSlots(prev => prev.map(s => s.id === updated.id
+            ? {...s, ...updated, user_id: s.user_id, user_name: s.user_name, booking_id: s.booking_id, booking_status: s.booking_status}
+            : s));
         setEditingSlot(null);
-        showToast(t.Slot_Rescheduled(), 'success');
+        // На забронированном слоте меняется только место встречи — так и
+        // говорим. Прежний текст обещал перенос занятия и обновление страницы,
+        // хотя ни того, ни другого не происходило.
+        showToast(editingSlot?.status === 'booked' ? t.Slot_PlaceUpdated() : t.Slot_Saved(), 'success');
     };
 
     const handleEditError = (msg: string) => {
@@ -565,71 +355,24 @@ const ExpertSlotsIslandInner: React.FC<ExpertSlotsProps> = (props) => {
                 />
             )}
 
-{/* Cancel booking modal */}
-            {cancelBookingSlotId !== null && (
-                <Portal><div
-                    className="fg-modal-overlay"
-                    onClick={(e) => { if (e.target === e.currentTarget) handleCancelBookingClose(); }}
-                    data-test-id="cancel-booking-modal"
-                >
-                    <div className="fg-modal-card fg-modal-card-md">
-                        <div className="fg-modal-header-row">
-                            <h3 className="fg-modal-title">{t.Cancel_BookedSlotTitle()}</h3>
-                            <button
-                                type="button"
-                                className="fg-modal-close-x"
-                                onClick={handleCancelBookingClose}
-                                title={t.Action_Close()}
-                                data-test-id="cancel-booking-close"
-                            >
-                                &times;
-                            </button>
-                        </div>
-
-                        {(() => {
-                            const cs = slots.find(s => s.id === cancelBookingSlotId);
-                            const impact = cs?.booking_status === 'confirmed' ? t.Booking_CancelImpact() : t.Booking_DeclineImpact();
-                            return <div className="mb-3 text-sm text-warning" data-test-id="cancel-booking-impact">{impact}</div>;
-                        })()}
-
-                        {cancelReasonError && (
-                            <div className="mb-3 text-sm text-danger">{cancelReasonError}</div>
-                        )}
-
-                        <div className="mb-4">
-                            <label className="text-sm text-secondary mb-1 block">{t.Cancel_ReasonLabel()}</label>
-                            <textarea
-                                className="form-control"
-                                rows={3}
-                                value={cancelReason}
-                                onChange={e => { setCancelReason(e.target.value); setCancelReasonError(''); }}
-                                placeholder={t.Cancel_ReasonPlaceholder()}
-                                data-test-id="cancel-booking-reason"
-                            />
-                        </div>
-
-                        <div className="flex gap-2 justify-end">
-                            <button
-                                type="button"
-                                className="btn btn-secondary"
-                                onClick={handleCancelBookingClose}
-                                disabled={cancelSending}
-                                data-test-id="cancel-booking-dismiss"
-                            >
-                                {t.Batch_Cancel()}
-                            </button>
-                            <SendButton
-                                onClick={handleCancelBookingSubmit}
-                                sending={cancelSending}
-                                label={t.Cancel_Submit()}
-                                testId="cancel-booking-submit"
-                                variant="outline-warning"
-                            />
-                        </div>
-                    </div>
-                </div></Portal>
-            )}
-
+            {/*
+              * Отказ по брони и отмена занятия — одно окно с разными словами.
+              * Раньше здесь стояла собственная копия со своим состоянием: она
+              * и осталась нетронутой, когда названия действий развели на
+              * соседнем экране (нашёл expert-3).
+              */}
+            <ReasonModal
+                open={cancelBookingSlotId !== null}
+                title={actionTitle('expert', cancelSlotStatus)}
+                impact={actionImpact('expert', cancelSlotStatus)}
+                reasonLabel={actionReasonLabel('expert', cancelSlotStatus)}
+                reasonPlaceholder={actionReasonPlaceholder('expert', cancelSlotStatus)}
+                submitLabel={actionSubmitLabel('expert', cancelSlotStatus)}
+                sending={cancelSending}
+                testId="cancel-booking-modal"
+                onSubmit={handleCancelBookingSubmit}
+                onClose={handleCancelBookingClose}
+            />
 
             <ConfirmModal
                 state={confirmState}

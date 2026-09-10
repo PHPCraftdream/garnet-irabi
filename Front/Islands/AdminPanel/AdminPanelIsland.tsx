@@ -33,6 +33,9 @@ interface Props {
     commentsPageUrl: string;
     commentsHideUrl: string;
     commentsUnhideUrl: string;
+    commentsApproveUrl: string;
+    commentsRejectUrl: string;
+    commentsFlagUrl: string;
     commentsExperts: CommentsAccountOption[];
     commentsAuthors: CommentsAccountOption[];
     commentsInitialPayload?: PageResponse<AdminCommentRow> | null;
@@ -83,6 +86,9 @@ export const AdminPanelIsland: React.FC<Props> = (props) => {
         commentsPageUrl,
         commentsHideUrl,
         commentsUnhideUrl,
+        commentsApproveUrl,
+        commentsRejectUrl,
+        commentsFlagUrl,
         commentsExperts,
         commentsAuthors,
         commentsInitialPayload,
@@ -184,6 +190,9 @@ export const AdminPanelIsland: React.FC<Props> = (props) => {
                     commentsPageUrl={commentsPageUrl}
                     hideUrl={commentsHideUrl}
                     unhideUrl={commentsUnhideUrl}
+                    approveUrl={commentsApproveUrl}
+                    rejectUrl={commentsRejectUrl}
+                    flagUrl={commentsFlagUrl}
                     experts={commentsExperts}
                     authors={commentsAuthors}
                 />

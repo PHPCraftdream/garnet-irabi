@@ -3,6 +3,7 @@ import {useState, useCallback} from 'react';
 import {sendPost} from '@common/Api/sendPost';
 import {showToast} from '@common/Components/GlobalToast';
 import {appUrl} from '@common/Utils/appUrl';
+import {refreshLiveCounts} from '@common/Utils/liveCounts';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import BookingModal from './BookingModal';
 import {bookErrorCode, bookErrorMessage} from './bookingErrors';
@@ -79,6 +80,15 @@ export function useSlotBooking(options: UseSlotBookingOptions = {}) {
             onClose={() => setBookData(null)}
             onBooked={() => {
                 setBookData(null);
+                // Бронирование двигает деньги, а баланс висит в шапке на
+                // каждой странице. Раньше его обновляли только те экраны,
+                // которые сами про это помнили: забронировав с карточки
+                // преподавателя, человек видел прежнюю сумму в шапке и
+                // правильную на странице баланса — два вида одного числа
+                // расходились (нашла user-6). Обновление стоит здесь, в общем
+                // крючке, а не в каждом вызывающем экране: следующий экран,
+                // который научится бронировать, получит его даром.
+                refreshLiveCounts();
                 onBooked?.();
             }}
         />

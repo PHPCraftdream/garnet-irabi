@@ -4,6 +4,7 @@ import {UserX} from 'lucide-react';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {appUrl} from '@common/Utils/appUrl';
 import ImageLightbox from '../../Common/ImageLightbox';
+import {MyReviews} from './MyReviews';
 
 interface Props {
     user: {
@@ -19,9 +20,10 @@ interface Props {
     };
     isModerator: boolean;
     isOwnProfile?: boolean;
+    myReviewsUrl?: string;
 }
 
-export const UserProfileIsland: React.FC<Props> = ({user, isModerator, isOwnProfile = false}) => {
+export const UserProfileIsland: React.FC<Props> = ({user, isModerator, isOwnProfile = false, myReviewsUrl}) => {
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const fullPhoto = user.avatar_full || user.avatar;
     const initials = (user.name || '?')
@@ -93,11 +95,11 @@ export const UserProfileIsland: React.FC<Props> = ({user, isModerator, isOwnProf
                 {/* Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 border-t border-default">
                     <div className="profile-stat-cell">
-                        <div className="profile-stat-value">{user.completedBookings}</div>
+                        <div className="profile-stat-value" data-test-id="user-stat-completed">{user.completedBookings}</div>
                         <div className="stat-tile-label">{t.Study_CompletedBookings()}</div>
                     </div>
                     <div className="profile-stat-cell">
-                        <div className="profile-stat-value">{user.totalBookings}</div>
+                        <div className="profile-stat-value" data-test-id="user-stat-total">{user.totalBookings}</div>
                         <div className="stat-tile-label">{t.Study_TotalBookings()}</div>
                     </div>
                     <div className="profile-stat-cell">
@@ -110,6 +112,7 @@ export const UserProfileIsland: React.FC<Props> = ({user, isModerator, isOwnProf
                     </div>
                 </div>
             </div>
+            {isOwnProfile && myReviewsUrl && <MyReviews listUrl={myReviewsUrl} />}
             {lightboxOpen && fullPhoto && (
                 <ImageLightbox src={fullPhoto} alt={user.name} onClose={() => setLightboxOpen(false)} />
             )}

@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {useMemo} from 'react';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
+import {isConfirmed} from '../../Common/bookingAction';
 import {SlotItem, SlotStatusFilter} from './types';
 
 interface Props {
@@ -54,7 +55,7 @@ export const SlotsStatusFilter: React.FC<Props> = ({
                 mine++;
                 const status = slotStatuses[String(slot.id)] || '';
                 if (status === 'pending') pending++;
-                else if (status === 'confirmed') confirmed++;
+                else if (isConfirmed(status)) confirmed++;
                 else if (status === 'cancelled') cancelled++;
                 if (status !== 'cancelled' && slot.start_at < nowSec) past++;
             } else {

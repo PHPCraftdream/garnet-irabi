@@ -2,24 +2,14 @@ import * as React from 'react';
 import {useState, useEffect, useCallback} from 'react';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {sendPostFormData} from '@common/Api/sendPostFormData';
-import {AsyncIconButton} from '@common/Components/AsyncIconButton';
-import {Archive, ArchiveRestore} from 'lucide-react';
+import {showToast} from '@common/Components/GlobalToast';
 import {formatTs} from '@common/Utils/DateUtils';
 import Pagination from '@common/Components/Pagination';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {appUrl} from '@common/Utils/appUrl';
 import {useSlotBooking} from '../SlotsCalendar/useSlotBooking';
-
-interface NewsEvent {
-    id: number;
-    event_type: string;
-    payload: Record<string, any>;
-    actor_id: number;
-    created_at: number;
-    is_read: boolean;
-    read_at: number | null;
-    is_archived: boolean;
-}
+import {NewsEvent} from './newsTypes';
+import {NewsGroup, NewsGroupRow} from './NewsGroupRow';
 
 interface FeedResponse {
     items: NewsEvent[];
@@ -59,14 +49,23 @@ function EventMessage({event, onBookSlot}: {event: NewsEvent; onBookSlot: (slotI
             ) : (
                 <a href={appUrl('/slots')} className={linkCls}>{t.News_NewSlot_Link()}</a>
             );
-            return <><PersonLink id={p.expert_id} name={p.name} isExpert />{t.News_NewSlot_Action()}{link}</>;
+            return <><PersonLink id={p.expert_id} name={p.name} isExpert />{t.News_NewSlot_Action()}{link}{t.News_NewSlot_Suffix()}</>;
         }
         case 'slot_booked':
             return <><PersonLink id={p.user_id} name={p.name} />{t.News_SlotBooked_Action()}<a href={appUrl('/expert/~slots')} className={linkCls}>{t.News_SlotBooked_Link()}</a></>;
         case 'booking_confirmed':
-            return <><PersonLink id={p.expert_id} name={p.name} isExpert />{t.News_BookingConfirmed_Action()}<a href={appUrl('/bookings')} className={linkCls}>{t.News_BookingConfirmed_Link()}</a></>;
+            return <><PersonLink id={p.expert_id} name={p.name} isExpert />{t.News_BookingConfirmed_Action()}<a href={appUrl('/bookings')} className={linkCls}>{t.News_BookingConfirmed_Link()}</a>{t.News_BookingConfirmed_Suffix()}</>;
         case 'booking_rejected':
-            return <><PersonLink id={p.expert_id} name={p.name} isExpert />{t.News_BookingRejected_Action()}<a href={appUrl('/bookings')} className={linkCls}>{t.News_BookingRejected_Link()}</a></>;
+            return <><PersonLink id={p.expert_id} name={p.name} isExpert />{t.News_BookingRejected_Action()}<a href={appUrl('/bookings')} className={linkCls}>{t.News_BookingRejected_Link()}</a>{t.News_BookingRejected_Suffix()}</>;
+        case 'booking_cancelled':
+            // Одно событие, две стороны: ученик снял бронь — узнаёт
+            // преподаватель; преподаватель отменил занятие — узнаёт ученик.
+            // Отличаются они тем, кто назван в полезной нагрузке.
+            return p.user_id
+                ? <><PersonLink id={p.user_id} name={p.name} />{t.News_BookingCancelledByUser_Action()}<a href={appUrl('/expert/~slots')} className={linkCls}>{t.News_BookingCancelledByUser_Link()}</a>{t.News_BookingCancelledByUser_Suffix()}</>
+                : <><PersonLink id={p.expert_id} name={p.name} isExpert />{t.News_BookingCancelled_Action()}<a href={appUrl('/bookings')} className={linkCls}>{t.News_BookingCancelled_Link()}</a>{t.News_BookingCancelled_Suffix()}</>;
+        case 'comment_approved':
+            return <>{t.News_CommentApproved_Prefix()}<PersonLink id={p.expert_id} name={p.name} isExpert />{t.News_CommentApproved_Suffix()}<a href={appUrl(`/expert/id~${p.expert_id}`)} className={linkCls}>{t.News_CommentApproved_Link()}</a></>;
         case 'support_reply':
             return <>{t.News_SupportReply_Prefix()}<a href={appUrl('/support')} className={linkCls}>«{p.subject}»</a></>;
         case 'new_message':
@@ -84,6 +83,7 @@ function groupKey(event: NewsEvent): string | null {
         case 'new_slot':
         case 'booking_confirmed':
         case 'booking_rejected':
+        case 'booking_cancelled':
             if (p.expert_id && p.time) return `${event.event_type}:${p.expert_id}:${p.time}`;
             return null;
         case 'new_message':
@@ -95,11 +95,6 @@ function groupKey(event: NewsEvent): string | null {
         default:
             return null;
     }
-}
-
-interface NewsGroup {
-    first: NewsEvent;
-    others: NewsEvent[];
 }
 
 function groupConsecutive(items: NewsEvent[]): NewsGroup[] {
@@ -119,11 +114,19 @@ function groupConsecutive(items: NewsEvent[]): NewsGroup[] {
     return out;
 }
 
+/**
+ * Подробность записи — время самого занятия.
+ *
+ * Подпись обязательна: ниже стоит вторая дата, время самого события, и без
+ * слова «Занятие» две даты подряд читаются как загадка — какая из них что.
+ * Нашла user-8 на записи «подтвердил(а) вашу бронь».
+ */
 function eventDetail(event: NewsEvent): string | null {
     const p = event.payload;
     if ((event.event_type === 'new_slot' || event.event_type === 'slot_booked' ||
-         event.event_type === 'booking_confirmed' || event.event_type === 'booking_rejected') && p.time) {
-        return formatTs(p.time) + (p.cost ? ` · ${p.cost}₽` : '');
+         event.event_type === 'booking_confirmed' || event.event_type === 'booking_rejected' ||
+         event.event_type === 'booking_cancelled') && p.time) {
+        return t.News_LessonAt([formatTs(p.time)]) + (p.cost ? ` · ${p.cost}₽` : '');
     }
     return null;
 }
@@ -183,6 +186,16 @@ export const NewsFeed: React.FC<Props> = ({feedUrl, initialUnreadCount}) => {
             });
     };
 
+    /**
+     * Убрать запись в архив.
+     *
+     * Запись исчезает мгновенно, и до этого экран не говорил ни слова: узнать,
+     * что действие обратимо, можно было только самому найдя «Показать архив».
+     * Пока возврат из архива к тому же был сломан, это выглядело как
+     * безвозвратное удаление (нашла user-8). Говорим вслух — и не окном
+     * подтверждения: спрашивать разрешение на обратимое действие дороже, чем
+     * сказать, как его отменить.
+     */
     const archiveEvent = (id: number) => {
         const fd = new FormData();
         fd.append('event_ids', JSON.stringify([id]));
@@ -194,6 +207,7 @@ export const NewsFeed: React.FC<Props> = ({feedUrl, initialUnreadCount}) => {
                 } else {
                     setItems(prev => prev.map(e => e.id === id ? {...e, is_archived: true} : e));
                 }
+                showToast(t.News_ArchivedHint(), 'primary');
             });
     };
 
@@ -261,75 +275,17 @@ export const NewsFeed: React.FC<Props> = ({feedUrl, initialUnreadCount}) => {
                         {t.News_Empty()}
                     </div>
                 )}
-                {groupConsecutive(items).map(group => {
-                    const event = group.first;
-                    const groupCount = group.others.length;
-                    const allIds = [event.id, ...group.others.map(o => o.id)];
-                    const anyUnread = !event.is_read || group.others.some(o => !o.is_read);
-                    return (
-                    <div
-                        key={event.id}
-                        className={`flex items-start gap-3 px-4 py-3 transition-colors ${
-                            anyUnread ? 'bg-accent-subtle' : ''
-                        } ${event.is_archived ? 'opacity-60' : ''}`}
-                        data-test-id={`news-event-${event.id}`}
-                        onMouseEnter={() => {
-                            const unread = allIds.filter(id => {
-                                if (id === event.id) return !event.is_read;
-                                const o = group.others.find(x => x.id === id);
-                                return o ? !o.is_read : false;
-                            });
-                            if (unread.length > 0) markRead(unread);
-                        }}
-                    >
-                        {/* Body */}
-                        <div className="flex-1 min-w-0">
-                            <p className={`text-sm ${anyUnread ? 'font-semibold text-on-surface' : 'text-on-surface'}`}>
-                                <EventMessage event={event} onBookSlot={handleBookSlot} />
-                            </p>
-                            {eventDetail(event) && (
-                                <p className="text-sm text-muted mt-0.5">{eventDetail(event)}</p>
-                            )}
-                            {groupCount > 0 && (
-                                <p className="news-group-suffix" data-test-id={`news-group-suffix-${event.id}`}>
-                                    {t.News_GroupSuffix([groupCount])}
-                                </p>
-                            )}
-                            <p className="text-xs text-muted mt-1">
-                                {formatTs(event.created_at)}
-                                {event.is_archived && (
-                                    <span className="ml-2 text-warning">{t.News_Archived()}</span>
-                                )}
-                            </p>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex-shrink-0 mt-0.5">
-                            {event.is_archived ? (
-                                <AsyncIconButton
-                                    icon={<ArchiveRestore size={14} aria-hidden="true" />}
-                                    label={t.News_Unarchive()}
-                                    className="inline-flex items-center gap-1.5 px-2 py-1 text-sm rounded border border-accent text-accent hover:bg-accent hover:text-accent-text transition-colors"
-                                    testId={`news-unarchive-${event.id}`}
-                                    iconSize={14}
-                                    errorToast={t.News_UnarchiveError()}
-                                    onAction={() => unarchiveEvent(event.id)}
-                                />
-                            ) : (
-                                <AsyncIconButton
-                                    icon={<Archive size={14} aria-hidden="true" />}
-                                    label={t.News_Archive()}
-                                    className="inline-flex items-center gap-1.5 px-2 py-1 text-sm rounded border border-default text-muted hover:text-on-surface hover:bg-surface-hover transition-colors"
-                                    testId={`news-archive-${event.id}`}
-                                    iconSize={14}
-                                    errorToast={t.News_ArchiveError()}
-                                    onAction={() => archiveEvent(event.id)}
-                                />
-                            )}
-                        </div>
-                    </div>
-                    );
-                })}
+                {groupConsecutive(items).map(group => (
+                    <NewsGroupRow
+                        key={group.first.id}
+                        group={group}
+                        detail={eventDetail(group.first)}
+                        message={<EventMessage event={group.first} onBookSlot={handleBookSlot} />}
+                        onMarkRead={markRead}
+                        onArchive={archiveEvent}
+                        onUnarchive={unarchiveEvent}
+                    />
+                ))}
             </div>
 
             {/* Pagination bottom */}

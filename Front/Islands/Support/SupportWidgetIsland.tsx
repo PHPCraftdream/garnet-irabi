@@ -13,11 +13,13 @@ import {useCtrlEnter, CTRL_ENTER_HINT} from '@common/hooks/useCtrlEnter';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {SupportTicket, SupportMessage} from './supportTypes';
 import {StatusBadge} from './supportRenders';
-import {reportAttachmentErrors} from '../../Common/attachmentErrors';
+import {SupportTicketRow} from './SupportTicketRow';
+import {SupportBubble} from './SupportBubble';
 import AttachmentDisplay from '../../Common/AttachmentDisplay';
 import AttachmentPicker, {PendingFile} from '../../Common/AttachmentPicker';
 import ScreenshotButton from '../../Common/ScreenshotButton';
-import {initAutoContext, collectContext} from './autoContext';
+import {initAutoContext} from './autoContext';
+import {useSupportThread} from './useSupportThread';
 
 type WidgetView = 'list' | 'conversation' | 'new';
 
@@ -37,19 +39,18 @@ export const SupportWidgetIsland: React.FC<Props> = ({unreadCount, unreadSupport
     const [isOpen, setIsOpen]           = useState(false);
     const [view, setView]               = useState<WidgetView>('list');
     const [tickets, setTickets]         = useState<SupportTicket[]>([]);
-    const [messages, setMessages]       = useState<SupportMessage[]>([]);
     const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
     const [loadingTickets, setLoadingTickets]     = useState(false);
-    const [loadingMessages, setLoadingMessages]   = useState(false);
     const [subject, setSubject]         = useState('');
     const [message, setMessage]         = useState('');
     const [replyText, setReplyText]     = useState('');
     const [badge, setBadge]             = useState(unreadCount);
     const [imUnread, setImUnread]       = useState(unreadIm);
     const [createFiles, setCreateFiles] = useState<PendingFile[]>([]);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
     const {sending, withSending} = useSending();
     const live = useLiveCounts();
+    const thread = useSupportThread({messagesUrl, createUrl, replyUrl});
+    const {messages, loading: loadingMessages, messagesEndRef} = thread;
 
     // Init auto-context collector on mount
     useEffect(() => { initAutoContext(); }, []);
@@ -76,29 +77,21 @@ export const SupportWidgetIsland: React.FC<Props> = ({unreadCount, unreadSupport
     };
 
     const fetchMessages = (ticketId: number, silent = false) => {
-        if (!silent) setLoadingMessages(true);
-        D('support.messages', {ticketId});
-        sendPost(messagesUrl, {ticket_id: ticketId}).then((r: any) => {
-            D('support.messages.loaded', {ticketId, count: r?.messages?.length ?? 0});
-            setMessages(r?.messages ?? []);
-            setLoadingMessages(false);
-        }).catch((err) => { D('support.error', {action: 'fetchMessages', ticketId, error: err}); setLoadingMessages(false); if (!silent) showToast(t.User_LoadError(), 'danger'); });
+        void thread.loadMessages(ticketId, silent);
     };
 
-    // While the panel is open, refresh its current view every 20s so an active
-    // conversation / ticket list stays live without the user reopening it.
+    // Пока панель открыта, её содержимое обновляется само: иначе активная
+    // переписка застывает до того, как её закроют и откроют снова.
+    // В свёрнутой вкладке опрос выключается.
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen || view !== 'list') return;
         const id = window.setInterval(() => {
-            if (document.hidden) return; // skip polling in a backgrounded tab
-            if (view === 'list') {
-                fetchTickets(true);
-            } else if (view === 'conversation' && selectedTicketId) {
-                fetchMessages(selectedTicketId, true);
-            }
+            if (!document.hidden) fetchTickets(true);
         }, 20000);
         return () => window.clearInterval(id);
-    }, [isOpen, view, selectedTicketId]);
+    }, [isOpen, view]);
+
+    thread.usePolling(selectedTicketId, 20000, isOpen && view === 'conversation');
 
     useEffect(() => {
         if (isOpen && view === 'list' && tickets.length === 0) {
@@ -133,17 +126,7 @@ export const SupportWidgetIsland: React.FC<Props> = ({unreadCount, unreadSupport
         if (!subject.trim() || !message.trim()) return;
         withSending(async () => {
             try {
-                const context = collectContext();
-                D('support.create', {subject, source: 'widget'});
-                D('support.context', context);
-                const fd = new FormData();
-                fd.append('subject', subject.trim());
-                fd.append('message', message.trim());
-                fd.append('context', JSON.stringify(context));
-                for (const f of createFiles) {
-                    fd.append('attachments[]', f.file, f.name);
-                }
-                const resp = await sendPostFormData<FormData, any>(createUrl, fd);
+                await thread.createTicket(subject, message, createFiles);
                 D('support.created', {source: 'widget'});
                 setSubject('');
                 setMessage('');
@@ -151,7 +134,6 @@ export const SupportWidgetIsland: React.FC<Props> = ({unreadCount, unreadSupport
                 setView('list');
                 fetchTickets();
                 showToast(t.Support_TicketCreated(), 'success');
-                reportAttachmentErrors(resp);
             } catch (err: any) {
                 D('support.error', {action: 'create', error: err});
                 showToast(err?.message || t.General_Error(), 'danger');
@@ -163,13 +145,9 @@ export const SupportWidgetIsland: React.FC<Props> = ({unreadCount, unreadSupport
         if (!replyText.trim() || !selectedTicketId) return;
         withSending(async () => {
             try {
-                D('support.reply', {ticketId: selectedTicketId, source: 'widget'});
-                const fd = new FormData();
-                fd.append('ticket_id', String(selectedTicketId));
-                fd.append('message', replyText.trim());
-                await sendPostFormData<FormData, any>(replyUrl, fd);
+                await thread.reply(selectedTicketId, replyText, []);
                 setReplyText('');
-                fetchMessages(selectedTicketId!);
+                fetchMessages(selectedTicketId);
             } catch (err: any) {
                 D('support.error', {action: 'reply', error: err});
                 showToast(err?.message || t.General_Error(), 'danger');
@@ -261,33 +239,19 @@ export const SupportWidgetIsland: React.FC<Props> = ({unreadCount, unreadSupport
                     </button>
                 </div>
                 <div className="support-list-scroll">
-                    {loadingTickets ? (
-                        <div className="support-empty">{t.User_Loading()}</div>
-                    ) : tickets.length === 0 ? (
+                    {loadingTickets && <div className="support-empty">{t.User_Loading()}</div>}
+                    {!loadingTickets && tickets.length === 0 && (
                         <div className="support-empty">{t.Support_NoTickets()}</div>
-                    ) : (
-                        tickets.map(ticket => (
-                            <div
-                                key={ticket.id}
-                                data-test-id={`support-ticket-${ticket.id}`}
-                                className="support-widget-ticket-row"
-                                onClick={() => openTicket(ticket.id)}
-                            >
-                                <div className="support-ticket-row-head">
-                                    <span className="support-ticket-title">{ticket.subject}</span>
-                                    {ticket.unread_user > 0 && (
-                                        <span className="support-unread-badge">
-                                            {ticket.unread_user}
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="support-ticket-row-meta">
-                                    <StatusBadge status={ticket.status} />
-                                    <span className="text-xs text-muted">{formatTs(ticket.updated_at)}</span>
-                                </div>
-                            </div>
-                        ))
                     )}
+                    {!loadingTickets && tickets.map(ticket => (
+                        <SupportTicketRow
+                            key={ticket.id}
+                            ticket={ticket}
+                            active={false}
+                            className="support-widget-ticket-row"
+                            onSelect={openTicket}
+                        />
+                    ))}
                 </div>
             </div>
         );
@@ -315,39 +279,11 @@ export const SupportWidgetIsland: React.FC<Props> = ({unreadCount, unreadSupport
 
                 {/* Messages */}
                 <div className="support-widget-conv-body">
-                    {loadingMessages ? (
-                        <div className="support-empty-line">{t.User_Loading()}</div>
-                    ) : messages.length === 0 ? (
+                    {loadingMessages && <div className="support-empty-line">{t.User_Loading()}</div>}
+                    {!loadingMessages && messages.length === 0 && (
                         <div className="support-empty-line">{t.Support_NoMessages()}</div>
-                    ) : (
-                        messages.map(msg => {
-                            if (msg.msg_type === 'system') {
-                                return (
-                                    <div key={msg.id} className="support-system-line-tight">
-                                        {msg.body}
-                                        <div className="text-muted mt-0.5">{formatTs(msg.created_at)}</div>
-                                    </div>
-                                );
-                            }
-                            const isUser = msg.msg_type === 'user';
-                            return (
-                                <div key={msg.id} className={`im-bubble-row-tight ${isUser ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`im-bubble-tight ${isUser ? 'im-bubble-mine' : 'im-bubble-theirs'}`}>
-                                        {!isUser && msg.author_name && (
-                                            <div className="im-bubble-author-tight">{msg.author_name}</div>
-                                        )}
-                                        <div className="im-bubble-body">{msg.body}</div>
-                                        {msg.attachments && msg.attachments.length > 0 && (
-                                            <AttachmentDisplay attachments={msg.attachments} />
-                                        )}
-                                        <div className="im-bubble-time">
-                                            {formatTs(msg.created_at)}
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })
                     )}
+                    {!loadingMessages && messages.map(msg => <SupportBubble key={msg.id} msg={msg} tight />)}
                     <div ref={messagesEndRef} />
                 </div>
 
@@ -411,7 +347,7 @@ export const SupportWidgetIsland: React.FC<Props> = ({unreadCount, unreadSupport
                     />
                 </div>
                 <div className="flex items-center gap-2">
-                    <AttachmentPicker files={createFiles} onChange={setCreateFiles} maxFiles={3} />
+                    <AttachmentPicker files={createFiles} onChange={setCreateFiles} />
                     <ScreenshotButton onScreenshot={handleScreenshot} />
                 </div>
                 <SendButton

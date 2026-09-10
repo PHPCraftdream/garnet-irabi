@@ -67,7 +67,8 @@ interface DashboardProps {
     totalUsers?: number;
     bookingsThisMonth?: number;
     // News
-    newsUrl: string;
+    /** Базовый адрес точек ленты (`~feed`, `~archive`, …), не страница. */
+    newsApiUrl: string;
     unreadNews: number;
 }
 
@@ -80,7 +81,7 @@ export const DashboardIsland: React.FC<DashboardProps> = (props) => {
         declines, cancellations,
         expertPendingBookingsList, expertConfirmedBookingsList,
         openTickets, pendingApprovals, totalUsers, bookingsThisMonth,
-        newsUrl, unreadNews,
+        newsApiUrl, unreadNews,
     } = props;
 
     // One fact, one place. The pending list, the confirmed list and the stats
@@ -108,7 +109,7 @@ export const DashboardIsland: React.FC<DashboardProps> = (props) => {
 
             <NotificationsWidget unreadSupport={unreadSupport} unreadIm={unreadIm} />
 
-            {newsUrl && <NewsFeed feedUrl={newsUrl} initialUnreadCount={unreadNews ?? 0} />}
+            {newsApiUrl && <NewsFeed feedUrl={newsApiUrl} initialUnreadCount={unreadNews ?? 0} />}
 
             {isModerator && (
                 <ModeratorStats

@@ -14,11 +14,13 @@ import Pagination, {PaginationLabels} from '@common/Components/Pagination';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {SupportTicket, SupportMessage} from './supportTypes';
 import {StatusBadge} from './supportRenders';
+import {SupportTicketRow} from './SupportTicketRow';
+import {SupportMessageList} from './SupportBubble';
 import AttachmentPicker, {PendingFile} from '../../Common/AttachmentPicker';
 import AttachmentDisplay from '../../Common/AttachmentDisplay';
-import {initAutoContext, collectContext} from './autoContext';
+import {initAutoContext} from './autoContext';
+import {useSupportThread} from './useSupportThread';
 import {PageHeader} from '@common/Components/PageHeader';
-import {reportAttachmentErrors} from '../../Common/attachmentErrors';
 import {LifeBuoy, ChevronLeft} from 'lucide-react';
 
 interface Props {
@@ -47,8 +49,6 @@ export const SupportPageIsland: React.FC<Props> = ({ticketsPagination, ticketPag
 
     const [selectedId, setSelectedId]   = useState<number | null>(null);
     const [selectedTicketData, setSelectedTicketData] = useState<SupportTicket | null>(null);
-    const [messages, setMessages]       = useState<SupportMessage[]>([]);
-    const [loadingMessages, setLoadingMessages] = useState(false);
     const [readTicketIds, setReadTicketIds] = useState<Set<number>>(new Set());
     const [showNewForm, setShowNewForm] = useState(false);
     const [subject, setSubject]         = useState('');
@@ -56,8 +56,9 @@ export const SupportPageIsland: React.FC<Props> = ({ticketsPagination, ticketPag
     const [replyText, setReplyText]     = useState('');
     const [createFiles, setCreateFiles] = useState<PendingFile[]>([]);
     const [replyFiles, setReplyFiles]   = useState<PendingFile[]>([]);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
     const {sending, withSending} = useSending();
+    const thread = useSupportThread({messagesUrl, createUrl, replyUrl});
+    const {messages, loading: loadingMessages, messagesEndRef} = thread;
     
 
     // Init auto-context collector on mount
@@ -66,32 +67,16 @@ export const SupportPageIsland: React.FC<Props> = ({ticketsPagination, ticketPag
     const sortedTickets = tickets; // Already sorted by server (updated_at DESC)
 
     const fetchMessages = (ticketId: number) => {
-        setLoadingMessages(true);
-        D('support.messages', {ticketId});
-        sendPost(messagesUrl, {ticket_id: ticketId}).then((r: any) => {
-            setMessages(r?.messages ?? []);
-            D('support.messages.loaded', {ticketId, count: r?.messages?.length ?? 0});
-            // Mark ticket as read locally and update selected ticket data
+        void thread.loadMessages(ticketId).then((r: any) => {
+            if (!r) return;
+            // Пометить прочитанным на месте: непрочитанный значок должен
+            // погаснуть сразу, а не после следующей загрузки списка.
             setReadTicketIds(prev => new Set(prev).add(ticketId));
-            if (r?.ticket) {
-                setSelectedTicketData({...r.ticket, unread_user: 0});
-            }
-            setLoadingMessages(false);
-        }).catch((err) => { D('support.error', {action: 'fetchMessages', ticketId, error: err}); setLoadingMessages(false); showToast(t.User_LoadError(), 'danger'); });
+            if (r.ticket) setSelectedTicketData({...r.ticket, unread_user: 0});
+        });
     };
 
-    useEffect(() => {
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({behavior: 'smooth'});
-        }
-    }, [messages]);
-
-    // Auto-refresh: poll messages every 15 seconds when a ticket is selected
-    useEffect(() => {
-        if (!selectedId) return;
-        const interval = setInterval(() => { if (!document.hidden) fetchMessages(selectedId); }, 15000);
-        return () => clearInterval(interval);
-    }, [selectedId]);
+    thread.usePolling(selectedId, 15000);
 
     const selectTicket = (ticketId: number) => {
         D('support.click', {action: 'selectTicket', ticketId});
@@ -108,17 +93,7 @@ export const SupportPageIsland: React.FC<Props> = ({ticketsPagination, ticketPag
         if (!subject.trim() || !message.trim()) return;
         withSending(async () => {
             try {
-                const context = collectContext();
-                D('support.create', {subject, hasAttachments: createFiles.length > 0});
-                D('support.context', context);
-                const fd = new FormData();
-                fd.append('subject', subject.trim());
-                fd.append('message', message.trim());
-                fd.append('context', JSON.stringify(context));
-                for (const f of createFiles) {
-                    fd.append('attachments[]', f.file, f.name);
-                }
-                const r = await sendPostFormData<FormData, any>(createUrl, fd);
+                const r = await thread.createTicket(subject, message, createFiles);
                 if (r?.ticket) {
                     D('support.created', {ticketId: r.ticket.id});
                     setShowNewForm(false);
@@ -130,7 +105,6 @@ export const SupportPageIsland: React.FC<Props> = ({ticketsPagination, ticketPag
                     setSelectedId(r.ticket.id);
                     fetchMessages(r.ticket.id);
                     showToast(t.Support_TicketCreated(), 'success');
-                    reportAttachmentErrors(r);
                 }
             } catch (err: any) {
                 D('support.error', {action: 'create', error: err});
@@ -143,21 +117,10 @@ export const SupportPageIsland: React.FC<Props> = ({ticketsPagination, ticketPag
         if (!replyText.trim() || !selectedId) return;
         withSending(async () => {
             try {
-                D('support.reply', {ticketId: selectedId, hasAttachments: replyFiles.length > 0});
-                const fd = new FormData();
-                fd.append('ticket_id', String(selectedId));
-                fd.append('message', replyText.trim());
-                for (const f of replyFiles) {
-                    fd.append('attachments[]', f.file, f.name);
-                }
-                const resp = await sendPostFormData<FormData, any>(replyUrl, fd);
+                await thread.reply(selectedId, replyText, replyFiles);
                 setReplyText('');
                 setReplyFiles([]);
-                fetchMessages(selectedId!);
-                // The message can be accepted while a file on it is refused —
-                // too large, wrong type. Saying nothing leaves the sender
-                // certain the file went with it.
-                reportAttachmentErrors(resp);
+                fetchMessages(selectedId);
             } catch (err: any) {
                 D('support.error', {action: 'reply', error: err});
                 showToast(err?.message || t.General_Error(), 'danger');
@@ -200,31 +163,16 @@ export const SupportPageIsland: React.FC<Props> = ({ticketsPagination, ticketPag
                         />
                     </div>
                     <div className="support-list-scroll">
-                        {sortedTickets.length === 0 ? (
-                            <div className="support-empty">{t.Support_NoTickets()}</div>
-                        ) : (
-                            sortedTickets.map(ticket => (
-                                <div
-                                    key={ticket.id}
-                                    data-test-id={`support-ticket-${ticket.id}`}
-                                    className={`support-ticket-row ${selectedId === ticket.id ? 'support-ticket-row-active' : 'support-ticket-row-inactive'}`}
-                                    onClick={() => selectTicket(ticket.id)}
-                                >
-                                    <div className="support-ticket-row-head">
-                                        <span className="support-ticket-title">{ticket.subject}</span>
-                                        {ticket.unread_user > 0 && !readTicketIds.has(ticket.id) && (
-                                            <span className="support-unread-badge">
-                                                {ticket.unread_user}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="support-ticket-row-meta">
-                                        <StatusBadge status={ticket.status} />
-                                        <span className="text-xs text-muted">{formatTs(ticket.updated_at)}</span>
-                                    </div>
-                                </div>
-                            ))
-                        )}
+                        {sortedTickets.length === 0 && <div className="support-empty">{t.Support_NoTickets()}</div>}
+                        {sortedTickets.map(ticket => (
+                            <SupportTicketRow
+                                key={ticket.id}
+                                ticket={ticket}
+                                active={selectedId === ticket.id}
+                                readLocally={readTicketIds.has(ticket.id)}
+                                onSelect={selectTicket}
+                            />
+                        ))}
                     </div>
                     {ticketTotalPages > 1 && (
                         <div className="support-list-pagination-bottom">
@@ -333,43 +281,13 @@ export const SupportPageIsland: React.FC<Props> = ({ticketsPagination, ticketPag
                     </div>
                 </div>
 
-                {/* Messages timeline */}
-                <div className="support-thread-body">
-                    {loadingMessages ? (
-                        <div className="support-empty-line">{t.User_Loading()}</div>
-                    ) : messages.length === 0 ? (
-                        <div className="support-empty-line">{t.Support_NoMessages()}</div>
-                    ) : (
-                        messages.map(msg => {
-                            if (msg.msg_type === 'system') {
-                                return (
-                                    <div key={msg.id} className="support-system-line">
-                                        {msg.body}
-                                        <div className="text-muted mt-0.5">{formatTs(msg.created_at)}</div>
-                                    </div>
-                                );
-                            }
-                            const isUser = msg.msg_type === 'user';
-                            return (
-                                <div key={msg.id} className={`im-bubble-row ${isUser ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`im-bubble ${isUser ? 'im-bubble-mine' : 'im-bubble-theirs'}`}>
-                                        {!isUser && msg.author_name && (
-                                            <div className="im-bubble-author">{msg.author_name}</div>
-                                        )}
-                                        <div className="im-bubble-body">{msg.body}</div>
-                                        {msg.attachments && msg.attachments.length > 0 && (
-                                            <AttachmentDisplay attachments={msg.attachments} />
-                                        )}
-                                        <div className="im-bubble-time">
-                                            {formatTs(msg.created_at)}
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })
-                    )}
-                    <div ref={messagesEndRef} />
-                </div>
+                <SupportMessageList
+                    messages={messages}
+                    loading={loadingMessages}
+                    emptyText={t.Support_NoMessages()}
+                    loadingText={t.User_Loading()}
+                    endRef={messagesEndRef}
+                />
 
                 {/* Reply input */}
                 <div className="support-thread-input">

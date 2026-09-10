@@ -23,6 +23,144 @@ interface Props {
     onAdjusted: (accountId: number, newBalance: number, updatedAt: number) => void;
 }
 
+const ModalFooter: React.FC<{canSubmit: boolean; sending: boolean; onClose: () => void}> = ({
+    canSubmit,
+    sending,
+    onClose,
+}) => (
+    <div className="flex gap-3 mt-4">
+        <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={!canSubmit}
+            aria-busy={sending}
+            data-test-id="balance-adjust-submit"
+        >
+            {sending
+                ? (
+                    <span className="common-send-spinner-wrap">
+                        <span className="common-spinner" aria-hidden="true" />
+                        {t.Admin_Balance_AdjustSave()}
+                    </span>
+                )
+                : t.Admin_Balance_AdjustSave()}
+        </button>
+        <button
+            type="button"
+            className="btn btn-outline-secondary"
+            onClick={onClose}
+            data-test-id="balance-adjust-cancel"
+        >
+            {t.Admin_Balance_AdjustCancel()}
+        </button>
+    </div>
+);
+
+const ReadonlyRow: React.FC<{label: string; testId: string; value: string; strong?: boolean}> = ({
+    label,
+    testId,
+    value,
+    strong = false,
+}) => (
+    <div>
+        <div className="text-xs text-muted mb-1">{label}</div>
+        <div className={`text-sm text-on-surface ${strong ? 'font-medium' : ''}`} data-test-id={testId}>{value}</div>
+    </div>
+);
+
+const AmountField: React.FC<{value: string; onChange: (v: string) => void}> = ({value, onChange}) => (
+    <div>
+        <label htmlFor="balance-adjust-amount" className="text-xs text-muted block mb-1">
+            {t.Admin_Balance_AdjustAmount()}
+        </label>
+        <input
+            id="balance-adjust-amount"
+            type="number"
+            min={1}
+            step={1}
+            className="form-control"
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            data-test-id="balance-adjust-amount"
+            autoFocus
+        />
+    </div>
+);
+
+/**
+ * Примечание обязательно.
+ *
+ * Правка чужого баланса руками — действие, за которое кто-то потом будет
+ * отвечать; без объяснения в журнале останется только сумма и имя.
+ */
+const NoteField: React.FC<{value: string; valid: boolean; onChange: (v: string) => void}> = ({value, valid, onChange}) => (
+    <div>
+        <label htmlFor="balance-adjust-note" className="text-xs text-muted block mb-1">
+            {t.Admin_Balance_AdjustNote()}
+        </label>
+        <textarea
+            id="balance-adjust-note"
+            className="form-control"
+            rows={3}
+            placeholder={t.Admin_Balance_AdjustNoteHint()}
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            data-test-id="balance-adjust-note"
+        />
+        {!valid && value.length > 0 && (
+            <div className="text-xs text-danger mt-1">{t.Admin_Balance_AdjustNoteRequired()}</div>
+        )}
+    </div>
+);
+
+const DirectionOption: React.FC<{
+    checked: boolean;
+    testId: string;
+    label: string;
+    labelClass: string;
+    onSelect: () => void;
+}> = ({checked, testId, label, labelClass, onSelect}) => (
+    <label className="flex items-center gap-2 cursor-pointer">
+        <input
+            type="radio"
+            name="balance-adjust-direction"
+            checked={checked}
+            onChange={onSelect}
+            data-test-id={testId}
+            className="accent-theme"
+        />
+        <span className={`text-sm ${labelClass}`}>{label}</span>
+    </label>
+);
+
+/**
+ * Начислить или списать.
+ *
+ * Цвет здесь не украшение: зачисление и списание с чужого счёта — разные по
+ * последствиям действия, и различать их надо до нажатия, а не по результату.
+ */
+const DirectionPicker: React.FC<{isCredit: boolean; onChange: (v: boolean) => void}> = ({isCredit, onChange}) => (
+    <div>
+        <div className="text-xs text-muted mb-1">{t.Admin_Balance_AdjustDirection()}</div>
+        <div className="flex gap-3">
+            <DirectionOption
+                checked={isCredit}
+                testId="balance-adjust-direction-credit"
+                label={t.Admin_Balance_AdjustCredit()}
+                labelClass="text-success"
+                onSelect={() => onChange(true)}
+            />
+            <DirectionOption
+                checked={!isCredit}
+                testId="balance-adjust-direction-debit"
+                label={t.Admin_Balance_AdjustDebit()}
+                labelClass="text-danger"
+                onSelect={() => onChange(false)}
+            />
+        </div>
+    </div>
+);
+
 export const BalanceAdjustModal: React.FC<Props> = ({row, adjustUrl, onClose, onAdjusted}) => {
     useBodyScrollLock(true);
 
@@ -96,108 +234,20 @@ export const BalanceAdjustModal: React.FC<Props> = ({row, adjustUrl, onClose, on
                 </div>
 
                 <div className="space-y-3">
-                    <div>
-                        <div className="text-xs text-muted mb-1">{t.Admin_Balance_Account()}</div>
-                        <div className="text-sm text-on-surface" data-test-id="balance-adjust-account">{accountLabel}</div>
-                    </div>
-
-                    <div>
-                        <div className="text-xs text-muted mb-1">{t.Admin_Balance_AdjustCurrentBalance()}</div>
-                        <div className="text-sm font-medium text-on-surface" data-test-id="balance-adjust-current">
-                            {row.balance} &#8381;
-                        </div>
-                    </div>
-
-                    <div>
-                        <label htmlFor="balance-adjust-amount" className="text-xs text-muted block mb-1">
-                            {t.Admin_Balance_AdjustAmount()}
-                        </label>
-                        <input
-                            id="balance-adjust-amount"
-                            type="number"
-                            min={1}
-                            step={1}
-                            className="form-control"
-                            value={amountStr}
-                            onChange={e => setAmountStr(e.target.value)}
-                            data-test-id="balance-adjust-amount"
-                            autoFocus
-                        />
-                    </div>
-
-                    <div>
-                        <div className="text-xs text-muted mb-1">{t.Admin_Balance_AdjustDirection()}</div>
-                        <div className="flex gap-3">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="balance-adjust-direction"
-                                    checked={isCredit}
-                                    onChange={() => setIsCredit(true)}
-                                    data-test-id="balance-adjust-direction-credit"
-                                    className="accent-theme"
-                                />
-                                <span className="text-sm text-success">{t.Admin_Balance_AdjustCredit()}</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="balance-adjust-direction"
-                                    checked={!isCredit}
-                                    onChange={() => setIsCredit(false)}
-                                    data-test-id="balance-adjust-direction-debit"
-                                    className="accent-theme"
-                                />
-                                <span className="text-sm text-danger">{t.Admin_Balance_AdjustDebit()}</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label htmlFor="balance-adjust-note" className="text-xs text-muted block mb-1">
-                            {t.Admin_Balance_AdjustNote()}
-                        </label>
-                        <textarea
-                            id="balance-adjust-note"
-                            className="form-control"
-                            rows={3}
-                            placeholder={t.Admin_Balance_AdjustNoteHint()}
-                            value={note}
-                            onChange={e => setNote(e.target.value)}
-                            data-test-id="balance-adjust-note"
-                        />
-                        {!noteValid && note.length > 0 && (
-                            <div className="text-xs text-danger mt-1">{t.Admin_Balance_AdjustNoteRequired()}</div>
-                        )}
-                    </div>
-
+                    <ReadonlyRow label={t.Admin_Balance_Account()} testId="balance-adjust-account" value={accountLabel} />
+                    <ReadonlyRow
+                        label={t.Admin_Balance_AdjustCurrentBalance()}
+                        testId="balance-adjust-current"
+                        value={`${row.balance} ₽`}
+                        strong
+                    />
+                    <AmountField value={amountStr} onChange={setAmountStr} />
+                    <DirectionPicker isCredit={isCredit} onChange={setIsCredit} />
+                    <NoteField value={note} valid={noteValid} onChange={setNote} />
                     {error && <div className="text-danger text-sm">{error}</div>}
                 </div>
 
-                <div className="flex gap-3 mt-4">
-                    <button
-                        type="submit"
-                        className="btn btn-primary"
-                        disabled={!canSubmit}
-                        aria-busy={sending}
-                        data-test-id="balance-adjust-submit"
-                    >
-                        {sending ? (
-                            <span className="common-send-spinner-wrap">
-                                <span className="common-spinner" aria-hidden="true" />
-                                {t.Admin_Balance_AdjustSave()}
-                            </span>
-                        ) : t.Admin_Balance_AdjustSave()}
-                    </button>
-                    <button
-                        type="button"
-                        className="btn btn-outline-secondary"
-                        onClick={onClose}
-                        data-test-id="balance-adjust-cancel"
-                    >
-                        {t.Admin_Balance_AdjustCancel()}
-                    </button>
-                </div>
+                <ModalFooter canSubmit={canSubmit} sending={sending} onClose={onClose} />
             </form>
         </div></Portal>
     );

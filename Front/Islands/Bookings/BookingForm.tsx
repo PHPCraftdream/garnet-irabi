@@ -8,6 +8,7 @@ import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/DateUtils';
 import {EntityLink, userLinks} from '../../Common/EntityLinks';
 import {IrabiPreviewProvider} from '../../Common/IrabiPreviewProvider';
+import {slotPlaceLabel, slotPlaceValue} from '../../Common/slotFormat';
 import {goTo} from '@common/Dom/Nav/GoTo';
 import {appUrl} from '@common/Utils/appUrl';
 
@@ -18,12 +19,12 @@ interface SlotInfo {
     cost: number;
     is_online: number;
     location?: string;
+    platform?: string;
     expert_id: number;
 }
 
 interface ExpertInfo {
     display_name: string;
-    specialization?: string;
 }
 
 interface BookingFormProps {
@@ -39,6 +40,20 @@ interface BookingResponse {
     error?: string;
 }
 
+
+/** Кто ведёт занятие — имя со ссылкой и, если есть, специализация. */
+const ExpertBlock: React.FC<{
+    expert: {display_name: string};
+    expertId: number;
+    isModerator: boolean;
+}> = ({expert, expertId, isModerator}) => (
+    <div className="mb-3 p-3 bg-surface-hover rounded">
+        <h5>{t.Slot_Expert()}</h5>
+        <p className="mb-0">
+            <EntityLink name={expert.display_name} {...userLinks(expertId, true)} isModerator={isModerator} />
+        </p>
+    </div>
+);
 
 const BookingFormIslandInner: React.FC<BookingFormProps> = ({slot, expert, csrf: _csrf, isModerator = false}) => {
     const [error, setError] = useState<string | null>(null);
@@ -83,23 +98,17 @@ const BookingFormIslandInner: React.FC<BookingFormProps> = ({slot, expert, csrf:
                         <p><strong>{t.Slot_Duration()}:</strong> {slot.duration_min ?? 60} {t.Slot_Duration_Min()}</p>
                         <p><strong>{t.Slot_Cost()}:</strong> {slot.cost} &#8381;</p>
                         <p><strong>{t.Slot_Type()}:</strong> {slot.is_online ? t.Slot_Online() : t.Slot_Offline()}</p>
-                        {!slot.is_online && slot.location && (
-                            <p><strong>{t.Slot_Location()}:</strong> {slot.location}</p>
+                        {slotPlaceValue(slot) && (
+                            <p><strong>{slotPlaceLabel(slot)}:</strong> {slotPlaceValue(slot)}</p>
                         )}
                     </div>
 
                     {expert && (
-                        <div className="mb-3 p-3 bg-surface-hover rounded">
-                            <h5>{t.Slot_Expert()}</h5>
-                            <p className="mb-0">
-                                <EntityLink name={expert.display_name} {...userLinks(slot.expert_id, true)} isModerator={isModerator} />
-                                {expert.specialization && (
-                                    <>
-                                        <br /><small className="text-muted">{expert.specialization}</small>
-                                    </>
-                                )}
-                            </p>
-                        </div>
+                        <ExpertBlock
+                            expert={expert}
+                            expertId={slot.expert_id}
+                            isModerator={isModerator}
+                        />
                     )}
 
                     {error && (

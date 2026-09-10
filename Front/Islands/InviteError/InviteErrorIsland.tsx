@@ -22,55 +22,56 @@ interface Props {
     supportContacts: SupportContacts;
 }
 
-export const InviteErrorIsland: React.FC<Props> = ({title, reason, guidance, contactMessage, supportContacts}) => {
-    const hasContacts = supportContacts.email || supportContacts.phone || supportContacts.telegram;
+const ContactLine: React.FC<{label: string; href: string; text: string; external?: boolean}> = ({
+    label,
+    href,
+    text,
+    external = false,
+}) => (
+    <div className="text-on-surface">
+        <span className="text-muted">{label}: </span>
+        <a
+            href={href}
+            className="text-accent hover:underline"
+            {...(external ? {target: '_blank', rel: 'noopener noreferrer'} : {})}
+        >
+            {text}
+        </a>
+    </div>
+);
+
+/** Ссылка на Telegram приходит и как адрес, и как @имя. */
+const telegramHref = (value: string): string =>
+    value.startsWith('http') ? value : `https://t.me/${value.replace('@', '')}`;
+
+const SupportBlock: React.FC<{contacts: SupportContacts; message: string}> = ({contacts, message}) => {
+    if (!contacts.email && !contacts.phone && !contacts.telegram) return null;
 
     return (
-        <div className="max-w-lg mx-auto mt-12" data-test-id="invite-error">
-            <div className="rounded-lg border border-default bg-surface p-8 text-center">
-                <div className="mb-4 text-4xl text-warning" aria-hidden="true">!</div>
-                <h1 className="text-xl font-semibold text-on-surface mb-3">{title}</h1>
-                <p className="text-secondary mb-6">{reason}</p>
-
-                {guidance && <p className="text-on-surface mb-6">{guidance}</p>}
-
-                {hasContacts && (
-                    <div className="border-t border-subtle pt-5">
-                        <p className="text-sm text-secondary mb-3">{contactMessage}</p>
-                        <div className="space-y-2 text-sm">
-                            {supportContacts.email && (
-                                <div className="text-on-surface">
-                                    <span className="text-muted">Email: </span>
-                                    <a href={`mailto:${supportContacts.email}`} className="text-accent hover:underline">
-                                        {supportContacts.email}
-                                    </a>
-                                </div>
-                            )}
-                            {supportContacts.phone && (
-                                <div className="text-on-surface">
-                                    <span className="text-muted">{t.Invite_Contact_Phone()}: </span>
-                                    <a href={`tel:${supportContacts.phone}`} className="text-accent hover:underline">
-                                        {supportContacts.phone}
-                                    </a>
-                                </div>
-                            )}
-                            {supportContacts.telegram && (
-                                <div className="text-on-surface">
-                                    <span className="text-muted">Telegram: </span>
-                                    <a
-                                        href={supportContacts.telegram.startsWith('http') ? supportContacts.telegram : `https://t.me/${supportContacts.telegram.replace('@', '')}`}
-                                        className="text-accent hover:underline"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                    >
-                                        {supportContacts.telegram}
-                                    </a>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+        <div className="border-t border-subtle pt-5">
+            <p className="text-sm text-secondary mb-3">{message}</p>
+            <div className="space-y-2 text-sm">
+                {contacts.email && <ContactLine label="Email" href={`mailto:${contacts.email}`} text={contacts.email} />}
+                {contacts.phone && (
+                    <ContactLine label={t.Invite_Contact_Phone()} href={`tel:${contacts.phone}`} text={contacts.phone} />
+                )}
+                {contacts.telegram && (
+                    <ContactLine label="Telegram" href={telegramHref(contacts.telegram)} text={contacts.telegram} external />
                 )}
             </div>
         </div>
     );
 };
+
+/** Приглашение не сработало: почему и что теперь делать. */
+export const InviteErrorIsland: React.FC<Props> = ({title, reason, guidance, contactMessage, supportContacts}) => (
+    <div className="max-w-lg mx-auto mt-12" data-test-id="invite-error">
+        <div className="rounded-lg border border-default bg-surface p-8 text-center">
+            <div className="mb-4 text-4xl text-warning" aria-hidden="true">!</div>
+            <h1 className="text-xl font-semibold text-on-surface mb-3">{title}</h1>
+            <p className="text-secondary mb-6">{reason}</p>
+            {guidance && <p className="text-on-surface mb-6">{guidance}</p>}
+            <SupportBlock contacts={supportContacts} message={contactMessage} />
+        </div>
+    </div>
+);

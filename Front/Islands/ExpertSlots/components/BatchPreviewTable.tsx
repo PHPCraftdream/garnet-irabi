@@ -1,8 +1,7 @@
 import * as React from 'react';
 import {useMemo} from 'react';
 import {ProposedSlot, ExistingItem} from '../types';
-import {DurationSelect} from '@common/Components/DurationSelect';
-import {DateInput} from '@common/Components/ui/DateInput';
+import {BatchPreviewRow} from './BatchPreviewRow';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {IGarnetWindow} from '@common/Models';
 
@@ -91,69 +90,29 @@ export const BatchPreviewTable: React.FC<Props> = ({slots, startDate, endDate, h
                 </tr>
             </thead>
             <tbody id="proposedBody">
-                {slots.map((s, i) => {
-                    const existingOverlap = hasOverlap(s.date, s.time, s.duration);
-                    const proposedOverlap = hasProposedOverlap(s.date, s.time, s.duration, i);
-                    const overlap = existingOverlap || proposedOverlap;
-                    const pastDate = isDateInPast(s.date, s.time);
-                    const outOfRange = !isDateInRange(s.date, startDate, endDate);
-                    const dayItems = getDayItems(s.date);
-                    const hasWarning = overlap || pastDate || outOfRange;
-                    return (
-                        <tr key={s.id} data-index={i} className={hasWarning ? 'table-warning' : ''}>
-                            <td>
-                                <span className="text-muted text-xs mr-1">{getWeekdayName(s.date)}</span>
-                                <DateInput
-                                    className="form-control-sm inline-block"
-                                    value={s.date}
-                                    min={startDate}
-                                    max={endDate}
-                                    data-index={i}
-                                    onChange={e => onDateChange(i, e.target.value)}
-                                />
-                            </td>
-                            <td>{hebrewDates[s.date] || ''}</td>
-                            <td>
-                                <DateInput
-                                    type="time"
-                                    className="form-control-sm slot-time-input"
-                                    value={s.time}
-                                    data-index={i}
-                                    onChange={e => onTimeChange(i, e.target.value)}
-                                />
-                            </td>
-                            <td>
-                                <DurationSelect
-                                    value={s.duration}
-                                    onChange={v => onDurationChange(i, v)}
-                                    className="form-select form-select-sm slot-duration-select"
-                                />
-                            </td>
-                            <td>
-                                {dayItems.map(item => (
-                                    <span key={`${item.time}-${item.duration_min}`} className="badge bg-secondary mr-1 mb-1" style={{fontSize: '0.7rem'}}>
-                                        {formatExistingItem(item)}
-                                    </span>
-                                ))}
-                            </td>
-                            <td>
-                                {existingOverlap && (
-                                    <span className="badge status-warning mr-1" title={t.Batch_Overlap()}>&#9888;</span>
-                                )}
-                                {proposedOverlap && (
-                                    <span className="badge status-warning mr-1" title={t.Batch_ProposedOverlap()}>&#9888;</span>
-                                )}
-                                {outOfRange && (
-                                    <span className="badge status-warning mr-1" title={t.Batch_DateOutOfRange()}>&#9888;</span>
-                                )}
-                                {pastDate && (
-                                    <span className="badge status-warning mr-1" title={t.Batch_PastDate()}>&#9888;</span>
-                                )}
-                                <button type="button" className="btn btn-sm btn-outline-danger slot-remove-btn" title={t.Action_Remove()} data-index={i} onClick={() => onRemove(i)}>&times;</button>
-                            </td>
-                        </tr>
-                    );
-                })}
+                {slots.map((s, i) => (
+                    <BatchPreviewRow
+                        key={s.id}
+                        slot={s}
+                        index={i}
+                        weekday={getWeekdayName(s.date)}
+                        hebrewDate={hebrewDates[s.date] || ''}
+                        startDate={startDate}
+                        endDate={endDate}
+                        dayItems={getDayItems(s.date)}
+                        warnings={{
+                            existingOverlap: hasOverlap(s.date, s.time, s.duration),
+                            proposedOverlap: hasProposedOverlap(s.date, s.time, s.duration, i),
+                            outOfRange: !isDateInRange(s.date, startDate, endDate),
+                            pastDate: isDateInPast(s.date, s.time),
+                        }}
+                        formatExistingItem={formatExistingItem}
+                        onDateChange={onDateChange}
+                        onTimeChange={onTimeChange}
+                        onDurationChange={onDurationChange}
+                        onRemove={onRemove}
+                    />
+                ))}
             </tbody>
         </table>
     );

@@ -13,7 +13,7 @@ import {UserDetailContext} from './UserDetailContext';
 import {UserDetailTab} from './UserDetailTab';
 import {useUserTabs} from './useUserTabs';
 import {ADMIN_URLS} from './AdminPageWrapper';
-import {Combobox} from '@common/Components/ui/Combobox';
+import {SupportStatusBar, SupportTicketFilters} from './SupportTicket/SupportTicketFilters';
 import {PageHeader} from '@common/Components/PageHeader';
 import {LifeBuoy, Paperclip} from 'lucide-react';
 import {DateInput} from '@common/Components/ui/DateInput';
@@ -283,94 +283,29 @@ export const AdminSupportIsland: React.FC<Props> = ({
         if (effectiveActiveId === mainTabId) {
             return (
                 <div>
-                    <div className="admin-filter-bar">
-                        <button
-                            type="button"
-                            data-test-id="support-filter-all"
-                            aria-selected={statusFilter === 'all'}
-                            className={`admin-filter-btn ${statusFilter === 'all' ? 'admin-filter-btn-active' : ''}`}
-                            onClick={() => setStatusFilter('all')}
-                        >
-                            {t.Admin_Tab_All()} <span className="admin-filter-count">({tickets.length})</span>
-                        </button>
-                        {visibleFilters.map(status => (
-                            <button
-                                key={status}
-                                type="button"
-                                data-test-id={`support-filter-${status}`}
-                                aria-selected={statusFilter === status}
-                                className={`admin-filter-btn ${statusFilter === status ? 'admin-filter-btn-active' : ''}`}
-                                onClick={() => setStatusFilter(status)}
-                            >
-                                {statusLabel(status)} <span className="admin-filter-count">({statusCounts[status]})</span>
-                            </button>
-                        ))}
-                    </div>
-                    <div className="admin-bookings-filters mt-3">
-                        <div className="filter-cell">
-                            <label>{t.Admin_Filter_User()}</label>
-                            <Combobox
-                                options={userOptions}
-                                value={userId}
-                                onChange={setUserId}
-                                placeholder={t.Admin_Filter_All()}
-                                searchPlaceholder={t.Admin_Filter_SearchUser()}
-                                testId="support-user-filter"
-                            />
-                        </div>
-                        <div className="filter-cell">
-                            <label>{t.Admin_Filter_Assignee()}</label>
-                            <Combobox
-                                options={assigneeOptions}
-                                value={assigneeId}
-                                onChange={setAssigneeId}
-                                placeholder={t.Admin_Filter_All()}
-                                searchPlaceholder={t.Admin_Filter_SearchUser()}
-                                testId="support-assignee-filter"
-                            />
-                        </div>
-                        <div className="filter-cell">
-                            <label>{t.Admin_Filter_DateBy()}</label>
-                            <select
-                                className="form-select text-sm"
-                                value={dateField}
-                                onChange={e => setDateField(e.target.value as DateField)}
-                                data-test-id="support-date-field"
-                            >
-                                <option value="updated_at">{t.Admin_Filter_DateUpdated()}</option>
-                                <option value="created_at">{t.Admin_Filter_DateCreated()}</option>
-                            </select>
-                        </div>
-                        <div className="filter-cell">
-                            <label>{t.Admin_Filter_DateFrom()}</label>
-                            <DateInput
-                                className="text-sm"
-                                value={dateFrom}
-                                onChange={e => setDateFrom(e.target.value)}
-                                data-test-id="support-date-from"
-                            />
-                        </div>
-                        <div className="filter-cell">
-                            <label>{t.Admin_Filter_DateTo()}</label>
-                            <DateInput
-                                className="text-sm"
-                                value={dateTo}
-                                onChange={e => setDateTo(e.target.value)}
-                                data-test-id="support-date-to"
-                            />
-                        </div>
-                        <div className="filter-actions">
-                            {(userId || assigneeId || dateFrom || dateTo) && (
-                                <button
-                                    type="button"
-                                    className="btn btn-sm btn-outline-secondary"
-                                    onClick={() => { setUserId(''); setAssigneeId(''); setDateFrom(''); setDateTo(''); }}
-                                    data-test-id="support-filter-reset"
-                                    aria-label={t.Admin_Filter_ResetAll()}
-                                >×</button>
-                            )}
-                        </div>
-                    </div>
+                    <SupportStatusBar
+                        total={tickets.length}
+                        statuses={visibleFilters}
+                        counts={statusCounts}
+                        active={statusFilter}
+                        statusLabel={statusLabel}
+                        onSelect={setStatusFilter}
+                    />
+                    <SupportTicketFilters
+                        userOptions={userOptions}
+                        assigneeOptions={assigneeOptions}
+                        userId={userId}
+                        assigneeId={assigneeId}
+                        dateField={dateField}
+                        dateFrom={dateFrom}
+                        dateTo={dateTo}
+                        onUserId={setUserId}
+                        onAssigneeId={setAssigneeId}
+                        onDateField={setDateField}
+                        onDateFrom={setDateFrom}
+                        onDateTo={setDateTo}
+                        onReset={() => { setUserId(''); setAssigneeId(''); setDateFrom(''); setDateTo(''); }}
+                    />
                     <AdminGrid<SupportTicket>
                         rows={filteredTickets}
                         config={gridConfig}

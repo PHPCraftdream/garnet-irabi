@@ -26,6 +26,24 @@ interface Props {
     maxMessages?: number;
 }
 
+/** Сообщение в коротком просмотре переписки. */
+const QuickChatBubble: React.FC<{msg: QuickMessage; mine: boolean}> = ({msg, mine}) => (
+    <div className={`flex mb-2 ${mine ? 'justify-end' : 'justify-start'}`} data-test-id={`quick-chat-msg-${msg.id}`}>
+        <div className={`max-w-[80%] rounded-lg px-3 py-2 text-xs ${mine ? 'bg-accent-subtle' : 'bg-surface-hover'} text-on-surface`}>
+            {!mine && msg.sender_name && (
+                <div className="text-[10px] font-medium text-muted mb-0.5">{msg.sender_name}</div>
+            )}
+            <div className="whitespace-pre-wrap break-words">{msg.body}</div>
+            {/* Сервер отдавал вложения всегда; этот вид их терял, и сообщение
+                с файлом читалось здесь как сообщение без файла. */}
+            {msg.attachments && msg.attachments.length > 0 && (
+                <div className="mt-1"><AttachmentDisplay attachments={msg.attachments} /></div>
+            )}
+            <div className="text-[10px] mt-0.5 text-muted">{formatTs(msg.created_at)}</div>
+        </div>
+    </div>
+);
+
 export default function QuickChat({partnerId, quickChatUrl, sendUrl, currentAccountId, maxMessages = 10}: Props) {
     const [messages, setMessages] = useState<QuickMessage[]>([]);
     const [_conversationId, setConversationId] = useState<number | null>(null);
@@ -82,44 +100,14 @@ export default function QuickChat({partnerId, quickChatUrl, sendUrl, currentAcco
         <div className="flex flex-col" data-test-id="quick-chat">
             {/* Messages */}
             <div className="overflow-y-auto px-3 py-2" style={{maxHeight: '240px'}} data-test-id="quick-chat-messages">
-                {loading ? (
-                    <div className="text-center text-muted text-xs py-4">{t.User_Loading()}</div>
-                ) : error ? (
-                    <div className="text-center text-danger text-xs py-4">{error}</div>
-                ) : messages.length === 0 ? (
+                {loading && <div className="text-center text-muted text-xs py-4">{t.User_Loading()}</div>}
+                {!loading && error && <div className="text-center text-danger text-xs py-4">{error}</div>}
+                {!loading && !error && messages.length === 0 && (
                     <div className="text-center text-muted text-xs py-4">{t.QuickChat_NoMessages()}</div>
-                ) : (
-                    messages.map(msg => {
-                        const isMine = msg.sender_id === currentAccountId;
-                        return (
-                            <div
-                                key={msg.id}
-                                className={`flex mb-2 ${isMine ? 'justify-end' : 'justify-start'}`}
-                                data-test-id={`quick-chat-msg-${msg.id}`}
-                            >
-                                <div className={`max-w-[80%] rounded-lg px-3 py-2 text-xs ${
-                                    isMine
-                                        ? 'bg-accent-subtle text-on-surface'
-                                        : 'bg-surface-hover text-on-surface'
-                                }`}>
-                                    {!isMine && msg.sender_name && (
-                                        <div className="text-[10px] font-medium text-muted mb-0.5">{msg.sender_name}</div>
-                                    )}
-                                    <div className="whitespace-pre-wrap break-words">{msg.body}</div>
-                                    {/* The server has always sent these; this view
-                                        used to drop them, so a message with a file
-                                        read here as a message without one. */}
-                                    {msg.attachments && msg.attachments.length > 0 && (
-                                        <div className="mt-1">
-                                            <AttachmentDisplay attachments={msg.attachments} />
-                                        </div>
-                                    )}
-                                    <div className="text-[10px] mt-0.5 text-muted">{formatTs(msg.created_at)}</div>
-                                </div>
-                            </div>
-                        );
-                    })
                 )}
+                {!loading && !error && messages.map(msg => (
+                    <QuickChatBubble key={msg.id} msg={msg} mine={msg.sender_id === currentAccountId} />
+                ))}
                 <div ref={messagesEndRef} />
             </div>
 

@@ -79,6 +79,54 @@ export function FlagBtn({label, active, cls, disabled, onClick, testId, title}: 
     );
 }
 
+const TabButton: React.FC<{
+    tabKey: string;
+    label: string;
+    count: number;
+    active: boolean;
+    onSelect: (key: any) => void;
+}> = ({tabKey, label, count, active, onSelect}) => (
+    <li className="admin-tabnav-item">
+        <button
+            type="button"
+            data-test-id={`filter-tab-${tabKey}`}
+            aria-selected={active}
+            className={`admin-tabnav-btn ${active ? 'admin-tabnav-btn-active' : ''}`}
+            onClick={() => onSelect(tabKey)}
+        >
+            {label} <span className="admin-tabnav-count">({count})</span>
+        </button>
+    </li>
+);
+
+/** Тип аккаунта и переключатель «сделать преподавателем». */
+const UserTypeCell: React.FC<{
+    row: {id: number; type: string};
+    canChange: boolean;
+    pending: boolean;
+    onToggle: () => void;
+}> = ({row, canChange, pending, onToggle}) => {
+    const isExpert = row.type === 'expert';
+
+    return (
+        <div className="flex items-center gap-2">
+            <span className={`badge ${isExpert ? 'status-info' : 'status-muted'}`}>
+                {isExpert ? t.Reg_AccountTypeExpert() : t.Reg_AccountTypeUser()}
+            </span>
+            {canChange && (
+                <FlagBtn
+                    testId={`set-type-${row.id}`}
+                    label={isExpert ? t.Admin_Flag_RevokeExpert() : t.Admin_Flag_GrantExpert()}
+                    active={isExpert}
+                    cls={['btn-outline-danger', 'btn-outline-primary']}
+                    disabled={pending}
+                    onClick={onToggle}
+                />
+            )}
+        </div>
+    );
+};
+
 export const UsersSection: React.FC<Props> = ({
     users: initialUsers, setFlagUrl, setUserTypeUrl, config,
 }) => {
@@ -132,20 +180,16 @@ export const UsersSection: React.FC<Props> = ({
 
     return (
         <div>
-            {/* Tabs */}
             <ul className="admin-tabnav">
                 {tabs.map(tab => (
-                    <li key={tab.key} className="admin-tabnav-item">
-                        <button
-                            type="button"
-                            data-test-id={`filter-tab-${tab.key}`}
-                            aria-selected={activeTab === tab.key}
-                            className={`admin-tabnav-btn ${activeTab === tab.key ? 'admin-tabnav-btn-active' : ''}`}
-                            onClick={() => setActiveTab(tab.key)}
-                        >
-                            {tab.labelFn()} <span className="admin-tabnav-count">({tabCounts[tab.key]})</span>
-                        </button>
-                    </li>
+                    <TabButton
+                        key={tab.key}
+                        tabKey={tab.key}
+                        label={tab.labelFn()}
+                        count={tabCounts[tab.key]}
+                        active={activeTab === tab.key}
+                        onSelect={setActiveTab}
+                    />
                 ))}
             </ul>
 
@@ -157,27 +201,22 @@ export const UsersSection: React.FC<Props> = ({
                 renders={{
                     id:    r => <span className="text-muted">{r.id}</span>,
                     login: r => (
-                        <button type="button" data-test-id={`user-login-${r.id}`} className="admin-link-btn-md font-mono"
-                            onClick={() => openUser(r.id, r.name || r.login)}>
+                        <button
+                            type="button"
+                            data-test-id={`user-login-${r.id}`}
+                            className="admin-link-btn-md font-mono"
+                            onClick={() => openUser(r.id, r.name || r.login)}
+                        >
                             {r.login}
                         </button>
                     ),
                     type: r => (
-                        <div className="flex items-center gap-2">
-                            <span className={`badge ${r.type === 'expert' ? 'status-info' : 'status-muted'}`}>
-                                {r.type === 'expert' ? t.Reg_AccountTypeExpert() : t.Reg_AccountTypeUser()}
-                            </span>
-                            {setUserTypeUrl && (
-                                <FlagBtn
-                                    testId={`set-type-${r.id}`}
-                                    label={r.type === 'expert' ? t.Admin_Flag_RevokeExpert() : t.Admin_Flag_GrantExpert()}
-                                    active={r.type === 'expert'}
-                                    cls={['btn-outline-danger', 'btn-outline-primary']}
-                                    disabled={pending[r.id]}
-                                    onClick={() => setUserType(r.id, r.type === 'expert' ? 'user' : 'expert')}
-                                />
-                            )}
-                        </div>
+                        <UserTypeCell
+                            row={r}
+                            canChange={!!setUserTypeUrl}
+                            pending={!!pending[r.id]}
+                            onToggle={() => setUserType(r.id, r.type === 'expert' ? 'user' : 'expert')}
+                        />
                     ),
                     last_online_time: r => <span className="text-muted text-xs">{formatTs(r.last_online_time)}</span>,
 

@@ -6,8 +6,11 @@ import SendButton from '@common/Components/SendButton';
 import {sendPost} from '@common/Api/sendPost';
 import {Portal} from '@common/Components/Portal';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
+import {isActionable} from '../../Common/bookingAction';
+import {SlotCancelForm} from './SlotCancelForm';
 import {SlotItem, ExpertMap} from './types';
 import QuickChat from '../../Common/QuickChat';
+import {SlotDateTimeBlock, SlotExpertBlock, SlotFormatBlock, SlotPriceBlock} from './SlotDetailSections';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {formatTime as fmtTime, formatDateLong as fmtFullDate} from '@common/Utils/DateUtils';
 import {appUrl} from '@common/Utils/appUrl';
@@ -58,7 +61,7 @@ export default function SlotDetailModal({
 
     const expert = experts[slot.expert_id];
     const endTs = slot.end_at || (slot.start_at + (slot.duration_min || 60) * 60);
-    const canCancel = bookingStatus === 'pending' || bookingStatus === 'confirmed';
+    const canCancel = isActionable(bookingStatus);
 
     const handleEscape = useCallback((e: KeyboardEvent) => {
         if (e.key === 'Escape') onClose();
@@ -128,59 +131,10 @@ export default function SlotDetailModal({
 
                 {/* Scrollable content */}
                 <div className="overflow-y-auto flex-1 p-4 space-y-4">
-                    {/* Date & time section */}
-                    <div className="p-3 rounded-lg bg-accent-subtle" data-test-id="slot-detail-datetime">
-                        <div className="text-sm text-muted mb-1">{t.Slot_DateLabel()}</div>
-                        <div className="font-semibold">{fmtFullDate(slot.start_at)}</div>
-                        <div className="text-sm font-medium mt-0.5">
-                            {fmtTime(slot.start_at)} — {fmtTime(endTs)}
-                        </div>
-                        <div className="text-xs text-muted mt-1">
-                            {t.Slot_Duration()}: {slot.duration_min || 60} {t.Slot_Duration_Min()}
-                        </div>
-                    </div>
-
-                    {/* Price */}
-                    <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-surface-alt" data-test-id="slot-detail-price">
-                        <span className="text-sm text-muted">{t.Slot_PricePaid()}</span>
-                        <span className="font-semibold text-lg">{slot.cost} &#8381;</span>
-                    </div>
-
-                    {/* Format: online/offline */}
-                    <div className="px-3 py-2 rounded-lg bg-surface-alt" data-test-id="slot-detail-format">
-                        <span className={`inline-block text-xs px-2 py-0.5 rounded ${slot.is_online ? 'status-success' : 'status-notice'}`}>
-                            {slot.is_online ? t.Slot_Online() : t.Slot_Offline()}
-                        </span>
-                        {!slot.is_online && slot.location && (
-                            <div className="text-sm mt-1.5">
-                                <span className="text-muted">{t.Slot_Location()}:</span> {slot.location}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Expert section */}
-                    {expert && (
-                        <div className="px-3 py-2 rounded-lg border border-default" data-test-id="slot-detail-expert">
-                            <div className="text-sm text-muted mb-1">{t.Slot_Expert()}</div>
-                            <div className="flex items-center justify-between">
-                                <span data-test-id="slot-detail-expert-link">
-                                    <UserLink
-                                        id={slot.expert_id}
-                                        name={expert.display_name}
-                                        isExpert
-                                        className="text-accent hover:underline font-medium"
-                                    />
-                                </span>
-                                <a
-                                    href={appUrl(`/im/#to=${slot.expert_id}`)}
-                                    className="text-sm text-accent hover:underline"
-                                    data-test-id="slot-detail-message-expert"
-                                >
-                                    {t.Im_GoToDialogs()}
-                                </a>
-                            </div>
-                        </div>
-                    )}
+                    <SlotDateTimeBlock startAt={slot.start_at} endTs={endTs} durationMin={slot.duration_min || 60} />
+                    <SlotPriceBlock cost={slot.cost} />
+                    <SlotFormatBlock slot={slot} />
+                    {expert && <SlotExpertBlock expertId={slot.expert_id} expert={expert} />}
 
                     {/* Quick Chat section */}
                     {quickChatUrl && sendUrl && currentAccountId && expert && (
@@ -218,77 +172,21 @@ export default function SlotDetailModal({
                         </button>
                     )}
 
-                    {canCancel && showCancelForm && (() => {
-                        const nowSec = Math.floor(Date.now() / 1000);
-                        const penaltyApplies =
-                            bookingStatus === 'confirmed'
-                            && slot.start_at > nowSec
-                            && slot.cancellation_penalty_percent > 0
-                            && slot.cost > 0;
-                        const penaltyAmount = penaltyApplies
-                            ? Math.floor(slot.cost * slot.cancellation_penalty_percent / 100)
-                            : 0;
-                        const refundAmount = slot.cost - penaltyAmount;
-
-                        return (
-                        <div className="p-3 rounded-lg border border-default bg-surface-alt space-y-3" data-test-id="slot-detail-cancel-form">
-                            <div className="text-sm font-medium">{t.User_Cancel_Title()}</div>
-
-                            {slot.cost > 0 && !penaltyApplies && (
-                                <div className="text-xs text-muted" data-test-id="slot-detail-refund-full">
-                                    {t.Booking_RefundInfo()}: {slot.cost} &#8381;
-                                </div>
-                            )}
-
-                            {penaltyApplies && (
-                                <div className="space-y-1" data-test-id="slot-detail-penalty-preview">
-                                    <div className="text-xs text-warning">
-                                        {t.Booking_PenaltyKeptByExpert([slot.cancellation_penalty_percent, penaltyAmount])}
-                                    </div>
-                                    <div className="text-xs text-muted">
-                                        {t.Booking_RefundAmount([refundAmount])}
-                                    </div>
-                                </div>
-                            )}
-
-                            {reasonError && (
-                                <div className="text-sm text-danger">{reasonError}</div>
-                            )}
-                            {cancelError && (
-                                <div className="text-sm text-danger">{cancelError}</div>
-                            )}
-
-                            <div>
-                                <label className="text-sm text-secondary mb-1 block">{t.User_Cancel_ReasonLabel()}</label>
-                                <textarea
-                                    className="form-control text-sm"
-                                    rows={3}
-                                    value={reason}
-                                    onChange={e => { setReason(e.target.value); setReasonError(''); }}
-                                    placeholder={t.User_Cancel_ReasonPlaceholder()}
-                                    data-test-id="slot-detail-cancel-reason-input"
-                                />
-                            </div>
-
-                            <div className="flex gap-2 justify-end">
-                                <button
-                                    type="button"
-                                    className="btn btn-sm btn-outline-secondary"
-                                    onClick={() => { setShowCancelForm(false); setReason(''); setReasonError(''); }}
-                                >
-                                    {t.Action_Cancel()}
-                                </button>
-                                <SendButton
-                                    onClick={handleCancelSubmit}
-                                    sending={sending}
-                                    label={t.User_Cancel_Submit()}
-                                    testId="slot-detail-cancel-submit"
-                                    variant="outline-warning"
-                                />
-                            </div>
-                        </div>
-                        );
-                    })()}
+                    {canCancel && showCancelForm && (
+                        <SlotCancelForm
+                            bookingStatus={bookingStatus}
+                            cost={slot.cost}
+                            penaltyPercent={slot.cancellation_penalty_percent}
+                            startAt={slot.start_at}
+                            reason={reason}
+                            reasonError={reasonError}
+                            cancelError={cancelError}
+                            sending={sending}
+                            onReasonChange={v => { setReason(v); setReasonError(''); }}
+                            onSubmit={handleCancelSubmit}
+                            onDismiss={() => { setShowCancelForm(false); setReason(''); setReasonError(''); }}
+                        />
+                    )}
                 </div>
             </div>
         </div></Portal>

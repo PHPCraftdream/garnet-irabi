@@ -2,7 +2,6 @@ import * as React from 'react';
 import {useState, useMemo} from 'react';
 import {sendPost} from '@common/Api/sendPost';
 import {D} from '@common/Debug/D';
-import {formatTs} from '@common/Utils/DateUtils';
 import {useSending} from '@common/hooks/useSending';
 import {useCtrlEnter, CTRL_ENTER_HINT} from '@common/hooks/useCtrlEnter';
 import {useConfirm} from '@common/hooks/useConfirm';
@@ -14,7 +13,7 @@ import Pagination, {PaginationLabels} from '@common/Components/Pagination';
 import {showToast} from '@common/Components/GlobalToast';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {Comment} from './commentTypes';
-import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
+import {CommentCard} from './CommentCard';
 
 interface CommentsSectionProps {
     entityType: 'expert';
@@ -68,6 +67,10 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
             if (r?.comment) {
                 D('comments.created', {commentId: r.comment.id});
                 setBody('');
+                // Отзыв уходит на проверку и на странице сразу не появляется.
+                // Без этой строки человек видит, что его текста нет, и делает
+                // единственный доступный вывод: отправка не сработала.
+                showToast(t.Comment_SentForReview(), 'success');
                 if (page === 1) refresh(); else goToPage(1);
             }
         });
@@ -89,13 +92,64 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
         }
     };
 
-    const canDelete = (comment: Comment): boolean => {
-        return comment.author_id === currentAccountId || isModerator;
+    // Свой отзыв узнаётся по `is_mine`, а не по author_id: для читателей
+    // author_id обнулён, иначе анонимность держалась бы только на вёрстке.
+    const isMine = (comment: Comment): boolean =>
+        comment.is_mine ?? (comment.author_id > 0 && comment.author_id === currentAccountId);
+
+    const canDelete = (comment: Comment): boolean => isMine(comment) || isModerator;
+
+    /**
+     * Подпись состояния — только автору и только когда есть что сказать.
+     * Одобренный чужой отзыв никакой пометки не несёт: она бы намекала
+     * читателю на то, чего он знать не должен.
+     */
+    const statusLabel = (comment: Comment): string => {
+        // Модератор видит на публичной странице всё, включая непроверенное,
+        // отклонённое и помеченное. Без подписи состояния эти отзывы выглядят
+        // ровно как опубликованные — mod-1 отклонила и пометила два отзыва,
+        // открыла страницу преподавателя, увидела их на месте и решила, что её
+        // действия не сработали. Ничего не сломалось: обычный посетитель их не
+        // видит (проверено под чужой сессией). Молчал не сервер, а подпись.
+        if (isModerator && comment.moderation_status && comment.moderation_status !== 'approved') {
+            return {
+                pending: t.Comment_StatusPending(),
+                rejected: t.Comment_StatusRejected(),
+                flagged: t.Comment_StatusFlagged(),
+            }[comment.moderation_status] ?? '';
+        }
+
+        if (!isMine(comment)) {
+            return '';
+        }
+
+        if (comment.moderation_status === 'pending') {
+            return `${t.Comment_StatusMine()} · ${t.Comment_StatusPending()}`;
+        }
+
+        if (comment.moderation_status === 'rejected') {
+            return `${t.Comment_StatusMine()} · ${t.Comment_StatusRejected()}`;
+        }
+
+        return t.Comment_StatusMine();
     };
 
     return (
         <div data-test-id="comments-section" className="mt-6">
             <h3 className="mb-4">{t.Comment_Title()}</h3>
+
+            {isModerator && (
+                // D-119: a moderator sees every review here, approved or not —
+                // without this, the page looks identical to what anyone else
+                // sees, and a moderator reading it concludes hidden content is
+                // leaking rather than realizing it's their own extended view.
+                <div
+                    className="text-sm p-3 mb-3 rounded-lg border border-default bg-surface-alt"
+                    data-test-id="comments-moderator-notice"
+                >
+                    {t.Comment_ModeratorViewNotice()}
+                </div>
+            )}
 
             {totalPages > 1 && (
                 <div className="mb-4">
@@ -121,37 +175,13 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
             ) : (
                 <div className="comment-list">
                     {comments.map(comment => (
-                        <div
+                        <CommentCard
                             key={comment.id}
-                            data-test-id={`comment-${comment.id}`}
-                            className="comment-card"
-                        >
-                            <div className="comment-card-row">
-                                <div className="flex-1">
-                                    <div className="comment-author">
-                                        {comment.author_id > 0 ? (
-                                            <UserLink id={comment.author_id} name={comment.author_name || t.User_Anonymous()} />
-                                        ) : (comment.author_name || t.User_Anonymous())}
-                                    </div>
-                                    <div className="comment-body">
-                                        {comment.body}
-                                    </div>
-                                    <div className="comment-time">
-                                        {formatTs(comment.created_at)}
-                                    </div>
-                                </div>
-                                {canDelete(comment) && (
-                                    <button
-                                        type="button"
-                                        data-test-id={`comment-delete-${comment.id}`}
-                                        className="comment-delete-btn"
-                                        onClick={() => handleDelete(comment.id)}
-                                    >
-                                        {t.Comment_Delete()}
-                                    </button>
-                                )}
-                            </div>
-                        </div>
+                            comment={comment}
+                            statusLabel={statusLabel(comment)}
+                            canDelete={canDelete(comment)}
+                            onDelete={handleDelete}
+                        />
                     ))}
                 </div>
             )}
@@ -171,6 +201,23 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
             )}
 
             {/* New comment form */}
+            {canCreate && (
+                // Обещание приватности подано как обещание, а не как сноска.
+                //
+                // Было набрано тем же `text-xs text-muted`, что и «Нет
+                // комментариев» рядом, — user-3 заметила, что текст сливается с
+                // служебной мелочью и его пролистывают не читая, хотя по
+                // важности он выше баннера про часовой пояс, который подан
+                // цветной плашкой с иконкой. Обещание, которого не прочли,
+                // ничем не лучше отсутствующего.
+                <div
+                    className="text-sm p-3 mb-3 rounded-lg border border-accent bg-surface-alt"
+                    data-test-id="comment-moderation-notice"
+                >
+                    {t.Comment_ModerationNotice()}
+                </div>
+            )}
+
             {canCreate && (
                 <div className="comment-form">
                     <textarea

@@ -9,9 +9,11 @@ import {bookErrorCode, bookErrorMessage} from './bookingErrors';
 import SendButton from '@common/Components/SendButton';
 import {Portal} from '@common/Components/Portal';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
+import {ExtraSlotPicker} from './ExtraSlotPicker';
 import {SlotItem, ExpertMap} from './types';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {formatTime as fmtTime, formatDateShort as fmtDate} from '@common/Utils/DateUtils';
+import {slotFormatLine} from '../../Common/slotFormat';
 import {appUrl} from '@common/Utils/appUrl';
 
 interface Props {
@@ -132,6 +134,13 @@ export default function BookingModal({slot, allSlots, experts, bookedIds, balanc
                             <UserLink id={slot.expert_id} name={expert.display_name} isExpert className="text-accent hover:underline" onClick={e => e.stopPropagation()} />
                         </div>
                     )}
+                    {/* Формат — на экране, где человек решает платить.
+                        Он был добавлен в карточку каталога и в форму брони, а
+                        эта модалка осталась без него: платишь за очное занятие
+                        и не видишь адреса. Нашёл user-7 в первый же час после
+                        выката — ровно тот случай, когда правку внесли не во все
+                        копии одного экрана. */}
+                    <div className="text-sm mt-1" data-test-id="booking-format">{slotFormatLine(slot)}</div>
                     <div className="text-sm font-medium mt-1">{slot.cost} &#8381;</div>
                     {slot.cancellation_penalty_percent > 0 && slot.cost > 0 && (
                         <div className="text-xs text-warning mt-1" data-test-id="booking-penalty-warning">
@@ -141,36 +150,17 @@ export default function BookingModal({slot, allSlots, experts, bookedIds, balanc
                             ])}
                         </div>
                     )}
+                    {/* «А если преподаватель откажет?» — вопрос задают здесь, до
+                        оплаты, а ответ до сих пор был только на карточке уже
+                        оплаченной заявки. Отказ преподавателя всегда возвращает
+                        всю сумму (ExpertBookingsService: «no penalty branch»). */}
+                    <div className="text-xs text-muted mt-1" data-test-id="booking-refund-note">
+                        {t.Booking_CancelTerms_Unanswered()}
+                    </div>
                 </div>
 
                 {/* Other slots by same expert */}
-                {otherSlots.length > 0 && (
-                    <div className="mb-4">
-                        <div className="text-sm font-medium text-secondary mb-2">
-                            {t.Booking_OtherSlots()}:
-                        </div>
-                        <div className="space-y-1 max-h-48 overflow-y-auto">
-                            {otherSlots.map(s => (
-                                <label
-                                    key={s.id}
-                                    className={`flex items-center gap-2 p-2 rounded cursor-pointer text-sm ${selected.has(s.id) ? 'bg-accent-subtle' : 'hover:bg-surface-hover'}`}
-                                    data-test-id={`booking-extra-slot-${s.id}`}
-                                >
-                                    <input
-                                        type="checkbox"
-                                        checked={selected.has(s.id)}
-                                        onChange={() => toggle(s.id)}
-                                        className="accent-theme"
-                                    />
-                                    <span className="flex-1">
-                                        {fmtDate(s.start_at)}, {fmtTime(s.start_at)} — {fmtTime(s.end_at || (s.start_at + (s.duration_min || 60) * 60))}
-                                    </span>
-                                    <span className="font-medium">{s.cost} &#8381;</span>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                <ExtraSlotPicker slots={otherSlots} selected={selected} onToggle={toggle} />
 
                 {/* Total */}
                 <div className="flex justify-between items-center py-3 border-t border-default">

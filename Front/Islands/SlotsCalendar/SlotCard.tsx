@@ -6,12 +6,16 @@ import {SlotItem, ExpertMap} from './types';
 import {EntityLink, userLinks} from '../../Common/EntityLinks';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {formatTime} from '@common/Utils/DateUtils';
+import {slotFormatLine, slotPlaceLabel, slotPlaceValue} from '../../Common/slotFormat';
+import {translateStatus} from '../../Common/statusHelpers';
+import {statusClass} from '../../Common/StatusBadge';
 
 interface SlotCardProps {
     slot: SlotItem;
     experts: ExpertMap;
     isBooked?: boolean;
-    bookingStatus?: string; // 'pending' | 'confirmed'
+    /** Статус брони этого посетителя: pending | confirmed | cancelled | completed. */
+    bookingStatus?: string;
     onBookClick?: (slot: SlotItem) => void;
     isModerator?: boolean;
     canBook?: boolean;
@@ -60,14 +64,14 @@ export const SlotCard: React.FC<SlotCardProps> = ({slot, experts, isBooked, book
                 </div>
             )}
 
-            <div className="flex items-center gap-1.5 mb-5 text-[11px] text-muted">
+            <div className={`flex items-center gap-1.5 text-[11px] text-muted ${slot.max_users > 1 ? 'mb-2' : 'mb-5'}`}>
                 <span className="inline-flex items-center gap-1">
                     {slot.is_online ? (
                         <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M2 5a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V5z"/><path d="M14 6l-2 2 2 2V6z" fill="currentColor"/></svg>
                     ) : (
                         <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M2 8L8 2l6 6"/><path d="M3 7v7h10V7"/></svg>
                     )}
-                    {slot.is_online ? t.Slots_Online() : t.Slots_Offline()}
+                    {slotFormatLine(slot)}
                 </span>
                 {slot.duration_min && (
                     <>
@@ -77,15 +81,34 @@ export const SlotCard: React.FC<SlotCardProps> = ({slot, experts, isBooked, book
                 )}
             </div>
 
+            {/* D-149: групповое занятие ничем не выделялось в общем каталоге —
+                видно было только по числу мест в тултипе при наведении. */}
+            {slot.max_users > 1 && (
+                <div className="mb-5">
+                    <span className="badge text-bg-primary" data-test-id={`slot-group-badge-${slot.id}`}>
+                        {t.Slot_GroupBadge([slot.max_users])}
+                    </span>
+                </div>
+            )}
+
             {isBooked ? (
                 <button
                     type="button"
-                    className={`w-full text-center text-xs font-semibold py-2 px-3 rounded-lg cursor-pointer hover:opacity-80 transition-opacity ${bookingStatus === 'confirmed' ? 'status-success' : 'status-notice'}`}
+                    className={`w-full text-center text-xs font-semibold py-2 px-3 rounded-lg cursor-pointer hover:opacity-80 transition-opacity ${statusClass(bookingStatus || 'pending')}`}
                     title={t.Slot_Details()}
                     data-test-id={`slot-booked-${slot.id}`}
                     onClick={() => onBookClick?.(slot)}
                 >
-                    {bookingStatus === 'confirmed' ? t.Booking_Status_Confirmed() : t.Booking_Status_Pending()}
+                    {/*
+                      * Раньше здесь стояло «подтверждено или ждёт
+                      * подтверждения», и всё остальное — отменённое,
+                      * завершённое — молча становилось «Ждёт подтверждения».
+                      * Каталог показывал ожидание там, где занятие давно
+                      * прошло, а бронь была снята (нашла user-5, дважды
+                      * подряд на разных слотах). Сервер отдаёт верный статус,
+                      * терялся он здесь.
+                      */}
+                    {translateStatus(bookingStatus || 'pending')}
                 </button>
             ) : canBook ? (
                 <button
@@ -109,8 +132,8 @@ export const SlotCard: React.FC<SlotCardProps> = ({slot, experts, isBooked, book
                     <div className="mb-1"><span className="text-muted">{t.Slot_Duration()}:</span> {slot.duration_min || 60} {t.Slot_Duration_Min()}</div>
                     <div className="mb-1"><span className="text-muted">{t.Slots_PriceRange()}:</span> {slot.cost} &#8381;</div>
                     <div className="mb-1"><span className="text-muted">{t.Slot_Format()}:</span> {slot.is_online ? t.Slots_Online() : t.Slots_Offline()}</div>
-                    {!slot.is_online && slot.location && <div className="mb-1"><span className="text-muted">{t.Slot_Location()}:</span> {slot.location}</div>}
-                    <div className="mb-1"><span className="text-muted">{t.Slot_Type()}:</span> {t.Slots_Individual()}</div>
+                    {slotPlaceValue(slot) && <div className="mb-1"><span className="text-muted">{slotPlaceLabel(slot)}:</span> {slotPlaceValue(slot)}</div>}
+                    <div className="mb-1"><span className="text-muted">{t.Slot_Type()}:</span> {slot.max_users > 1 ? t.Slots_Group() : t.Slots_Individual()}</div>
                     <div><span className="text-muted">{t.Slot_Seats()}:</span> {slot.max_users || 1}</div>
                 </div>,
                 document.body

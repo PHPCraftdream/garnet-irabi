@@ -10,6 +10,12 @@ interface Props {
     idPrefix: string;
     /** Defaults to 'form-label'; EditSlotModal passes its own label class. */
     labelClassName?: string;
+    /**
+     * Слот уже забронирован: формат менять нельзя, место — можно. Человек
+     * записывался на очное или на онлайн, и подменять это задним числом
+     * нельзя; а вот дописать ссылку или адрес нужно обязательно.
+     */
+    formatLocked?: boolean;
 }
 
 /**
@@ -24,6 +30,7 @@ export const SlotFormatFields: React.FC<Props> = ({
     onLocationChange,
     idPrefix,
     labelClassName = 'form-label',
+    formatLocked = false,
 }) => {
     const locationPlaceholder = isOnline
         ? t.Slot_LocationPlaceholderOnline()
@@ -40,6 +47,7 @@ export const SlotFormatFields: React.FC<Props> = ({
                             name={`${idPrefix}-format`}
                             checked={isOnline}
                             onChange={() => onIsOnlineChange(true)}
+                            disabled={formatLocked}
                             data-test-id={`${idPrefix}-format-online`}
                             className="accent-theme"
                         />
@@ -51,6 +59,7 @@ export const SlotFormatFields: React.FC<Props> = ({
                             name={`${idPrefix}-format`}
                             checked={!isOnline}
                             onChange={() => onIsOnlineChange(false)}
+                            disabled={formatLocked}
                             data-test-id={`${idPrefix}-format-offline`}
                             className="accent-theme"
                         />

@@ -3,6 +3,8 @@ import {useRef, useState} from 'react';
 import {useBodyScrollLock} from '@common/hooks/useBodyScrollLock';
 import {showToast} from '@common/Components/GlobalToast';
 import {I18nForeground as t} from '../I18nGen/I18nForeground';
+import {AttachmentTile} from './AttachmentTile';
+import {AttachmentLightbox} from './AttachmentLightbox';
 
 export interface PendingFile {
     id: string;
@@ -25,6 +27,20 @@ interface Props {
  */
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_FILE_SIZE_MB = 5;
+
+/**
+ * Сколько файлов можно приложить.
+ *
+ * Число одно на все формы. Виджет поддержки обещал три, страница
+ * поддержки — пять, а операция у них одна и та же: создать обращение.
+ * Человек получал разное обещание в зависимости от того, через какую дверь
+ * зашёл (нашла mod-2).
+ *
+ * Ограничение живёт только на клиенте — сервер числа файлов не проверяет.
+ * Это любезность к отправителю, а не гарантия, и потому тем более не
+ * должно расходиться между экранами.
+ */
+export const MAX_ATTACHMENTS = 5;
 const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'txt', 'log']);
 
 function formatSize(bytes: number): string {
@@ -54,7 +70,7 @@ function refusalFor(file: File): string | null {
     return null;
 }
 
-export default function AttachmentPicker({files, onChange, maxFiles = 5, accept}: Props) {
+export default function AttachmentPicker({files, onChange, maxFiles = MAX_ATTACHMENTS, accept}: Props) {
     const inputRef = useRef<HTMLInputElement>(null);
     const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
     useBodyScrollLock(lightboxIndex !== null);
@@ -119,31 +135,7 @@ export default function AttachmentPicker({files, onChange, maxFiles = 5, accept}
             {files.length > 0 && (
                 <div className="common-pick-grid">
                     {files.map((f, i) => (
-                        <div key={f.id} className="group common-pick-tile"
-                             style={{width: 80, height: 80}}
-                             onClick={() => f.preview && setLightboxIndex(i)}
-                        >
-                            {f.preview ? (
-                                <img src={f.preview} alt={f.name}
-                                     className="w-full h-full object-cover" />
-                            ) : (
-                                <div className="common-pick-tile-fallback">
-                                    {f.name.split('.').pop()?.toUpperCase()}
-                                    <br />
-                                    {formatSize(f.file instanceof File ? f.file.size : f.file.size)}
-                                </div>
-                            )}
-                            <button
-                                type="button"
-                                className="common-pick-remove"
-                                onClick={(e) => { e.stopPropagation(); remove(i); }}
-                                data-test-id={`attachment-remove-${i}`}
-                                title={t.A11y_RemoveAttachment()}
-                                aria-label={t.A11y_RemoveAttachment()}
-                            >
-                                ×
-                            </button>
-                        </div>
+                        <AttachmentTile key={f.id} file={f} index={i} onOpen={setLightboxIndex} onRemove={remove} />
                     ))}
                 </div>
             )}
@@ -185,76 +177,14 @@ export default function AttachmentPicker({files, onChange, maxFiles = 5, accept}
             )}
 
             {/* Lightbox */}
-            {lightboxIndex !== null && files[lightboxIndex]?.preview && (
-                <div
-                    className="common-pick-lightbox"
-                    onClick={() => setLightboxIndex(null)}
-                    data-test-id="attachment-lightbox"
-                >
-                    <div role="dialog" aria-modal="true" aria-label={t.A11y_ImagePreview()} className="common-pick-lightbox-frame" onClick={e => e.stopPropagation()}>
-                        <img
-                            src={files[lightboxIndex].preview}
-                            alt={files[lightboxIndex].name}
-                            className="common-pick-lightbox-img"
-                        />
-                        <div className="common-pick-lightbox-actions">
-                            <button
-                                type="button"
-                                className="common-pick-lightbox-btn-danger"
-                                onClick={() => { remove(lightboxIndex); }}
-                                title={t.A11y_RemoveAttachment()}
-                                aria-label={t.A11y_RemoveAttachment()}
-                            >
-                                ×
-                            </button>
-                            <button
-                                type="button"
-                                className="common-pick-lightbox-btn-neutral"
-                                onClick={() => setLightboxIndex(null)}
-                                title={t.Action_Close()}
-                                aria-label={t.Action_Close()}
-                            >
-                                ✕
-                            </button>
-                        </div>
-                        {/* Navigation arrows */}
-                        {previewFiles.length > 1 && (
-                            <>
-                                <button
-                                    type="button"
-                                    className="common-pick-lightbox-nav left-2"
-                                    title={t.A11y_PreviousImage()}
-                                    aria-label={t.A11y_PreviousImage()}
-                                    onClick={() => {
-                                        const currentIdx = previewFiles.findIndex(f => f.index === lightboxIndex);
-                                        const prev = currentIdx > 0 ? previewFiles[currentIdx - 1] : previewFiles[previewFiles.length - 1];
-                                        setLightboxIndex(prev.index);
-                                    }}
-                                >
-                                    ‹
-                                </button>
-                                <button
-                                    type="button"
-                                    className="common-pick-lightbox-nav right-2"
-                                    title={t.A11y_NextImage()}
-                                    aria-label={t.A11y_NextImage()}
-                                    onClick={() => {
-                                        const currentIdx = previewFiles.findIndex(f => f.index === lightboxIndex);
-                                        const next = currentIdx < previewFiles.length - 1 ? previewFiles[currentIdx + 1] : previewFiles[0];
-                                        setLightboxIndex(next.index);
-                                    }}
-                                >
-                                    ›
-                                </button>
-                            </>
-                        )}
-                        <div className="common-pick-lightbox-caption">
-                            {files[lightboxIndex].name}
-                            {previewFiles.length > 1 && ` (${previewFiles.findIndex(f => f.index === lightboxIndex) + 1}/${previewFiles.length})`}
-                        </div>
-                    </div>
-                </div>
-            )}
+            <AttachmentLightbox
+                current={lightboxIndex !== null ? files[lightboxIndex] : null}
+                previewFiles={previewFiles}
+                currentIndex={lightboxIndex ?? -1}
+                onNavigate={setLightboxIndex}
+                onRemove={() => { if (lightboxIndex !== null) remove(lightboxIndex); }}
+                onClose={() => setLightboxIndex(null)}
+            />
         </div>
     );
 }

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {useState, useEffect, useRef} from 'react';
+import {useState, useEffect} from 'react';
 import {sendPost} from '@common/Api/sendPost';
 import {sendPostFormData} from '@common/Api/sendPostFormData';
 import {D} from '@common/Debug/D';
@@ -47,7 +47,6 @@ export default function SupportTicketTab({ticketId, ticketDetailUrl, replyUrl, i
     const [internalText, setInternalText] = useState('');
     const [replyFiles, setReplyFiles]   = useState<PendingFile[]>([]);
     const [internalFiles, setInternalFiles] = useState<PendingFile[]>([]);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
     const {sending, withSending} = useSending();
     
 
@@ -63,6 +62,23 @@ export default function SupportTicketTab({ticketId, ticketDetailUrl, replyUrl, i
     useEffect(() => {
         setData(null);
         loadDetail();
+    }, [ticketId, ticketDetailUrl]);
+
+    /**
+     * Клиентская половина переписки обновляется сама (`useSupportThread`,
+     * раз в 15 секунд), а половина сотрудника — нет: ответ человека приходил
+     * только по нажатию. Один разговор не должен жить по разным правилам в
+     * зависимости от того, с какой стороны прилавка на него смотрят.
+     *
+     * В свёрнутой вкладке опрос молчит: обновлять то, чего никто не видит, —
+     * только нагрузка на сервер.
+     */
+    useEffect(() => {
+        const id = window.setInterval(() => {
+            if (!document.hidden) loadDetail();
+        }, 15000);
+
+        return () => window.clearInterval(id);
     }, [ticketId, ticketDetailUrl]);
 
     if (error) return <div className="admin-detail-error">{error}</div>;
@@ -148,7 +164,6 @@ export default function SupportTicketTab({ticketId, ticketDetailUrl, replyUrl, i
             <TicketTimeline
                 messages={messages}
                 assignmentLog={assignmentLog}
-                messagesEndRef={messagesEndRef}
             />
 
             {data.context && <TicketContext context={data.context} />}

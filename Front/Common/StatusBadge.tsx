@@ -42,6 +42,14 @@ const STATUS_CLASS: Record<string, string> = {
     admin:      'status-danger',
 };
 
+/**
+ * Класс подсветки для статуса — для мест, которым нужен цвет без самой
+ * плашки. Заводить рядом второй такой словарь нельзя: он неизбежно
+ * разойдётся с этим, и один и тот же статус окажется разного цвета на
+ * соседних экранах.
+ */
+export const statusClass = (status: string): string => STATUS_CLASS[status] || 'status-muted';
+
 interface Props {
     status: string;
     label?: string;
