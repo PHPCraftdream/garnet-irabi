@@ -141,6 +141,17 @@ export default function BookingModal({slot, allSlots, experts, bookedIds, balanc
                         выката — ровно тот случай, когда правку внесли не во все
                         копии одного экрана. */}
                     <div className="text-sm mt-1" data-test-id="booking-format">{slotFormatLine(slot)}</div>
+                    {/* D-162 (продолжение D-149): каталог с D-149 уже помечает
+                        групповые карточки значком, а эта модалка — тот самый
+                        экран, где человек решает платить за место в группе,
+                        не за персональное занятие, — молчала. */}
+                    {slot.max_users > 1 && (
+                        <div className="mt-1">
+                            <span className="badge text-bg-primary" data-test-id="booking-group-badge">
+                                {t.Slot_GroupBadge([slot.max_users])}
+                            </span>
+                        </div>
+                    )}
                     <div className="text-sm font-medium mt-1">{slot.cost} &#8381;</div>
                     {slot.cancellation_penalty_percent > 0 && slot.cost > 0 && (
                         <div className="text-xs text-warning mt-1" data-test-id="booking-penalty-warning">
