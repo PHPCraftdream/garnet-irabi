@@ -95,7 +95,7 @@ export const NewsGroupRow: React.FC<Props> = ({group, detail, message, onMarkRea
                     {event.is_archived && <span className="ml-2 text-warning">{t.News_Archived()}</span>}
                 </p>
             </div>
-            <div className="flex-shrink-0 mt-0.5">
+            <div className="flex-shrink-0 mt-0.5 news-row-actions">
                 <ArchiveToggle event={event} onArchive={onArchive} onUnarchive={onUnarchive} />
             </div>
         </div>
