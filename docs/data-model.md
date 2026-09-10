@@ -108,7 +108,7 @@
 
 Связи по доменам (полные списки колонок-«внешних ключей» см. в §4):
 
-- `accounts.id` ← `accounts_data.account_id`, `expert_profiles.account_id`,
+- `accounts.id` ← `accounts_data.account_id`,
   `account_balance.account_id`, `balance_ledger.account_id`,
   `bookings.user_id`, `time_slots.expert_id`, `comments.author_id` /
   `comments.entity_id` (когда `entity_type='expert'`),
@@ -172,9 +172,12 @@
 
 > Колонки `about`, `photo`, `photo_cropped`, `crop_info`, `consent_*_at`
 > и индекс `type` добавляются в самом `M_0001` поверх базового
-> `DbAccount::init()`. **Колонки `rating` в этой таблице нет** —
-> рейтинга нет ни в одном профиле (ранние доки описывали выдуманный
-> `expert_profiles.rating DECIMAL(3,2)` — это ошибка).
+> `DbAccount::init()`. **Колонки `rating` здесь нет** — рейтинга нет
+> нигде (ранние доки описывали выдуманную колонку — это ошибка).
+>
+> `about` — это и есть «О себе» преподавателя: одно поле, одна форма
+> (`/system/~profile_edit`), один читатель. Отдельной таблицы профилей
+> больше нет, см. `M_0023`.
 
 #### `db_ir_accounts_data` — EAV-данные аккаунта *(framework, M_0001; класс `DbAccountData`)*
 
@@ -211,19 +214,16 @@ account+param)*.
 
 **Индексы:** PK(`id`); UNIQUE `account_id`(`account_id`).
 
-#### `db_ir_expert_profiles` — Профили экспертов *(app, M_0002; `Common\Tables\ExpertProfiles`)*
+#### `db_ir_expert_profiles` — УДАЛЕНА в `M_0023`
 
-| Колонка | Тип | NULL | Default | Назначение |
-|---------|-----|------|---------|-----------|
-| `id` | int(11) | NO | — | PK |
-| `account_id` | int(11) | YES | NULL | ID аккаунта эксперта |
-| `display_name` | varchar(255) | YES | NULL | Отображаемое имя |
-| `bio` | text | YES | NULL | Описание/био |
-| `specialization` | varchar(255) | YES | NULL | Специализация |
-| `photo` | varchar(255) | YES | NULL | Путь к фото |
-| `is_approved` | tinyint(1) | YES | NULL | Одобрен ли как эксперт |
+Таблица была копией аккаунта и ничего своего не хранила: `display_name` —
+снимок `accounts.name`, `bio` — двойник `accounts.about`, `photo` —
+двойник `accounts.photo`, `is_approved` — двойник флага `IS_APPROVED`,
+`specialization` не заполнял никто. Копии разошлись с оригиналом.
 
-**Индексы:** PK(`id`); `account_id`; `is_approved`.
+Кто преподаватель — отвечает `accounts.type = 'expert'` плюс флаг
+`IS_APPROVED`; имя и «о себе» — `accounts.name` и `accounts.about`
+(читаются через `Common\Services\ExpertDirectory`).
 
 ### 4.2 Финансы и леджер
 

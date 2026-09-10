@@ -33,7 +33,7 @@
 | Машина | Таблица | Состояния | Документ |
 |--------|---------|-----------|----------|
 | **AccountSM** | `db_accounts` + `db_account_data` | `unregistered → registered → approved → disabled` | [admin.md](admin.md) |
-| **ExpertProfileSM** | `ir_expert_profiles` | `not_approved ↔ approved` | [expert.md](expert.md) |
+| **ExpertProfileSM** | `ir_accounts_data.IS_APPROVED` | `not_approved ↔ approved` | [expert.md](expert.md) |
 | **TimeSlotSM** | `ir_time_slots` | `free → booked → completed / cancelled` | [expert.md](expert.md) |
 | **BookingSM** | `ir_bookings` | `pending → confirmed → completed / cancelled` | [user.md](user.md) |
 | **BalanceSM** | `ir_account_balance` | `balance: INT (изменяется через LedgerSM)` | [user.md](user.md) |

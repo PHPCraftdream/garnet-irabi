@@ -116,7 +116,7 @@ db_schema:
   schema_vN
 ```
 
-**Таблицы:** `ir_time_slots`, `ir_expert_profiles`, `ir_bookings`, `ir_account_balance`, `ir_balance_ledger`, `ir_payments`, `ir_payments_log`, `ir_user_cancellations`, `ir_expert_cancellations`, `ir_admin_action_log`, `ir_comments`
+**Таблицы:** `ir_time_slots`, `ir_bookings`, `ir_account_balance`, `ir_balance_ledger`, `ir_payments`, `ir_payments_log`, `ir_user_cancellations`, `ir_expert_cancellations`, `ir_admin_action_log`, `ir_comments`
 
 **Инварианты DbSM:**
 - Миграции применяются строго последовательно (M_0001 → M_0002 → ...)
