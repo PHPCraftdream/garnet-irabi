@@ -12,9 +12,10 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
     use PHPCraftdream\Garnet\Kernel\Io\Twig\TwigParams;
     use PHPCraftdream\IRabi\Common\Services\AccountDisplay;
+    use PHPCraftdream\IRabi\Common\Services\ExpertDirectory;
+    use PHPCraftdream\IRabi\Common\Services\MeetingPlatform;
     use PHPCraftdream\IRabi\Common\Tables\Bookings;
     use PHPCraftdream\IRabi\Common\Tables\ExpertCancellations;
-    use PHPCraftdream\IRabi\Common\Tables\ExpertProfiles;
     use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
     use PHPCraftdream\IRabi\Foreground\Params\Menu;
     use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;
@@ -53,16 +54,13 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             $accountId = $account?->id() ?? 0;
             $isOwnProfile = $accountId > 0 && $accountId === $expertId;
 
-            $expert = ExpertProfiles::get()->selectOneByField('account_id', $expertId);
+            $expert = ExpertDirectory::one($expertId);
 
-            // Security audit M-01: expert_profiles.is_approved alone doesn't
-            // reflect account-level demotion — a moderator demoting an
-            // expert or clearing account-level approval doesn't cascade-clear
-            // this row. Gate on the same type+approved predicate the booking
-            // path enforces. IS_DISABLED is handled separately below (the
-            // profile stays reachable but anonymised, matching how disabled
-            // accounts are shown elsewhere — news feed, IM partner name —
-            // instead of 404).
+            // Кто такой преподаватель, решает аккаунт: тип плюс флаг
+            // одобрения. Отдельная строка профиля этот вопрос когда-то тоже
+            // решала — и разошлась с флагом, поэтому её больше нет.
+            // IS_DISABLED разбирается ниже: страница остаётся доступной, но
+            // обезличенной, как и везде — в ленте, в личке.
             if (!$expert || !UserEntityConfig::isApprovedExpertAccount($expertId)) {
                 return ControllerTools::notFound('Expert not found');
             }
@@ -75,40 +73,45 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                     ->limit(30);
             });
 
-            // Количество отмен эксперта (only kind='cancel')
-            $cancellationRows = ExpertCancellations::get()->selectAll(function (SelectInterface $query) use ($expertId): void {
-                $query->resetCols()->cols(['COUNT(*) as cnt']);
-                $query->where('expert_id = ? AND kind = ?', [$expertId, 'cancel']);
-            });
-            $cancellationCount = (int)($cancellationRows[0]['cnt'] ?? 0);
+            // The row goes into island props as it comes out of the table, and
+            // for an online slot `location` is the meeting link. On this page —
+            // a profile any signed-in person can open — that link was readable
+            // in the page source for lessons nobody had booked or paid for.
+            // The catalogue already blanked it; this page did not.
+            //
+            // The platform behind the link is not a secret and is exactly what
+            // people were asking their teacher about after paying (D-052), so
+            // it takes the field's place.
+            foreach ($slots as &$slot) {
+                if ((int)($slot['is_online'] ?? 0)) {
+                    $slot['platform'] = MeetingPlatform::publicName($slot['location'] ?? null);
+                    $slot['location'] = '';
+                } else {
+                    $slot['platform'] = '';
+                }
+            }
+            unset($slot);
 
-            // Количество отказов эксперта (kind='decline')
-            $declineRows = ExpertCancellations::get()->selectAll(function (SelectInterface $query) use ($expertId): void {
-                $query->resetCols()->cols(['COUNT(*) as cnt']);
-                $query->where('expert_id = ? AND kind = ?', [$expertId, 'decline']);
-            });
-            $declineCount = (int)($declineRows[0]['cnt'] ?? 0);
+            // D-121/consolidation: was four independent queries, duplicated
+            // (with subtly different SQL) across the full profile, the mini
+            // preview and the expert's own dashboard — the exact mismatch
+            // ("мини-карточка говорила 6, полная страница — 4") that user-2
+            // found once already. Bookings::expertOutcomeCounts() and
+            // ExpertCancellations::countsFor() are now the one source both
+            // read from.
+            //
+            // Счётчики отмен и отказов считают только то, что сделал сам
+            // преподаватель, — это про него, а не про судьбу записей, и
+            // смешивать в них ученические отмены нельзя. Поэтому вместо
+            // суммы, которую нечем сойтись, показываем второе самостоятельное
+            // число: сколько занятий впереди.
+            $expertCancelCounts = ExpertCancellations::countsFor($expertId);
+            $cancellationCount = $expertCancelCounts['cancellations'];
+            $declineCount = $expertCancelCounts['declines'];
 
-            // Сколько уроков провёл (завершённые брони на слоты этого эксперта)
-            $tableSlots = TimeSlots::get()->getTableName();
-            $tableBookings = Bookings::get()->getTableName();
-            $conductedRows = Bookings::get()->selectAll(function (SelectInterface $query) use ($tableSlots, $tableBookings, $expertId): void {
-                $query->resetCols()->cols(['COUNT(*) as cnt']);
-                $query->join('INNER', $tableSlots, "{$tableSlots}.id = {$tableBookings}.bookable_id");
-                $query->where("{$tableBookings}.bookable_type = ?", ['time_slot']);
-                $query->where("{$tableBookings}.status = ?", ['completed']);
-                $query->where("{$tableSlots}.expert_id = ?", [$expertId]);
-            });
-            $conductedCount = (int)($conductedRows[0]['cnt'] ?? 0);
-
-            // Всего активных/прошедших уроков (брони со всеми статусами кроме отменённых)
-            $totalRows = Bookings::get()->selectAll(function (SelectInterface $query) use ($tableSlots, $tableBookings, $expertId): void {
-                $query->resetCols()->cols(['COUNT(*) as cnt']);
-                $query->join('INNER', $tableSlots, "{$tableSlots}.id = {$tableBookings}.bookable_id");
-                $query->where("{$tableBookings}.bookable_type = ?", ['time_slot']);
-                $query->where("{$tableSlots}.expert_id = ?", [$expertId]);
-            });
-            $totalBookingsCount = (int)($totalRows[0]['cnt'] ?? 0);
+            $expertBookingCounts = Bookings::expertOutcomeCounts($expertId);
+            $conductedCount = $expertBookingCounts['conducted'];
+            $upcomingCount = $expertBookingCounts['upcoming'];
 
             $expertAccount = DbAccount::get()->selectById($expertId);
             $avatar = UserEntityConfig::avatarUrl([
@@ -135,21 +138,30 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 $cancellationCount = 0;
                 $declineCount = 0;
                 $conductedCount = 0;
-                $totalBookingsCount = 0;
+                $upcomingCount = 0;
+                // «О себе» — свободный текст, который человек писал о себе, и
+                // из него его узнают вернее, чем по имени. Раньше оно ничем не
+                // грозило, потому что всегда приходило пустым; теперь, когда
+                // оно наполнилось, обезличивание обязано убирать и его.
+                $expert['about'] = '';
             }
 
             $content = RenderIsland::render('expert-profile', [
                 'expert' => [
                     'display_name' => $expert['display_name'],
-                    'specialization' => $expert['specialization'] ?? '',
-                    'bio' => $expert['bio'] ?? '',
+                    // «О себе» человек пишет в своём профиле, и оно ложится в
+                    // `accounts.about`. Карточка читала двойника из
+                    // `expert_profiles`, которого не заполнял никто, и потому
+                    // показывала пустоту. expert-4 сообщила это как «моё „О
+                    // себе“ не отображается» и была права.
+                    'bio' => $expert['about'],
                     'avatar' => $avatar,
                     'avatar_full' => $avatarFull,
                     'is_disabled' => $disabled,
                     'cancellation_count' => $cancellationCount,
                     'decline_count' => $declineCount,
                     'conducted_count' => $conductedCount,
-                    'total_bookings' => $totalBookingsCount,
+                    'upcoming_count' => $upcomingCount,
                 ],
                 'expertId' => $expertId,
                 'slots' => array_values($slots),

@@ -1,12 +1,20 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Common\Tables {
+    use Aura\SqlQuery\Common\SelectInterface;
     use PHPCraftdream\Garnet\Bundle\Modules\Support\Tables\FwSupportTickets;
     use PHPCraftdream\Garnet\Kernel\Db\Tables\DbTableBuilderFactory;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Db\ITableBuilderDriver;
 
     class SupportTickets extends FwSupportTickets {
         protected string $tableName = 'support_tickets';
+
+        /** Open tickets — was written twice (MainController, DashboardMainController), same filter both times. */
+        public static function openCount(): int {
+            return static::get()->getCount(function (SelectInterface $q): void {
+                $q->where("status NOT IN ('resolved', 'rejected')");
+            });
+        }
 
         public static function init(): ITableBuilderDriver {
             return DbTableBuilderFactory::newCreateTable(table: static::get())

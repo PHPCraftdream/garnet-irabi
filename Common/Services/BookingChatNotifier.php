@@ -2,7 +2,7 @@
 
 namespace PHPCraftdream\IRabi\Common\Services {
     use Aura\SqlQuery\Common\SelectInterface;
-    use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\DbAccountData;
+    use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\DbAccount;
     use PHPCraftdream\IRabi\Common\System\DateUtils;
     use PHPCraftdream\IRabi\Common\Tables\ImConversations;
     use PHPCraftdream\IRabi\Common\Tables\ImMessages;
@@ -35,6 +35,13 @@ namespace PHPCraftdream\IRabi\Common\Services {
             ));
         }
 
+        public static function locationChanged(int $expertId, int $userId, int $startAt): void {
+            static::send($expertId, $userId, sprintf(
+                (string)ForegroundI18n::getInstance()->Booking_Chat_LocationChanged(),
+                static::when($userId, $startAt),
+            ));
+        }
+
         /**
          * "Cancel" when the booking was already confirmed, otherwise "decline".
          */
@@ -46,13 +53,31 @@ namespace PHPCraftdream\IRabi\Common\Services {
             }
         }
 
+        /**
+         * Часовой пояс ученика живёт КОЛОНКОЙ `accounts.time_zone`, а не
+         * строкой в `accounts_data`.
+         *
+         * Здесь его искали во втором месте, где ключа `time_zone` нет ни у
+         * кого — запрос всегда возвращал пусто, `$tz` всегда был null, и время
+         * печаталось в UTC. Для профиля с московским поясом это ровно три часа
+         * мимо: «Ваша бронь на 08:00 подтверждена» о занятии в 11:00.
+         *
+         * Ошибка была невидимой снаружи: подставлялось не «непонятно что», а
+         * правдоподобное время, просто чужое. Заметил её преподаватель, у
+         * которого ни одно из названных в чате времён ни разу не совпало с
+         * настоящим.
+         */
         private static function when(int $userId, int $startAt): string {
-            $rows = DbAccountData::get()->selectAll(static function (SelectInterface $q) use ($userId): void {
-                $q->where('account_id = :aid AND param = :p', ['aid' => $userId, 'p' => 'time_zone']);
+            $rows = DbAccount::get()->selectAll(static function (SelectInterface $q) use ($userId): void {
+                $q->resetCols();
+                $q->cols(['time_zone']);
+                $q->where('id = :aid', ['aid' => $userId]);
             });
-            $tz = (isset($rows[0]['value']) && is_string($rows[0]['value']) && $rows[0]['value'] !== '')
-                ? $rows[0]['value']
+
+            $tz = (isset($rows[0]['time_zone']) && is_string($rows[0]['time_zone']) && $rows[0]['time_zone'] !== '')
+                ? $rows[0]['time_zone']
                 : null;
+
             return DateUtils::formatForUser($startAt, $tz, 'd.m.Y, H:i');
         }
 

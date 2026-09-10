@@ -10,9 +10,10 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
     use PHPCraftdream\IRabi\Common\PaginationHelper;
+    use PHPCraftdream\IRabi\Common\Services\NewsService;
     use PHPCraftdream\IRabi\Common\Tables\AdminActionLog;
     use PHPCraftdream\IRabi\Common\Tables\Comments;
-    use PHPCraftdream\IRabi\Common\Tables\ExpertProfiles;
+    use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;
     use PHPCraftdream\IRabi\IRabi;
 
     /**
@@ -67,6 +68,11 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
          * @return list<array<string, mixed>>
          */
         private static function hydrateCommentRows(array $rows): array {
+            // Кто вправе увидеть автора: владелец или админ, и только у
+            // помеченных отзывов (ниже). Модератор — никогда: он читает текст,
+            // а не досье на человека.
+            $canSeeFlaggedAuthors = UserEntityConfig::isOwner() || UserEntityConfig::isAdmin();
+
             $accountIds = [];
             foreach ($rows as $row) {
                 $accountIds[] = (int)($row['author_id'] ?? 0);
@@ -93,45 +99,37 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
                 }
             }
 
-            // Expert profiles for display_name override
-            $expertIds = [];
-            foreach ($rows as $row) {
-                $expertIds[] = (int)($row['entity_id'] ?? 0);
-            }
-            $expertIds = array_values(array_unique(array_filter($expertIds)));
-
-            $expertDisplay = [];
-            if (!empty($expertIds)) {
-                $profiles = ExpertProfiles::get()->selectAll(static function (SelectInterface $sel) use ($expertIds): void {
-                    $sel->where('account_id IN (?)', [array_map('intval', $expertIds)]);
-                });
-                foreach ($profiles as $p) {
-                    $aid = (int)($p['account_id'] ?? 0);
-                    $disp = trim((string)($p['display_name'] ?? ''));
-                    if ($aid > 0 && $disp !== '') {
-                        $expertDisplay[$aid] = $disp;
-                    }
-                }
-            }
-
             $out = [];
             foreach ($rows as $row) {
                 $authorId = (int)($row['author_id'] ?? 0);
                 $expertId = (int)($row['entity_id'] ?? 0);
                 $authorInfo = $accountInfo[$authorId] ?? null;
                 $expertInfo = $accountInfo[$expertId] ?? null;
-                $expertName = $expertDisplay[$expertId] ?? ($expertInfo['name'] ?? ($expertId ? '#' . $expertId : '—'));
+                $expertName = $expertInfo['name'] ?? ($expertId ? '#' . $expertId : '—');
+
+                // Имя автора уходит только владельцу и только у помеченных
+                // отзывов. Модератор судит текст вслепую: он решает, годится
+                // ли отзыв к публикации, и для этого ему не нужно знать, кто
+                // его написал. Вскрывает анонимность владелец — и только тогда,
+                // когда модератор счёл отзыв опасным.
+                $status = (string)($row['moderation_status'] ?? Comments::STATUS_PENDING);
+                $maySeeAuthor = $canSeeFlaggedAuthors && $status === Comments::STATUS_FLAGGED;
 
                 $out[] = [
                     'id' => (int)($row['id'] ?? 0),
-                    'author_id' => $authorId,
-                    'author_name' => $authorInfo['name'] ?? ($authorId ? '#' . $authorId : '—'),
+                    'author_id' => $maySeeAuthor ? $authorId : 0,
+                    'author_name' => $maySeeAuthor
+                        ? ($authorInfo['name'] ?? ($authorId ? '#' . $authorId : '—'))
+                        : '',
                     'entity_type' => (string)($row['entity_type'] ?? ''),
                     'entity_id' => $expertId,
                     'entity_name' => $expertName,
                     'expert_has_profile' => ($expertInfo['type'] ?? '') === 'expert',
                     'body' => (string)($row['body'] ?? ''),
                     'is_hidden' => (int)($row['is_hidden'] ?? 0) === 1,
+                    // Модератор — единственный, кто видит и автора, и состояние
+                    // проверки: решение принимает он и отвечает за него.
+                    'moderation_status' => (string)($row['moderation_status'] ?? Comments::STATUS_PENDING),
                     'created_at' => (int)($row['created_at'] ?? 0),
                 ];
             }
@@ -190,29 +188,10 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
                 },
             );
 
-            // Override with expert profile display_name where present.
-            $accountIds = array_values(array_filter(array_map(
-                static fn (array $a): int => (int)($a['id'] ?? 0),
-                $accs,
-            )));
-            $expertDisplay = [];
-            if (!empty($accountIds)) {
-                $profiles = ExpertProfiles::get()->selectAll(static function (SelectInterface $sel) use ($accountIds): void {
-                    $sel->where('account_id IN (?)', [array_map('intval', $accountIds)]);
-                });
-                foreach ($profiles as $p) {
-                    $aid = (int)($p['account_id'] ?? 0);
-                    $disp = trim((string)($p['display_name'] ?? ''));
-                    if ($aid > 0 && $disp !== '') {
-                        $expertDisplay[$aid] = $disp;
-                    }
-                }
-            }
-
             $out = [];
             foreach ($accs as $a) {
                 $aid = (int)($a['id'] ?? 0);
-                $name = $expertDisplay[$aid] ?? trim((string)($a['name'] ?? ''));
+                $name = trim((string)($a['name'] ?? ''));
                 if ($name === '') {
                     $name = (string)($a['login'] ?? ('#' . $aid));
                 }
@@ -333,6 +312,118 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
             return ControllerTools::JSON($payload);
         }
 
+        public static function post__approve(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
+            return static::setModerationStatus($globals, Comments::STATUS_APPROVED);
+        }
+
+        public static function post__reject(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
+            return static::setModerationStatus($globals, Comments::STATUS_REJECTED);
+        }
+
+        /**
+         * Пометить отзыв как опасный.
+         *
+         * Отдельное действие, а не разновидность отказа: помеченный отзыв
+         * попадает к владельцу платформы вместе с именем автора. Это
+         * единственный ход во всей системе, который снимает анонимность, и
+         * потому он должен называться своим словом и в интерфейсе, и в
+         * журнале действий.
+         */
+        public static function post__flag(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
+            return static::setModerationStatus($globals, Comments::STATUS_FLAGGED);
+        }
+
+        /**
+         * Решение модератора по отзыву: пропустить к читателям или нет.
+         *
+         * Отдельно от `setHiddenFlag()`, потому что это разные события с
+         * разными последствиями. Проверка — до публикации, и отклонённый отзыв
+         * читатели не видели никогда. Скрытие — после, и оно убирает с глаз
+         * то, что уже прочитали. Смешать их в одном флаге значит потерять
+         * различие между «не пропустили» и «убрали», а вместе с ним и
+         * возможность понять, что уже разобрано.
+         */
+        private static function setModerationStatus(IGlobalReqParams $globals, string $status): mixed {
+            if (!static::isModerator()) {
+                return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
+            }
+
+            if (!in_array($status, Comments::MODERATION_STATUSES, true)) {
+                return ControllerTools::JSON(['error' => 'Invalid params'], status: 400);
+            }
+
+            $commentId = (int)$globals->readPostValue('id', 0);
+
+            if ($commentId <= 0) {
+                return ControllerTools::JSON(['error' => 'Invalid params'], status: 400);
+            }
+
+            $comment = Comments::get()->selectOneByField('id', $commentId);
+
+            if (!$comment) {
+                return ControllerTools::JSON(['error' => 'Comment not found'], status: 404);
+            }
+
+            $oldValue = (string)($comment['moderation_status'] ?? Comments::STATUS_PENDING);
+
+            if ($oldValue !== $status) {
+                Comments::get()->updateByField(['moderation_status' => $status], 'id', $commentId);
+
+                $actor = Account::fromSession();
+
+                if ($actor !== null) {
+                    AdminActionLog::get()->writeLog(
+                        actorId: (int)$actor->readParam('id'),
+                        actorLogin: (string)$actor->readParam('login'),
+                        // targetId = 0, а не id комментария: колонка «Кому» в
+                        // журнале означает аккаунт, и читатель журнала рисует
+                        // из неё ссылку на карточку пользователя. Положить туда
+                        // id комментария значило отправлять на /admin/#user=<id
+                        // комментария> — пустой экран (нашла owner-1).
+                        // Автора комментария сюда тоже нельзя: отзывы судят
+                        // вслепую, и журнал не должен раскрывать имя, которое
+                        // модератору не показывают на самом экране модерации.
+                        targetId: 0,
+                        targetLogin: 'comment#' . $commentId,
+                        action: match ($status) {
+                            Comments::STATUS_APPROVED => 'COMMENT_APPROVE',
+                            Comments::STATUS_FLAGGED => 'COMMENT_FLAG',
+                            default => 'COMMENT_REJECT',
+                        },
+                        oldValue: $oldValue,
+                        newValue: $status,
+                    );
+                }
+
+                // D-128: approval reached the author only if they happened to
+                // reopen the expert's page and re-read their own status label
+                // — every OTHER feed-worthy event (a booking confirmed, a
+                // reply posted) lands in the news feed, this one silently
+                // didn't. `actor_id` is the reviewed expert, not the
+                // moderator: moderation stays anonymous even in the
+                // notification that a review passed it.
+                if ($status === Comments::STATUS_APPROVED) {
+                    $authorId = (int)($comment['author_id'] ?? 0);
+                    $expertId = (int)($comment['entity_id'] ?? 0);
+
+                    if ($authorId > 0 && $expertId > 0) {
+                        NewsService::createPersonal(
+                            NewsService::TYPE_COMMENT_APPROVED,
+                            $expertId,
+                            $authorId,
+                            ['expert_id' => $expertId],
+                        );
+                    }
+                }
+            }
+
+            return ControllerTools::JSON([
+                'success' => true,
+                'id' => $commentId,
+                'moderation_status' => $status,
+            ]);
+        }
+
         public static function post__hide(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
             return static::setHiddenFlag($globals, true);
         }
@@ -370,7 +461,8 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
                     AdminActionLog::get()->writeLog(
                         actorId: (int)$actor->readParam('id'),
                         actorLogin: (string)$actor->readParam('login'),
-                        targetId: $commentId,
+                        // См. пояснение к targetId в setModerationStatus.
+                        targetId: 0,
                         targetLogin: 'comment#' . $commentId,
                         action: $hidden ? 'COMMENT_HIDE' : 'COMMENT_UNHIDE',
                         oldValue: (string)$oldValue,

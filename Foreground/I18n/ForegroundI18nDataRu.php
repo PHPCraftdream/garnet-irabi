@@ -25,6 +25,41 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Slot_PenaltyHelp' => 'Если пользователь отменит подтверждённую бронь — этот процент останется у эксперта',
             'Slot_Online' => 'Онлайн',
             'Slot_Location' => 'Место',
+            'Slot_Platform' => 'Площадка',
+            'Booking_PlatformUnset' => 'Площадка не указана',
+            'Booking_CancelledByYou' => 'Вы отменили эту бронь',
+            // Неподтверждённую заявку не отменяют, а снимают (ученик) или
+            // отклоняют (преподаватель). Вход и выход должны говорить одним
+            // словом — D-135.
+            'Booking_WithdrawnByYou' => 'Вы сняли эту заявку',
+            'Booking_WithdrawnByStudent' => 'Ученик снял заявку',
+            'Booking_CancelledLessonByExpert' => 'Преподаватель отменил это занятие',
+            'Booking_CancelledLessonByYouAsExpert' => 'Вы отменили это занятие',
+            'Booking_CancelledByStudent' => 'Ученик отменил эту бронь',
+            'Booking_CancelledByExpert' => 'Преподаватель отклонил эту бронь',
+            'Booking_CancelledByYouAsExpert' => 'Вы отклонили эту бронь',
+            'Booking_CancelledByModerator' => 'Бронь отменена администрацией',
+            'Booking_CancelledBySystem' => 'Снято автоматически: занятие началось, а преподаватель так и не подтвердил бронь',
+            'Booking_CancelReason' => 'Причина',
+            'Comment_ModerationNotice' => 'Отзыв публикуется без вашего имени, и до публикации его читает модератор. Имени не видит никто: ни другие читатели, ни преподаватель, о котором вы пишете, ни сам модератор — он решает по тексту. Единственное исключение: если модератор сочтёт отзыв опасным, имя увидит владелец платформы, чтобы разобраться. Отзыв появится на странице после одобрения.',
+            'Comment_SentForReview' => 'Отзыв отправлен на проверку. Он появится на странице после одобрения модератором — до тех пор его видите только вы.',
+            'Comment_StatusPending' => 'На проверке',
+            'Comment_StatusRejected' => 'Отклонён модератором',
+            'Comment_StatusMine' => 'Ваш отзыв',
+            'Comment_Moderation' => 'Проверка',
+            'Comment_Approve' => 'Одобрить',
+            'Comment_Reject' => 'Отклонить',
+            'Comment_ApproveConfirm' => 'Одобрить отзыв? После этого он появится на странице преподавателя — анонимно, без имени автора.',
+            'Comment_RejectConfirm' => 'Отклонить отзыв? Читатели его не увидят. Автору будет видно, что отзыв отклонён.',
+            'Comment_Flag' => 'Пометить как опасный',
+            'Comment_StatusFlagged' => 'Помечен как опасный',
+            // D-119: без этой строки модератор видит непроверенные и
+            // отклонённые отзывы на публичной странице так же, как видел бы
+            // любой посетитель, и решает, что чужое скрытое ему протекает.
+            'Comment_ModeratorViewNotice' => 'Вы модератор: здесь видны все отзывы, включая непроверенные и отклонённые — обычные посетители видят только одобренные.',
+            'Comment_FlagConfirm' => 'Пометить отзыв как опасный? Он не будет опубликован, а владелец платформы увидит имя автора, чтобы разобраться. Это единственный случай, когда анонимность снимается, — не помечайте отзыв просто потому, что он резкий.',
+            'Comment_AuthorHidden' => 'Аноним',
+            'Comment_AuthorHiddenHint' => 'Имя автора скрыто: отзывы модерируются вслепую. Оно раскрывается владельцу, только если отзыв помечен как опасный.',
             'Slot_LocationPlaceholderOnline' => 'Ссылка на встречу (Zoom/Meet/...)',
             'Slot_LocationPlaceholderOffline' => 'Адрес',
             'Slot_LocationHint' => 'Поле необязательное, но без него пользователь не получит ссылку или адрес',
@@ -34,7 +69,6 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Slot_Status_Completed' => 'Завершен',
             'Slot_Status_Cancelled' => 'Отменен',
 
-            'Expert_Specialization' => 'Специализация',
             'Expert_PendingApproval' => 'Ваш профиль на модерации. Слоты не видны пользователям и не попадают в новости, пока администратор не одобрит профиль. После одобрения новости появятся автоматически.',
 
             'Batch_Title' => 'Пакетное создание слотов',
@@ -96,6 +130,10 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Slot_MaxUsers' => 'Макс. пользователей',
 
             'User_Individual' => 'Индивидуальное занятие',
+            // D-141: карточка брони на дашборде всегда писала «Индивидуальное»
+            // даже для группового слота — ученица записалась в тройку и не
+            // узнала об этом со своей же карточки.
+            'User_Group' => 'Групповое занятие',
 
             // merged from Common
             'cal_shabbat' => 'Шаббат',
@@ -239,6 +277,8 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Booking_Status_Pending' => 'Ждёт подтверждения',
             'Booking_Status_Confirmed' => 'Подтверждено',
             'Booking_Status_Cancelled' => 'Отменён',
+            'Booking_Status_Withdrawn' => 'Снят',
+            'Booking_Status_Declined' => 'Отклонён',
             'Booking_Status_Completed' => 'Завершён',
             'Booking_Cancel' => 'Отменить',
 
@@ -271,6 +311,13 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Ledger_Type_Invoice' => 'Бронь',
             'Ledger_Type_Payment' => 'Оплачен',
             'Ledger_Type_Refund' => 'Возврат',
+            'Ledger_Note_AutoCancel' => 'Автоотмена: занятие началось без подтверждения',
+            'Ledger_Note_Penalty' => 'удержано %s ₽ — неустойка %s%%',
+            // D-140: строка возврата у эксперта была тем же текстом, что и у
+            // ученика, — «Возврат #123 (удержано 750₽...)» на СПИСАНИИ у
+            // эксперта читалось как «я ещё и заплатил», хотя на деле он
+            // сохранил неустойку и в минусе не остался.
+            'Ledger_Note_ExpertKeepsPenalty' => 'ученику возвращено %s ₽, вы сохраняете %s ₽ (%s%%) как компенсацию за отменённое занятие',
             'Ledger_Type_Manual' => 'Вручную',
 
             'User_Status_Disabled' => 'Отключён',
@@ -286,6 +333,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Booking_Chat_Confirmed' => 'Ваша бронь на %s подтверждена.',
             'Booking_Chat_Declined' => 'Ваша бронь на %s отклонена.',
             'Booking_Chat_Cancelled' => 'Ваша бронь на %s отменена.',
+            'Booking_Chat_LocationChanged' => 'Обновилось место встречи для занятия %s — посмотрите в своей брони.',
 
             'General_Yes' => 'Да',
             'General_No' => 'Нет',
@@ -312,6 +360,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Balance_TopUpNotice' => 'Оплата картой пока не подключена: указанная сумма зачислится на баланс сразу, без списания с карты.',
             'Balance_TopUpSuccess' => 'Баланс пополнен',
             'Balance_LedgerNote_TopUp' => 'Пополнение баланса',
+            'Balance_LedgerReason_Lesson' => 'Занятие с %s',
 
             'Dashboard_Balance' => 'Баланс',
 
@@ -374,13 +423,16 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Support_Context_Breadcrumb' => 'Навигация',
             'Support_StatusChanged' => 'Статус изменён',
 
-            // Comments
-            'Comment_Title' => 'Комментарии',
-            'Comment_Write' => 'Написать комментарий',
+            // Отзывы. Слово одно на всё: вход назывался
+            // «комментарием», а всё остальное на том же экране — «отзывом», и
+            // преподаватель не узнал собственный блок на своей карточке.
+            'Comment_Title' => 'Отзывы',
+            'MyReviews_Title' => 'Мои отзывы',
+            'Comment_Write' => 'Написать отзыв',
             'Comment_Send' => 'Отправить',
             'Comment_Delete' => 'Удалить',
-            'Comment_DeleteConfirm' => 'Удалить комментарий?',
-            'Comment_NoComments' => 'Нет комментариев',
+            'Comment_DeleteConfirm' => 'Удалить отзыв?',
+            'Comment_NoComments' => 'Отзывов пока нет',
 
             // Admin: comments journal
             'Admin_Comments' => 'Комментарии',
@@ -469,6 +521,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Slots_Evening' => 'Вечер',
             'Slots_AllExperts' => 'Все эксперты',
             'Slots_Individual' => 'Индивидуальные',
+            'Slots_Group' => 'Групповые',
             'Slots_Online' => 'Онлайн',
             'Slots_Offline' => 'Очно',
             'Slots_PriceRange' => 'Цена',
@@ -476,8 +529,13 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
 
             'Slot_Format' => 'Формат',
             'Slot_Seats' => 'Мест',
+            // D-149: общий каталог не отличал групповое занятие от
+            // индивидуального ни на карточке, ни в фильтре.
+            'Slot_GroupBadge' => 'Групповое, мест: %s',
 
             'Slot_Rescheduled' => 'Слот был перенесён. Обновляем страницу...',
+            'Slot_PlaceUpdated' => 'Место встречи обновлено, записавшимся отправлено сообщение',
+            'Slot_Saved' => 'Изменения сохранены',
             'Slot_ReschedulePastError' => 'Нельзя перенести слот на прошедшее время',
 
             // Booking modal
@@ -502,11 +560,11 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Cancel_ReasonRequired' => 'Укажите причину отмены',
             'Cancel_Submit' => 'Отменить бронь',
             'Cancel_Success' => 'Бронь отменена, средства возвращены пользователю',
-            'Expert_Cancellations' => 'Отмен',
-            'Expert_Declines' => 'Отклонений',
+            'Expert_Cancellations' => 'Отменил занятий',
+            'Expert_Declines' => 'Отклонил заявок',
             'Expert_Conducted' => 'Проведено уроков',
             'Slot_OwnSlot' => 'Ваш слот',
-            'Expert_TotalBookings' => 'Всего записей',
+            'Expert_Upcoming' => 'Предстоящих',
             'Expert_Stats' => 'Статистика',
             'Admin_Cancellations' => 'Отмены',
             'Admin_CancellationsTab_Expert' => 'Отмены экспертов',
@@ -546,12 +604,39 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Cancellations_ResetFilters' => 'Сбросить фильтры',
 
             // User cancellations
-            'User_Cancel_Title' => 'Отмена бронирования',
+            'User_Cancel_Title' => 'Отмена подтверждённой брони',
             'User_Cancel_ReasonLabel' => 'Причина отмены',
             'User_Cancel_ReasonPlaceholder' => 'Укажите причину отмены...',
-            'User_Cancel_ReasonRequired' => 'Укажите причину отмены',
+            'User_Cancel_ReasonRequired' => 'Укажите причину',
             'User_Cancel_Submit' => 'Отменить бронь',
             'User_Cancel_Success' => 'Бронь отменена, средства возвращены',
+            // Снятие своей ещё не подтверждённой заявки — не то же самое, что
+            // отмена подтверждённой брони: занятия ещё не было в расписании,
+            // неустойка не удерживается, растёт другой счётчик. Пока оба
+            // действия назывались «Отменить», цену своего шага человек узнавал
+            // только открыв окно.
+            'User_Withdraw_Card' => 'Снять заявку',
+            'User_Withdraw_Title' => 'Снятие неподтверждённой заявки',
+            'User_Withdraw_ReasonLabel' => 'Причина снятия',
+            'User_Withdraw_ReasonPlaceholder' => 'Укажите причину снятия...',
+            'User_Withdraw_Submit' => 'Снять заявку',
+            'User_Withdraw_Success' => 'Заявка снята, средства возвращены',
+            'User_Cancel_Card' => 'Отменить бронь',
+            // Цену действия человек узнавал только открыв окно. Короткая
+            // подпись рядом с кнопкой отвечает на вопрос «чего мне это
+            // будет стоить» до нажатия, а не после.
+            'Booking_CostHint_Withdraw' => 'Деньги вернутся полностью, счётчик ваших снятий вырастет',
+            'Booking_CostHint_CancelFree' => 'Деньги вернутся полностью, счётчик ваших отмен вырастет',
+            'Booking_CostHint_CancelPenalty' => 'У эксперта останется %s ₽ (%s%%), счётчик ваших отмен вырастет',
+            // Условия отмены меняются вместе со статусом, а до сих пор человек
+            // узнавал их по частям в разное время: удержание — в окне перед
+            // бронированием, полный возврат — на карточке уже созданной
+            // заявки, автоснятие — вообще нигде. Собираем всё туда, где
+            // решение принимается (чейндж-реквест user-5).
+            'Booking_CancelTerms_AfterConfirm' => 'После подтверждения отмена будет стоить %s%% — %s ₽ останется у эксперта',
+            'Booking_CancelTerms_Unanswered' => 'Если преподаватель откажет или не подтвердит до начала занятия, деньги вернутся полностью',
+            'Booking_CostHint_Decline' => 'Ученику вернутся деньги полностью, счётчик ваших отклонений вырастет',
+            'Booking_CostHint_CancelLesson' => 'Ученику вернутся деньги, счётчик ваших отмен вырастет',
             'User_Cancellations' => 'Отмен бронирований',
             'User_Declines' => 'Снятий бронирования',
             'Admin_NoUserCancellations' => 'Отмен не найдено',
@@ -586,6 +671,12 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Slot_Error_NoSlots' => 'Не выбрано ни одного слота',
             'Slot_Error_AccessDenied' => 'Это не ваш слот',
             'Slot_Error_OnlyFreeEditable' => 'Редактировать можно только свободный слот',
+            // Начинается со слова «Не сохранено» намеренно: прежний текст читался
+            // как объяснение правила после успешного сохранения, и преподаватель
+            // не сразу понял, что правка не прошла (замечание expert-3).
+            'Slot_Error_BookedOnlyLocation' => 'Не сохранено: на слот уже записались, поэтому менять можно только место встречи. Время, стоимость, неустойку и число мест придётся оставить как есть',
+            'Slot_EditPlaceOnly' => 'Изменить место встречи',
+            'Slot_EditLockedNotice' => 'На это занятие уже записались. Менять можно только место встречи — остальные поля заперты, потому что человек согласился именно на эти условия.',
             'Slot_Error_PastNotEditable' => 'Прошедший слот изменить нельзя',
             'Slot_Error_CostLockedByBookings' => 'Пока на слот есть брони, стоимость и неустойку менять нельзя',
             'Slot_Error_PastReschedule' => 'Нельзя перенести слот в прошлое',
@@ -623,19 +714,32 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Booking_Reject' => 'Отклонить',
             'Booking_User' => 'Пользователь',
             'Bookings_IncomingTitle' => 'Входящие брони',
-            'Booking_RejectReasonLabel' => 'Причина отклонения',
-            'Booking_RejectReasonPlaceholder' => 'Укажите причину отклонения...',
-            'Booking_RejectReasonRequired' => 'Укажите причину отклонения',
-            'Booking_RejectTitle' => 'Отклонение брони',
-            'Booking_RejectSuccess' => 'Бронь отклонена',
+            'Booking_RejectReasonLabel' => 'Причина отказа',
+            'Booking_RejectReasonPlaceholder' => 'Объясните ученику, почему не получится...',
+            'Booking_RejectReasonRequired' => 'Укажите причину',
+            'Booking_RejectTitle' => 'Отказ по неподтверждённой заявке',
+            'Booking_RejectSuccess' => 'Заявка отклонена',
+            // Отказ по заявке и отмена уже подтверждённого занятия стоят
+            // преподавателю разного: первое ничего, второе портит счётчик
+            // отмен и ломает человеку планы. Слово «Отклонить» стояло на обеих
+            // кнопках, и разницу продукт называл только внутри окна (нашёл
+            // expert-2).
+            'Booking_DeclineCard' => 'Отклонить заявку',
+            'Booking_CancelLessonCard' => 'Отменить занятие',
+            'Booking_CancelLessonTitle' => 'Отмена подтверждённого занятия',
+            'Booking_CancelLessonReasonLabel' => 'Причина отмены',
+            'Booking_CancelLessonReasonPlaceholder' => 'Объясните ученику, почему занятие не состоится...',
+            'Booking_CancelLessonSubmit' => 'Отменить занятие',
+            'Booking_CancelLessonSuccess' => 'Занятие отменено, ученику возвращены деньги',
             'Booking_ConfirmSuccess' => 'Бронь подтверждена',
             'Booking_GroupCount' => 'броней: %d',
             'Booking_PenaltyWarning' => 'При отмене подтверждённой брони эксперт удержит %d%% (%d ₽)',
             'Booking_PenaltyKeptByExpert' => 'Неустойка (%d%%): %d ₽ останется у эксперта',
             'Booking_RefundAmount' => 'Возврат: %d ₽',
-            'Booking_DeclineImpact' => 'Это отклонение неподтверждённой брони — оно увеличит счётчик ваших отклонений.',
+            'Booking_DeclineImpact' => 'Это отклонение неподтверждённой брони: ученику вернутся деньги полностью, а счётчик ваших отклонений вырастет.',
+            'Booking_CancelLessonImpact' => 'Это отмена подтверждённой брони: ученику вернутся деньги, а счётчик ваших отмен вырастет.',
             'Booking_CancelImpact' => 'Это отмена подтверждённой брони — она увеличит счётчик ваших отмен.',
-            'Booking_WithdrawImpact' => 'Это снятие неподтверждённой брони — оно увеличит счётчик ваших снятий.',
+            'Booking_WithdrawImpact' => 'Это снятие неподтверждённой брони: деньги вернутся вам полностью, а счётчик ваших снятий вырастет.',
 
             // User preview modal (foreground, generic)
             'Preview_UserTitle' => 'Профиль',
@@ -646,7 +750,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Preview_Bio' => 'О себе',
             'Preview_Rating' => 'Рейтинг',
             'Preview_Conducted' => 'Проведено',
-            'Preview_TotalBookings' => 'Всего броней',
+            'Preview_TotalBookings' => 'Предстоящих',
             'Preview_Cancellations' => 'Отмены',
             'Preview_CompletedBookings' => 'Завершено',
             'Preview_RoleExpert' => 'Эксперт',
@@ -755,7 +859,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Admin_SystemSettings_Description' => 'Управление SMTP и правилами регистрации.',
             'Admin_RegistrationSettings' => 'Регистрация',
             'Admin_RegistrationEnabled' => 'Разрешить регистрации',
-            'Admin_RegistrationEnabled_Hint' => 'При выключении страница /register станет недоступной для новых пользователей.',
+            'Admin_RegistrationEnabled_Hint' => 'При выключении система перестанет высылать код входа на незнакомые адреса. Уже зарегистрированные войдут как обычно.',
             'Admin_SMTPSettings' => 'SMTP',
             'Admin_SMTPSettings_Hint' => 'Значения здесь перекрывают email.ini и используются для отправки писем.',
             'Admin_SMTPEnabled' => 'Включить отправку писем',
@@ -813,21 +917,42 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Slot_BookError_Busy' => 'Кошелёк сейчас занят другой операцией — повторите через мгновение',
             'News_Unread' => 'новых',
             'News_Archived' => 'Архив',
-            'News_NewSlot_Action' => ' открыл(а) ',
+            // D-143: глагол в прошедшем времени требует рода, а имя в ленте
+            // рода не знает — «подтвердил(а)»/«отменил(а)» на видном месте
+            // выглядели как незаполненный плейсхолдер. Без глагола: имя,
+            // двоеточие, ссылка на предмет, безличное причастие.
+            'News_NewSlot_Action' => ': ',
             'News_NewSlot_Link' => 'новый слот',
-            // Без глагола: у него есть род, а у имени в ленте — нет.
-            // «забронировал(а)» — незаполненный плейсхолдер на видном месте.
+            'News_NewSlot_Suffix' => ' открыт',
             'News_SlotBooked_Action' => ' — новая бронь на ваш ',
             'News_SlotBooked_Link' => 'слот',
-            'News_BookingConfirmed_Action' => ' подтвердил(а) вашу ',
-            'News_BookingConfirmed_Link' => 'бронь',
-            'News_BookingRejected_Action' => ' отклонил(а) вашу ',
-            'News_BookingRejected_Link' => 'бронь',
+            'News_BookingConfirmed_Action' => ': ',
+            'News_BookingConfirmed_Link' => 'занятие',
+            'News_BookingConfirmed_Suffix' => ' подтверждено',
+            'News_CommentApproved_Prefix' => 'Ваш отзыв о ',
+            'News_CommentApproved_Suffix' => ' прошёл проверку — ',
+            'News_CommentApproved_Link' => 'смотреть на странице',
+            'News_BookingRejected_Action' => ': ',
+            'News_BookingRejected_Link' => 'занятие',
+            'News_BookingRejected_Suffix' => ' отклонено',
+            // Отмена приходит с двух сторон и читается по-разному: ученику —
+            // что занятие не состоится, преподавателю — что запись на его
+            // слот снялась. Без этих строк в ленте лежало сырое
+            // `booking_cancelled` (нашла expert-2).
+            'News_BookingCancelled_Action' => ': ',
+            'News_BookingCancelled_Link' => 'занятие',
+            'News_BookingCancelled_Suffix' => ' отменено',
+            'News_BookingCancelledByUser_Action' => ': бронь на ',
+            'News_BookingCancelledByUser_Link' => 'слот',
+            'News_BookingCancelledByUser_Suffix' => ' отменена',
             'News_SupportReply_Prefix' => 'Ответ от поддержки по тикету ',
             'News_NewMessage_Prefix' => 'Новое ',
             'News_NewMessage_Link' => 'сообщение',
             'News_NewMessage_From' => ' от ',
             'News_GroupSuffix' => '+ ещё %d',
+            'News_ArchivedHint' => 'Убрано в архив. Вернуть можно через «Показать архив»',
+            'News_LessonAt' => 'Занятие: %s',
+            'News_HappenedAt' => 'Событие: %s',
 
             // SlotsCalendar
             'Slots_PageHint' => 'Выберите удобный слот у эксперта на эту или следующие недели',
@@ -887,6 +1012,11 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Email_Row_DateTime' => 'Дата и время',
             'Email_Row_Duration' => 'Длительность',
             'Email_Row_Reason' => 'Причина',
+            // D-139: письма не говорили, что занятие групповое — для
+            // преподавателя «часть отменилась» и «всё отменилось» выглядели
+            // одинаково, если он читал письмо об одной из нескольких записей.
+            'Email_Row_GroupLesson' => 'Формат занятия',
+            'Email_GroupLesson_Value' => 'Групповое, мест: %s',
             'Email_Row_CancelledBy' => 'Кто отменил',
             'Email_Row_From' => 'От',
             'Email_Row_Message' => 'Сообщение',
@@ -1015,9 +1145,13 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Admin_Pages_Title' => 'Статические страницы',
             'Admin_Pages_Empty' => 'Страниц не найдено',
             'Admin_Pages_Create' => 'Создать страницу',
+            // Кнопка, которая только открывает форму. Раньше называлась так же,
+            // как кнопка отправки формы, — владелец нажимала верхнюю и не
+            // понимала, почему страница не создаётся (D-110).
+            'Admin_Pages_CreateOpen' => 'Новая страница',
             'Admin_Pages_CreateTitle' => 'Новая страница',
             'Admin_Pages_Slug' => 'URL (slug)',
-            'Admin_Pages_SlugHint' => 'Латинские буквы, цифры и дефис. Будет доступна по /page/{slug}',
+            'Admin_Pages_SlugHint' => 'Латинские буквы, цифры и дефис. Будет доступна по /page/view~{slug} после публикации',
             'Admin_Pages_PageTitle' => 'Заголовок',
             'Admin_Pages_MetaDescription' => 'Мета-описание',
             'Admin_Pages_Published' => 'Опубликовано',
@@ -1057,6 +1191,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Admin_Snippets' => 'Компоненты',
             'Admin_Snippets_Empty' => 'Компонентов не найдено',
             'Admin_Snippets_Create' => 'Создать компонент',
+            'Admin_Snippets_CreateOpen' => 'Новый компонент',
             'Admin_Snippets_CreateTitle' => 'Новый компонент',
             'Admin_Snippets_Name' => 'Название',
             'Admin_Snippets_Slug' => 'Идентификатор (slug)',

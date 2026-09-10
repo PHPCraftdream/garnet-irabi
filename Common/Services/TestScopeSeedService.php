@@ -7,7 +7,6 @@ namespace PHPCraftdream\IRabi\Common\Services {
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\DbAccount;
     use PHPCraftdream\IRabi\Common\Tables\AccountBalance;
     use PHPCraftdream\IRabi\Common\Tables\BalanceLedger;
-    use PHPCraftdream\IRabi\Common\Tables\ExpertProfiles;
     use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
 
     /**
@@ -111,17 +110,6 @@ namespace PHPCraftdream\IRabi\Common\Services {
         }
 
         private static function seedExpert(int $accountId, string $name): void {
-            if (!ExpertProfiles::get()->selectOneByField('account_id', $accountId)) {
-                ExpertProfiles::get()->insert([
-                    'account_id' => $accountId,
-                    'display_name' => $name,
-                    'bio' => 'Test expert bio',
-                    'specialization' => 'Mathematics',
-                    'photo' => null,
-                    'is_approved' => 1,
-                ]);
-            }
-
             $futureSlots = count(TimeSlots::get()->selectAll(static function (SelectInterface $q) use ($accountId): void {
                 $q->cols(['id'])
                     ->where('expert_id = ?', [$accountId])

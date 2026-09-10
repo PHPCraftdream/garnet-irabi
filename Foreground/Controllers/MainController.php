@@ -7,26 +7,24 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Bundle\Utils\RenderIsland;
     use PHPCraftdream\Garnet\Kernel\Core\FrameworkController;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
-    use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\DbAccount;
     use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Logs\Logger;
     use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
     use PHPCraftdream\Garnet\Kernel\Io\Twig\TwigParams;
-    use PHPCraftdream\IRabi\Common\Services\AccountDisplay;
     use PHPCraftdream\IRabi\Common\Services\ConsentJournalService;
+    use PHPCraftdream\IRabi\Common\Services\ExpertDirectory;
     use PHPCraftdream\IRabi\Common\Services\NewsService;
+    use PHPCraftdream\IRabi\Common\Services\UserProfilePresenter;
     use PHPCraftdream\IRabi\Common\System\DateUtils;
     use PHPCraftdream\IRabi\Common\System\ThirdPartyAssets;
     use PHPCraftdream\IRabi\Common\Tables\AccountBalance;
     use PHPCraftdream\IRabi\Common\Tables\BalanceLedger;
     use PHPCraftdream\IRabi\Common\Tables\Bookings;
     use PHPCraftdream\IRabi\Common\Tables\ExpertCancellations;
-    use PHPCraftdream\IRabi\Common\Tables\ExpertProfiles;
     use PHPCraftdream\IRabi\Common\Tables\ImReadStatus;
     use PHPCraftdream\IRabi\Common\Tables\SupportTickets;
     use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
-    use PHPCraftdream\IRabi\Common\Tables\UserCancellations;
     use PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel\ExpertHelpers;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
     use PHPCraftdream\IRabi\Foreground\Middlewares\UserDataMiddleware;
@@ -102,9 +100,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
 
                     $expertMap = [];
                     if (!empty($expertIds)) {
-                        foreach (ExpertProfiles::get()->selectByField('account_id', $expertIds) as $tp) {
-                            $expertMap[(int)$tp['account_id']] = $tp;
-                        }
+                        $expertMap = ExpertDirectory::byIds($expertIds);
                     }
 
                     foreach ($slots as $slot) {
@@ -116,7 +112,8 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                             continue;
                         }
 
-                        $label = ForegroundI18n::getInstance()->User_Individual();
+                        $t = ForegroundI18n::getInstance();
+                        $label = (int)($slot['max_users'] ?? 1) > 1 ? $t->User_Group() : $t->User_Individual();
                         $tid = (int)($slot['expert_id'] ?? 0);
                         $upcomingBookings[] = [
                             'id' => (int)$booking['id'],
@@ -165,13 +162,14 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
 
                     $fsEMap = [];
                     if (!empty($fsExpertIds)) {
-                        foreach (ExpertProfiles::get()->selectByField('account_id', $fsExpertIds) as $tp) {
+                        foreach (ExpertDirectory::byIds($fsExpertIds) as $tp) {
                             $fsEMap[(int)$tp['account_id']] = $tp;
                         }
                     }
 
                     foreach ($freeSlots as $slot) {
-                        $label = ForegroundI18n::getInstance()->User_Individual();
+                        $trs = ForegroundI18n::getInstance();
+                        $label = (int)($slot['max_users'] ?? 1) > 1 ? $trs->User_Group() : $trs->User_Individual();
                         $tid = (int)($slot['expert_id'] ?? 0);
                         $recommendedSlots[] = [
                             'id' => (int)$slot['id'],
@@ -216,7 +214,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                         $bookedCount = (int)($bRows[0]['cnt'] ?? 0);
                     }
 
-                    $label = ForegroundI18n::getInstance()->User_Individual();
+                    $tes = ForegroundI18n::getInstance();
+                    $maxUsers = (int)($slot['max_users'] ?? 1);
+                    $label = $maxUsers > 1 ? $tes->User_Group() : $tes->User_Individual();
 
                     $expertSlots[] = [
                         'id' => (int)$slot['id'],
@@ -228,21 +228,14 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                     ];
                 }
 
-                // Pending bookings count (expert's slots with pending bookings)
+                // Pending bookings count (expert's slots with pending bookings) —
+                // was a second copy of Menu::expertPendingBookingsCount() (used
+                // elsewhere in this same file for the nav badge, line ~607).
                 $expertSlotIds = array_column(
                     TimeSlots::get()->selectByField('expert_id', $accountId),
                     'id'
                 );
-                if (!empty($expertSlotIds)) {
-                    $pbRows = Bookings::get()->selectAll(function (SelectInterface $q) use ($expertSlotIds): void {
-                        $q->resetCols();
-                        $q->cols(['COUNT(*) as cnt']);
-                        $q->where('bookable_type = :btype', ['btype' => 'time_slot'])
-                            ->where('bookable_id IN (:slot_ids)', ['slot_ids' => array_map('intval', $expertSlotIds)])
-                            ->where('status = :st', ['st' => 'pending']);
-                    });
-                    $pendingBookings = (int)($pbRows[0]['cnt'] ?? 0);
-                }
+                $pendingBookings = Menu::expertPendingBookingsCount();
 
                 // Monthly stats from BalanceLedger — month boundary in expert's tz
                 $userTz = $account->readParam('time_zone') ?: 'UTC';
@@ -272,16 +265,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 $earningsThisMonth = (int)($monthEarnings[0]['total'] ?? 0);
 
                 // Decline (pre-confirmation) vs cancellation (post-confirmation) tallies.
-                $expCancelRows = ExpertCancellations::get()->selectAll(function (SelectInterface $q) use ($accountId): void {
-                    $q->resetCols()->cols(['COUNT(*) as cnt'])
-                        ->where('expert_id = ? AND kind = ?', [$accountId, 'cancel']);
-                });
-                $expertCancelCount = (int)($expCancelRows[0]['cnt'] ?? 0);
-                $expDeclineRows = ExpertCancellations::get()->selectAll(function (SelectInterface $q) use ($accountId): void {
-                    $q->resetCols()->cols(['COUNT(*) as cnt'])
-                        ->where('expert_id = ? AND kind = ?', [$accountId, 'decline']);
-                });
-                $expertDeclineCount = (int)($expDeclineRows[0]['cnt'] ?? 0);
+                $expertCancelCounts = ExpertCancellations::countsFor($accountId);
+                $expertCancelCount = $expertCancelCounts['cancellations'];
+                $expertDeclineCount = $expertCancelCounts['declines'];
 
                 // Full lists for the dashboard widgets
                 $expertPendingBookingsList = ExpertHelpers::buildPendingBookingsList($accountId);
@@ -296,26 +282,10 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
 
             if ($isModerator) {
                 // Open support tickets
-                $otRows = SupportTickets::get()->selectAll(function (SelectInterface $q): void {
-                    $q->resetCols();
-                    $q->cols(['COUNT(*) as cnt']);
-                    $q->where('status NOT IN (?)', [['resolved', 'rejected']]);
-                });
-                $openTickets = (int)($otRows[0]['cnt'] ?? 0);
+                $openTickets = SupportTickets::openCount();
 
-                // Pending approvals (experts not yet approved)
-                $allExperts = Account::getAccounts(
-                    selectCallback: static function (SelectInterface $s): void {
-                        $s->resetCols();
-                        $s->cols(['id']);
-                        $s->where("type = 'expert'");
-                    },
-                    accountDataFields: [Account::IS_APPROVED, Account::IS_DISABLED],
-                );
-                $pendingApprovals = count(array_filter($allExperts, static function (array $a): bool {
-                    return intval($a[Account::IS_APPROVED] ?? 0) < 1
-                        && intval($a[Account::IS_DISABLED] ?? 0) < 1;
-                }));
+                // Pending approvals (experts not yet approved) — D-153
+                $pendingApprovals = count(UserEntityConfig::pendingExpertApprovals());
 
                 // Total users
                 $tuRows = Account::getAccounts(
@@ -362,7 +332,11 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 'unreadIm' => $unreadIm,
                 'upcomingBookings' => array_values($upcomingBookings),
                 'recommendedSlots' => array_values($recommendedSlots),
-                'newsUrl' => IRabi::url(NewsController::URL),
+                // Базовый адрес точек ленты, а не страница: сама лента живёт
+                // на дашборде, а по этому адресу отвечают только `~feed`,
+                // `~archive`, `~unarchive`. Имя `newsUrl` читалось как ссылка
+                // на страницу, и user-8 пошла по нему в 404.
+                'newsApiUrl' => IRabi::url(NewsController::URL),
                 'unreadNews' => $unreadNews,
             ];
 
@@ -405,55 +379,24 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
 
             $userId = $account->id();
 
-            $expertProfile = ExpertProfiles::get()->selectOneByField('account_id', $userId);
-            if ($expertProfile && (int)($expertProfile['is_approved'] ?? 0)) {
+            // Одобрение живёт во флаге аккаунта. Копия в `expert_profiles`
+            // успела разойтись с ним на боевом, и одобренный преподаватель не
+            // попадал на свою же страницу.
+            if (UserEntityConfig::isApprovedExpertAccount($userId)) {
                 return ControllerTools::redirect(IRabi::url('/expert/id~' . $userId));
             }
 
-            $row = DbAccount::get()->selectOneByField('id', $userId);
+            // D-150/D-152: was an independent copy of UserProfileController's
+            // props (/user/id~X) — the two drifted (this copy lacked
+            // myReviewsUrl, the other lacked avatar/is_disabled) and one
+            // counter fix landed here late because nobody had noticed the
+            // duplication. Single source now: UserProfilePresenter.
+            $props = UserProfilePresenter::buildProps($userId);
+            if (!$props) {
+                return ControllerTools::redirect(IRabi::url('/'));
+            }
 
-            $completedBookings = Bookings::get()->getCount(function (SelectInterface $q) use ($userId): void {
-                $q->where('user_id = ? AND status = ?', [$userId, 'completed']);
-            });
-            $totalBookings = Bookings::get()->getCount(function (SelectInterface $q) use ($userId): void {
-                $q->where('user_id = ?', [$userId]);
-            });
-            $userCancellations = UserCancellations::get()->getCount(function (SelectInterface $q) use ($userId): void {
-                $q->where('user_id = ? AND kind = ?', [$userId, 'cancel']);
-            });
-            $userDeclines = UserCancellations::get()->getCount(function (SelectInterface $q) use ($userId): void {
-                $q->where('user_id = ? AND kind = ?', [$userId, 'decline']);
-            });
-
-            $isModerator = UserEntityConfig::isModerator();
-
-            $disabled = AccountDisplay::isDisabled($userId);
-            $userName = $disabled ? AccountDisplay::disabledName($userId) : ($row['name'] ?? '');
-            $userAvatar = $disabled ? null : UserEntityConfig::avatarUrl([
-                'photo' => $row['photo'] ?? null,
-                'photo_cropped' => $row['photo_cropped'] ?? null,
-                'token16' => $row['token16'] ?? null,
-            ]);
-            $userAvatarFull = $disabled ? null : UserEntityConfig::avatarUrl([
-                'photo' => $row['photo'] ?? null,
-                'token16' => $row['token16'] ?? null,
-            ]);
-
-            $content = RenderIsland::render('user-profile', [
-                'user' => [
-                    'id' => (int)($row['id'] ?? $userId),
-                    'name' => $userName,
-                    'avatar' => $userAvatar,
-                    'avatar_full' => $userAvatarFull,
-                    'is_disabled' => $disabled,
-                    'completedBookings' => $completedBookings,
-                    'totalBookings' => $totalBookings,
-                    'userCancellations' => $userCancellations,
-                    'userDeclines' => $userDeclines,
-                ],
-                'isModerator' => $isModerator,
-                'isOwnProfile' => true,
-            ]);
+            $content = RenderIsland::render('user-profile', $props);
 
             return ControllerTools::ok(HtmlLayout::render(
                 TwigParams::init()->get(TwigParams::DEF_LAYOUT_PARAMS, [

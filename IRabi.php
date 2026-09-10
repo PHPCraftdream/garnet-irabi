@@ -224,9 +224,23 @@ namespace PHPCraftdream\IRabi {
                 [UserDataMiddleware::class, 'expertOnly'],
             ]);
 
-            $router->add(SlotsController::URL, SlotsController::class, $common);
+            // D-137: the catalog and an expert card are the two surfaces the
+            // owner allowed to open up to a logged-out visitor, gated behind
+            // AppSettings::publicCatalogEnabled() (default off — unchanged
+            // behavior). Everything else in $common still applies; only the
+            // auth step is swapped for one that lets a guest through.
+            $guestOptional = [
+                [WorkerScopeMiddleware::class, 'process'],
+                [MaintenanceMiddleware::class, 'process'],
+                [IrabiAuthMiddleware::class, 'authOptional'],
+                [UserDataMiddleware::class, 'notDisabled'],
+                [UserDataMiddleware::class, 'process'],
+                [IdempotencyMiddleware::class, 'before'],
+            ];
+
+            $router->add(SlotsController::URL, SlotsController::class, $guestOptional);
             $router->add(UserProfileController::URL . '/{id}', UserProfileController::class, $common);
-            $router->add(ExpertController::URL . '/{id}', ExpertController::class, $common);
+            $router->add(ExpertController::URL . '/{id}', ExpertController::class, $guestOptional);
             $router->add(BookingsController::URL, BookingsController::class, $common);
             $router->add(BookingsController::URL . '/{id}', BookingsController::class, $common);
             $router->add(BalanceController::URL, BalanceController::class, $common);
@@ -662,7 +676,12 @@ namespace PHPCraftdream\IRabi {
                     // primaryBadgeCount — the 'Брони' item (Menu::main()'s
                     // 'bookings' id) badges pending bookings for experts.
                     'primary_badge_item_id' => 'bookings',
+                    // Все три контакта — независимо: подвал показывается, как
+                    // только заполнен любой из них. Документы обещают «контактные
+                    // данные», а не именно почту.
                     'support_email' => Common\System\AppSettings::supportContacts()['email'],
+                    'support_phone' => Common\System\AppSettings::supportContacts()['phone'],
+                    'support_telegram' => Common\System\AppSettings::supportContacts()['telegram'],
                     'support_contact_label' => ForegroundI18n::getInstance()->Footer_Contact(),
                 ];
             });

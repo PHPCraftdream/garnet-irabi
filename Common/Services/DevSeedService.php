@@ -11,7 +11,6 @@ namespace PHPCraftdream\IRabi\Common\Services {
     use PHPCraftdream\IRabi\Common\Tables\Bookings;
     use PHPCraftdream\IRabi\Common\Tables\Comments;
     use PHPCraftdream\IRabi\Common\Tables\ExpertCancellations;
-    use PHPCraftdream\IRabi\Common\Tables\ExpertProfiles;
     use PHPCraftdream\IRabi\Common\Tables\ImAttachments;
     use PHPCraftdream\IRabi\Common\Tables\ImConversations;
     use PHPCraftdream\IRabi\Common\Tables\ImMessages;
@@ -417,17 +416,10 @@ namespace PHPCraftdream\IRabi\Common\Services {
             $account->flush();
             $account->readDataAsyncPollFinishAll();
 
-            $tid = (int)$account->readParam('id');
-            if (!ExpertProfiles::get()->selectOneByField('account_id', $tid)) {
-                ExpertProfiles::get()->insert([
-                    'account_id' => $tid,
-                    'display_name' => $name,
-                    'bio' => 'Опытный эксперт с многолетним стажем в области «' . $specialization . '».',
-                    'specialization' => $specialization,
-                    'photo' => null,
-                    'is_approved' => 1,
-                ]);
-            }
+            // «О себе» живёт в аккаунте — там же, куда его пишет форма
+            // профиля. Отдельной строки профиля преподавателя больше нет.
+            $account->setParam('about', 'Опытный эксперт с многолетним стажем в области «' . $specialization . '».');
+            $account->flush();
         }
 
         private static function setupUser(Account $account, string $name, string $tz): void {

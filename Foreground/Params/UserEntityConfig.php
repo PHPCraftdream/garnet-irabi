@@ -151,6 +151,38 @@ namespace PHPCraftdream\IRabi\Foreground\Params {
             );
         }
 
+        /**
+         * D-153: had two independent definitions — MainController excluded
+         * disabled accounts, DashboardMainController::fetchPendingApprovals()
+         * didn't, so a disabled never-approved expert counted on the owner's
+         * dashboard widget but not on the moderator's. A disabled account has
+         * nothing to approve (it's blocked separately), so exclude it here,
+         * matching getApprovedExpertIds()'s own is-a-real-expert definition.
+         *
+         * @return array<int, array{id:int, login:string, name:string}>
+         */
+        public static function pendingExpertApprovals(): array {
+            $accounts = Account::getAccounts(
+                selectCallback: static function (SelectInterface $select): void {
+                    $select->resetCols();
+                    $select->cols(['id', 'login', 'name']);
+                    $select->where("type = 'expert'");
+                },
+                accountDataFields: [Account::IS_APPROVED, Account::IS_DISABLED],
+            );
+
+            $pending = array_filter($accounts, static function (array $a): bool {
+                return intval($a[Account::IS_APPROVED] ?? 0) < 1
+                    && intval($a[Account::IS_DISABLED] ?? 0) < 1;
+            });
+
+            return array_values(array_map(static fn (array $a): array => [
+                'id' => (int)$a['id'],
+                'login' => (string)($a['login'] ?? ''),
+                'name' => (string)($a['name'] ?? ''),
+            ], $pending));
+        }
+
         public static function isExpert(): bool {
             $account = Account::fromSession();
 

@@ -8,7 +8,6 @@
  */
 
 namespace PHPCraftdream\IRabi\Foreground\Controllers {
-    use Aura\SqlQuery\Common\SelectInterface;
     use PHPCraftdream\Garnet\Kernel\Core\FrameworkController;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\DbAccount;
@@ -18,9 +17,6 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\IRabi\Common\Services\AccountDisplay;
     use PHPCraftdream\IRabi\Common\Tables\Bookings;
     use PHPCraftdream\IRabi\Common\Tables\ExpertCancellations;
-    use PHPCraftdream\IRabi\Common\Tables\ExpertProfiles;
-    use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
-    use PHPCraftdream\IRabi\Common\Tables\UserCancellations;
     use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;
 
     class UsersController extends FrameworkController {
@@ -38,7 +34,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             }
 
             // Load id+name only — never expose login/email. `type` lives in db_accounts_data,
-            // so derive it from ExpertProfiles existence instead of selecting it as a column.
+            // so derive it from the account predicate instead of selecting it as a column.
             // If account row is missing (e.g. stale news referencing a deleted/reseeded id) —
             // fall back to a stub so preview opens gracefully with "#id" as the name.
             $acc = DbAccount::get()->selectOneByField('id', $userId);
@@ -58,7 +54,6 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             }
 
             $type = UserEntityConfig::isApprovedActiveExpert($userId) ? 'expert' : 'user';
-            $expertProfileRow = $type === 'expert' ? ExpertProfiles::get()->selectOneByField('account_id', $userId) : null;
 
             $payload = [
                 'id' => $userId,
@@ -74,83 +69,57 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             ];
 
             if ($type === 'expert') {
-                $profile = $expertProfileRow;
-                $isApproved = (int)($profile['is_approved'] ?? 0) === 1;
-                if ($isApproved && !$isDisabled) {
+                // `$type` уже означает «одобренный и не отключённый
+                // преподаватель». Раньше здесь стояла вторая проверка — по
+                // копии `is_approved` в строке профиля, — и на боевом она
+                // расходилась с настоящим флагом: у троих одобренных
+                // преподавателей копия осталась нулевой, и превью молча
+                // показывало пустоту вместо профиля.
+                if (!$isDisabled) {
                     $payload['expertProfile'] = [
-                        'display_name' => (string)($profile['display_name'] ?? ''),
-                        'specialization' => (string)($profile['specialization'] ?? ''),
-                        'bio' => (string)($profile['bio'] ?? ''),
+                        'display_name' => (string)($acc['name'] ?? ''),
+                        'bio' => (string)($acc['about'] ?? ''),
                     ];
                 }
 
-                // Expert stats: scoped to this expert's slots.
-                $slotIds = array_column(
-                    TimeSlots::get()->selectByField('expert_id', $userId),
-                    'id'
-                );
-
-                $conducted = 0;
-                $total = 0;
-                $cancellations = 0;
-
-                if (!empty($slotIds)) {
-                    $slotIds = array_map('intval', $slotIds);
-
-                    $row = Bookings::get()->selectAll(function (SelectInterface $q) use ($slotIds): void {
-                        $q->resetCols()->cols(['COUNT(*) as cnt']);
-                        $q->where('bookable_type = ?', ['time_slot']);
-                        $q->where('bookable_id IN (?)', [$slotIds]);
-                        $q->where('status = ?', ['completed']);
-                    });
-                    $conducted = (int)($row[0]['cnt'] ?? 0);
-
-                    $row = Bookings::get()->selectAll(function (SelectInterface $q) use ($slotIds): void {
-                        $q->resetCols()->cols(['COUNT(*) as cnt']);
-                        $q->where('bookable_type = ?', ['time_slot']);
-                        $q->where('bookable_id IN (?)', [$slotIds]);
-                    });
-                    $total = (int)($row[0]['cnt'] ?? 0);
-                }
+                // Consolidation: was a second, differently-shaped copy of the
+                // full profile's "Проведено"/"Предстоящих" query — the two
+                // already disagreed once ("мини-карточка говорила 6, полная
+                // страница — 4", нашёл user-2). Bookings::expertOutcomeCounts()
+                // is now the one place both read from.
+                //
+                // Имя поля 'totalBookings' осталось прежним: его читает
+                // компонент превью из фреймворка, переименование потянуло бы
+                // правку за границей приложения. Подпись на экране —
+                // «Предстоящих», по смыслу это upcoming.
+                $expertBookingCounts = Bookings::expertOutcomeCounts($userId);
 
                 // Use ExpertCancellations log (cancellations initiated by this expert) —
                 // matches what the public profile shows (only kind='cancel').
-                $row = ExpertCancellations::get()->selectAll(function (SelectInterface $q) use ($userId): void {
-                    $q->resetCols()->cols(['COUNT(*) as cnt']);
-                    $q->where('expert_id = ? AND kind = ?', [$userId, 'cancel']);
-                });
-                $cancellations = (int)($row[0]['cnt'] ?? 0);
+                $cancellations = ExpertCancellations::countsFor($userId)['cancellations'];
 
                 $payload['stats'] = [
-                    'conducted' => $conducted,
-                    'totalBookings' => $total,
+                    'conducted' => $expertBookingCounts['conducted'],
+                    'totalBookings' => $expertBookingCounts['upcoming'],
                     'cancellations' => $cancellations,
                 ];
             } else {
-                // User stats: aggregate counts only — no per-expert leak.
-                $row = Bookings::get()->selectAll(function (SelectInterface $q) use ($userId): void {
-                    $q->resetCols()->cols(['COUNT(*) as cnt']);
-                    $q->where('user_id = ?', [$userId]);
-                });
-                $total = (int)($row[0]['cnt'] ?? 0);
-
-                $row = Bookings::get()->selectAll(function (SelectInterface $q) use ($userId): void {
-                    $q->resetCols()->cols(['COUNT(*) as cnt']);
-                    $q->where('user_id = ?', [$userId]);
-                    $q->where('status = ?', ['completed']);
-                });
-                $completed = (int)($row[0]['cnt'] ?? 0);
-
-                $row = UserCancellations::get()->selectAll(function (SelectInterface $q) use ($userId): void {
-                    $q->resetCols()->cols(['COUNT(*) as cnt']);
-                    $q->where('user_id = ?', [$userId]);
-                });
-                $cancellations = (int)($row[0]['cnt'] ?? 0);
+                // D-151: was UserCancellations::get()->getCount() with no
+                // kind filter — that table only sees cancellations the
+                // STUDENT herself performed (BookingsController::post__cancel,
+                // if ($isOwner)); an expert/moderator/cron cancellation left
+                // no row there, so this preview, the profile page, and the
+                // admin card could show three different numbers for the same
+                // account. Bookings::userOutcomeCounts() is the one place
+                // that now owns this (D-150) — this preview has no separate
+                // "Снятий"/"Отмен" fields, so combine both kinds the same way
+                // the old unfiltered COUNT(*) did.
+                $counts = Bookings::userOutcomeCounts($userId);
 
                 $payload['stats'] = [
-                    'totalBookings' => $total,
-                    'completedBookings' => $completed,
-                    'cancellations' => $cancellations,
+                    'totalBookings' => $counts['total'],
+                    'completedBookings' => $counts['completed'],
+                    'cancellations' => $counts['cancellations'] + $counts['declines'],
                 ];
             }
 

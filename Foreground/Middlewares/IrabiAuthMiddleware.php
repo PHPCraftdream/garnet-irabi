@@ -12,11 +12,40 @@ namespace PHPCraftdream\IRabi\Foreground\Middlewares {
     use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
     use PHPCraftdream\IRabi\Common\Services\ConsentJournalService;
     use PHPCraftdream\IRabi\Common\Services\StaticPagesService;
+    use PHPCraftdream\IRabi\Common\System\AppSettings;
     use Psr\Http\Message\ResponseInterface;
     use Throwable;
 
     class IrabiAuthMiddleware extends EmailAuthMiddleware {
         public static ?string $customTitle = null;
+
+        /**
+         * D-137: same as authOnly(), but a logged-out visitor is let through
+         * instead of being swapped to the login form — gated behind
+         * `public_catalog_enabled` (AppSettings::publicCatalogEnabled()).
+         * Any in-flight login action (email submit, code, logout) or an
+         * already-authenticated session still goes through the normal
+         * authOnly() path, so "Войти" keeps working from a public page.
+         *
+         * Routes using this must tolerate Account::fromSession() === null —
+         * UserDataMiddleware::process() is guarded for exactly that.
+         */
+        public static function authOptional(IGlobalReqParams $globals, IRouterUriParams $params): ?ResponseInterface {
+            if (!AppSettings::publicCatalogEnabled()) {
+                return static::authOnly($globals, $params);
+            }
+
+            $session = Session::get();
+            $session->readDataAsyncPollFinishAll();
+            $phase = $session->getValue(static::PHASE_KEY, static::PHASE_NULL);
+            $authEmail = $globals->readPostValue('auth_email', null);
+
+            if ($globals->isPost() || $phase !== static::PHASE_NULL || !empty($authEmail)) {
+                return static::authOnly($globals, $params);
+            }
+
+            return null;
+        }
 
         protected static function renderPage(IGlobalReqParams $globals, array $applyParams = []): ResponseInterface {
             if (static::$customTitle !== null) {

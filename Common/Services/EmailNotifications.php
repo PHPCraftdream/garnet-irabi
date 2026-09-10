@@ -176,16 +176,24 @@ namespace PHPCraftdream\IRabi\Common\Services {
             return $row ? ($row['name'] ?? $row['login']) : '';
         }
 
+        /**
+         * Часовой пояс аккаунта — КОЛОНКА `accounts.time_zone`.
+         *
+         * Раньше его искали строкой в `accounts_data` с `param = 'time_zone'`.
+         * Такого ключа там нет ни у кого — в этой таблице живут только флаги
+         * ролей. Значит поиск всегда возвращал пусто, пояс всегда был `null`, и
+         * **каждое письмо со временем занятия печаталось в UTC**: для
+         * московского профиля это три часа мимо.
+         *
+         * Ошибку не было видно ни по логам, ни по коду отправки: письмо
+         * уходило, время в нём выглядело правдоподобно и было просто чужим.
+         * Нашлось это по чату (D-061), где та же ошибка сидела во второй копии
+         * того же запроса.
+         */
         private static function getAccountTimezone(int $accountId): ?string {
-            // The account timezone lives in `db_accounts_data` (EAV) under the
-            // `time_zone` param. Read it directly via the gateway so we don't
-            // depend on the active session.
-            $rows = DbAccountData::get()->selectAll(
-                static function (SelectInterface $q) use ($accountId): void {
-                    $q->where('account_id = :aid AND param = :p', ['aid' => $accountId, 'p' => 'time_zone']);
-                }
-            );
-            $value = $rows[0]['value'] ?? null;
+            $row = DbAccount::get()->selectById($accountId);
+            $value = $row['time_zone'] ?? null;
+
             return is_string($value) && $value !== '' ? $value : null;
         }
 
@@ -198,7 +206,41 @@ namespace PHPCraftdream\IRabi\Common\Services {
         private static function formatSlotInfo(int $recipientId, int $startAt, int $durationMin): string {
             $tz = static::getAccountTimezone($recipientId);
             $when = DateUtils::formatForUser($startAt, $tz, 'Y-m-d H:i');
-            return $durationMin > 0 ? sprintf('%s (%d min)', $when, $durationMin) : $when;
+
+            // Пояс подписывается прямо у времени, и только в письмах.
+            //
+            // На странице пояс подсказан баннером и самим тем, что человек
+            // сейчас на сайте. В почтовом ящике этого нет: «занятие в 11:00»
+            // без пояса — не факт, а загадка, и цена ошибки здесь полное
+            // занятие, а не неудобство. Подпись явная (`Europe/Moscow, UTC+3`),
+            // потому что сокращения вроде «МСК» знает не каждый, а смещение
+            // проверяемо кем угодно.
+            $zone = DateUtils::zoneLabel($startAt, $tz);
+
+            // «min» здесь было по-английски, в русском письме. Мелочь, но
+            // ровно того же рода, что D-029, и теперь она стоит вплотную к
+            // подписи пояса — то есть на самом видном месте письма.
+            $minutes = (string)ForegroundI18n::getInstance()->Slot_Duration_Min();
+
+            return $durationMin > 0
+                ? sprintf('%s (%s, %d %s)', $when, $zone, $durationMin, $minutes)
+                : sprintf('%s (%s)', $when, $zone);
+        }
+
+        /**
+         * D-139: писем о группового занятия ничем не отличались от писем об
+         * одиночном — преподаватель, читая письмо об отмене ОДНОГО места,
+         * не мог понять, сорвалась вся группа или один из четырёх.
+         *
+         * @return array{label: string, value: string}[]
+         */
+        private static function groupLessonRow(int $maxUsers): array {
+            if ($maxUsers <= 1) {
+                return [];
+            }
+            $t = ForegroundI18n::getInstance();
+
+            return [['label' => $t->Email_Row_GroupLesson(), 'value' => $t->Email_GroupLesson_Value((string)$maxUsers)]];
         }
 
         private static function frequencyFor(int $accountId, string $category): string {
@@ -264,7 +306,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
         /**
          * @return array{subject: string, body: string}
          */
-        private static function buildBookingCreated(int $recipientId, string $studentName, int $startAt, int $durationMin): array {
+        private static function buildBookingCreated(int $recipientId, string $studentName, int $startAt, int $durationMin, int $maxUsers = 1): array {
             $t = ForegroundI18n::getInstance();
             return [
                 'subject' => $t->Email_BookingCreated_Subject(FwAppSettings::brandName()),
@@ -273,7 +315,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
                     [
                         ['label' => $t->Email_Row_User(),     'value' => $studentName],
                         ['label' => $t->Email_Row_DateTime(), 'value' => static::formatSlotInfo($recipientId, $startAt, $durationMin)],
-                        ['label' => $t->Email_Row_Duration(), 'value' => sprintf('%d min', $durationMin)],
+                        ...static::groupLessonRow($maxUsers),
                     ],
                     [
                         'text' => $t->Email_Cta_OpenBooking(),
@@ -337,14 +379,14 @@ namespace PHPCraftdream\IRabi\Common\Services {
             ];
         }
 
-        private static function buildBookingConfirmed(int $recipientId, string $expertName, int $startAt, int $durationMin): array {
+        private static function buildBookingConfirmed(int $recipientId, string $expertName, int $startAt, int $durationMin, int $maxUsers = 1): array {
             $t = ForegroundI18n::getInstance();
             $rows = [];
             if ($expertName !== '') {
                 $rows[] = ['label' => $t->Email_Row_Expert(), 'value' => $expertName];
             }
             $rows[] = ['label' => $t->Email_Row_DateTime(), 'value' => static::formatSlotInfo($recipientId, $startAt, $durationMin)];
-            $rows[] = ['label' => $t->Email_Row_Duration(), 'value' => sprintf('%d min', $durationMin)];
+            $rows = [...$rows, ...static::groupLessonRow($maxUsers)];
             return [
                 'subject' => $t->Email_BookingConfirmed_Subject(FwAppSettings::brandName()),
                 'body' => static::renderEmail(
@@ -361,14 +403,14 @@ namespace PHPCraftdream\IRabi\Common\Services {
         /**
          * @return array{subject: string, body: string}
          */
-        private static function buildBookingRejected(int $recipientId, string $expertName, int $startAt, int $durationMin, string $reason = ''): array {
+        private static function buildBookingRejected(int $recipientId, string $expertName, int $startAt, int $durationMin, string $reason = '', int $maxUsers = 1): array {
             $t = ForegroundI18n::getInstance();
             $rows = [];
             if ($expertName !== '') {
                 $rows[] = ['label' => $t->Email_Row_Expert(), 'value' => $expertName];
             }
             $rows[] = ['label' => $t->Email_Row_DateTime(), 'value' => static::formatSlotInfo($recipientId, $startAt, $durationMin)];
-            $rows[] = ['label' => $t->Email_Row_Duration(), 'value' => sprintf('%d min', $durationMin)];
+            $rows = [...$rows, ...static::groupLessonRow($maxUsers)];
             if ($reason !== '') {
                 $rows[] = ['label' => $t->Email_Row_Reason(), 'value' => $reason];
             }
@@ -388,7 +430,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
         /**
          * @return array{subject: string, body: string}
          */
-        private static function buildBookingCancelled(int $recipientId, int $startAt, int $durationMin, string $cancelledBy): array {
+        private static function buildBookingCancelled(int $recipientId, int $startAt, int $durationMin, string $cancelledBy, string $reason = '', int $maxUsers = 1): array {
             $t = ForegroundI18n::getInstance();
             return [
                 'subject' => $t->Email_BookingCancelled_Subject(FwAppSettings::brandName()),
@@ -396,8 +438,15 @@ namespace PHPCraftdream\IRabi\Common\Services {
                     $t->Email_BookingCancelled_Title(),
                     [
                         ['label' => $t->Email_Row_DateTime(),  'value' => static::formatSlotInfo($recipientId, $startAt, $durationMin)],
-                        ['label' => $t->Email_Row_Duration(),  'value' => sprintf('%d min', $durationMin)],
+                        ...static::groupLessonRow($maxUsers),
                         ['label' => $t->Email_Row_CancelledBy(), 'value' => $cancelledBy],
+                        // Причина у нас теперь есть — и на карточке брони, и в
+                        // чате она показывается. В письме её не было: человек
+                        // узнавал, что занятие сорвалось и кем, но не почему —
+                        // а письмо он читает вне сайта и переспросить не может.
+                        ...($reason !== ''
+                            ? [['label' => $t->Email_Row_Reason(), 'value' => $reason]]
+                            : []),
                     ],
                     [
                         'text' => $t->Email_Cta_FindAnotherSlot(),
@@ -543,7 +592,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
         //  Public senders (called from boot flow / business code)
         // ------------------------------------------------------------------
 
-        public static function bookingCreated(int $expertId, int $studentId, int $startAt, int $durationMin): void {
+        public static function bookingCreated(int $expertId, int $studentId, int $startAt, int $durationMin, int $maxUsers = 1): void {
             $email = static::getAccountEmail($expertId);
             if (!$email) {
                 return;
@@ -552,11 +601,11 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 return;
             }
             $studentName = static::getAccountName($studentId);
-            $rendered = static::buildBookingCreated($expertId, $studentName, $startAt, $durationMin);
+            $rendered = static::buildBookingCreated($expertId, $studentName, $startAt, $durationMin, $maxUsers);
             FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body'], self::MAX_SEND_ATTEMPTS);
         }
 
-        public static function bookingConfirmed(int $studentId, int $startAt, int $durationMin, int $expertId = 0): void {
+        public static function bookingConfirmed(int $studentId, int $startAt, int $durationMin, int $expertId = 0, int $maxUsers = 1): void {
             $email = static::getAccountEmail($studentId);
             if (!$email) {
                 return;
@@ -565,11 +614,11 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 return;
             }
             $expertName = $expertId > 0 ? static::getAccountName($expertId) : '';
-            $rendered = static::buildBookingConfirmed($studentId, $expertName, $startAt, $durationMin);
+            $rendered = static::buildBookingConfirmed($studentId, $expertName, $startAt, $durationMin, $maxUsers);
             FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body'], self::MAX_SEND_ATTEMPTS);
         }
 
-        public static function bookingRejected(int $studentId, int $startAt, int $durationMin, int $expertId = 0, string $reason = ''): void {
+        public static function bookingRejected(int $studentId, int $startAt, int $durationMin, int $expertId = 0, string $reason = '', int $maxUsers = 1): void {
             $email = static::getAccountEmail($studentId);
             if (!$email) {
                 return;
@@ -578,7 +627,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 return;
             }
             $expertName = $expertId > 0 ? static::getAccountName($expertId) : '';
-            $rendered = static::buildBookingRejected($studentId, $expertName, $startAt, $durationMin, $reason);
+            $rendered = static::buildBookingRejected($studentId, $expertName, $startAt, $durationMin, $reason, $maxUsers);
             FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body'], self::MAX_SEND_ATTEMPTS);
         }
 
@@ -635,7 +684,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
             FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body'], self::MAX_SEND_ATTEMPTS);
         }
 
-        public static function bookingCancelled(int $recipientId, int $startAt, int $durationMin, string $cancelledBy): void {
+        public static function bookingCancelled(int $recipientId, int $startAt, int $durationMin, string $cancelledBy, string $reason = '', int $maxUsers = 1): void {
             $email = static::getAccountEmail($recipientId);
             if (!$email) {
                 return;
@@ -643,7 +692,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
             if (!static::gate($recipientId, self::CAT_BOOKINGS)) {
                 return;
             }
-            $rendered = static::buildBookingCancelled($recipientId, $startAt, $durationMin, $cancelledBy);
+            $rendered = static::buildBookingCancelled($recipientId, $startAt, $durationMin, $cancelledBy, $reason, $maxUsers);
             FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body'], self::MAX_SEND_ATTEMPTS);
         }
 

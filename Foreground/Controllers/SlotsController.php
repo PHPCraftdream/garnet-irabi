@@ -14,9 +14,10 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Kernel\Io\Twig\TwigParams;
     use PHPCraftdream\IRabi\Common\Services\AccountDisplay;
     use PHPCraftdream\IRabi\Common\Services\EmailNotifications;
+    use PHPCraftdream\IRabi\Common\Services\ExpertDirectory;
+    use PHPCraftdream\IRabi\Common\Services\MeetingPlatform;
     use PHPCraftdream\IRabi\Common\Services\NewsService;
     use PHPCraftdream\IRabi\Common\Tables\Bookings;
-    use PHPCraftdream\IRabi\Common\Tables\ExpertProfiles;
     use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
     use PHPCraftdream\IRabi\Common\Tables\UserCancellations;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
@@ -116,23 +117,18 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             $expertIds = array_unique(array_column($slots, 'expert_id'));
             $experts = [];
             if (!empty($expertIds)) {
-                // No second approval filter here. Whose slots are listed was
-                // already decided above by getApprovedExpertIds(), which reads
-                // the account-level flag — the one the approval action writes
-                // and the booking path enforces. expert_profiles.is_approved is
-                // a copy of that fact and drifts out of step with it (security
-                // audit M-01 says as much, and the profile row is created by
-                // the first slot with the column hardcoded to 0).
+                // Второго фильтра по одобрению здесь нет. Чьи слоты попадут в
+                // список, решено выше — `getApprovedExpertIds()` читает флаг
+                // аккаунта, тот самый, что пишет одобрение и проверяет
+                // бронирование.
                 //
-                // Filtering the NAME lookup by the stale copy could only ever
-                // hide a name that belongs to a slot already on the page. It
-                // did: every card and every booking dialog was anonymous, so
-                // people were booking lessons without being told who teaches
-                // them, and the teacher filter had nobody to offer.
-                $expertsData = ExpertProfiles::get()->selectByField('account_id', $expertIds);
-                foreach ($expertsData as $expert) {
-                    $experts[$expert['account_id']] = $expert;
-                }
+                // Раньше рядом жила копия этого флага в отдельной таблице
+                // профилей, и она отставала. Фильтрация выборки ИМЁН по этой
+                // копии могла только спрятать имя у слота, который и так уже
+                // на странице. Так и вышло: карточки и окно бронирования стали
+                // безымянными, люди записывались на занятие, не зная, кто его
+                // ведёт, а фильтру по преподавателю некого было предложить.
+                $experts = ExpertDirectory::byIds($expertIds);
             }
 
             // Anonymise disabled (IS_DISABLED) expert accounts.
@@ -142,9 +138,15 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             }
 
             foreach ($slots as &$s) {
-                // Hide online meeting link from public calendar view
+                // The meeting link stays private; the platform behind it does
+                // not. Blanking the field outright left the catalogue unable to
+                // answer "how does this lesson actually happen" — the question
+                // people were asking their teacher after paying (D-052).
                 if ((int)($s['is_online'] ?? 0)) {
+                    $s['platform'] = MeetingPlatform::publicName($s['location'] ?? null);
                     $s['location'] = '';
+                } else {
+                    $s['platform'] = '';
                 }
             }
             unset($s);
@@ -218,8 +220,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             }
 
             $expertId = (int)$slot['expert_id'];
-            $expertProfile = ExpertProfiles::get()->selectOneByField('account_id', $expertId);
-            $expertDisplayName = $expertProfile['display_name'] ?? '';
+            $expertDisplayName = ExpertDirectory::one($expertId)['display_name'] ?? '';
 
             $balance = \PHPCraftdream\IRabi\Common\Tables\AccountBalance::getBalance($account->id());
 
@@ -236,6 +237,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                     'cancellation_penalty_percent' => (int)($slot['cancellation_penalty_percent'] ?? 0),
                     'is_online' => $isOnline,
                     'location' => $isOnline ? '' : ($slot['location'] ?? ''),
+                    'platform' => $isOnline ? MeetingPlatform::publicName($slot['location'] ?? null) : '',
                     'max_users' => (int)($slot['max_users'] ?? 1),
                     'status' => (string)$slot['status'],
                     'uid' => (string)($slot['uid'] ?? ''),
@@ -360,6 +362,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             //    Compensation: refund the proportional amount.
                 $createdBookingIds = [];
                 $createdSlotIds = []; // slot IDs for which INSERT actually succeeded (not duplicate-key skipped)
+                $bookingIdBySlot = []; // D-154: TYPE_SLOT_BOOKED payload parity with BookingsController
                 $refundedTotal = 0;
                 $touchedExpertIds = [];
                 try {
@@ -395,6 +398,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                         }
                         $createdBookingIds[] = $bookingId;
                         $createdSlotIds[$slotId] = true;
+                        $bookingIdBySlot[$slotId] = $bookingId;
 
                         if ($slotCost > 0) {
                             try {
@@ -489,6 +493,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                             $accountId,
                             $expertId,
                             [
+                                // D-154: BookingsController::post__book has always
+                                // included booking_id here; this path never did —
+                                // harmless today (the frontend doesn't read it yet)
+                                // but kept the two producers of the same event type
+                                // silently out of sync.
+                                'booking_id' => $bookingIdBySlot[$slotId] ?? 0,
                                 'slot_id' => $slotId,
                                 'user_id' => $accountId,
                                 'name' => $userName,
@@ -496,12 +506,23 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                             ],
                             NewsService::slotKey($slotId),
                         );
-                        EmailNotifications::bookingCreated($expertId, $accountId, (int)($slot['start_at'] ?? 0), (int)($slot['duration_min'] ?? 0));
+                        EmailNotifications::bookingCreated($expertId, $accountId, (int)($slot['start_at'] ?? 0), (int)($slot['duration_min'] ?? 0), (int)($slot['max_users'] ?? 1));
                     } catch (Throwable) {
                     }
                 }
-                // Slot is now booked — drop the public new_slot announcement.
-                NewsService::deleteByTargetKey(NewsService::slotKey($slotId), NewsService::TYPE_NEW_SLOT);
+                // D-154: was unconditional — every booking through this
+                // (multi-select) path hid the "new group slot" announcement
+                // after the FIRST seat taken, while BookingsController (single-
+                // slot detail page) only hides it once the slot is actually
+                // full. A group slot with two seats still open silently lost
+                // its public announcement after one booking. Re-read the
+                // slot's current status: the CAS above only flips it to
+                // 'booked' once booked_count reaches max_users, so this now
+                // matches the single-slot path's behaviour exactly.
+                $freshSlot = TimeSlots::get()->selectOneByField('id', $slotId);
+                if ($freshSlot && $freshSlot['status'] === 'booked') {
+                    NewsService::deleteByTargetKey(NewsService::slotKey($slotId), NewsService::TYPE_NEW_SLOT);
+                }
             }
 
             return ControllerTools::JSON([

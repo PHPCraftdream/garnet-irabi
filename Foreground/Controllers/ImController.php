@@ -12,7 +12,6 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\IRabi\Common\Services\EmailNotifications;
     use PHPCraftdream\IRabi\Common\Services\NewsService;
     use PHPCraftdream\IRabi\Common\Tables\Bookings;
-    use PHPCraftdream\IRabi\Common\Tables\ExpertProfiles;
     use PHPCraftdream\IRabi\Common\Tables\ImAttachments;
     use PHPCraftdream\IRabi\Common\Tables\ImConversations;
     use PHPCraftdream\IRabi\Common\Tables\ImMessages;
@@ -71,8 +70,10 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
          */
         protected static function enrichConversation(array &$conv, int $accountId): void {
             $partnerId = (int)$conv['partner_id'];
-            $expertRow = ExpertProfiles::get()->selectOneByField('account_id', $partnerId);
-            $conv['partner_has_expert_profile'] = !empty($expertRow);
+            // «Собеседник — преподаватель» решает аккаунт. Раньше признаком
+            // была строка в `expert_profiles`, которая появлялась у любого, кто
+            // хоть раз завёл слот, и жила дальше своей жизнью.
+            $conv['partner_has_expert_profile'] = UserEntityConfig::isApprovedExpertAccount($partnerId);
 
             // Resolve the partner's current display name (expert display_name ->
             // accounts.name -> "#id") so dialogs never show an empty/"#id" name.
@@ -146,10 +147,10 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 return true;
             }
 
-            // Is the sender an expert? Security audit M-02: existence of an
-            // expert_profiles row alone doesn't reflect account-level
-            // demotion/disable — gate on the same account-level predicate
-            // the booking path enforces.
+            // Преподаватель ли отправитель. Аудит M-02: признаком когда-то
+            // была строка в отдельной таблице профилей, которая не знала ни о
+            // разжаловании, ни об отключении. Условие — то же, что проверяет
+            // бронирование.
             $senderIsActiveExpert = UserEntityConfig::isApprovedActiveExpert($senderId);
 
             if ($senderIsActiveExpert) {
@@ -196,9 +197,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 return false;
             }
 
-            // Regular user — may message active approved experts only.
-            // Security audit M-02: existence of an expert_profiles row alone
-            // doesn't reflect account-level demotion/disable.
+            // Обычный человек пишет только действующим преподавателям.
+            // Аудит M-02: проверяем аккаунт, а не наличие строки профиля —
+            // она не знала ни о разжаловании, ни об отключении.
             return UserEntityConfig::isApprovedActiveExpert($recipientId);
         }
 
@@ -246,10 +247,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
          * - Always includes existing conversation partners
          */
         protected static function searchRecipients(int $accountId, string $query): array {
-            // Determine if current user is an expert. Security audit M-02:
-            // existence of an expert_profiles row alone doesn't reflect
-            // account-level demotion/disable — gate on the same account-level
-            // predicate the booking path enforces.
+            // Преподаватель ли тот, кто ищет. Аудит M-02: условие то же, что
+            // проверяет бронирование, — по аккаунту, а не по наличию строки
+            // профиля, которая не знала о разжаловании и отключении.
             $isCurrentUserExpert = UserEntityConfig::isApprovedActiveExpert($accountId);
 
             // Staff may message anyone — canMessage() has always said so, and
@@ -268,40 +268,30 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 accountDataFields: [Account::IS_MODERATOR, Account::IS_OWNER],
             );
 
-            // Build a lookup of all approved active expert account IDs.
-            // Security audit M-02: existence of an expert_profiles row alone
-            // doesn't reflect account-level demotion/disable.
-            // Perf (review F-03): resolve this with ONE batched account
-            // lookup for the whole candidate id set instead of calling
-            // isApprovedActiveExpert() per expert (which used to cost 2
-            // queries — including a full accounts_data table scan — PER
-            // candidate, i.e. an N+1 query storm on every IM search).
-            $allExperts = ExpertProfiles::get()->selectAll(function (SelectInterface $q): void {
-                $q->resetCols();
-                $q->cols(['account_id']);
-            });
-            $candidateExpertIds = array_values(array_unique(array_map(
-                static fn ($expert) => (int)$expert['account_id'],
-                $allExperts,
-            )));
-
+            // Все одобренные и не отключённые преподаватели — одним запросом.
+            //
+            // Раньше здесь сначала собирали кандидатов из `expert_profiles`, а
+            // потом отсеивали их по аккаунту, потому что строка профиля не
+            // отражала ни разжалование, ни отключение (аудит M-02). Теперь
+            // спрашиваем сразу того, кто знает ответ, и лишний проход исчез
+            // вместе с таблицей. Батч, а не вызов на каждого: поимённая
+            // проверка стоила двух запросов на кандидата (F-03).
             $expertIds = [];
-            if (!empty($candidateExpertIds)) {
-                $expertAccounts = Account::getAccounts(
-                    selectCallback: static function (SelectInterface $select) use ($candidateExpertIds): void {
-                        $select->resetCols();
-                        $select->cols(['id', 'type']);
-                        $select->where('id IN (?)', [$candidateExpertIds]);
-                    },
-                    accountDataFields: [Account::IS_APPROVED, Account::IS_DISABLED],
-                );
-                foreach ($expertAccounts as $a) {
-                    $isApprovedActive = ($a['type'] ?? '') === 'expert'
-                        && intval($a[Account::IS_APPROVED] ?? 0) > 0
-                        && intval($a[Account::IS_DISABLED] ?? 0) < 1;
-                    if ($isApprovedActive) {
-                        $expertIds[] = (int)$a['id'];
-                    }
+            $expertAccounts = Account::getAccounts(
+                selectCallback: static function (SelectInterface $select): void {
+                    $select->resetCols();
+                    $select->cols(['id', 'type']);
+                    $select->where('type = ?', ['expert']);
+                },
+                accountDataFields: [Account::IS_APPROVED, Account::IS_DISABLED],
+            );
+
+            foreach ($expertAccounts as $a) {
+                $isApprovedActive = intval($a[Account::IS_APPROVED] ?? 0) > 0
+                    && intval($a[Account::IS_DISABLED] ?? 0) < 1;
+
+                if ($isApprovedActive) {
+                    $expertIds[] = (int)$a['id'];
                 }
             }
 

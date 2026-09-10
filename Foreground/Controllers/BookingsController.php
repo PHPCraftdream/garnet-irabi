@@ -18,11 +18,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\IRabi\Common\PaginationHelper;
     use PHPCraftdream\IRabi\Common\Services\AccountDisplay;
     use PHPCraftdream\IRabi\Common\Services\EmailNotifications;
+    use PHPCraftdream\IRabi\Common\Services\ExpertDirectory;
+    use PHPCraftdream\IRabi\Common\Services\MeetingPlatform;
     use PHPCraftdream\IRabi\Common\Services\NewsService;
     use PHPCraftdream\IRabi\Common\Tables\AccountBalance;
     use PHPCraftdream\IRabi\Common\Tables\BalanceLedger;
     use PHPCraftdream\IRabi\Common\Tables\Bookings;
-    use PHPCraftdream\IRabi\Common\Tables\ExpertProfiles;
     use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
     use PHPCraftdream\IRabi\Common\Tables\UserCancellations;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
@@ -129,12 +130,19 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
          */
         private static function buildAuxMaps(array $bookings, string $viewAs = 'user'): array {
             $slotIds = [];
-            // Track which slot IDs have a confirmed booking
+            // Track which slot IDs have a confirmed (or since-completed) booking
             $confirmedSlotIds = [];
             foreach ($bookings as $booking) {
                 if ($booking['bookable_type'] === 'time_slot') {
                     $slotIds[] = (int)$booking['bookable_id'];
-                    if ($booking['status'] === 'confirmed') {
+                    // D-147: a booking flips confirmed -> completed once the
+                    // session's end_at passes (CronCompletionService). The
+                    // meeting link was only ever shown while status stayed
+                    // literally 'confirmed' — it vanished back to a bare
+                    // platform name the moment the session ended, which is
+                    // exactly the opposite of when a student most needs it
+                    // (joining, or double-checking right after).
+                    if (in_array($booking['status'], ['confirmed', 'completed'], true)) {
                         $confirmedSlotIds[(int)$booking['bookable_id']] = true;
                     }
                 }
@@ -153,6 +161,11 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                         'start_at' => (int)$slot['start_at'],
                         'is_online' => $isOnline,
                         'location' => $showLocation ? ($slot['location'] ?? '') : '',
+                        // Площадка публична и до подтверждения: человек, ждущий
+                        // подтверждения, вправе знать, где пройдёт занятие, —
+                        // ссылку он получит после, а название площадки нужно
+                        // ему уже сейчас.
+                        'platform' => $isOnline ? MeetingPlatform::publicName($slot['location'] ?? null) : '',
                         'expert_id' => (int)$slot['expert_id'],
                         'cost' => (int)($slot['cost'] ?? 0),
                         'cancellation_penalty_percent' => (int)($slot['cancellation_penalty_percent'] ?? 0),
@@ -195,12 +208,11 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 $expertIds = array_values(array_unique(array_filter($expertIds)));
                 if (!empty($expertIds)) {
                     $disabledExpertIds = AccountDisplay::disabledIds($expertIds);
-                    foreach (ExpertProfiles::get()->selectByField('account_id', $expertIds) as $tp) {
-                        $eid = (int)$tp['account_id'];
+                    foreach (ExpertDirectory::byIds($expertIds) as $eid => $tp) {
                         if (isset($disabledExpertIds[$eid])) {
                             $experts[$eid] = ['display_name' => AccountDisplay::disabledName($eid)];
                         } else {
-                            $experts[$eid] = ['display_name' => $tp['display_name'] ?? ''];
+                            $experts[$eid] = ['display_name' => $tp['display_name']];
                         }
                     }
                 }
@@ -484,7 +496,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                         'name' => $userName,
                         'time' => (int)$slot['start_at'],
                     ], NewsService::slotKey($slotId));
-                    EmailNotifications::bookingCreated($expertId, $account->id(), (int)($slot['start_at'] ?? 0), (int)($slot['duration_min'] ?? 0));
+                    EmailNotifications::bookingCreated($expertId, $account->id(), (int)($slot['start_at'] ?? 0), (int)($slot['duration_min'] ?? 0), (int)($slot['max_users'] ?? 1));
                 } catch (Throwable) {
                 }
             }
@@ -566,9 +578,14 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             $now = time();
 
             if (!$alreadyCancelled) {
+                // Роль берётся из того, кем вызвана отмена, а не из того, чья
+                // это бронь: сюда приходят и сам ученик, и администрация,
+                // и по строке в базе их потом уже не различить.
+                $cancelledRole = $isOwner ? Bookings::CANCELLED_BY_USER : Bookings::CANCELLED_BY_MODERATOR;
+
                 $affected = CasUpdate::exec(
-                    "UPDATE {$bookingsTbl} SET status = 'cancelled', cancelled_at = ? WHERE id = ? AND status IN ('pending', 'confirmed')",
-                    [$now, $bookingId]
+                    "UPDATE {$bookingsTbl} SET status = 'cancelled', cancelled_at = ?, cancelled_by = ?, cancelled_role = ?, cancel_reason = ? WHERE id = ? AND status IN ('pending', 'confirmed')",
+                    [$now, $account->id(), $cancelledRole, mb_substr($reason, 0, 500), $bookingId]
                 );
                 if ($affected === 1) {
                     $performedCancelNow = true;
@@ -627,7 +644,18 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                         $note = $t->Ledger_Type_Refund() . ' #' . $bookingId . ($noteSuffix !== '' ? ' (' . $noteSuffix . ')' : '');
                         BalanceLedger::tryAddRefund($bookingUserId, true, $userRefund, $bookingId, $note);
                         if ($expertId && $expertDebit > 0) {
-                            BalanceLedger::tryAddRefund($expertId, false, $expertDebit, $bookingId, $note);
+                            // D-140: this row is a DEBIT on the expert's own
+                            // balance — reusing the student's "Возврат"
+                            // wording here read as "I paid the student",
+                            // with no hint that the withheld penalty (cost -
+                            // expertDebit) is compensation they kept, not a
+                            // loss on top of it.
+                            $penaltyKept = $cost - $expertDebit;
+                            $expertNote = $penaltyKept > 0
+                                ? $t->Ledger_Type_Refund() . ' #' . $bookingId
+                                    . ' (' . $t->Ledger_Note_ExpertKeepsPenalty((string)$expertDebit, (string)$penaltyKept, (string)$penaltyPct) . ')'
+                                : $note;
+                            BalanceLedger::tryAddRefund($expertId, false, $expertDebit, $bookingId, $expertNote);
                         }
                     }
                 }
@@ -647,7 +675,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                         'expert_id' => $expertId,
                         'reason' => $reason,
                         'created_at' => time(),
-                        'kind' => ($previousStatus === 'confirmed' ? 'cancel' : 'decline'),
+                        'kind' => Bookings::cancellationKind($previousStatus),
                     ]);
                 }
 
@@ -674,7 +702,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                     if ($slot) {
                         try {
                             $cancelledByName = $account->readParam('name') ?: ('#' . $account->id());
-                            EmailNotifications::bookingCancelled((int)$slot['expert_id'], (int)($slot['start_at'] ?? 0), (int)($slot['duration_min'] ?? 0), $cancelledByName);
+                            EmailNotifications::bookingCancelled((int)$slot['expert_id'], (int)($slot['start_at'] ?? 0), (int)($slot['duration_min'] ?? 0), $cancelledByName, $reason, (int)($slot['max_users'] ?? 1));
                         } catch (Throwable) {
                         }
 
@@ -692,6 +720,24 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                             } catch (Throwable) {
                             }
                         }
+                        // Отменил не владелец брони — значит, с его занятием
+                        // распорядился кто-то другой, и узнать об этом он должен
+                        // не из молчания. Сюда приходит администрация тем же
+                        // эндпоинтом; преподавателю событие уходит выше, а
+                        // ученику до этого не уходило никому.
+                        if (!$isOwner && $bookingUserId > 0) {
+                            try {
+                                NewsService::createPersonal(NewsService::TYPE_BOOKING_CANCELLED, $account->id(), $bookingUserId, [
+                                    'booking_id' => $bookingId,
+                                    'slot_id' => $slotId,
+                                    'user_id' => $account->id(),
+                                    'name' => $cancelledByName ?? ('#' . $account->id()),
+                                    'time' => (int)($slot['start_at'] ?? 0),
+                                ], NewsService::slotKey($slotId));
+                            } catch (Throwable) {
+                            }
+                        }
+
                         // Purge the stale `slot_booked` announcement for this slot — it no longer holds.
                         NewsService::deleteByTargetKey(NewsService::slotKey($slotId), NewsService::TYPE_SLOT_BOOKED);
                     }
@@ -745,7 +791,21 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             $penalty = intdiv($cost * $penaltyPct, 100);
             $refund = $cost - $penalty;
 
-            return [$refund, $refund, "penalty {$penaltyPct}%"];
+            // Примечание к возврату человек читает в истории операций, и это
+            // единственное место, где он видит, за что удержаны деньги.
+            // Английское «penalty 30%» посреди русского интерфейса выглядело
+            // отладочной строкой, а не объяснением (нашёл user-2).
+            // Аргументы подстановки идут россыпью, а не массивом: `__call`
+            // отдаёт их в `sprintf` через распаковку, и обёрнутый массив
+            // роняет запрос с «Array to string conversion». На клиенте
+            // соглашение обратное — `t.Key([arg])`, — и на этом легко
+            // ошибиться.
+            // Сумма удержания в рублях, а не только процент: процент без
+            // исходной цены не говорит ничего — читатель вынужден был
+            // найти парную строку списания и вычесть в уме (нашёл user-2).
+            $note = ForegroundI18n::getInstance()->Ledger_Note_Penalty((string)$penalty, (string)$penaltyPct);
+
+            return [$refund, $refund, $note];
         }
 
         public static function get__book(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
@@ -765,7 +825,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 return ControllerTools::notFound('Slot not found');
             }
 
-            $expert = ExpertProfiles::get()->selectOneByField('account_id', $slot['expert_id']);
+            $expert = ExpertDirectory::one((int)$slot['expert_id']);
 
             $account = Account::fromSession();
 
@@ -787,11 +847,11 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                     'is_online' => (int)($slot['is_online'] ?? 1),
                     // Online meeting link is only shown after confirmed booking
                     'location' => (int)($slot['is_online'] ?? 0) ? '' : ($slot['location'] ?? ''),
+                    'platform' => (int)($slot['is_online'] ?? 0) ? MeetingPlatform::publicName($slot['location'] ?? null) : '',
                     'expert_id' => (int)$slot['expert_id'],
                 ],
                 'expert' => $expert ? [
                     'display_name' => $expert['display_name'],
-                    'specialization' => $expert['specialization'] ?? '',
                 ] : null,
                 'csrf' => Session::touchCSRF_(),
                 'isModerator' => UserEntityConfig::isModerator(),

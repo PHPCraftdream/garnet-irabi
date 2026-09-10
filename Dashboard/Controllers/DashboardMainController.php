@@ -14,8 +14,8 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use PHPCraftdream\IRabi\Common\Tables\AdminActionLog;
     use PHPCraftdream\IRabi\Common\Tables\BalanceLedger;
     use PHPCraftdream\IRabi\Common\Tables\Bookings;
-    use PHPCraftdream\IRabi\Common\Tables\ExpertProfiles;
     use PHPCraftdream\IRabi\Common\Tables\SupportTickets;
+    use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;
     use PHPCraftdream\IRabi\IRabi;
 
     class DashboardMainController extends DashboardController {
@@ -28,12 +28,7 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
                 $q->limit(5);
             });
 
-            $allTickets = SupportTickets::get()->selectAll(function (SelectInterface $q): void {
-                $q->resetCols();
-                $q->cols(['COUNT(*) as total']);
-                $q->where("status NOT IN ('resolved', 'rejected')");
-            });
-            $openCount = (int)($allTickets[0]['total'] ?? 0);
+            $openCount = SupportTickets::openCount();
 
             // Resolve user names
             $accountIds = array_unique(array_filter(array_column($tickets, 'account_id')));
@@ -63,27 +58,17 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
         }
 
         private static function fetchPendingApprovals(): array {
-            // Identify experts the same way the admin users grid does — by the
-            // account type column — NOT by expert_profiles membership. An expert
-            // who registered but hasn't created a slot yet has no expert_profiles
-            // row, yet still shows an "Approve" button in the grid; counting by
-            // profile membership would miss them and report 0.
-            $accounts = Account::getAccounts(
-                selectCallback: static function (SelectInterface $select): void {
-                    $select->resetCols();
-                    $select->cols(['id', 'login', 'name']);
-                    $select->where("type = 'expert'");
-                },
-                accountDataFields: [Account::IS_APPROVED],
-            );
-
-            $pending = [];
-            foreach ($accounts as $a) {
-                if (intval($a[Account::IS_APPROVED] ?? 0) > 0) {
-                    continue;
-                }
-                $pending[] = ['id' => (int)$a['id'], 'login' => $a['login'], 'name' => $a['name']];
-            }
+            // Преподаватель определяется так же, как в таблице пользователей:
+            // по типу аккаунта. Когда-то здесь считали иначе — по наличию
+            // строки в отдельной таблице профилей, — и не видели тех, кто
+            // зарегистрировался, но ещё не завёл слот: кнопка «Одобрить» у них
+            // в таблице была, а счётчик показывал ноль.
+            //
+            // D-153: эта версия не исключала отключённых — счётчик на
+            // дашборде владельца и виджет модератора (MainController)
+            // расходились на отключённых неодобренных экспертов. Теперь оба
+            // читают UserEntityConfig::pendingExpertApprovals().
+            $pending = UserEntityConfig::pendingExpertApprovals();
 
             return ['count' => count($pending), 'names' => array_slice($pending, 0, 10)];
         }
@@ -98,8 +83,19 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
             );
             $totalUsers = (int)($allUsers[0]['total'] ?? 0);
 
-            // Total experts
-            $totalExperts = ExpertProfiles::get()->getCount();
+            // Сколько преподавателей на площадке.
+            //
+            // Считалось по строкам `expert_profiles` — а строка там заводилась
+            // при первом слоте и оставалась навсегда, в том числе у
+            // разжалованных. Считаем аккаунты с типом «преподаватель».
+            $expertRows = Account::getAccounts(
+                selectCallback: static function (SelectInterface $select): void {
+                    $select->resetCols();
+                    $select->cols(['id']);
+                    $select->where("type = 'expert'");
+                },
+            );
+            $totalExperts = count($expertRows);
 
             // Bookings this month — month boundary in the viewing admin's tz
             $adminAccount = Account::fromSession();

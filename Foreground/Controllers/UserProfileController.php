@@ -1,20 +1,14 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Foreground\Controllers {
-    use Aura\SqlQuery\Common\SelectInterface;
     use PHPCraftdream\Garnet\Bundle\Utils\HtmlLayout;
     use PHPCraftdream\Garnet\Bundle\Utils\RenderIsland;
     use PHPCraftdream\Garnet\Kernel\Core\FrameworkController;
-    use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
-    use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\DbAccount;
     use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
     use PHPCraftdream\Garnet\Kernel\Io\Twig\TwigParams;
-    use PHPCraftdream\IRabi\Common\Services\AccountDisplay;
-    use PHPCraftdream\IRabi\Common\Tables\Bookings;
-    use PHPCraftdream\IRabi\Common\Tables\ExpertProfiles;
-    use PHPCraftdream\IRabi\Common\Tables\UserCancellations;
+    use PHPCraftdream\IRabi\Common\Services\UserProfilePresenter;
     use PHPCraftdream\IRabi\Foreground\Params\Menu;
     use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;
     use PHPCraftdream\IRabi\IRabi;
@@ -45,8 +39,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             }
 
             // Check if this user is an expert — redirect to expert profile
-            $expertProfile = ExpertProfiles::get()->selectOneByField('account_id', $userId);
-            if ($expertProfile && (int)($expertProfile['is_approved'] ?? 0)) {
+            if (UserEntityConfig::isApprovedExpertAccount($userId)) {
                 return ControllerTools::redirect(IRabi::url('/expert/id~' . $userId));
             }
 
@@ -57,55 +50,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             // M-03 self/staff/counterparty gate was intentionally reverted to
             // keep the two profile surfaces consistent). Disabled accounts are
             // still anonymised uniformly, matching every other surface.
-            $currentAccount = Account::fromSession();
-
-            // Load basic account info
-            $row = DbAccount::get()->selectOneByField('id', $userId);
-
-            if (!$row) {
+            $props = UserProfilePresenter::buildProps($userId);
+            if (!$props) {
                 return ControllerTools::notFound('User not found');
             }
 
-            // Count completed bookings
-            $completedBookings = Bookings::get()->getCount(function (SelectInterface $q) use ($userId): void {
-                $q->where('user_id = ? AND status = ?', [$userId, 'completed']);
-            });
-
-            // Count total bookings
-            $totalBookings = Bookings::get()->getCount(function (SelectInterface $q) use ($userId): void {
-                $q->where('user_id = ?', [$userId]);
-            });
-
-            // Count user cancellations (only kind='cancel')
-            $userCancellations = UserCancellations::get()->getCount(function (SelectInterface $q) use ($userId): void {
-                $q->where('user_id = ? AND kind = ?', [$userId, 'cancel']);
-            });
-
-            // Count user declines (kind='decline')
-            $userDeclines = UserCancellations::get()->getCount(function (SelectInterface $q) use ($userId): void {
-                $q->where('user_id = ? AND kind = ?', [$userId, 'decline']);
-            });
-
-            $isModerator = $currentAccount ? UserEntityConfig::isModerator() : false;
-            $isOwnProfile = $currentAccount && $currentAccount->id() === $userId;
-
-            $isDisabled = AccountDisplay::isDisabled($userId);
-            $displayName = $isDisabled
-                ? AccountDisplay::disabledName($userId)
-                : (string)($row['name'] ?? '');
-
-            $content = RenderIsland::render('user-profile', [
-                'user' => [
-                    'id' => (int)$row['id'],
-                    'name' => $displayName,
-                    'completedBookings' => $completedBookings,
-                    'totalBookings' => $totalBookings,
-                    'userCancellations' => $userCancellations,
-                    'userDeclines' => $userDeclines,
-                ],
-                'isModerator' => $isModerator,
-                'isOwnProfile' => $isOwnProfile,
-            ]);
+            $content = RenderIsland::render('user-profile', $props);
 
             return ControllerTools::ok(static::renderContent($content, $url));
         }

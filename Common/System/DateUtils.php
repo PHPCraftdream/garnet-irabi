@@ -149,5 +149,44 @@ namespace PHPCraftdream\IRabi\Common\System {
                 return new DateTimeZone('UTC');
             }
         }
+
+        /**
+         * Подпись часового пояса для показа рядом со временем: «Europe/Moscow,
+         * UTC+3».
+         *
+         * Нужна там, где человек читает время **вне сайта** — прежде всего в
+         * письме. На странице пояс подсказывает баннер и общий контекст; в
+         * почтовом ящике контекста нет вовсе, и «занятие в 11:00» — это не
+         * факт, а загадка: у отправителя, получателя и сервера часы могут
+         * стоять по-разному.
+         *
+         * Смещение считается на конкретный момент, а не «вообще»: летнее время
+         * сдвигает его, и подпись, посчитанная на сегодня, для занятия через
+         * месяц может соврать.
+         *
+         * @param int         $ts     момент, на который считается смещение
+         * @param string|null $userTz IANA-идентификатор пояса
+         */
+        public static function zoneLabel(int $ts, ?string $userTz): string {
+            $zone = static::resolveZone($userTz);
+
+            try {
+                $dt = (new DateTime('@' . max($ts, 0)))->setTimezone($zone);
+            } catch (Throwable) {
+                return $zone->getName();
+            }
+
+            $offset = $dt->getOffset();
+            $sign = $offset < 0 ? '-' : '+';
+            $abs = abs($offset);
+            $hours = intdiv($abs, 3600);
+            $minutes = intdiv($abs % 3600, 60);
+
+            $utc = $minutes === 0
+                ? sprintf('UTC%s%d', $sign, $hours)
+                : sprintf('UTC%s%d:%02d', $sign, $hours, $minutes);
+
+            return $zone->getName() . ', ' . $utc;
+        }
     }
 }

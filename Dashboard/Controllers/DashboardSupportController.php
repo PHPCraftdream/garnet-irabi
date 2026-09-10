@@ -15,7 +15,6 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use PHPCraftdream\IRabi\Common\PaginationHelper;
     use PHPCraftdream\IRabi\Common\Services\EmailNotifications;
     use PHPCraftdream\IRabi\Common\Services\NewsService;
-    use PHPCraftdream\IRabi\Common\Tables\ExpertProfiles;
     use PHPCraftdream\IRabi\Common\Tables\SupportAssignmentLog;
     use PHPCraftdream\IRabi\Common\Tables\SupportAttachments;
     use PHPCraftdream\IRabi\Common\Tables\SupportMessages;
@@ -65,9 +64,10 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
             $isModerator = intval($userData[Account::IS_MODERATOR] ?? 0) > 0;
             $isAdmin = intval($userData[Account::IS_ADMIN] ?? 0) > 0;
 
-            // Check if user has expert profile (IRabi-specific)
-            $expertProfile = ExpertProfiles::get()->selectOneByField('account_id', $accountId);
-            $hasExpertProfile = !empty($expertProfile);
+            // Преподаватель он или нет, знает аккаунт. Отдельная строка
+            // профиля отвечала на тот же вопрос своей копией флага и успела с
+            // ним разойтись.
+            $hasExpertProfile = UserEntityConfig::isApprovedExpertAccount($accountId);
 
             if ($isAdmin) {
                 $role = 'admin';

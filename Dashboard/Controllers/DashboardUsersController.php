@@ -24,7 +24,6 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use PHPCraftdream\IRabi\Common\Tables\Bookings;
     use PHPCraftdream\IRabi\Common\Tables\EntityHistory;
     use PHPCraftdream\IRabi\Common\Tables\ExpertCancellations;
-    use PHPCraftdream\IRabi\Common\Tables\ExpertProfiles;
     use PHPCraftdream\IRabi\Common\Tables\SupportTickets;
     use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
     use PHPCraftdream\IRabi\Common\Tables\UserCancellations;
@@ -115,27 +114,11 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
             // When approving/revoking an expert, cascade to their expert profile
             // and notify the expert by email (only on actual transitions of accounts of type=expert).
             if ($flag === Account::IS_APPROVED) {
-                // The profile row may not exist yet: it is created lazily, by
-                // the expert's first slot. Approving before that used to
-                // update nothing at all, silently — and the row minted later
-                // came out unapproved, so the approval was lost for good.
-                $profile = ExpertProfiles::get()->selectOneByField('account_id', $userId);
-
-                if ($profile) {
-                    ExpertProfiles::get()->updateByField(
-                        ['is_approved' => $value ? 1 : 0],
-                        'account_id', $userId,
-                    );
-                } else {
-                    $targetAccount = DbAccount::get()->selectById($userId);
-                    ExpertProfiles::get()->insert([
-                        'account_id' => $userId,
-                        'display_name' => (string)($targetAccount['name'] ?? ''),
-                        'bio' => '',
-                        'specialization' => '',
-                        'is_approved' => $value ? 1 : 0,
-                    ]);
-                }
+                // Одобрение целиком живёт во флаге аккаунта, который уже
+                // выставлен выше. Раньше оно ещё и дублировалось в строку
+                // профиля — и дубликат отставал: у троих одобренных
+                // преподавателей он так и остался нулевым, пряча их профиль в
+                // превью. Дубликата больше нет.
 
                 if ($oldValue !== $newValue) {
                     $accountRow = DbAccount::get()->selectById($userId);
@@ -194,11 +177,9 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
          * moderator+ flip it after the fact (e.g. a teacher who registered through
          * the regular link and needs to be turned into an expert).
          *
-         * expert_profiles row is created lazily — when the expert first opens any
-         * expert-only flow — so we don't pre-create it here. Demotion keeps the
-         * existing row in place (re-used on a later re-promotion); the user just
-         * stops appearing in public expert listings because every expert query
-         * filters on `accounts.type = 'expert'`.
+         * Ничего, кроме типа, менять не нужно: все запросы о преподавателях
+         * фильтруют по `accounts.type = 'expert'`. Разжалование поэтому
+         * достаточно записать в тип — из публичных списков человек уходит сам.
          */
         public static function post__setUserType(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
             if (!static::isModerator()) {
@@ -477,7 +458,10 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
             ]);
 
             $isExpert = ($account['type'] ?? '') === 'expert';
-            $expertProfile = $isExpert ? ExpertProfiles::get()->selectOneByField('account_id', $accountId) : null;
+            $expertProfile = $isExpert ? [
+                'display_name' => (string)($account['name'] ?? ''),
+                'bio' => (string)($account['about'] ?? ''),
+            ] : null;
 
             $balance = AccountBalance::get()->selectOneByField('account_id', $accountId) ?: null;
 
@@ -748,8 +732,19 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
 
             $expertCancelCount = count(array_filter($expertCancellations, fn ($r) => ($r['kind'] ?? 'cancel') === 'cancel'));
             $expertDeclineCount = count(array_filter($expertCancellations, fn ($r) => ($r['kind'] ?? '') === 'decline'));
-            $userCancelCount = count(array_filter($userCancellations, fn ($r) => ($r['kind'] ?? 'cancel') === 'cancel'));
-            $userDeclineCount = count(array_filter($userCancellations, fn ($r) => ($r['kind'] ?? '') === 'decline'));
+            // D-151: counting the $userCancellations list itself undercounts
+            // the same way the profile pages did — that table only has a row
+            // when the STUDENT herself cancelled (BookingsController, if
+            // ($isOwner)); an expert/moderator/cron cancellation of this
+            // user's booking never lands here. Bookings::userOutcomeCounts()
+            // reads bookings.status/confirmed_at directly and is now the one
+            // place every "Снятий"/"Отмен" count on any surface agrees with.
+            // The $userCancellations array itself stays as-is below — it's
+            // still the (partial) audit list of reasons/dates, just not the
+            // count.
+            $userOutcomeCounts = Bookings::userOutcomeCounts($accountId);
+            $userCancelCount = $userOutcomeCounts['cancellations'];
+            $userDeclineCount = $userOutcomeCounts['declines'];
 
             return ControllerTools::JSON([
                 'account' => $account,
@@ -840,6 +835,9 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
                 'commentsPageUrl' => IRabi::url(DashboardCommentsController::URL . '~commentsPage'),
                 'commentsHideUrl' => IRabi::url(DashboardCommentsController::URL . '~hide'),
                 'commentsUnhideUrl' => IRabi::url(DashboardCommentsController::URL . '~unhide'),
+                'commentsApproveUrl' => IRabi::url(DashboardCommentsController::URL . '~approve'),
+                'commentsRejectUrl' => IRabi::url(DashboardCommentsController::URL . '~reject'),
+                'commentsFlagUrl' => IRabi::url(DashboardCommentsController::URL . '~flag'),
                 'commentsExperts' => DashboardCommentsController::loadExperts(),
                 'commentsAuthors' => DashboardCommentsController::loadAuthors(),
                 'commentsInitialPayload' => $commentsInitialPayload,
@@ -886,9 +884,8 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
             if (empty($slots)) {
                 return;
             }
-            $profile = ExpertProfiles::get()->selectOneByField('account_id', $expertId);
             $accountRow = DbAccount::get()->selectById($expertId);
-            $name = ($profile['display_name'] ?? '') ?: ($accountRow['name'] ?? '') ?: ($accountRow['login'] ?? '') ?: 'Expert';
+            $name = ($accountRow['name'] ?? '') ?: ($accountRow['login'] ?? '') ?: 'Expert';
             foreach ($slots as $slot) {
                 $slotId = (int)$slot['id'];
                 NewsService::deleteByTargetKey(NewsService::slotKey($slotId), NewsService::TYPE_NEW_SLOT);

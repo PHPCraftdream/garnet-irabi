@@ -7,6 +7,8 @@ use PHPCraftdream\Garnet\Kernel\Db\Link\CasUpdate;
 use PHPCraftdream\IRabi\Common\Tables\BalanceLedger;
 use PHPCraftdream\IRabi\Common\Tables\Bookings;
 use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
+use PHPCraftdream\IRabi\Common\Tables\UserCancellations;
+use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
 
 class CronCompletionService {
     /**
@@ -83,6 +85,15 @@ class CronCompletionService {
             if (!empty($orphanBookingIds)) {
                 Bookings::get()->updateById(['status' => 'completed'], $orphanBookingIds);
                 $stats['bookings'] += count($orphanBookingIds);
+
+                // The bookings are done, but the slot itself (D-144) was left
+                // at 'free' forever — the calendar kept showing it as still
+                // open, Edit/Delete included, for a session that already happened.
+                $orphanSlotIds = array_values(array_unique(
+                    array_map(fn (array $b): int => (int)$b['bookable_id'], $orphanBookings),
+                ));
+                TimeSlots::get()->updateById(['status' => 'completed'], $orphanSlotIds);
+                $stats['slots'] += count($orphanSlotIds);
             }
         }
 
@@ -124,12 +135,12 @@ class CronCompletionService {
 
                 // CAS pending → cancelled. Only a row still in 'pending' flips;
                 // a parallel manual cancel (user or expert) makes affected=0 and
-                // we skip the refund/email entirely. addEntry() is also
-                // idempotent by UNIQUE(account_id, entry_type, ref_type, ref_id),
-                // but we avoid even attempting a duplicate refund.
+                // we skip the refund/email entirely. tryAddRefund() below is
+                // also idempotent (UNIQUE(account_id, entry_type, ref_type,
+                // ref_id)), but we avoid even attempting a duplicate refund.
                 $affected = CasUpdate::exec(
-                    "UPDATE {$bookingsTbl} SET status = 'cancelled', cancelled_at = ? WHERE id = ? AND status = 'pending'",
-                    [$now, $bookingId]
+                    "UPDATE {$bookingsTbl} SET status = 'cancelled', cancelled_at = ?, cancelled_role = ? WHERE id = ? AND status = 'pending'",
+                    [$now, Bookings::CANCELLED_BY_SYSTEM, $bookingId]
                 );
                 if ($affected === 0) {
                     continue;
@@ -150,36 +161,46 @@ class CronCompletionService {
                 $startAt = (int)($slot['start_at'] ?? 0);
                 $durationMin = (int)($slot['duration_min'] ?? 0);
 
+                // D-146: this path flipped bookings.status but never wrote a
+                // user_cancellations row — the only table the profile-page
+                // counters (and the booking-card cause line) read from. A
+                // pending booking auto-declined by the cron was invisible to
+                // both "Снятий" and "Отмен", yet still counted in "Всего".
+                $autoDeclineNote = ForegroundI18n::getInstance()->Ledger_Note_AutoCancel();
+                UserCancellations::get()->insert([
+                    'user_id' => $userId,
+                    'booking_id' => $bookingId,
+                    'slot_id' => $slotId,
+                    'expert_id' => $expertId,
+                    'reason' => $autoDeclineNote,
+                    'created_at' => $now,
+                    'kind' => 'decline', // always pending here, never confirmed
+                ]);
+
                 // Full refund: credit the user and debit the expert by the same
                 // amount. addEntry() recalculates the cached balance internally
                 // (under the per-account advisory lock).
                 if ($slotCost > 0) {
-                    BalanceLedger::addEntry(
-                        accountId: $userId,
-                        isCredit: true,
-                        amount: $slotCost,
-                        entryType: 'booking_refund',
-                        refType: 'booking',
-                        refId: $bookingId,
-                        note: 'Auto-cancel (slot expired) #' . $bookingId,
-                    );
+                    // Примечание видно человеку в истории операций, и долгое
+                    // время оно было единственным местом во всём продукте, где
+                    // вообще называлась причина отмены, — да ещё по-английски
+                    // посреди русского интерфейса.
+                    $note = $autoDeclineNote . ' #' . $bookingId;
+
+                    // D-155: addEntry() throws on a duplicate ledger row instead of
+                    // no-oping — every other cancellation path uses tryAddRefund()
+                    // for exactly that reason (a retried/raced cron tick must not
+                    // crash on a refund that already landed).
+                    BalanceLedger::tryAddRefund($userId, true, $slotCost, $bookingId, $note);
                     if ($expertId > 0) {
-                        BalanceLedger::addEntry(
-                            accountId: $expertId,
-                            isCredit: false,
-                            amount: $slotCost,
-                            entryType: 'booking_refund',
-                            refType: 'booking',
-                            refId: $bookingId,
-                            note: 'Auto-cancel (slot expired) #' . $bookingId,
-                        );
+                        BalanceLedger::tryAddRefund($expertId, false, $slotCost, $bookingId, $note);
                     }
                 }
 
                 // Notify the user: their request was not accepted before the
                 // session time. bookingRejected is the closest existing
                 // template — it addresses the user and fills in the expert name.
-                EmailNotifications::bookingRejected($userId, $startAt, $durationMin, $expertId);
+                EmailNotifications::bookingRejected($userId, $startAt, $durationMin, $expertId, '', (int)($slot['max_users'] ?? 1));
 
                 $stats['pending_expired']++;
             }

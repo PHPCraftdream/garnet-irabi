@@ -13,14 +13,15 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
     use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
     use PHPCraftdream\IRabi\Common\Calendar\SlotDateFilter;
     use PHPCraftdream\IRabi\Common\Services\AccountDisplay;
+    use PHPCraftdream\IRabi\Common\Services\BookingChatNotifier;
     use PHPCraftdream\IRabi\Common\Services\NewsService;
     use PHPCraftdream\IRabi\Common\System\AppSettings;
     use PHPCraftdream\IRabi\Common\System\DateUtils;
     use PHPCraftdream\IRabi\Common\Tables\Bookings;
-    use PHPCraftdream\IRabi\Common\Tables\ExpertProfiles;
     use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
     use PHPCraftdream\IRabi\IRabi;
+    use Throwable;
 
     class ExpertSlotsService {
         /**
@@ -246,23 +247,6 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 ], status: 400);
             }
 
-            $expertProfile = ExpertProfiles::get()->selectOneByField('account_id', $account->id());
-
-            if (!$expertProfile) {
-                ExpertProfiles::get()->insert([
-                    'account_id' => $account->id(),
-                    'display_name' => $account->readParam('name') ?: '',
-                    'bio' => '',
-                    'specialization' => '',
-                    // Mirror the account flag rather than hardcoding 0. An
-                    // expert who was approved BEFORE creating their first slot
-                    // used to get an unapproved profile here, minted by their
-                    // own first slot — and the approval that had already
-                    // happened never came back to correct it.
-                    'is_approved' => $account->isApproved() ? 1 : 0,
-                ]);
-            }
-
             $slotId = TimeSlots::get()->insert([
                 'expert_id' => $account->id(),
                 'start_at' => $startAt,
@@ -279,7 +263,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
             ]);
 
             // News: broadcast new slot (only for approved experts)
-            $expertName = ($expertProfile['display_name'] ?? '') ?: ($account->readParam('name') ?: ('#' . $account->id()));
+            $expertName = ($account->readParam('name') ?: ('#' . $account->id()));
             if ($account->isApproved()) {
                 NewsService::createBroadcast(NewsService::TYPE_NEW_SLOT, $account->id(), [
                     'slot_id' => (int)$slotId,
@@ -391,22 +375,6 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 $q->where('start_at >= ? AND start_at <= ?', [$rangeStart, $rangeEnd]);
                 $q->where("status != 'cancelled'");
             });
-
-            $expertProfile = ExpertProfiles::get()->selectOneByField('account_id', $account->id());
-            if (!$expertProfile) {
-                ExpertProfiles::get()->insert([
-                    'account_id' => $account->id(),
-                    'display_name' => $account->readParam('name') ?: '',
-                    'bio' => '',
-                    'specialization' => '',
-                    // Mirror the account flag rather than hardcoding 0. An
-                    // expert who was approved BEFORE creating their first slot
-                    // used to get an unapproved profile here, minted by their
-                    // own first slot — and the approval that had already
-                    // happened never came back to correct it.
-                    'is_approved' => $account->isApproved() ? 1 : 0,
-                ]);
-            }
 
             $t = ForegroundI18n::getInstance();
 
@@ -537,7 +505,14 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_AccessDenied()], status: 403);
             }
 
-            if ($slot['status'] !== 'free') {
+            // Забронированный слот правится, но только в одном месте — где
+            // проходит занятие. Онлайн-слот, созданный без ссылки и тут же
+            // забронированный, иначе не починить вовсе: время и деньги трогать
+            // нельзя (люди записались на эти условия), а ссылку дописать
+            // жизненно нужно. До этой правки преподаватель был вынужден
+            // передавать её вручную в переписке (нашёл expert-3).
+            $bookedSlot = $slot['status'] !== 'free';
+            if ($bookedSlot && $slot['status'] !== 'booked') {
                 return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_OnlyFreeEditable()], status: 400);
             }
 
@@ -569,6 +544,56 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
 
             $date = $globals->readPostValue('date', '');
             $time = $globals->readPostValue('time', '');
+
+            // На забронированном слоте меняется только место встречи. Всё
+            // остальное — условия, на которые человек уже согласился.
+            //
+            // Сравниваются ПРИСЛАННЫЕ значения, а не собранный набор правок:
+            // форма всегда шлёт все поля целиком, а в собранный набор при
+            // переданных дате и времени попадает заново сгенерированный `uid`,
+            // который не совпадает с текущим никогда. Первая версия этой
+            // проверки сравнивала именно его — и отказывала в любом
+            // сохранении, включая разрешённое (поймал expert-3 на боевом).
+            if ($bookedSlot) {
+                $locked = [
+                    'cost' => (int)$slot['cost'],
+                    'cancellation_penalty_percent' => (int)$slot['cancellation_penalty_percent'],
+                    'max_users' => (int)($slot['max_users'] ?? 1),
+                    'is_online' => (int)($slot['is_online'] ?? 0),
+                ];
+
+                foreach ($locked as $field => $current) {
+                    $raw = $globals->readPostValue($field);
+                    if ($raw !== null && (int)$raw !== $current) {
+                        return ControllerTools::JSON(
+                            ['error' => ForegroundI18n::getInstance()->Slot_Error_BookedOnlyLocation()],
+                            status: 400,
+                        );
+                    }
+                }
+
+                $postedDuration = (int)$globals->readPostValue('duration_min', $globals->readPostValue('duration', '0'));
+                if ($postedDuration > 0 && $postedDuration !== (int)$slot['duration_min']) {
+                    return ControllerTools::JSON(
+                        ['error' => ForegroundI18n::getInstance()->Slot_Error_BookedOnlyLocation()],
+                        status: 400,
+                    );
+                }
+
+                if ($date !== '' && $time !== '') {
+                    $expertTz = $account->readParam('time_zone') ?: 'UTC';
+                    $postedStart = DateUtils::parseUserDateTime((string)$date, (string)$time, $expertTz);
+                    // С точностью до минуты: форма отдаёт время без секунд, и
+                    // слот с ненулевыми секундами иначе получил бы отказ на
+                    // ровном месте.
+                    if ($postedStart > 0 && intdiv($postedStart, 60) !== intdiv((int)$slot['start_at'], 60)) {
+                        return ControllerTools::JSON(
+                            ['error' => ForegroundI18n::getInstance()->Slot_Error_BookedOnlyLocation()],
+                            status: 400,
+                        );
+                    }
+                }
+            }
             // Both spellings: the edit modal posts `duration`, the same name
             // the create form uses, while this handler only ever read
             // `duration_min`. Changing a slot's length therefore did nothing
@@ -634,7 +659,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 $bookedCount = (int)($slot['booked_count'] ?? 0);
                 if ($maxUsers < $bookedCount) {
                     return ControllerTools::JSON(
-                        ['error' => ForegroundI18n::getInstance()->Slot_Error_MaxUsersBelowBooked([$bookedCount])],
+                        ['error' => ForegroundI18n::getInstance()->Slot_Error_MaxUsersBelowBooked($bookedCount)],
                         status: 400,
                     );
                 }
@@ -649,6 +674,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
             if ($globals->readPostValue('cancellation_penalty_percent') !== null) {
                 $penaltyPercent = max(0, min(100, (int)$globals->readPostValue('cancellation_penalty_percent', '0')));
                 $updateData['cancellation_penalty_percent'] = $penaltyPercent;
+            }
+
+            if ($bookedSlot) {
+                $updateData = array_key_exists('location', $updateData)
+                    ? ['location' => $updateData['location']]
+                    : [];
             }
 
             if (!empty($updateData)) {
@@ -673,17 +704,46 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 $whereExtra = ($changesCost || $changesPenalty)
                     ? ' AND booked_count = 0'
                     : '';
+                // Забронированный слот сюда доходит только с правкой места —
+                // сторожевое условие меняется на его собственный статус.
+                $statusGuard = $bookedSlot ? "status = 'booked'" : "status = 'free'";
                 $sql = 'UPDATE ' . TimeSlots::get()->getTableName()
                     . ' SET ' . implode(', ', $setParts)
-                    . " WHERE id = ? AND status = 'free'" . $whereExtra;
+                    . " WHERE id = ? AND {$statusGuard}" . $whereExtra;
                 $affected = CasUpdate::exec($sql, $params);
                 if ($affected === 0) {
                     return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_SlotTaken()], status: 409);
+                }
+
+                // Ссылка не должна появиться молча: человек уже заглядывал
+                // в бронь, не нашёл её и ушёл — сам он больше не проверит.
+                if ($bookedSlot && isset($updateData['location'])) {
+                    static::notifyLocationChanged($slotId, $account->id(), (int)$slot['start_at']);
                 }
             }
 
             $updated = TimeSlots::get()->selectOneByField('id', $slotId);
             return ControllerTools::JSON(['success' => true, 'slot' => $updated]);
+        }
+
+        /**
+         * Сообщить записавшимся, что место встречи у занятия обновилось.
+         *
+         * Ошибка отправки не должна ломать саму правку — она уже сохранена.
+         */
+        private static function notifyLocationChanged(int $slotId, int $expertId, int $startAt): void {
+            try {
+                $bookings = Bookings::get()->selectAll(static function (SelectInterface $q) use ($slotId): void {
+                    $q->where('bookable_id = :bid', ['bid' => $slotId]);
+                    $q->where('bookable_type = :btype', ['btype' => 'time_slot']);
+                    $q->where("status IN ('pending', 'confirmed')");
+                });
+
+                foreach ($bookings as $booking) {
+                    BookingChatNotifier::locationChanged($expertId, (int)$booking['user_id'], $startAt);
+                }
+            } catch (Throwable) {
+            }
         }
 
         /**

@@ -19,7 +19,6 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
     use PHPCraftdream\IRabi\Common\Tables\BalanceLedger;
     use PHPCraftdream\IRabi\Common\Tables\Bookings;
     use PHPCraftdream\IRabi\Common\Tables\ExpertCancellations;
-    use PHPCraftdream\IRabi\Common\Tables\ExpertProfiles;
     use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
     use Throwable;
@@ -120,8 +119,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
             }
 
             try {
-                $expertProfile = ExpertProfiles::get()->selectOneByField('account_id', $account->id());
-                $expertName = ($expertProfile['display_name'] ?? '') ?: ($account->readParam('name') ?: ('#' . $account->id()));
+                $expertName = ($account->readParam('name') ?: ('#' . $account->id()));
                 NewsService::createPersonal(NewsService::TYPE_BOOKING_CONFIRMED, $account->id(), (int)$booking['user_id'], [
                     'booking_id' => $bookingId,
                     'slot_id' => (int)$slot['id'],
@@ -129,7 +127,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                     'name' => $expertName,
                     'time' => (int)$slot['start_at'],
                 ], NewsService::slotKey((int)$slot['id']));
-                EmailNotifications::bookingConfirmed((int)$booking['user_id'], (int)($slot['start_at'] ?? 0), (int)($slot['duration_min'] ?? 0), $account->id());
+                EmailNotifications::bookingConfirmed((int)$booking['user_id'], (int)($slot['start_at'] ?? 0), (int)($slot['duration_min'] ?? 0), $account->id(), (int)($slot['max_users'] ?? 1));
                 BookingChatNotifier::confirmed($account->id(), (int)$booking['user_id'], (int)$slot['start_at']);
             } catch (Throwable) {
             }
@@ -182,8 +180,8 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
 
             if (!$alreadyCancelled) {
                 $affected = CasUpdate::exec(
-                    'UPDATE ' . Bookings::get()->getTableName() . " SET status = 'cancelled', cancelled_at = ? WHERE id = ? AND status IN ('pending', 'confirmed')",
-                    [$now, $bookingId]
+                    'UPDATE ' . Bookings::get()->getTableName() . " SET status = 'cancelled', cancelled_at = ?, cancelled_by = ?, cancelled_role = ?, cancel_reason = ? WHERE id = ? AND status IN ('pending', 'confirmed')",
+                    [$now, $account->id(), Bookings::CANCELLED_BY_EXPERT, mb_substr($reason, 0, 500), $bookingId]
                 );
                 if ($affected === 1) {
                     $performedCancelNow = true;
@@ -224,7 +222,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                     'user_id' => $userId,
                     'reason' => $reason,
                     'created_at' => $now,
-                    'kind' => ($booking['status'] === 'confirmed' ? 'cancel' : 'decline'),
+                    'kind' => Bookings::cancellationKind($booking['status']),
                 ]);
 
                 $slotIdForCount = (int)$slot['id'];
@@ -240,8 +238,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 }
 
                 try {
-                    $expertProfile = ExpertProfiles::get()->selectOneByField('account_id', $account->id());
-                    $expertName = ($expertProfile['display_name'] ?? '') ?: ($account->readParam('name') ?: ('#' . $account->id()));
+                    $expertName = ($account->readParam('name') ?: ('#' . $account->id()));
                     NewsService::createPersonal(NewsService::TYPE_BOOKING_REJECTED, $account->id(), (int)$booking['user_id'], [
                         'booking_id' => $bookingId,
                         'slot_id' => (int)$slot['id'],
@@ -251,7 +248,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                     ], NewsService::slotKey((int)$slot['id']));
                     // Stale slot_booked event for this slot is no longer meaningful.
                     NewsService::deleteByTargetKey(NewsService::slotKey((int)$slot['id']), NewsService::TYPE_SLOT_BOOKED);
-                    EmailNotifications::bookingRejected((int)$booking['user_id'], (int)($slot['start_at'] ?? 0), (int)($slot['duration_min'] ?? 0), $account->id(), $reason);
+                    EmailNotifications::bookingRejected((int)$booking['user_id'], (int)($slot['start_at'] ?? 0), (int)($slot['duration_min'] ?? 0), $account->id(), $reason, $maxUsers);
                     BookingChatNotifier::cancelledOrDeclined($account->id(), (int)$booking['user_id'], (int)$slot['start_at'], (string)$booking['status']);
                 } catch (Throwable) {
                 }
@@ -268,6 +265,13 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
 
         /**
          * Отмена забронированного слота (инициирована экспертом) с указанием причины и возвратом.
+         *
+         * D-155: раньше вела свой собственный цикл по броням — с CAS-отменой
+         * и возвратом, но без NewsService/email (только чат-уведомление) и
+         * без чистки анонса new_slot/slot_booked. Студент, чью бронь снял
+         * полностью занятый слот, не получал ни ленты, ни письма — только
+         * автосообщение в переписке. cancelSlotInternal() уже делает то же
+         * самое плюс недостающие уведомления и чистку анонса; делегируем.
          */
         public static function cancelBookedSlot(IGlobalReqParams $globals, Account $account): mixed {
             $slotId = (int)$globals->readPostValue('slot_id', '0');
@@ -290,58 +294,8 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 return ControllerTools::JSON(['error' => 'Cannot cancel past slot'], status: 400);
             }
 
-            $t = ForegroundI18n::getInstance();
-
-            // Find active bookings for this slot
-            // Use selectAll with named params (selectByField + callback causes param binding conflicts)
-            $activeBookings = Bookings::get()->selectAll(function (SelectInterface $query) use ($slotId): void {
-                $query->where('bookable_id = :bid', ['bid' => $slotId]);
-                $query->where('bookable_type = :btype', ['btype' => 'time_slot']);
-                $query->where("status IN ('pending', 'confirmed')");
-            });
-
-            $slotCost = (int)$slot['cost'];
-            $expertId = $account->id();
-            $now = time();
-
-            foreach ($activeBookings as $booking) {
-                $bookingId = (int)$booking['id'];
-                $userId = (int)$booking['user_id'];
-
-                $affected = CasUpdate::exec(
-                    'UPDATE ' . Bookings::get()->getTableName() . " SET status = 'cancelled', cancelled_at = ? WHERE id = ? AND status IN ('pending', 'confirmed')",
-                    [$now, $bookingId]
-                );
-
-                if ($affected === 1) {
-                    if ($slotCost > 0) {
-                        $note = $t->Ledger_Type_Refund() . ' #' . $bookingId;
-                        BalanceLedger::tryAddRefund($userId, true, $slotCost, $bookingId, $note);
-                        if ($expertId > 0) {
-                            BalanceLedger::tryAddRefund($expertId, false, $slotCost, $bookingId, $note);
-                        }
-                    }
-
-                    ExpertCancellations::get()->insert([
-                        'expert_id' => $expertId,
-                        'slot_id' => $slotId,
-                        'booking_id' => $bookingId,
-                        'user_id' => $userId,
-                        'reason' => $reason,
-                        'created_at' => $now,
-                        'kind' => ($booking['status'] === 'confirmed' ? 'cancel' : 'decline'),
-                    ]);
-
-                    try {
-                        BookingChatNotifier::cancelledOrDeclined($expertId, $userId, (int)$slot['start_at'], (string)$booking['status']);
-                    } catch (Throwable) {
-                    }
-                }
-            }
-
-            // Set slot status to cancelled and release its capacity reservation —
-            // a cancelled slot is never bookable again, so booked_count resets to 0.
-            TimeSlots::get()->updateByField(['status' => 'cancelled', 'booked_count' => 0], 'id', $slotId);
+            $cancelledBy = ($account->readParam('name') ?: ('#' . $account->id()));
+            static::cancelSlotInternal($slot, null, $cancelledBy, $reason);
 
             return ControllerTools::JSON(['success' => true]);
         }
@@ -370,11 +324,29 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 return ControllerTools::JSON(['error' => 'Slot cannot be cancelled in current status'], status: 400);
             }
 
-            // Resolve the expert's display name for the "Cancelled by" email row.
-            $expertProfile = ExpertProfiles::get()->selectOneByField('account_id', $account->id());
-            $cancelledBy = ($expertProfile['display_name'] ?? '') ?: ($account->readParam('name') ?: ('#' . $account->id()));
+            $reason = trim((string)$globals->readPostValue('reason', ''));
 
-            static::cancelSlotInternal($slot, null, $cancelledBy);
+            // D-130: a partially-filled group slot stays status='free' (only
+            // fills to 'booked' once max_users is reached — see audit C-2),
+            // so cancelBookedSlot()'s status==='booked' guard can never reach
+            // it. This was the only path left that could cancel a slot with
+            // real people on it, and it never asked why — the student's
+            // booking card and email showed who cancelled and nothing else.
+            // A reason is only required when someone would actually read it.
+            $hasActiveBookings = Bookings::get()->getCount(function (SelectInterface $query) use ($slotId): void {
+                $query->where('bookable_id = :bid', ['bid' => $slotId]);
+                $query->where('bookable_type = :btype', ['btype' => 'time_slot']);
+                $query->where("status IN ('pending', 'confirmed')");
+            }) > 0;
+
+            if ($hasActiveBookings && $reason === '') {
+                return ControllerTools::JSON(['error' => 'Reason is required'], status: 400);
+            }
+
+            // Resolve the expert's display name for the "Cancelled by" email row.
+            $cancelledBy = ($account->readParam('name') ?: ('#' . $account->id()));
+
+            static::cancelSlotInternal($slot, null, $cancelledBy, $reason);
 
             return ControllerTools::JSON(['success' => true]);
         }
@@ -403,7 +375,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
          *
          * @return int Число броней, фактически переведённых в 'cancelled'.
          */
-        private static function cancelSlotInternal(array $slot, ?string $kind = null, string $cancelledBy = ''): int {
+        private static function cancelSlotInternal(array $slot, ?string $kind = null, string $cancelledBy = '', string $reason = ''): int {
             $slotId = (int)$slot['id'];
             $t = ForegroundI18n::getInstance();
 
@@ -421,12 +393,20 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
             $durationMin = (int)($slot['duration_min'] ?? 0);
             $cancelled = 0;
 
+            // Каскадный путь (разжалование или блокировка преподавателя) — это
+            // решение администрации, а не преподавателя, хотя слоты его. Автора
+            // здесь нет: сюда доходит только `kind`, конкретный модератор
+            // остаётся в журнале действий админки.
+            $byAdmin = $kind === 'admin_cancel';
+            $cancelledRole = $byAdmin ? Bookings::CANCELLED_BY_MODERATOR : Bookings::CANCELLED_BY_EXPERT;
+            $cancelledById = $byAdmin ? null : $expertId;
+
             foreach ($activeBookings as $booking) {
                 $bookingId = (int)$booking['id'];
 
                 $affected = CasUpdate::exec(
-                    'UPDATE ' . Bookings::get()->getTableName() . " SET status = 'cancelled', cancelled_at = ? WHERE id = ? AND status IN ('pending', 'confirmed')",
-                    [$now, $bookingId]
+                    'UPDATE ' . Bookings::get()->getTableName() . " SET status = 'cancelled', cancelled_at = ?, cancelled_by = ?, cancelled_role = ?, cancel_reason = ? WHERE id = ? AND status IN ('pending', 'confirmed')",
+                    [$now, $cancelledById, $cancelledRole, $reason, $bookingId]
                 );
 
                 if ($affected === 1) {
@@ -445,24 +425,30 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                         'slot_id' => $slotId,
                         'booking_id' => $bookingId,
                         'user_id' => $userId,
-                        'reason' => '',
+                        'reason' => $reason,
                         'created_at' => $now,
-                        'kind' => $kind ?? ($booking['status'] === 'confirmed' ? 'cancel' : 'decline'),
+                        'kind' => $kind ?? Bookings::cancellationKind($booking['status']),
                     ]);
 
                     // Notify the affected user that their booking was cancelled
                     // (in-app news + chat + email). Wrapped so a notification
                     // failure can never break the cancellation transaction.
                     try {
+                        // Имя нужно ленте новостей, иначе там останется голая
+                        // ссылка без человека. При каскадной отмене решение
+                        // принимала администрация, и подпись «Модератор» не
+                        // должна вести на профиль преподавателя — поэтому в
+                        // этом случае id не передаётся вовсе.
                         NewsService::createPersonal(NewsService::TYPE_BOOKING_CANCELLED, $expertId, $userId, [
                             'booking_id' => $bookingId,
                             'slot_id' => $slotId,
-                            'expert_id' => $expertId,
+                            'expert_id' => $byAdmin ? 0 : $expertId,
+                            'name' => $cancelledBy,
                             'time' => $slotStartAt,
                         ], NewsService::slotKey($slotId));
                         BookingChatNotifier::cancelledOrDeclined($expertId, $userId, $slotStartAt, (string)$booking['status']);
                         if ($cancelledBy !== '') {
-                            EmailNotifications::bookingCancelled($userId, $slotStartAt, $durationMin, $cancelledBy);
+                            EmailNotifications::bookingCancelled($userId, $slotStartAt, $durationMin, $cancelledBy, $reason, (int)($slot['max_users'] ?? 1));
                         }
                     } catch (Throwable) {
                     }

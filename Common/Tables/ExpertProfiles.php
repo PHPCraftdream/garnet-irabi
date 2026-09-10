@@ -6,7 +6,19 @@ namespace PHPCraftdream\IRabi\Common\Tables {
     use PHPCraftdream\Garnet\Kernel\Interfaces\Db\ITableBuilderDriver;
 
     /**
-     * Профили экспертов (преподавателей/консультантов).
+     * УДАЛЁННАЯ таблица. Класс жив только ради истории миграций.
+     *
+     * Профиль преподавателя оказался копией аккаунта: `display_name` — снимок
+     * `accounts.name`, `bio` — двойник `accounts.about`, `photo` — двойник
+     * `accounts.photo`, `is_approved` — двойник флага `IS_APPROVED`,
+     * `specialization` не заполнял никто. Копии разошлись с оригиналом, и
+     * экраны начали спорить друг с другом. `M_0023` удалила таблицу; читатели
+     * переведены на аккаунт — см. `ExpertDirectory` и
+     * `UserEntityConfig::isApprovedExpertAccount()`.
+     *
+     * Удалить сам класс нельзя: на него ссылается `M_0002`, и без него история
+     * миграций не проиграется на чистой базе. Новый код обращаться сюда не
+     * должен — таблицы на диске нет.
      */
     class ExpertProfiles extends DbTable {
         protected string $tableName = 'expert_profiles';

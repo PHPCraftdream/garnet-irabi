@@ -8,7 +8,6 @@ namespace PHPCraftdream\IRabi\Common\Services {
     use PHPCraftdream\Garnet\Bundle\Modules\News\Tables\FwNewsEvents;
     use PHPCraftdream\Garnet\Bundle\Modules\News\Tables\FwNewsReads;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\DbAccount;
-    use PHPCraftdream\IRabi\Common\Tables\ExpertProfiles;
     use PHPCraftdream\IRabi\Common\Tables\NewsArchived;
     use PHPCraftdream\IRabi\Common\Tables\NewsEvents;
     use PHPCraftdream\IRabi\Common\Tables\NewsReads;
@@ -24,6 +23,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
         public const TYPE_SLOT_CANCELLED = 'slot_cancelled';
         public const TYPE_SUPPORT_REPLY = 'support_reply';
         public const TYPE_NEW_MESSAGE = 'new_message';
+        public const TYPE_COMMENT_APPROVED = 'comment_approved';
 
         protected static function eventsTable(): FwNewsEvents {
             return NewsEvents::get();
@@ -112,8 +112,8 @@ namespace PHPCraftdream\IRabi\Common\Services {
 
         /**
          * Resolve the best current display name for each account id:
-         * expert display_name (if set) -> accounts.name -> "#id". Never falls back
-         * to login so e-mail addresses are not leaked into feeds/conversations.
+         * accounts.name -> "#id". Never falls back to login so e-mail addresses
+         * are not leaked into feeds/conversations.
          *
          * @param int[] $accountIds
          * @return array<int, string> id => display name
@@ -133,17 +133,6 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 $id = (int)$a['id'];
                 $name = trim((string)($a['name'] ?? ''));
                 $out[$id] = $name !== '' ? $name : ('#' . $id);
-            }
-
-            // Experts: a non-empty display_name takes precedence over the account name.
-            $profiles = ExpertProfiles::get()->selectAll(function (SelectInterface $q) use ($ids): void {
-                $q->where('account_id IN (?)', [$ids]);
-            });
-            foreach ($profiles as $p) {
-                $dn = trim((string)($p['display_name'] ?? ''));
-                if ($dn !== '') {
-                    $out[(int)$p['account_id']] = $dn;
-                }
             }
 
             // Any id with no account row at all (deleted) still gets a stable label.
@@ -168,6 +157,37 @@ namespace PHPCraftdream\IRabi\Common\Services {
          */
         public static function slotKey(int $slotId): string {
             return 'slot:' . $slotId;
+        }
+
+        /**
+         * Вернуть событие из архива.
+         *
+         * Родительская реализация передаёт в `deleteBy` замыкание с параметром,
+         * объявленным как `SelectInterface`, а `DbTable::deleteBy` отдаёт туда
+         * построитель DELETE — TypeError и 500 на каждом вызове. Кнопка «Из
+         * архива» не работала ни разу с момента появления (нашла user-8);
+         * пользователь при этом видел «В архив» как безвозвратное удаление.
+         *
+         * Пишем запрос напрямую — тем же приёмом, что `deleteByTargetKey` в
+         * родителе, и одним запросом на все идентификаторы вместо цикла.
+         */
+        public static function unarchive(int $accountId, array $eventIds): void {
+            $ids = array_values(array_filter(
+                array_map('intval', $eventIds),
+                static fn (int $id): bool => $id > 0,
+            ));
+
+            if ($ids === []) {
+                return;
+            }
+
+            $table = static::archivedTable();
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
+            $table->getQueryEx()->ex(
+                'DELETE FROM ' . $table->getTableName() . " WHERE account_id = ? AND event_id IN ({$placeholders})",
+                array_merge([$accountId], $ids),
+            );
         }
     }
 }

@@ -14,6 +14,7 @@ namespace PHPCraftdream\IRabi\Foreground\Middlewares {
     use PHPCraftdream\IRabi\Foreground\Params\Menu;
     use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;
     use PHPCraftdream\IRabi\IRabi;
+    use Psr\Http\Message\ResponseInterface;
 
     class UserDataMiddleware extends RegMiddleware {
         protected static function publicDir(): string {
@@ -75,6 +76,21 @@ namespace PHPCraftdream\IRabi\Foreground\Middlewares {
          * `$common` chain right after authOnly() so it runs before any
          * business-role or staff-rank gate, for every protected route.
          */
+        /**
+         * D-137: routes gated by IrabiAuthMiddleware::authOptional() can reach
+         * this point with no account at all (a guest browsing the public
+         * catalog). The parent's registration-completion flow assumes an
+         * authenticated account and would crash on a null one — there is
+         * nothing to complete registration for, so skip it.
+         */
+        public static function process(IGlobalReqParams $globals, IRouterUriParams $params): ?ResponseInterface {
+            if (!Account::fromSession()) {
+                return null;
+            }
+
+            return parent::process($globals, $params);
+        }
+
         public static function notDisabled(IGlobalReqParams $globals, IRouterUriParams $params): string|null {
             $account = Account::fromSession();
             if ($account && $account->isDisabled()) {

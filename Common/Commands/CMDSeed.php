@@ -26,7 +26,6 @@ namespace PHPCraftdream\IRabi\Common\Commands {
             'admin_action_log',
             'bookings',
             'time_slots',
-            'expert_profiles',
             'payments',
             'payments_log',
             'expert_cancellations',

@@ -4,18 +4,65 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use Aura\SqlQuery\Common\SelectInterface;
     use PHPCraftdream\Garnet\Kernel\Core\FrameworkController;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
-    use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\DbAccount;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Session\Session;
     use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
     use PHPCraftdream\IRabi\Common\PaginationHelper;
-    use PHPCraftdream\IRabi\Common\Services\AccountDisplay;
+    use PHPCraftdream\IRabi\Common\Services\ExpertDirectory;
     use PHPCraftdream\IRabi\Common\Tables\Comments;
     use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;
 
     class CommentsController extends FrameworkController {
         public const URL = '/comments/';
+
+        /**
+         * D-128: reviews existed nowhere outside the expert page they were
+         * written on — an author with reviews for three different experts had
+         * no single place to see any of them, count how many they'd written,
+         * or find one again. Scoped to `author_id = $accountId` server-side,
+         * so unlike post__list this never takes entity_type/entity_id from
+         * the client — there is nothing to authorize per-row, the query
+         * itself can only ever return the caller's own comments.
+         */
+        public static function post__myList(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
+            $account = Account::fromSession();
+            if (!$account) {
+                return ControllerTools::JSON(['error' => 'Not authenticated'], status: 401);
+            }
+
+            $accountId = $account->id();
+            ['page' => $page, 'perPage' => $perPage] = PaginationHelper::readPageParams($globals);
+
+            $pageData = PaginationHelper::fetchPage(
+                Comments::get(),
+                $page,
+                $perPage,
+                static function (SelectInterface $q) use ($accountId): void {
+                    $q->where('author_id = ?', [$accountId]);
+                    $q->orderBy(['created_at DESC']);
+                },
+            );
+
+            $expertIds = array_unique(array_column($pageData->pageItems, 'entity_id'));
+            $experts = ExpertDirectory::byIds($expertIds);
+
+            $items = [];
+            foreach ($pageData->pageItems as $c) {
+                $expertId = (int)$c['entity_id'];
+                $items[] = [
+                    'id' => (int)$c['id'],
+                    'expert_id' => $expertId,
+                    'expert_name' => $experts[$expertId]['display_name'] ?? '',
+                    'body' => (string)$c['body'],
+                    'moderation_status' => $c['moderation_status'],
+                    'created_at' => (int)$c['created_at'],
+                ];
+            }
+            $pageData->pageItems = $items;
+
+            return ControllerTools::JSON(PaginationHelper::toPageResponse($pageData));
+        }
 
         public static function post__list(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
             $account = Account::fromSession();
@@ -35,36 +82,59 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             // Moderators see hidden comments (with status flag in payload),
             // regular users never see them.
             $isModerator = UserEntityConfig::isModerator();
+            $accountId = $account->id();
 
-            $queryCallback = function (SelectInterface $q) use ($entityType, $entityId, $isModerator): void {
+            // Обычный посетитель видит одобренные отзывы — и свой собственный
+            // в любом состоянии. Без этого исключения автор, отправив отзыв,
+            // не находит его на странице и делает единственный доступный ему
+            // вывод: отправка не сработала. Тот же класс, что D-039 и D-041,
+            // только молчание здесь не в ошибке, а в исчезновении написанного.
+            $queryCallback = function (SelectInterface $q) use ($entityType, $entityId, $isModerator, $accountId): void {
                 $q->where('entity_type = ? AND entity_id = ?', [$entityType, $entityId]);
+
                 if (!$isModerator) {
-                    $q->where('is_hidden = ?', [0]);
+                    if ($accountId > 0) {
+                        $q->where(
+                            '((is_hidden = ? AND moderation_status = ?) OR author_id = ?)',
+                            [0, Comments::STATUS_APPROVED, $accountId]
+                        );
+                    } else {
+                        $q->where('is_hidden = ? AND moderation_status = ?', [0, Comments::STATUS_APPROVED]);
+                    }
                 }
+
                 $q->orderBy(['created_at DESC']);
             };
 
             $pageData = PaginationHelper::fetchPage(Comments::get(), $page, $perPage, $queryCallback);
 
-            // Enrich with author names
+            // Имена авторов здесь больше не поднимаются вовсе.
+            //
+            // Раньше их выбирали из базы, чтобы показать модератору. Теперь имя
+            // не уходит никому, и запроса за ним быть не должно: данные, которые
+            // некому показать, незачем и доставать. Заодно исчезает соблазн
+            // «показать хотя бы модератору» при следующей правке.
             $comments = $pageData->pageItems;
-            $authorIds = array_unique(array_filter(array_column($comments, 'author_id')));
-            $authors = [];
-            if (!empty($authorIds)) {
-                $accs = DbAccount::get()->selectByField('id', array_map('intval', $authorIds));
-                foreach ($accs as $a) {
-                    $authors[(int)$a['id']] = $a;
-                }
-            }
 
-            $disabledAuthorIds = AccountDisplay::disabledIds(array_keys($authors));
             foreach ($comments as &$comment) {
                 $aid = (int)$comment['author_id'];
-                if (isset($disabledAuthorIds[$aid])) {
-                    $comment['author_name'] = AccountDisplay::disabledName($aid);
-                } else {
-                    $comment['author_name'] = $authors[$aid]['name'] ?? '';
-                }
+                $comment['is_mine'] = $aid === $accountId;
+
+                // Имя автора не уходит НИКОМУ, включая модератора.
+                //
+                // Раньше оно уходило модератору — с обоснованием, что решение
+                // принимает человек и отвечает за него. Владелец решил иначе, и
+                // это сильнее: модератор судит текст, а не человека, а имя
+                // раскрывается только владельцу платформы и только по отдельному
+                // ходу — когда модератор пометил отзыв как опасный
+                // (`Comments::STATUS_FLAGGED`). Тот, кто вскрывает анонимность,
+                // отвечает за это своим положением.
+                //
+                // Автор своё имя тоже не получает обратно: пусть видит свой отзыв
+                // ровно таким, каким его увидят другие. Иначе обещание
+                // анонимности проверить нечем.
+                $comment['author_name'] = '';
+                $comment['author_id'] = 0;
                 $comment['author_login'] = '';
             }
             unset($comment);
@@ -106,28 +176,36 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 return ControllerTools::JSON(['error' => 'Cannot comment on your own profile'], status: 400);
             }
 
-            // Validate entity is a currently-public expert (only expert type
-            // supported now). Security audit L-01: a bare expert_profiles row
-            // doesn't reflect account-level demotion/disable/unapproval — a
-            // comment target must pass the same predicate the public expert
-            // profile itself requires.
+            // Отзыв можно оставить только действующему преподавателю. Аудит
+            // L-01: когда-то достаточно было строки в отдельной таблице
+            // профилей, а она не знала ни о разжаловании, ни об отключении.
+            // Условие здесь — то же, что и на самой публичной карточке.
             if (!UserEntityConfig::isApprovedActiveExpert($entityId)) {
                 return ControllerTools::JSON(['error' => 'Entity not found'], status: 404);
             }
 
             $now = time();
 
+            // Отзыв не публикуется сразу: сначала его читает модератор.
+            // Состояние проставляется явно, а не полагается на DEFAULT
+            // колонки — из кода должно быть видно, что происходит с тем, что
+            // человек только что написал.
             $commentId = Comments::get()->insert([
                 'author_id' => $accountId,
                 'entity_type' => $entityType,
                 'entity_id' => $entityId,
                 'body' => $body,
                 'created_at' => $now,
+                'moderation_status' => Comments::STATUS_PENDING,
             ]);
 
+            // Ответ отдаётся в том же виде, в каком отзыв увидят другие:
+            // без имени. Автор узнаёт свой по `is_mine`.
             $comment = Comments::get()->selectOneByField('id', $commentId);
-            $comment['author_name'] = $account->readParam('name') ?? '';
+            $comment['author_id'] = 0;
+            $comment['author_name'] = '';
             $comment['author_login'] = '';
+            $comment['is_mine'] = true;
 
             return ControllerTools::JSON([
                 'success' => true,

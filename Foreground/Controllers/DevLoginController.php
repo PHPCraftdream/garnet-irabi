@@ -176,7 +176,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             // scope, never the live `db_ir_*` set. NEVER hardcode `db_ir_*` here.
             $tables = [
                 'balance_ledger', 'account_balance', 'admin_action_log',
-                'bookings', 'time_slots', 'expert_profiles',
+                'bookings', 'time_slots',
                 'payments', 'payments_log',
             ];
 

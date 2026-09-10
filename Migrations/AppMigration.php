@@ -21,6 +21,10 @@ namespace PHPCraftdream\IRabi\Migrations {
     use PHPCraftdream\IRabi\Migrations\Items\M_0017;
     use PHPCraftdream\IRabi\Migrations\Items\M_0018;
     use PHPCraftdream\IRabi\Migrations\Items\M_0019;
+    use PHPCraftdream\IRabi\Migrations\Items\M_0020;
+    use PHPCraftdream\IRabi\Migrations\Items\M_0021;
+    use PHPCraftdream\IRabi\Migrations\Items\M_0022;
+    use PHPCraftdream\IRabi\Migrations\Items\M_0023;
 
     /**
      * Migration plan:
@@ -45,6 +49,14 @@ namespace PHPCraftdream\IRabi\Migrations {
      *            per-item visibility.
      *   M_0018 — home copy no longer names the button, only its place.
      *   M_0019 — reminder-sent marks on bookings (student) and slots (expert).
+     *   M_0020 — comments.moderation_status: reviews are published anonymously
+     *     and only after a moderator approves them.
+     *   M_0021 — comments.moderation_status gains `flagged`: blind moderation,
+     *     with the author revealed to owners only on an escalated review.
+     *   M_0022 — bookings remember who cancelled them and why, so the three
+     *     ways to lose a booking stop looking identical on screen.
+     *   M_0023 — expert_profiles dropped: every column was a copy of the
+     *     account, and the copies had already drifted apart from it.
      *
      * Historical M_0003..M_0019 were squashed into M_0002 in a one-time
      * consolidation pass. Existing prod DBs at version=19 keep their
@@ -52,7 +64,7 @@ namespace PHPCraftdream\IRabi\Migrations {
      * destructive ALTERs replayed).
      */
     class AppMigration extends Migration {
-        protected int $currentVersion = 19;
+        protected int $currentVersion = 23;
 
         /**
          * @var array|class-string[]
@@ -77,6 +89,10 @@ namespace PHPCraftdream\IRabi\Migrations {
             17 => M_0017::class,
             18 => M_0018::class,
             19 => M_0019::class,
+            20 => M_0020::class,
+            21 => M_0021::class,
+            22 => M_0022::class,
+            23 => M_0023::class,
         ];
     }
 }
