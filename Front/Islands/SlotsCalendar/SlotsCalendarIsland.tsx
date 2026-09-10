@@ -59,6 +59,32 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots, experts,
 
     D('slots-calendar.init', {slotCount: slots.length, expertCount: Object.keys(experts).length});
 
+    // D-159: `bookedIds` (from `bookedSlotIds`) is deliberately a full
+    // lifetime history — the server includes cancelled/completed bookings so
+    // old ones stay visible on the calendar. But a slot the server has
+    // already reopened (BookingsController::post__cancel flips it back to
+    // 'free' once nobody active holds it) must stop being "mine" once my
+    // only claim on it is that stale cancellation — otherwise the card is
+    // frozen on a dead-end "Отменён" status forever, with no way back to a
+    // book button, even though the exact same slot books fine from the
+    // expert's public profile (which never remembers the cancellation at
+    // all). Any other status (pending/confirmed/completed) still blocks —
+    // those really do own the slot right now.
+    const slotStatusById = useMemo(() => {
+        const m = new Map<number, string>();
+        for (const s of slots) m.set(s.id, s.status);
+        return m;
+    }, [slots]);
+    const effectiveBookedIds = useMemo(() => {
+        const result = new Set<number>();
+        for (const id of bookedIds) {
+            const bookingStatus = slotStatuses[String(id)];
+            if (bookingStatus === 'cancelled' && slotStatusById.get(id) === 'free') continue;
+            result.add(id);
+        }
+        return result;
+    }, [bookedIds, slotStatuses, slotStatusById]);
+
     // Filter slots client-side (property filters)
     const propertyFilteredSlots = useMemo(() => {
         return slots.filter(slot => {
@@ -92,7 +118,7 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots, experts,
         if (statusFilter === 'all') return propertyFilteredSlots;
         const nowSec = Math.floor(Date.now() / 1000);
         return propertyFilteredSlots.filter(slot => {
-            const isBooked = bookedIds.has(slot.id);
+            const isBooked = effectiveBookedIds.has(slot.id);
             if (statusFilter === 'free') return !isBooked;
             if (statusFilter === 'mine') return isBooked;
             if (!isBooked) return false;
@@ -102,7 +128,7 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots, experts,
             }
             return bookingStatus === statusFilter;
         });
-    }, [propertyFilteredSlots, statusFilter, bookedIds, slotStatuses]);
+    }, [propertyFilteredSlots, statusFilter, effectiveBookedIds, slotStatuses]);
 
     // Build current week data (all timestamps resolved in the user's TZ)
     const weekData = useMemo(() => {
@@ -140,8 +166,8 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots, experts,
         const blank = () => ({free: 0, mine: 0});
         const prev = blank(), next = blank(), now = blank();
         for (const s of propertyFilteredSlots) {
-            const mine = bookedIds.has(s.id) && (slotStatuses[String(s.id)] || '') !== 'cancelled';
-            const free = !bookedIds.has(s.id) && s.status === 'free';
+            const mine = effectiveBookedIds.has(s.id) && (slotStatuses[String(s.id)] || '') !== 'cancelled';
+            const free = !effectiveBookedIds.has(s.id) && s.status === 'free';
             if (!mine && !free) continue;
             const bucket = s.start_at < ws ? prev : (s.start_at >= we ? next : now);
             if (mine) bucket.mine++; else bucket.free++;
@@ -151,14 +177,14 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots, experts,
             {key: 'mine', count: c.mine, label: t.Slots_FilterMine(), cls: 'cal-nav-badge--mine'},
         ];
         return {prev: toItems(prev), next: toItems(next), now: toItems(now)};
-    }, [propertyFilteredSlots, weekData.weekStartUnix, weekData.weekEndUnix, bookedIds, slotStatuses]);
+    }, [propertyFilteredSlots, weekData.weekStartUnix, weekData.weekEndUnix, effectiveBookedIds, slotStatuses]);
 
     const handlePrev = useCallback(() => setWeekOffset(o => o - 1), []);
     const handleNext = useCallback(() => setWeekOffset(o => o + 1), []);
     const handleToday = useCallback(() => setWeekOffset(0), []);
 
     const handleSlotClick = useCallback((slot: SlotItem) => {
-        const isBooked = bookedIds.has(slot.id);
+        const isBooked = effectiveBookedIds.has(slot.id);
         if (isBooked) {
             setDetailSlot(slot);
         } else if (canBook) {
@@ -166,7 +192,7 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots, experts,
         } else {
             setDetailSlot(slot);
         }
-    }, [bookedIds, canBook]);
+    }, [effectiveBookedIds, canBook]);
 
     return (
         <div data-test-id="slots-calendar">
@@ -179,7 +205,7 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots, experts,
             <div className="mb-4">
                 <SlotsStatusFilter
                     slots={propertyFilteredSlots}
-                    bookedIds={bookedIds}
+                    bookedIds={effectiveBookedIds}
                     slotStatuses={slotStatuses}
                     activeFilter={statusFilter}
                     onChange={setStatusFilter}
@@ -217,7 +243,7 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots, experts,
                     days={weekData.days}
                     slotsByDay={weekData.slotsByDay}
                     experts={experts}
-                    bookedIds={bookedIds}
+                    bookedIds={effectiveBookedIds}
                     slotStatuses={slotStatuses}
                     onBookClick={handleSlotClick}
                     isModerator={isModerator}
@@ -253,7 +279,7 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots, experts,
                     slot={bookingSlot}
                     allSlots={slots}
                     experts={experts}
-                    bookedIds={bookedIds}
+                    bookedIds={effectiveBookedIds}
                     balance={currentBalance}
                     bookUrl={bookUrl}
                     csrf={csrf}
