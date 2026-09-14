@@ -10,6 +10,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
     use PHPCraftdream\IRabi\Common\PaginationHelper;
     use PHPCraftdream\IRabi\Common\Services\ExpertDirectory;
+    use PHPCraftdream\IRabi\Common\Tables\Bookings;
     use PHPCraftdream\IRabi\Common\Tables\Comments;
     use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;
 
@@ -182,6 +183,13 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             // Условие здесь — то же, что и на самой публичной карточке.
             if (!UserEntityConfig::isApprovedActiveExpert($entityId)) {
                 return ControllerTools::JSON(['error' => 'Entity not found'], status: 404);
+            }
+
+            // D-173: отзыв можно было оставить, ни разу не занимавшись у
+            // эксперта, — и любое число раз подряд. Отзыв — о состоявшемся
+            // занятии, право писать его наступает только после него.
+            if (!Bookings::hasCompletedBookingWith($accountId, $entityId)) {
+                return ControllerTools::JSON(['error' => 'No completed booking with this expert'], status: 403);
             }
 
             $now = time();

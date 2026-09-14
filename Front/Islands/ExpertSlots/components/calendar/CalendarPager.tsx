@@ -41,6 +41,8 @@ interface Props {
     onPrev: () => void;
     onNext: () => void;
     onToday: () => void;
+    /** Вид, подсвечиваемый активным фильтром списка (см. CalendarPagerCounts). */
+    activeKind?: PagerKind;
 }
 
 /**
@@ -57,6 +59,7 @@ export const CalendarPager: React.FC<Props> = ({
     onPrev,
     onNext,
     onToday,
+    activeKind,
 }) => (
     <div className="grid grid-cols-3 items-center gap-3 mb-2" data-test-id="expert-week-nav">
         <div className="flex items-center gap-2 min-w-0">
@@ -69,11 +72,11 @@ export const CalendarPager: React.FC<Props> = ({
             >
                 <Chevron points="10 12 6 8 10 4" />
             </button>
-            <CalendarPagerCounts items={pagerItems(prevCounts)} side="prev" />
+            <CalendarPagerCounts items={pagerItems(prevCounts)} side="prev" activeKey={activeKind} />
         </div>
 
         <div className="flex flex-col items-center gap-1 min-w-0">
-            <CalendarPagerCounts items={pagerItems(windowCounts)} side="now" />
+            <CalendarPagerCounts items={pagerItems(windowCounts)} side="now" activeKey={activeKind} />
             <div className="flex items-center gap-2 flex-wrap justify-center">
                 <span className="text-sm font-semibold text-on-surface">{rangeLabel}</span>
                 {weekOffset !== 0 && (
@@ -85,7 +88,7 @@ export const CalendarPager: React.FC<Props> = ({
         </div>
 
         <div className="flex items-center gap-2 min-w-0 justify-end">
-            <CalendarPagerCounts items={pagerItems(nextCounts)} side="next" />
+            <CalendarPagerCounts items={pagerItems(nextCounts)} side="next" activeKey={activeKind} />
             <button
                 className="btn-icon-round"
                 onClick={onNext}

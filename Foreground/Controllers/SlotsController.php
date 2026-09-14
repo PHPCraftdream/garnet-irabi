@@ -319,7 +319,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                         ->where("status IN ('pending', 'confirmed')");
                 });
                 if (!empty($alreadyBooked)) {
-                    return ControllerTools::JSON(['error' => "Slot #{$slotId} already booked"], status: 400);
+                    // D-177: was a raw human-readable string — bookErrorMessage()
+                    // on the client only recognizes machine codes, so this fell
+                    // into its generic "slot unavailable" fallback. Wrong for a
+                    // group slot the user can still SEE as bookable by others —
+                    // read as "nothing happened".
+                    return ControllerTools::JSON(['error' => 'already_booked'], status: 400);
                 }
             }
 

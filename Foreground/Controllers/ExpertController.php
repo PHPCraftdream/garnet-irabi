@@ -174,6 +174,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 // Anyone signed in can book (own slots show an "your slot" label
                 // instead of a book button via isOwnProfile).
                 'canBook' => $account !== null,
+                // D-173: форма отзыва раньше показывалась всем, кто не сам
+                // эксперт, — писать могли и без единого занятия у него.
+                'canReview' => !$isOwnProfile && $accountId > 0 && Bookings::hasCompletedBookingWith($accountId, $expertId),
             ]);
 
             return ControllerTools::ok(static::renderContent($content, $url));

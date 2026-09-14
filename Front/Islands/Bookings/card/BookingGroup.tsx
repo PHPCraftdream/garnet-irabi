@@ -20,6 +20,9 @@ interface Props {
 const GroupHeader: React.FC<{group: BookingGroupData}> = ({group}) => {
     const slot = group.slot;
     const id = group.slotId ?? group.key;
+    // Отменённая бронь на том же слоте остаётся в группе (история видна), но
+    // не должна считаться как занятое место — иначе счётчик путает (D-170).
+    const activeCount = group.bookings.filter(b => b.status !== 'cancelled').length;
 
     return (
         <div className="booking-group-header">
@@ -33,7 +36,7 @@ const GroupHeader: React.FC<{group: BookingGroupData}> = ({group}) => {
                 )}
             </div>
             <span className="booking-group-count" data-test-id={`booking-group-count-${id}`}>
-                {t.Booking_GroupCount([group.bookings.length])}
+                {t.Booking_GroupCount([activeCount])}
             </span>
         </div>
     );

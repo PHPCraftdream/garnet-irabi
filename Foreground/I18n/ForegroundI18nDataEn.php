@@ -163,6 +163,8 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Admin_Flag_RevokeOwner' => 'Demote from owner',
             'Admin_Flag_GrantAdmin' => 'Promote to admin',
             'Admin_Flag_RevokeAdmin' => 'Demote from admin',
+            'Admin_Flag_RemoveAdminFirst' => 'Unavailable while the account has the "Admin" role — remove it first',
+            'Admin_Flag_OwnerHasModeratorRights' => 'An owner doesn\'t need a separate moderator role — their rights are already higher',
             'Admin_Flag_GrantExpert' => 'Promote to expert',
             'Admin_Flag_RevokeExpert' => 'Demote to user',
             'Admin_Role_Owner' => 'Owner',
@@ -379,6 +381,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Support_InternalComment' => 'Internal Comment',
             'Support_Assignee' => 'Assignee',
             'Support_Unassigned' => 'Unassigned',
+            'Support_TicketUpdatedWhileTyping' => 'While you were typing, a new reply was posted to this ticket — check the conversation above before sending yours.',
             'Support_HasAttachments' => 'Attachments: %s',
             'Support_Assign' => 'Assign',
             'Support_ChangeStatus' => 'Change Status',
@@ -440,6 +443,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
 
             // IM (Personal Messages)
             'IM_Title' => 'Messages',
+            'Support_Widget_ImBannerLabel' => 'Unread personal messages',
             'IM_NewMessage' => 'New Message',
             'IM_WriteMessage' => 'Write a message',
             'IM_Send' => 'Send',
@@ -876,6 +880,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Slot_BookError_Unavailable' => 'This slot is already taken or unavailable',
             'Slot_BookError_Past' => 'This time has already passed',
             'Slot_BookError_Busy' => 'The wallet is busy with another operation — try again in a moment',
+            'Slot_BookError_AlreadyBooked' => 'You\'re already booked for this session',
             'News_Unread' => 'new',
             'News_Archived' => 'Archived',
             'News_NewSlot_Action' => ' opened ',

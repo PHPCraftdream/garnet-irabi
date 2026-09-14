@@ -16,7 +16,15 @@ export interface PagerCountItem {
  * so they know whether paging that way is worth it. Shared by the expert slot
  * calendar and the public slots calendar.
  */
-export const CalendarPagerCounts: React.FC<{items: PagerCountItem[]; side: 'prev' | 'next' | 'now'}> = ({items, side}) => {
+/**
+ * `activeKey` — какой вид подсвечен активным фильтром списка (напр. "free").
+ * Без него, отфильтровав «Свободен», человек видел рядом со стрелкой все 4
+ * вида вперемешку и не понимал, какое число относится к его фильтру
+ * (нашли expert-2/user-7: счётчик есть, карточки не находятся ни в одной
+ * ближайшей неделе). Остальные виды не убираем — они всё ещё говорят,
+ * есть ли смысл листать вообще, — просто приглушаем.
+ */
+export const CalendarPagerCounts: React.FC<{items: PagerCountItem[]; side: 'prev' | 'next' | 'now'; activeKey?: string}> = ({items, side, activeKey}) => {
     const shown = items.filter(i => i.count > 0);
     if (!shown.length) return null;
     return (
@@ -24,7 +32,7 @@ export const CalendarPagerCounts: React.FC<{items: PagerCountItem[]; side: 'prev
             {shown.map(i => (
                 <span
                     key={i.key}
-                    className={`cal-nav-badge ${i.cls}`}
+                    className={`cal-nav-badge ${i.cls}${activeKey && i.key !== activeKey ? ' cal-nav-badge--dim' : ''}`}
                     title={i.label}
                     data-test-id={`week-${side}-count-${i.key}`}
                 >

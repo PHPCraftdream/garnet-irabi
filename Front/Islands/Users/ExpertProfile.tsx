@@ -31,11 +31,13 @@ interface ExpertSlot {
     location?: string;
     /** Публичное имя площадки онлайн-занятия («Zoom»). */
     platform?: string;
+    max_users?: number;
 }
 
 interface ExpertProfileProps {
     expert: Expert;
     expertId: number;
+    canReview: boolean;
     slots: ExpertSlot[];
     commentsListUrl: string;
     commentsCreateUrl: string;
@@ -60,6 +62,7 @@ const ExpertProfileIslandInner: React.FC<ExpertProfileProps> = ({
     isModerator,
     isOwnProfile = false,
     canBook = false,
+    canReview,
 }) => {
     const [visibleCount, setVisibleCount] = useState(SLOTS_PAGE_SIZE);
     const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -215,7 +218,7 @@ const ExpertProfileIslandInner: React.FC<ExpertProfileProps> = ({
                 deleteUrl={commentsDeleteUrl}
                 currentAccountId={currentAccountId}
                 isModerator={isModerator}
-                canCreate={!isOwnProfile}
+                canCreate={canReview}
             />
             {bookingModal}
         </div>

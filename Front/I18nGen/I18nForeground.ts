@@ -146,6 +146,8 @@ class I18n extends I18nBase {
     Admin_Flag_RevokeOwner: t = (a = []) => this.t('Admin_Flag_RevokeOwner', a);
     Admin_Flag_GrantAdmin: t = (a = []) => this.t('Admin_Flag_GrantAdmin', a);
     Admin_Flag_RevokeAdmin: t = (a = []) => this.t('Admin_Flag_RevokeAdmin', a);
+    Admin_Flag_RemoveAdminFirst: t = (a = []) => this.t('Admin_Flag_RemoveAdminFirst', a);
+    Admin_Flag_OwnerHasModeratorRights: t = (a = []) => this.t('Admin_Flag_OwnerHasModeratorRights', a);
     Admin_Flag_GrantExpert: t = (a = []) => this.t('Admin_Flag_GrantExpert', a);
     Admin_Flag_RevokeExpert: t = (a = []) => this.t('Admin_Flag_RevokeExpert', a);
     Admin_Role_Owner: t = (a = []) => this.t('Admin_Role_Owner', a);
@@ -342,6 +344,7 @@ class I18n extends I18nBase {
     Support_InternalComment: t = (a = []) => this.t('Support_InternalComment', a);
     Support_Assignee: t = (a = []) => this.t('Support_Assignee', a);
     Support_Unassigned: t = (a = []) => this.t('Support_Unassigned', a);
+    Support_TicketUpdatedWhileTyping: t = (a = []) => this.t('Support_TicketUpdatedWhileTyping', a);
     Support_HasAttachments: t = (a = []) => this.t('Support_HasAttachments', a);
     Support_Assign: t = (a = []) => this.t('Support_Assign', a);
     Support_ChangeStatus: t = (a = []) => this.t('Support_ChangeStatus', a);
@@ -397,6 +400,7 @@ class I18n extends I18nBase {
     Comment_Filter_HiddenOnly: t = (a = []) => this.t('Comment_Filter_HiddenOnly', a);
     Comment_Filter_Search: t = (a = []) => this.t('Comment_Filter_Search', a);
     IM_Title: t = (a = []) => this.t('IM_Title', a);
+    Support_Widget_ImBannerLabel: t = (a = []) => this.t('Support_Widget_ImBannerLabel', a);
     IM_NewMessage: t = (a = []) => this.t('IM_NewMessage', a);
     IM_WriteMessage: t = (a = []) => this.t('IM_WriteMessage', a);
     IM_Send: t = (a = []) => this.t('IM_Send', a);
@@ -772,6 +776,7 @@ class I18n extends I18nBase {
     Slot_BookError_Unavailable: t = (a = []) => this.t('Slot_BookError_Unavailable', a);
     Slot_BookError_Past: t = (a = []) => this.t('Slot_BookError_Past', a);
     Slot_BookError_Busy: t = (a = []) => this.t('Slot_BookError_Busy', a);
+    Slot_BookError_AlreadyBooked: t = (a = []) => this.t('Slot_BookError_AlreadyBooked', a);
     News_Unread: t = (a = []) => this.t('News_Unread', a);
     News_Archived: t = (a = []) => this.t('News_Archived', a);
     News_NewSlot_Action: t = (a = []) => this.t('News_NewSlot_Action', a);

@@ -3,7 +3,7 @@ import {useState, useMemo, useCallback} from 'react';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {Slot} from '../types';
 import {CalendarStatusFilter, StatusFilter} from './calendar/CalendarStatusFilter';
-import {CalendarPager} from './calendar/CalendarPager';
+import {CalendarPager, PagerKind} from './calendar/CalendarPager';
 import {CalendarDayColumn} from './calendar/CalendarDayColumn';
 import {useCalendarDrag} from './calendar/useCalendarDrag';
 import {useCalendarWeeks, PAGE_WEEKS} from './calendar/useCalendarWeeks';
@@ -60,6 +60,10 @@ export const ExpertCalendar: React.FC<Props> = ({
     const handleToday = useCallback(() => setWeekOffset(0), []);
 
     const hasFreeSlots = slots.some(s => s.status === 'free');
+    const activeKind: PagerKind | undefined =
+        statusFilter === 'free' || statusFilter === 'pending' || statusFilter === 'booked' || statusFilter === 'completed'
+            ? statusFilter
+            : undefined;
 
     return (
         <div className="space-y-4">
@@ -80,6 +84,7 @@ export const ExpertCalendar: React.FC<Props> = ({
                 onPrev={handlePrevPage}
                 onNext={handleNextPage}
                 onToday={handleToday}
+                activeKind={activeKind}
             />
 
             {weeks.map((week, wi) => (

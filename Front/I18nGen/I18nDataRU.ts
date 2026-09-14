@@ -140,6 +140,8 @@ export class I18nDataRU {
     static Admin_Flag_RevokeOwner = 'Снять роль владельца';
     static Admin_Flag_GrantAdmin = 'Назначить администратором';
     static Admin_Flag_RevokeAdmin = 'Снять роль администратора';
+    static Admin_Flag_RemoveAdminFirst = 'Недоступно, пока у аккаунта роль «Администратор» — сначала снимите её';
+    static Admin_Flag_OwnerHasModeratorRights = 'Владельцу не нужна отдельная роль модератора — права уже выше';
     static Admin_Flag_GrantExpert = 'Назначить преподавателем';
     static Admin_Flag_RevokeExpert = 'Снять роль преподавателя';
     static Admin_Role_Owner = 'Владелец';
@@ -336,6 +338,7 @@ export class I18nDataRU {
     static Support_InternalComment = 'Внутренний комментарий';
     static Support_Assignee = 'Ответственный';
     static Support_Unassigned = 'Не назначен';
+    static Support_TicketUpdatedWhileTyping = 'Пока вы печатали, в тикете появился новый ответ — проверьте переписку выше, прежде чем отправлять свой.';
     static Support_HasAttachments = 'Вложений: %s';
     static Support_Assign = 'Назначить';
     static Support_ChangeStatus = 'Изменить статус';
@@ -391,6 +394,7 @@ export class I18nDataRU {
     static Comment_Filter_HiddenOnly = 'Только скрытые';
     static Comment_Filter_Search = 'Поиск по тексту';
     static IM_Title = 'Сообщения';
+    static Support_Widget_ImBannerLabel = 'Непрочитанные личные сообщения';
     static IM_NewMessage = 'Новый диалог';
     static IM_WriteMessage = 'Написать сообщение';
     static IM_Send = 'Отправить';
@@ -766,6 +770,7 @@ export class I18nDataRU {
     static Slot_BookError_Unavailable = 'Этот слот уже занят или недоступен';
     static Slot_BookError_Past = 'Это время уже прошло';
     static Slot_BookError_Busy = 'Кошелёк сейчас занят другой операцией — повторите через мгновение';
+    static Slot_BookError_AlreadyBooked = 'Вы уже записаны на это занятие';
     static News_Unread = 'новых';
     static News_Archived = 'Архив';
     static News_NewSlot_Action = ': ';

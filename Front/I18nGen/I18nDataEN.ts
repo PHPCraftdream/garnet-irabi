@@ -141,6 +141,8 @@ export class I18nDataEN {
     static Admin_Flag_RevokeOwner = 'Demote from owner';
     static Admin_Flag_GrantAdmin = 'Promote to admin';
     static Admin_Flag_RevokeAdmin = 'Demote from admin';
+    static Admin_Flag_RemoveAdminFirst = 'Unavailable while the account has the "Admin" role — remove it first';
+    static Admin_Flag_OwnerHasModeratorRights = 'An owner doesn\'t need a separate moderator role — their rights are already higher';
     static Admin_Flag_GrantExpert = 'Promote to expert';
     static Admin_Flag_RevokeExpert = 'Demote to user';
     static Admin_Role_Owner = 'Owner';
@@ -337,6 +339,7 @@ export class I18nDataEN {
     static Support_InternalComment = 'Internal Comment';
     static Support_Assignee = 'Assignee';
     static Support_Unassigned = 'Unassigned';
+    static Support_TicketUpdatedWhileTyping = 'While you were typing, a new reply was posted to this ticket — check the conversation above before sending yours.';
     static Support_HasAttachments = 'Attachments: %s';
     static Support_Assign = 'Assign';
     static Support_ChangeStatus = 'Change Status';
@@ -392,6 +395,7 @@ export class I18nDataEN {
     static Comment_Filter_HiddenOnly = 'Hidden only';
     static Comment_Filter_Search = 'Search comment';
     static IM_Title = 'Messages';
+    static Support_Widget_ImBannerLabel = 'Unread personal messages';
     static IM_NewMessage = 'New Message';
     static IM_WriteMessage = 'Write a message';
     static IM_Send = 'Send';
@@ -766,6 +770,7 @@ export class I18nDataEN {
     static Slot_BookError_Unavailable = 'This slot is already taken or unavailable';
     static Slot_BookError_Past = 'This time has already passed';
     static Slot_BookError_Busy = 'The wallet is busy with another operation — try again in a moment';
+    static Slot_BookError_AlreadyBooked = 'You\'re already booked for this session';
     static News_Unread = 'new';
     static News_Archived = 'Archived';
     static News_NewSlot_Action = ' opened ';

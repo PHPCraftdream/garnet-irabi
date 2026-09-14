@@ -171,6 +171,8 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Admin_Flag_RevokeOwner' => 'Снять роль владельца',
             'Admin_Flag_GrantAdmin' => 'Назначить администратором',
             'Admin_Flag_RevokeAdmin' => 'Снять роль администратора',
+            'Admin_Flag_RemoveAdminFirst' => 'Недоступно, пока у аккаунта роль «Администратор» — сначала снимите её',
+            'Admin_Flag_OwnerHasModeratorRights' => 'Владельцу не нужна отдельная роль модератора — права уже выше',
             'Admin_Flag_GrantExpert' => 'Назначить преподавателем',
             'Admin_Flag_RevokeExpert' => 'Снять роль преподавателя',
             'Admin_Role_Owner' => 'Владелец',
@@ -391,6 +393,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Support_InternalComment' => 'Внутренний комментарий',
             'Support_Assignee' => 'Ответственный',
             'Support_Unassigned' => 'Не назначен',
+            'Support_TicketUpdatedWhileTyping' => 'Пока вы печатали, в тикете появился новый ответ — проверьте переписку выше, прежде чем отправлять свой.',
             'Support_HasAttachments' => 'Вложений: %s',
             'Support_Assign' => 'Назначить',
             'Support_ChangeStatus' => 'Изменить статус',
@@ -454,6 +457,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
 
             // IM (Personal Messages)
             'IM_Title' => 'Сообщения',
+            'Support_Widget_ImBannerLabel' => 'Непрочитанные личные сообщения',
             'IM_NewMessage' => 'Новый диалог',
             'IM_WriteMessage' => 'Написать сообщение',
             'IM_Send' => 'Отправить',
@@ -920,6 +924,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Slot_BookError_Unavailable' => 'Этот слот уже занят или недоступен',
             'Slot_BookError_Past' => 'Это время уже прошло',
             'Slot_BookError_Busy' => 'Кошелёк сейчас занят другой операцией — повторите через мгновение',
+            'Slot_BookError_AlreadyBooked' => 'Вы уже записаны на это занятие',
             'News_Unread' => 'новых',
             'News_Archived' => 'Архив',
             // D-143: глагол в прошедшем времени требует рода, а имя в ленте

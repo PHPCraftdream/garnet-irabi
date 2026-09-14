@@ -7,6 +7,7 @@ interface SlotLike extends SlotFormatSource {
     id: number;
     start_at: number;
     cost: number;
+    max_users?: number;
 }
 
 interface Props {
@@ -26,7 +27,14 @@ export const ExpertSlotCard: React.FC<Props> = ({slot, isOwnProfile, canBook, on
     <div data-test-id={`slot-card-${slot.id}`}>
         <div className="card">
             <div className="card-body">
-                <h5 className="card-title">{formatTs(slot.start_at)}</h5>
+                <h5 className="card-title">
+                    {formatTs(slot.start_at)}
+                    {(slot.max_users ?? 1) > 1 && (
+                        <span className="badge text-bg-primary ml-2" data-test-id={`slot-group-badge-${slot.id}`}>
+                            {t.Slot_GroupBadge([slot.max_users ?? 1])}
+                        </span>
+                    )}
+                </h5>
                 <p className="card-text mb-2"><strong>{t.Slot_Cost()}:</strong> {slot.cost} &#8381;</p>
                 <p className="card-text mb-3"><strong>{t.Slot_Type()}:</strong> {slotFormatLine(slot)}</p>
                 {/* Забронировать себя нельзя — на своей же странице вместо

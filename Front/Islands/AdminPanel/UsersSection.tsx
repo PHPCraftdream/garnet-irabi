@@ -244,7 +244,11 @@ export const UsersSection: React.FC<Props> = ({
                         <FlagBtn
                             testId={`flag-IS_MODERATOR-${r.id}`}
                             label={roleFlagLabel(t.Admin_Role_Moderator(), flag(r.IS_MODERATOR))}
-                            title={flag(r.IS_MODERATOR) ? t.Admin_Flag_RevokeModerator() : t.Admin_Flag_GrantModerator()}
+                            title={
+                                flag(r.IS_ADMIN) ? t.Admin_Flag_RemoveAdminFirst()
+                                    : flag(r.IS_OWNER) ? t.Admin_Flag_OwnerHasModeratorRights()
+                                        : flag(r.IS_MODERATOR) ? t.Admin_Flag_RevokeModerator() : t.Admin_Flag_GrantModerator()
+                            }
                             active={flag(r.IS_MODERATOR)}
                             cls={['btn-outline-danger', 'btn-outline-primary']}
                             disabled={pending[r.id] || flag(r.IS_ADMIN) || flag(r.IS_OWNER)}
@@ -255,7 +259,10 @@ export const UsersSection: React.FC<Props> = ({
                         <FlagBtn
                             testId={`flag-IS_OWNER-${r.id}`}
                             label={roleFlagLabel(t.Admin_Role_Owner(), flag(r.IS_OWNER))}
-                            title={flag(r.IS_OWNER) ? t.Admin_Flag_RevokeOwner() : t.Admin_Flag_GrantOwner()}
+                            title={
+                                flag(r.IS_ADMIN) ? t.Admin_Flag_RemoveAdminFirst()
+                                    : flag(r.IS_OWNER) ? t.Admin_Flag_RevokeOwner() : t.Admin_Flag_GrantOwner()
+                            }
                             active={flag(r.IS_OWNER)}
                             cls={['btn-outline-danger', 'btn-outline-primary']}
                             disabled={pending[r.id] || flag(r.IS_ADMIN)}

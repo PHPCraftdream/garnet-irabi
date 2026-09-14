@@ -35,6 +35,7 @@ export function bookErrorMessage(code: string): string {
         case 'insufficient_balance': return t.Booking_InsufficientBalance();
         case 'slot_rescheduled': return t.Slot_Rescheduled();
         case 'account_busy':     return t.Slot_BookError_Busy();
+        case 'already_booked':   return t.Slot_BookError_AlreadyBooked();
         default:                 return t.News_SlotUnavailable();
     }
 }

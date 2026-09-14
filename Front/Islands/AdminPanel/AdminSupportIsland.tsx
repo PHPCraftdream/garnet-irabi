@@ -106,8 +106,14 @@ export const AdminSupportIsland: React.FC<Props> = ({
             const saved = JSON.parse(sessionStorage.getItem(OPEN_TICKETS_KEY) || 'null');
             const savedIds: number[] = Array.isArray(saved?.ticketIds) ? saved.ticketIds : [];
             for (const ticketId of savedIds) {
+                // fetchTickets() caps at the 200 most recently updated — under
+                // active queue traffic a ticket that's been open a while can
+                // fall out of that window before the moderator comes back
+                // (D-168). Same fallback as the #ticket= hash path below:
+                // open with a placeholder label, SupportTicketTab fetches the
+                // real subject independently once mounted.
                 const ticket = tickets.find(x => x.id === ticketId);
-                if (ticket) openTicket(ticketId, ticket.subject);
+                openTicket(ticketId, ticket?.subject || `#${ticketId}`);
             }
             if (savedIds.length > 0 && typeof saved.activeId === 'string') {
                 setActiveId(saved.activeId);

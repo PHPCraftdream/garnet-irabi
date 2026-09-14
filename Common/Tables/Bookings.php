@@ -91,6 +91,26 @@ namespace PHPCraftdream\IRabi\Common\Tables {
         }
 
         /**
+         * Есть ли у пользователя хоть одно завершённое занятие у этого
+         * эксперта — условие права оставить отзыв (D-173: раньше отзыв
+         * можно было оставить, даже не бронируя занятие).
+         */
+        public static function hasCompletedBookingWith(int $userId, int $expertId): bool {
+            $slotsTbl = TimeSlots::get()->getTableName();
+            $bookingsTbl = static::get()->getTableName();
+
+            $count = static::get()->getCount(function (SelectInterface $q) use ($slotsTbl, $bookingsTbl, $userId, $expertId): void {
+                $q->join('INNER', $slotsTbl, "{$slotsTbl}.id = {$bookingsTbl}.bookable_id");
+                $q->where("{$bookingsTbl}.bookable_type = ?", ['time_slot']);
+                $q->where("{$bookingsTbl}.user_id = ?", [$userId]);
+                $q->where("{$bookingsTbl}.status = ?", ['completed']);
+                $q->where("{$slotsTbl}.expert_id = ?", [$expertId]);
+            });
+
+            return $count > 0;
+        }
+
+        /**
          * 'cancel' для брони, которая успела дойти до confirmed, иначе
          * 'decline' — формула переизобреталась одинаково в каждом месте
          * отмены (эксперт/модератор/студент); теперь один источник.

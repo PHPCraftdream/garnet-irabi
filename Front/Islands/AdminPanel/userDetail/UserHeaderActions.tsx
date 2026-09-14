@@ -47,10 +47,14 @@ const RoleToggles: React.FC<RoleTogglesProps> = ({account, isExpert, flagPending
             <FlagBtn
                 testId={`flag-IS_MODERATOR-${account.id}`}
                 label={t.Admin_Role_Moderator()}
-                title={flag(account.IS_MODERATOR) ? t.Admin_Flag_RevokeModerator() : t.Admin_Flag_GrantModerator()}
+                title={
+                    flag(account.IS_ADMIN) ? t.Admin_Flag_RemoveAdminFirst()
+                        : flag(account.IS_OWNER) ? t.Admin_Flag_OwnerHasModeratorRights()
+                            : flag(account.IS_MODERATOR) ? t.Admin_Flag_RevokeModerator() : t.Admin_Flag_GrantModerator()
+                }
                 active={flag(account.IS_MODERATOR)}
                 cls={['btn-success', 'btn-outline-secondary']}
-                disabled={flagPending}
+                disabled={flagPending || flag(account.IS_ADMIN) || flag(account.IS_OWNER)}
                 onClick={() => onSetFlag('IS_MODERATOR', flag(account.IS_MODERATOR) ? 0 : 1)}
             />
         )}
@@ -58,10 +62,13 @@ const RoleToggles: React.FC<RoleTogglesProps> = ({account, isExpert, flagPending
             <FlagBtn
                 testId={`flag-IS_OWNER-${account.id}`}
                 label={t.Admin_Role_Owner()}
-                title={flag(account.IS_OWNER) ? t.Admin_Flag_RevokeOwner() : t.Admin_Flag_GrantOwner()}
+                title={
+                    flag(account.IS_ADMIN) ? t.Admin_Flag_RemoveAdminFirst()
+                        : flag(account.IS_OWNER) ? t.Admin_Flag_RevokeOwner() : t.Admin_Flag_GrantOwner()
+                }
                 active={flag(account.IS_OWNER)}
                 cls={['btn-success', 'btn-outline-secondary']}
-                disabled={flagPending}
+                disabled={flagPending || flag(account.IS_ADMIN)}
                 onClick={() => onSetFlag('IS_OWNER', flag(account.IS_OWNER) ? 0 : 1)}
             />
         )}

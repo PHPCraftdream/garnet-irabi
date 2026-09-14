@@ -47,20 +47,41 @@ export default function SupportTicketTab({ticketId, ticketDetailUrl, replyUrl, i
     const [internalText, setInternalText] = useState('');
     const [replyFiles, setReplyFiles]   = useState<PendingFile[]>([]);
     const [internalFiles, setInternalFiles] = useState<PendingFile[]>([]);
+    const [staleWarning, setStaleWarning] = useState(false);
     const {sending, withSending} = useSending();
-    
+
+    const replyTextRef = React.useRef(replyText);
+    useEffect(() => { replyTextRef.current = replyText; }, [replyText]);
+    useEffect(() => { if (!replyText.trim()) setStaleWarning(false); }, [replyText]);
+    const messageCountRef = React.useRef<number | null>(null);
 
     const loadDetail = () => {
         setError(null);
         D('support.admin.detail', {ticketId});
         sendPost(ticketDetailUrl, {ticket_id: ticketId}).then((r: any) => {
             if (r?.error) { D('support.error', {action: 'loadDetail', ticketId, error: r.error}); setError(r.error); }
-            else { D('support.admin.detail.loaded', {ticketId, messages: (r as TicketDetailData).messages.length}); setData(r as TicketDetailData); }
+            else {
+                const newData = r as TicketDetailData;
+                if (
+                    messageCountRef.current !== null &&
+                    newData.messages.length > messageCountRef.current &&
+                    replyTextRef.current.trim()
+                ) {
+                    // Кто-то ответил в тикете, пока модератор набирал свой ответ —
+                    // именно так mod-1/mod-2 в одном цикле чуть не продублировали ответы.
+                    setStaleWarning(true);
+                }
+                messageCountRef.current = newData.messages.length;
+                D('support.admin.detail.loaded', {ticketId, messages: newData.messages.length});
+                setData(newData);
+            }
         }).catch((err) => { D('support.error', {action: 'loadDetail', ticketId, error: err}); setError(t.User_LoadError()); });
     };
 
     useEffect(() => {
         setData(null);
+        setStaleWarning(false);
+        messageCountRef.current = null;
         loadDetail();
     }, [ticketId, ticketDetailUrl]);
 
@@ -169,6 +190,12 @@ export default function SupportTicketTab({ticketId, ticketDetailUrl, replyUrl, i
             {data.context && <TicketContext context={data.context} />}
 
             <TicketAttachments messages={messages} />
+
+            {staleWarning && (
+                <div className="alert alert-warning mb-3" data-test-id="support-stale-warning">
+                    {t.Support_TicketUpdatedWhileTyping()}
+                </div>
+            )}
 
             <TicketReplyForm
                 replyText={replyText}
