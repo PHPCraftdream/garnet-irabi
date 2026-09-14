@@ -16,15 +16,25 @@ checkout is useful only when developing Garnet itself.
 ```bash
 git clone https://github.com/PHPCraftdream/garnet-irabi.git IRabi
 cd IRabi
-
-copy .env.example .env         # PowerShell; use cp on Unix
-composer install
-php garnet setup --skip-composer
-php garnet config:init --dev   # seeds WorkDir/ConfigDev/ from templates
+./init.sh   # .env, .mcp.json, composer install, garnet setup, config:init,
+            # dev-checkout marker, WorkDir/public — all in one, idempotent
 # edit WorkDir/ConfigDev/{app,db,email,ssh}.ini with your local values
 php garnet migration
 php garnet build
 php garnet serve
+```
+
+Doing it by hand instead of `./init.sh`:
+
+```bash
+copy .env.example .env         # PowerShell; use cp on Unix
+copy .mcp.example.json .mcp.json
+composer install
+php garnet setup --skip-composer
+php garnet config:init --dev   # seeds WorkDir/ConfigDev/ from templates
+mkdir .vscode                  # dev-checkout marker — see Env::isDevDir()
+# Windows: New-Item -ItemType Junction -Path WorkDir\public -Target Public
+# Unix:    ln -s Public WorkDir/public
 ```
 
 See [`docs/development.md`](docs/development.md) for the full setup guide.

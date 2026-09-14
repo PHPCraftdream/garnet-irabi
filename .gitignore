@@ -22,6 +22,10 @@
 # Per-environment app identity (commit .env.example instead).
 /.env
 
+# Per-developer MCP config — absolute local paths, real target URL
+# (commit .mcp.example.json instead; copy it to .mcp.json locally).
+/.mcp.json
+
 # ── Build output (`garnet bundle`, deploy staging trees) ─────────────────
 /dist/
 
