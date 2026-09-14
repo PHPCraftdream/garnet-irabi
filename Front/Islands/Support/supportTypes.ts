@@ -1,4 +1,4 @@
-export type SupportStatus = 'open' | 'investigation' | 'in_progress' | 'waiting_user' | 'waiting_support' | 'escalated' | 'on_hold' | 'deferred' | 'low_priority' | 'resolved' | 'rejected';
+export type SupportStatus = 'open' | 'investigation' | 'in_progress' | 'waiting_user' | 'waiting_support' | 'escalated' | 'on_hold' | 'resolved' | 'rejected';
 
 export type UserRole = 'user' | 'expert' | 'moderator' | 'owner' | 'admin';
 

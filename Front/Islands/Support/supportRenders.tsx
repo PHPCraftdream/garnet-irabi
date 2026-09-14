@@ -11,8 +11,6 @@ export function statusLabel(status: SupportStatus): string {
         waiting_support: () => t.Support_Status_WaitingSupport(),
         escalated: () => t.Support_Status_Escalated(),
         on_hold: () => t.Support_Status_OnHold(),
-        deferred: () => t.Support_Status_Deferred(),
-        low_priority: () => t.Support_Status_LowPriority(),
         resolved: () => t.Support_Status_Resolved(),
         rejected: () => t.Support_Status_Rejected(),
     };
@@ -27,8 +25,6 @@ const STATUS_CLASS: Record<string, string> = {
     waiting_support:   'status-danger',
     escalated:         'status-special',
     on_hold:           'status-muted',
-    deferred:          'status-muted',
-    low_priority:      'status-muted',
     resolved:          'status-success',
     rejected:          'status-muted',
 };
@@ -44,5 +40,5 @@ export const StatusBadge: React.FC<{status: SupportStatus}> = ({status}) => {
 
 export const ALL_STATUSES: SupportStatus[] = [
     'open', 'investigation', 'in_progress', 'waiting_user', 'waiting_support',
-    'escalated', 'on_hold', 'deferred', 'low_priority', 'resolved', 'rejected',
+    'escalated', 'on_hold', 'resolved', 'rejected',
 ];
