@@ -66,6 +66,12 @@ namespace PHPCraftdream\IRabi\Common\Services {
          * правдоподобное время, просто чужое. Заметил её преподаватель, у
          * которого ни одно из названных в чате времён ни разу не совпало с
          * настоящим.
+         *
+         * D-166: время здесь верно переводится в пояс ученика — но диалог
+         * читают ДВОЕ, и эксперт видит ту же самую строку в СВОЁМ поясе,
+         * который может отличаться. Без подписи пояса время выглядит как
+         * рассинхрон/UTC, даже когда конвертация отработала правильно.
+         * Подписываем пояс так же, как в письмах (`DateUtils::zoneLabel`).
          */
         private static function when(int $userId, int $startAt): string {
             $rows = DbAccount::get()->selectAll(static function (SelectInterface $q) use ($userId): void {
@@ -78,7 +84,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 ? $rows[0]['time_zone']
                 : null;
 
-            return DateUtils::formatForUser($startAt, $tz, 'd.m.Y, H:i');
+            return DateUtils::formatForUser($startAt, $tz, 'd.m.Y, H:i') . ' (' . DateUtils::zoneLabel($startAt, $tz) . ')';
         }
 
         private static function send(int $expertId, int $userId, string $body): void {

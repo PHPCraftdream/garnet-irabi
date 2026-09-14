@@ -174,5 +174,10 @@ test.describe('D-157: booking-confirmed chat message uses the recipient\'s local
 
 		expect(body).toContain(localHour);
 		expect(body).not.toContain(utcHour);
+
+		// D-166: the same message is read by the expert too, in their own
+		// timezone — an unlabeled local time misleads whichever participant
+		// isn't the one it was converted for. The zone must be spelled out.
+		expect(body).toMatch(/\(America\/New_York, UTC-?\d/);
 	});
 });
