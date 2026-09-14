@@ -7,6 +7,7 @@ export interface ImConversation {
     partner_is_disabled?: boolean;
     last_message_snippet: string;
     last_message_at: number;
+    last_message_is_mine?: boolean;
     unread_count: number;
     attachments_count?: number;
 }

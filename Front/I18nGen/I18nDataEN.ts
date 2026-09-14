@@ -401,6 +401,7 @@ export class I18nDataEN {
     static IM_MessagePlaceholder = 'Write a message...';
     static IM_Search = 'Search';
     static IM_NoRecipients = 'No recipients found';
+    static IM_YouPrefix = 'You: ';
     static Menu_Messages = 'Messages';
     static Dash_Welcome = 'Hi, %s!';
     static Dash_Role_User = 'User';

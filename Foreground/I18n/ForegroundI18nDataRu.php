@@ -463,6 +463,9 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'IM_MessagePlaceholder' => 'Напишите сообщение...',
             'IM_Search' => 'Поиск',
             'IM_NoRecipients' => 'Получатели не найдены',
+            // Префикс перед превью своего же последнего сообщения в списке
+            // диалогов — иначе список не отличает "жду ответа" от "уже ответил(а)".
+            'IM_YouPrefix' => 'Вы: ',
             'Menu_Messages' => 'Сообщения',
 
             // Dashboard

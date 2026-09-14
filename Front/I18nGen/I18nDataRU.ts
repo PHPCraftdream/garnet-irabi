@@ -400,6 +400,7 @@ export class I18nDataRU {
     static IM_MessagePlaceholder = 'Напишите сообщение...';
     static IM_Search = 'Поиск';
     static IM_NoRecipients = 'Получатели не найдены';
+    static IM_YouPrefix = 'Вы: ';
     static Menu_Messages = 'Сообщения';
     static Dash_Welcome = 'Привет, %s!';
     static Dash_Role_User = 'Пользователь';

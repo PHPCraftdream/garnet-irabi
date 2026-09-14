@@ -68,7 +68,10 @@ export const ConversationRow: React.FC<Props> = ({conv, active, onSelect}) => {
                         )}
                     </div>
                     <div className="support-ticket-row-meta">
-                        <span className="im-conv-snippet">{conv.last_message_snippet}</span>
+                        <span className="im-conv-snippet">
+                            {conv.last_message_is_mine && <span className="im-conv-you-prefix">{t.IM_YouPrefix()}</span>}
+                            {conv.last_message_snippet}
+                        </span>
                         <AttachmentsMark count={conv.attachments_count ?? 0} convId={conv.id} />
                         <span className="im-conv-time">{formatTs(conv.last_message_at)}</span>
                     </div>

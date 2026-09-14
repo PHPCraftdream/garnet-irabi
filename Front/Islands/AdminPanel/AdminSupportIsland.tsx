@@ -72,7 +72,17 @@ export const AdminSupportIsland: React.FC<Props> = ({
     // User tabs via shared hook
     const {userTabs, activeUserTabId, setActiveUserTabId, openUser, closeUser} = useUserTabs();
 
-    // Read #user={id} or #ticket={id} from URL hash on mount
+    // Which open tickets survive a trip away from this page (e.g. checking a
+    // slot/booking in a different admin section) and back — a moderator
+    // mid-investigation on ticket #9 used to have to re-find and reopen it
+    // from the queue every time, since dynamicTabs is plain React state that
+    // resets on remount. sessionStorage (not localStorage) so it clears with
+    // the tab/session, matching how long this context should realistically live.
+    const OPEN_TICKETS_KEY = 'admin-support-open-tickets';
+
+    // Read #user={id} or #ticket={id} from URL hash on mount (explicit deep
+    // link, e.g. from an email notification) — falls back to whatever ticket
+    // tabs were open before navigating to another admin section.
     useEffect(() => {
         const hash = window.location.hash;
         if (hash.includes('ticket=')) {
@@ -82,14 +92,40 @@ export const AdminSupportIsland: React.FC<Props> = ({
                 openTicket(ticketId, ticket?.subject || `#${ticketId}`);
                 window.history.replaceState(null, '', window.location.pathname);
             }
-        } else if (hash.includes('user=')) {
+            return;
+        }
+        if (hash.includes('user=')) {
             const userId = parseInt(hash.split('user=')[1]?.split('&')[0] || '0', 10);
             if (userId > 0) {
                 openUser(userId, `#${userId}`);
                 window.history.replaceState(null, '', window.location.pathname);
             }
+            return;
         }
+        try {
+            const saved = JSON.parse(sessionStorage.getItem(OPEN_TICKETS_KEY) || 'null');
+            const savedIds: number[] = Array.isArray(saved?.ticketIds) ? saved.ticketIds : [];
+            for (const ticketId of savedIds) {
+                const ticket = tickets.find(x => x.id === ticketId);
+                if (ticket) openTicket(ticketId, ticket.subject);
+            }
+            if (savedIds.length > 0 && typeof saved.activeId === 'string') {
+                setActiveId(saved.activeId);
+            }
+        } catch { /* corrupt/old shape — ignore, start clean */ }
     }, []);
+
+    // Keep the saved set in sync with whichever ticket tabs are actually open.
+    useEffect(() => {
+        const ticketIds = dynamicTabs
+            .filter((tab): tab is InternalTab & {tabKind: TicketTabKind} => tab.tabKind?.kind === 'ticket-detail')
+            .map(tab => tab.tabKind.ticketId);
+        if (ticketIds.length === 0) {
+            sessionStorage.removeItem(OPEN_TICKETS_KEY);
+        } else {
+            sessionStorage.setItem(OPEN_TICKETS_KEY, JSON.stringify({ticketIds, activeId}));
+        }
+    }, [dynamicTabs, activeId]);
 
     // Sync active tab: user tabs take priority when active
     const effectiveActiveId = activeUserTabId ?? activeId;

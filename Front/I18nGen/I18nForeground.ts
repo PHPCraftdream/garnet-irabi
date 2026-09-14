@@ -406,6 +406,7 @@ class I18n extends I18nBase {
     IM_MessagePlaceholder: t = (a = []) => this.t('IM_MessagePlaceholder', a);
     IM_Search: t = (a = []) => this.t('IM_Search', a);
     IM_NoRecipients: t = (a = []) => this.t('IM_NoRecipients', a);
+    IM_YouPrefix: t = (a = []) => this.t('IM_YouPrefix', a);
     Menu_Messages: t = (a = []) => this.t('Menu_Messages', a);
     Dash_Welcome: t = (a = []) => this.t('Dash_Welcome', a);
     Dash_Role_User: t = (a = []) => this.t('Dash_Role_User', a);

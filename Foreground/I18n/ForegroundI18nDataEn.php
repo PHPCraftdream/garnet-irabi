@@ -449,6 +449,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'IM_MessagePlaceholder' => 'Write a message...',
             'IM_Search' => 'Search',
             'IM_NoRecipients' => 'No recipients found',
+            'IM_YouPrefix' => 'You: ',
             'Menu_Messages' => 'Messages',
 
             // Dashboard
