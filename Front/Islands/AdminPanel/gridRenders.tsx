@@ -13,6 +13,7 @@ export function statusLabel(status: string): string {
         case 'completed': return t.Booking_Status_Completed();
         case 'free':      return t.Slot_Status_Free();
         case 'booked':    return t.Slot_Status_Booked();
+        case 'expired':   return t.Slot_Status_Expired();
         default:          return status;
     }
 }

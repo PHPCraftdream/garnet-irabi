@@ -3,7 +3,7 @@ import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {translateStatus} from '../../../../Common/statusHelpers';
 import {Slot} from '../../types';
 
-export const STATUS_FILTERS = ['all', 'pending', 'free', 'booked', 'completed', 'cancelled'] as const;
+export const STATUS_FILTERS = ['all', 'pending', 'free', 'booked', 'completed', 'expired', 'cancelled'] as const;
 export type StatusFilter = typeof STATUS_FILTERS[number];
 
 /**

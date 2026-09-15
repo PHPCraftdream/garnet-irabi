@@ -16,6 +16,9 @@ function statusBadgeClass(status: string): string {
         case 'free': return 'bg-success';
         case 'booked': return 'status-warning';
         case 'completed': return 'status-info';
+        // Несостоявшееся занятие — не достижение и не беда: приглушённый серый,
+        // как у снятого, но отдельно от него.
+        case 'expired': return 'status-muted';
         case 'cancelled': return 'bg-secondary';
         default: return 'status-muted';
     }
@@ -26,6 +29,7 @@ function statusText(status: string): string {
         case 'free': return t.Slot_Status_Free();
         case 'booked': return t.Slot_Status_Booked();
         case 'completed': return t.Slot_Status_Completed();
+        case 'expired': return t.Slot_Status_Expired();
         case 'cancelled': return t.Slot_Status_Cancelled();
         default: return status;
     }
@@ -36,6 +40,7 @@ function borderClass(status: string): string {
         case 'free': return 'border-success';
         case 'booked': return 'border-warning';
         case 'completed': return 'border-info';
+        case 'expired': return 'border-secondary';
         case 'cancelled': return 'border-secondary';
         default: return '';
     }

@@ -224,6 +224,24 @@ async function getUserCancellationKind(bookingId: number): Promise<string | null
 	} finally { await conn.end(); }
 }
 
+/**
+ * The refund row a cancellation wrote for ONE booking: credit on the student's
+ * side, debit on the expert's. Exact by construction — the ledger has a UNIQUE
+ * key on (account_id, entry_type, ref_type, ref_id), so there is at most one.
+ */
+async function refundEntryAmount(bookingId: number, accountId: number, isCredit: boolean): Promise<number> {
+	const conn = await mysql.createConnection(DB);
+	try {
+		const [rows]: any = await conn.execute(
+			`SELECT amount FROM ${tn('balance_ledger')}
+			 WHERE account_id = ? AND entry_type = 'booking_refund'
+			   AND ref_type = 'booking' AND ref_id = ? AND is_credit = ?`,
+			[accountId, bookingId, isCredit ? 1 : 0]
+		);
+		return rows.length > 0 ? Number(rows[0].amount) : 0;
+	} finally { await conn.end(); }
+}
+
 async function getSlotStatus(slotId: number): Promise<string> {
 	const conn = await mysql.createConnection(DB);
 	try {
@@ -728,6 +746,14 @@ test.describe('Fix 7: cron complete-expired completes orphan confirmed booking; 
 	let emptyPastSlotId = 0;
 	let emptyFutureSlotId = 0;
 
+	// D-204: a FULL slot (status='booked') whose every seat was held by a
+	// request the expert never answered. The first cron branch closes it before
+	// the third branch declines those requests, so it used to end the pass
+	// labelled the same as a lesson that actually happened.
+	let fullPendingSlotId = 0;
+	let fullPendingBookingId = 0;
+
+
 	// Balances + email-queue watermark captured before the cron runs, so the
 	// refund + notification assertions can compare against a known baseline.
 	const PENDING_SLOT_COST = 300;
@@ -825,6 +851,22 @@ test.describe('Fix 7: cron complete-expired completes orphan confirmed booking; 
 			maxUsers: 5,
 		});
 		expect(emptyFutureSlotId).toBeGreaterThan(0);
+
+		// D-204 TARGET: single-seat slot already marked 'booked' (the seat was
+		// taken) whose only booking is still waiting for the expert's answer.
+		// Cost 0 on purpose — the refund branch must not disturb the balance
+		// baselines the controls above compare against.
+		fullPendingSlotId = await seedSlot({
+			expertId,
+			startAt: pastStart,
+			endAt: pastEnd,
+			status: 'booked',
+			cost: 0,
+			maxUsers: 1,
+		});
+		expect(fullPendingSlotId).toBeGreaterThan(0);
+		fullPendingBookingId = await seedBooking({ userId, slotId: fullPendingSlotId, status: 'pending' });
+		expect(fullPendingBookingId).toBeGreaterThan(0);
 	});
 
 	test('before cron: target booking is confirmed, controls are correct', async () => {
@@ -902,12 +944,15 @@ test.describe('Fix 7: cron complete-expired completes orphan confirmed booking; 
 		expect(userEmailMaxIdAfter).toBeGreaterThan(userEmailMaxIdBefore);
 	});
 
-	test('D-183: past slot nobody booked stops being "free" — it is over, not available', async () => {
+	test('D-183/D-204: past slot nobody booked ends as "expired" — over, and it never happened', async () => {
 		if (!emptyPastSlotId) { test.skip(); return; }
 		// Before the fix this stayed 'free' forever: the expert's status filter
 		// counted it, the calendar window (four weeks from today) never showed
 		// it, and the two numbers disagreed on the same screen.
-		expect(await getSlotStatus(emptyPastSlotId)).toBe('completed');
+		//
+		// D-204: closing it is not enough — 'completed' would claim a lesson
+		// took place. Nobody was ever booked here.
+		expect(await getSlotStatus(emptyPastSlotId)).toBe('expired');
 	});
 
 	test('D-183 control: a future slot nobody booked is left alone', async () => {
@@ -919,8 +964,27 @@ test.describe('Fix 7: cron complete-expired completes orphan confirmed booking; 
 		if (!pastPendingSlotId) { test.skip(); return; }
 		// The auto-cancel above releases the seat and leaves the slot open.
 		// Without the closing sweep it would be back to the D-183 state: past,
-		// empty, and still advertised as free.
-		expect(await getSlotStatus(pastPendingSlotId)).toBe('completed');
+		// empty, and still advertised as free. Nobody attended, so 'expired'.
+		expect(await getSlotStatus(pastPendingSlotId)).toBe('expired');
+	});
+
+	test('D-204: a full slot whose every request went unanswered did NOT take place', async () => {
+		if (!fullPendingSlotId) { test.skip(); return; }
+		// The request itself is declined by the same pass...
+		expect(await getBookingStatus(fullPendingBookingId)).toBe('cancelled');
+		// ...and the slot must not end up wearing the same word as a lesson the
+		// expert actually gave. The first cron branch closes 'booked' slots
+		// before the third one declines their pending requests, so without the
+		// re-classification this reads 'completed' — a lesson that never was.
+		expect(await getSlotStatus(fullPendingSlotId)).toBe('expired');
+	});
+
+	test('D-204 control: a past slot someone actually attended stays "completed"', async () => {
+		if (!targetSlotId) { test.skip(); return; }
+		// The contrast that gives the word its meaning: same cron pass, same
+		// expired time, but here a confirmed booking became a completed one.
+		expect(await getBookingStatus(targetBookingId)).toBe('completed');
+		expect(await getSlotStatus(targetSlotId)).toBe('completed');
 	});
 
 	test('D-146: auto-cancelled pending booking gets a user_cancellations row (kind=decline)', async () => {
@@ -951,6 +1015,7 @@ test.describe('Fix 7: cron complete-expired completes orphan confirmed booking; 
 		if (pastPendingSlotId) await cleanupSlot(pastPendingSlotId);
 		if (emptyPastSlotId) await cleanupSlot(emptyPastSlotId);
 		if (emptyFutureSlotId) await cleanupSlot(emptyFutureSlotId);
+		if (fullPendingSlotId) await cleanupSlot(fullPendingSlotId);
 		// Clean the rejection email enqueued by the cron so it does not leak
 		// into subsequent test runs that share this isolated scope.
 		if (userEmailMaxIdBefore > 0) {
@@ -989,6 +1054,144 @@ async function postBookingsPage(page: Page): Promise<{ status: number; body: any
 		return { status: res.status, body };
 	});
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// D-199: an unanswered request dies when the lesson STARTS, not when it ends.
+//
+// A pending booking is paid at booking time. While it sits unanswered the
+// student's money is gone from their balance and the expert is credited for a
+// session that has not happened. The cron used to wait for `end_at`, so a
+// student who was never let into a lesson still had their money locked for the
+// full hour it ran — while every screen in the product had already been saying
+// "the lesson has started, you can no longer cancel" since the first minute.
+// The owner's decision: move the money at the start, where the words already
+// are.
+//
+// Its own describe on purpose. The Fix 7 block above compares whole-account
+// balances before and after one cron pass; a second paid booking seeded into
+// that block shifts those totals and makes an unrelated test fail instead of
+// this one. Separate slots, separate cron run, separate baselines.
+// ─────────────────────────────────────────────────────────────────────────────
+
+test.describe('D-199: the money follows the words — an unanswered request is dropped at the start', () => {
+	const COST = 400;
+
+	let userId = 0;
+	let expertId = 0;
+	let runningSlotId = 0;
+	let runningBookingId = 0;
+	let futureSlotId = 0;
+	let futureBookingId = 0;
+	let emailMaxIdBefore = 0;
+
+	test.beforeAll(async () => {
+		userId = await getAccountId('user1@dev.test');
+		expertId = await getAccountId('expert1@dev.test');
+		expect(userId).toBeGreaterThan(0);
+		expect(expertId).toBeGreaterThan(0);
+
+		const now = Math.floor(Date.now() / 1000);
+
+		await ensureBalance(userId, COST + 2000);
+		await ensureBalance(expertId, COST + 2000);
+		emailMaxIdBefore = await emailQueueMaxId('user1@dev.test');
+
+		// TARGET: the lesson is running RIGHT NOW — started ten minutes ago,
+		// fifty still to go — and the expert never answered.
+		runningSlotId = await seedSlot({
+			expertId,
+			startAt: now - 600,
+			endAt: now + 3000,
+			status: 'free',
+			cost: COST,
+			maxUsers: 2,
+		});
+		expect(runningSlotId).toBeGreaterThan(0);
+		runningBookingId = await seedBooking({ userId, slotId: runningSlotId, status: 'pending', cost: COST, expertId });
+		expect(runningBookingId).toBeGreaterThan(0);
+
+		// CONTROL: same shape, but the lesson has not started. The expert still
+		// has every right to take their time answering it.
+		const futureStart = now + 86400 * 3;
+		futureSlotId = await seedSlot({
+			expertId,
+			startAt: futureStart,
+			endAt: futureStart + 3600,
+			status: 'free',
+			cost: COST,
+			maxUsers: 2,
+		});
+		expect(futureSlotId).toBeGreaterThan(0);
+		futureBookingId = await seedBooking({ userId, slotId: futureSlotId, status: 'pending', cost: COST, expertId });
+		expect(futureBookingId).toBeGreaterThan(0);
+	});
+
+	test.afterAll(async () => {
+		if (runningSlotId) await cleanupSlot(runningSlotId);
+		if (futureSlotId) await cleanupSlot(futureSlotId);
+		if (emailMaxIdBefore > 0) {
+			const conn = await mysql.createConnection(DB);
+			try {
+				await conn.execute(
+					`DELETE FROM ${tn('email_queue')} WHERE recipient_email = ? AND id > ?`,
+					['user1@dev.test', emailMaxIdBefore]
+				);
+			} finally { await conn.end(); }
+		}
+		if (userId) await recalcBalance(userId);
+		if (expertId) await recalcBalance(expertId);
+	});
+
+	test('before cron: both requests are still waiting for the expert', async () => {
+		if (!runningBookingId) { test.skip(); return; }
+		expect(await getBookingStatus(runningBookingId)).toBe('pending');
+		expect(await getBookingStatus(futureBookingId)).toBe('pending');
+	});
+
+	test('run real cron complete-expired', () => {
+		const prefix = getDbPrefix();
+		const res = spawnSync('php', ['run_cmd.php', 'cron', 'complete-expired'], {
+			cwd: APP_DIR,
+			env: { ...process.env, DB_PREFIX_OVERRIDE: prefix },
+			encoding: 'utf8',
+		});
+		const out = (res.stdout ?? '') + (res.stderr ?? '');
+		console.log('[cron output]', out.trim());
+		expect(out).toContain('Completed:');
+	});
+
+	test('the request on the lesson under way is dropped, with the money returned in full', async () => {
+		if (!runningBookingId) { test.skip(); return; }
+
+		// Before the fix this survived until end_at — another fifty minutes of
+		// the student's money sitting frozen for a lesson they are not in.
+		expect(await getBookingStatus(runningBookingId)).toBe('cancelled');
+
+		// Both sides of the refund, read off THIS booking's own ledger rows
+		// rather than account totals: other bookings are refunded in the same
+		// pass, and a balance comparison would be measuring their sum.
+		expect(await refundEntryAmount(runningBookingId, userId, true)).toBe(COST);
+		expect(await refundEntryAmount(runningBookingId, expertId, false)).toBe(COST);
+
+		// Counted as a decline, like every other request the expert let pass.
+		expect(await getUserCancellationKind(runningBookingId)).toBe('decline');
+	});
+
+	test('control: the lesson in progress itself stays open — only the request died', async () => {
+		if (!runningSlotId) { test.skip(); return; }
+		// The distinction the fix rests on. The request has no future the
+		// moment the lesson starts; the lesson does — it is running right now
+		// for whoever was confirmed in time, and must stay open until end_at.
+		expect(await getSlotStatus(runningSlotId)).toBe('free');
+	});
+
+	test('control: a request on a lesson that has not started is left alone', async () => {
+		if (!futureBookingId) { test.skip(); return; }
+		expect(await getBookingStatus(futureBookingId)).toBe('pending');
+		expect(await refundEntryAmount(futureBookingId, userId, true)).toBe(0);
+		expect(await getSlotStatus(futureSlotId)).toBe('free');
+	});
+});
 
 test.describe('D-147: meeting link stays visible after the session (booked slot) completes', () => {
 	let userId = 0;

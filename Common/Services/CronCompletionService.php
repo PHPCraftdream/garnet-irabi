@@ -65,7 +65,7 @@ class CronCompletionService {
         $expiredOpenSlots = TimeSlots::get()->selectAll(function (SelectInterface $q) use ($now, $limit, $slotIds): void {
             $q->where('end_at > 0')
                 ->where('end_at < ?', [$now])
-                ->where("status NOT IN ('completed', 'cancelled', 'booked')")
+                ->where("status NOT IN ('completed', 'expired', 'cancelled', 'booked')")
                 ->limit($limit);
 
             if ($slotIds !== null) {
@@ -97,19 +97,28 @@ class CronCompletionService {
             }
         }
 
-        // Auto-cancel pending bookings whose slot has already passed without an
-        // expert decision. A pending booking is already PAID at booking time
-        // (booking_invoice debit on the user, booking_payment credit on the
-        // expert — both inserted unconditionally by post__book), so leaving it
-        // pending forever keeps the user's funds locked and the expert credited
-        // for a session that never happened. Once end_at has passed on a slot
-        // that is NOT itself cancelled, cancel the booking with a FULL refund
-        // and notify the user. Slots already cancelled are skipped — their
-        // bookings are cancelled by the slot-cancellation flow. Idempotent: a
-        // re-run finds no status='pending' row and is a no-op.
+        // Auto-cancel pending bookings the expert never answered. A pending
+        // booking is already PAID at booking time (booking_invoice debit on the
+        // user, booking_payment credit on the expert — both inserted
+        // unconditionally by post__book), so leaving it pending keeps the
+        // user's money locked and the expert credited for a session that is not
+        // going to happen.
+        //
+        // D-199: the cut-off is the START of the lesson, not its end. Once the
+        // clock passes start_at the answer can no longer be useful — nobody
+        // joins a lesson that is already under way, and every screen in the
+        // product says as much from that moment on. Waiting for end_at kept the
+        // student's money frozen for the entire length of a lesson they were
+        // never let into: an hour, sometimes two, with the funds gone from the
+        // balance and the expert credited for nothing. The word and the money
+        // now move at the same moment.
+        //
+        // Slots already cancelled are skipped — their bookings are cancelled by
+        // the slot-cancellation flow. Idempotent: a re-run finds no
+        // status='pending' row and is a no-op.
         $expiredNotCancelledSlots = TimeSlots::get()->selectAll(function (SelectInterface $q) use ($now, $limit, $slotIds): void {
-            $q->where('end_at > 0')
-                ->where('end_at < ?', [$now])
+            $q->where('start_at > 0')
+                ->where('start_at < ?', [$now])
                 ->where("status != 'cancelled'")
                 ->limit($limit);
 
@@ -214,6 +223,10 @@ class CronCompletionService {
         // карточкой «Свободен» и цифрой в фильтре: счётчик считал по статусу,
         // список отбирал по времени, и числа расходились на двух экранах
         // сразу. Статус здесь терминальный, так что повторный тик — no-op.
+        //
+        // D-204: закрывается «Не состоялось», а не «Завершено». К этому месту
+        // доходит только то, на чём никого не было: подтверждённые брони выше
+        // уже завершены вместе со своими слотами, неподтверждённые — сняты.
         $staleOpenSlots = TimeSlots::get()->selectAll(function (SelectInterface $q) use ($now, $limit, $slotIds): void {
             $q->where('end_at > 0')
                 ->where('end_at < ?', [$now])
@@ -227,8 +240,32 @@ class CronCompletionService {
 
         $staleOpenSlotIds = array_map(fn (array $s): int => (int)$s['id'], $staleOpenSlots);
         if (!empty($staleOpenSlotIds)) {
-            TimeSlots::get()->updateById(['status' => 'completed'], $staleOpenSlotIds);
+            TimeSlots::get()->updateById(['status' => 'expired'], $staleOpenSlotIds);
             $stats['slots'] += count($staleOpenSlotIds);
+        }
+
+        // D-204: слот, забитый под завязку одними неподтверждёнными заявками,
+        // первая ветка пометила «Завершено» ещё до того, как третья эти заявки
+        // сняла. Занятия не было — и слово на карточке не должно утверждать
+        // обратное. Спрашиваем факт, а не ветку: остался ли на слоте хоть один
+        // состоявшийся визит. Идемпотентно — терминальный статус меняется
+        // только на терминальный, и только в одну сторону.
+        if (!empty($completedSlotIds)) {
+            $attended = Bookings::get()->selectAll(function (SelectInterface $q) use ($completedSlotIds): void {
+                $q->resetCols();
+                $q->cols(['bookable_id']);
+                $q->where("status = 'completed'")
+                    ->where("bookable_type = 'time_slot'")
+                    ->where('bookable_id IN (?)', [$completedSlotIds])
+                    ->groupBy(['bookable_id']);
+            });
+
+            $attendedSlotIds = array_map(fn (array $b): int => (int)$b['bookable_id'], $attended);
+            $emptySlotIds = array_values(array_diff($completedSlotIds, $attendedSlotIds));
+
+            if (!empty($emptySlotIds)) {
+                TimeSlots::get()->updateById(['status' => 'expired'], $emptySlotIds);
+            }
         }
 
         return $stats;

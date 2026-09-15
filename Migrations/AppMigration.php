@@ -25,6 +25,7 @@ namespace PHPCraftdream\IRabi\Migrations {
     use PHPCraftdream\IRabi\Migrations\Items\M_0021;
     use PHPCraftdream\IRabi\Migrations\Items\M_0022;
     use PHPCraftdream\IRabi\Migrations\Items\M_0023;
+    use PHPCraftdream\IRabi\Migrations\Items\M_0024;
 
     /**
      * Migration plan:
@@ -57,6 +58,8 @@ namespace PHPCraftdream\IRabi\Migrations {
      *     ways to lose a booking stop looking identical on screen.
      *   M_0023 — expert_profiles dropped: every column was a copy of the
      *     account, and the copies had already drifted apart from it.
+     *   M_0024 — time_slots.status gains `expired`: a lesson that took place
+     *     and an hour nobody booked were the same word on the teacher's card.
      *
      * Historical M_0003..M_0019 were squashed into M_0002 in a one-time
      * consolidation pass. Existing prod DBs at version=19 keep their
@@ -64,7 +67,7 @@ namespace PHPCraftdream\IRabi\Migrations {
      * destructive ALTERs replayed).
      */
     class AppMigration extends Migration {
-        protected int $currentVersion = 23;
+        protected int $currentVersion = 24;
 
         /**
          * @var array|class-string[]
@@ -93,6 +96,7 @@ namespace PHPCraftdream\IRabi\Migrations {
             21 => M_0021::class,
             22 => M_0022::class,
             23 => M_0023::class,
+            24 => M_0024::class,
         ];
     }
 }

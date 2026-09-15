@@ -65,7 +65,7 @@ class CronReminderService {
                 static function (SelectInterface $q) use ($until, $floor, $limit, $slotIds): void {
                     $q->where('start_at > ?', [$floor])
                         ->where('start_at <= ?', [$until])
-                        ->where("status NOT IN ('cancelled', 'completed')")
+                        ->where("status NOT IN ('cancelled', 'completed', 'expired')")
                         ->limit($limit);
 
                     if ($slotIds !== null) {

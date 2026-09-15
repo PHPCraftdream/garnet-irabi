@@ -62,6 +62,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Slot_Status_Free' => 'Free',
             'Slot_Status_Booked' => 'Booked',
             'Slot_Status_Completed' => 'Completed',
+            'Slot_Status_Expired' => 'Did not take place',
             'Slot_Status_Cancelled' => 'Cancelled',
 
             'Expert_PendingApproval' => 'Your profile is under review. Your slots are hidden from users and excluded from news until an admin approves your profile. After approval, news will appear automatically.',

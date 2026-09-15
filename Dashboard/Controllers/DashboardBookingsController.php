@@ -36,7 +36,7 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
         private const TABS = [self::TAB_SLOTS, self::TAB_BOOKINGS, self::TAB_EXPERT_CANCELLATIONS, self::TAB_USER_CANCELLATIONS];
 
         private const ALLOWED_BOOKING_STATUSES = ['pending', 'confirmed', 'cancelled', 'completed'];
-        private const ALLOWED_SLOT_STATUSES = ['free', 'booked', 'completed', 'cancelled'];
+        private const ALLOWED_SLOT_STATUSES = ['free', 'booked', 'completed', 'expired', 'cancelled'];
 
         // ── Bookings tab — admin view of every booking ──────────────────────
 

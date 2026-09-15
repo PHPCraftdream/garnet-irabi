@@ -54,6 +54,7 @@ export class I18nDataRU {
     static Slot_Status_Free = 'Свободен';
     static Slot_Status_Booked = 'Забронирован';
     static Slot_Status_Completed = 'Завершен';
+    static Slot_Status_Expired = 'Не состоялось';
     static Slot_Status_Cancelled = 'Отменен';
     static Expert_PendingApproval = 'Ваш профиль на модерации. Слоты не видны пользователям и не попадают в новости, пока администратор не одобрит профиль. После одобрения новости появятся автоматически.';
     static Batch_Title = 'Пакетное создание слотов';

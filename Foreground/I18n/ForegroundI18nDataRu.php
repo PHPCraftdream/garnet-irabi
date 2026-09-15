@@ -71,6 +71,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Slot_Status_Free' => 'Свободен',
             'Slot_Status_Booked' => 'Забронирован',
             'Slot_Status_Completed' => 'Завершен',
+            'Slot_Status_Expired' => 'Не состоялось',
             'Slot_Status_Cancelled' => 'Отменен',
 
             'Expert_PendingApproval' => 'Ваш профиль на модерации. Слоты не видны пользователям и не попадают в новости, пока администратор не одобрит профиль. После одобрения новости появятся автоматически.',

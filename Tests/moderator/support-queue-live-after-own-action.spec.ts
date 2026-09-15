@@ -10,9 +10,11 @@
  * hit the same class on the user-facing support page in the same cycle.
  *
  * The header badge (`unreadSupport`) is fixed by the same call chain
- * (`refreshLiveCounts()`) but is NOT asserted here — it lives in a framework
- * component with no test id, and inventing one for a test would be the tail
- * wagging the dog. Stated plainly rather than implied by silence.
+ * (`refreshLiveCounts()`). It is covered — from the client's side, where that
+ * badge actually counts something — in
+ * `Tests/user/support-header-badge-after-read.spec.ts`. No test id had to be
+ * invented for it after all: the framework's header button already spells the
+ * count into its accessible name.
  *
  * Fixed by the rule the four findings pointed at: after a mutation, re-read
  * from the server the state that mutation changes. `SupportTicketTab` now

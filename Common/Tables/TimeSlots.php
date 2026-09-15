@@ -58,7 +58,11 @@ namespace PHPCraftdream\IRabi\Common\Tables {
                 ->addColumn(column: 'location', type: 'VARCHAR', length: '255')
                 ->addColumn(column: 'max_users', type: 'INT', length: '11')
                 ->addColumn(column: 'booked_count', type: 'INT', length: '11', null: false, default: '0')
-                ->addColumn(column: 'status', type: 'ENUM', length: "'free','booked','completed','cancelled'")
+                // 'completed' и 'expired' — оба про прошедшее время, но это
+                // разные вещи: занятие состоялось (кто-то на нём был) против
+                // «время вышло, никто не записался». Одно слово на оба случая
+                // врало преподавателю в календаре.
+                ->addColumn(column: 'status', type: 'ENUM', length: "'free','booked','completed','expired','cancelled'")
                 ->addColumn(column: 'uid', type: 'VARCHAR', length: '16', null: false, default: '')
                 ->addColumn(column: 'created_at', type: 'INT', length: '11', null: false, default: '0')
                 ->addColumn(column: 'cancellation_penalty_percent', type: 'TINYINT', length: '3', null: false, default: '0')

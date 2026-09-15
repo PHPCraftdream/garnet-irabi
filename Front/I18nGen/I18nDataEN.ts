@@ -54,6 +54,7 @@ export class I18nDataEN {
     static Slot_Status_Free = 'Free';
     static Slot_Status_Booked = 'Booked';
     static Slot_Status_Completed = 'Completed';
+    static Slot_Status_Expired = 'Did not take place';
     static Slot_Status_Cancelled = 'Cancelled';
     static Expert_PendingApproval = 'Your profile is under review. Your slots are hidden from users and excluded from news until an admin approves your profile. After approval, news will appear automatically.';
     static Batch_Title = 'Batch Slot Creation';

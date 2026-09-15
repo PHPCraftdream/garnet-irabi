@@ -60,6 +60,7 @@ class I18n extends I18nBase {
     Slot_Status_Free: t = (a = []) => this.t('Slot_Status_Free', a);
     Slot_Status_Booked: t = (a = []) => this.t('Slot_Status_Booked', a);
     Slot_Status_Completed: t = (a = []) => this.t('Slot_Status_Completed', a);
+    Slot_Status_Expired: t = (a = []) => this.t('Slot_Status_Expired', a);
     Slot_Status_Cancelled: t = (a = []) => this.t('Slot_Status_Cancelled', a);
     Expert_PendingApproval: t = (a = []) => this.t('Expert_PendingApproval', a);
     Batch_Title: t = (a = []) => this.t('Batch_Title', a);

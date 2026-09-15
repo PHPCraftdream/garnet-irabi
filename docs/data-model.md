@@ -307,7 +307,7 @@ account+param)*.
 | `is_online` | tinyint(1) | YES | NULL | Онлайн (1) или офлайн (0) |
 | `location` | varchar(255) | YES | NULL | Место проведения |
 | `max_users` | int(11) | YES | NULL | Макс. пользователей |
-| `status` | enum('free','booked','completed','cancelled') | YES | NULL | Статус слота |
+| `status` | enum('free','booked','completed','expired','cancelled') | YES | NULL | Статус слота. `completed` — занятие прошло и на нём кто-то был; `expired` — время вышло, а не пришёл никто (заявок не было или их сняли). Границу проводит крон по факту: остался ли на слоте хоть один визит в статусе `completed`. См. `M_0024` |
 | `uid` | varchar(16) | NO | '' | 64-бит энтропии; сверка актуальности в `SlotsController` |
 | `created_at` | int(11) | NO | 0 | Unix-ts создания |
 | `cancellation_penalty_percent` | tinyint(3) | NO | 0 | Процент штрафа за отмену |
