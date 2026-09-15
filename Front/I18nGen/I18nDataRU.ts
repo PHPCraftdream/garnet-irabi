@@ -292,6 +292,7 @@ export class I18nDataRU {
     static Booking_Chat_Cancelled = 'Ваша бронь на %s отменена.';
     static Booking_Chat_LocationChanged = 'Обновилось место встречи для занятия %s — посмотрите в своей брони.';
     static Booking_Chat_Rescheduled = 'Занятие перенесено: было %s, стало %s.';
+    static Booking_CannotCancelStarted = 'Занятие началось — отменить бронь уже нельзя. Если оно не состоялось, напишите в поддержку.';
     static General_Yes = 'Да';
     static General_No = 'Нет';
     static General_Error = 'Ошибка';

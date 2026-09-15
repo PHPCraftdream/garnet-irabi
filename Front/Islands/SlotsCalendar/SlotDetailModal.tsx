@@ -6,7 +6,7 @@ import SendButton from '@common/Components/SendButton';
 import {sendPost} from '@common/Api/sendPost';
 import {Portal} from '@common/Components/Portal';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
-import {isActionable} from '../../Common/bookingAction';
+import {canActNow, isActionable} from '../../Common/bookingAction';
 import {SlotCancelForm} from './SlotCancelForm';
 import {SlotItem, ExpertMap} from './types';
 import QuickChat from '../../Common/QuickChat';
@@ -61,7 +61,11 @@ export default function SlotDetailModal({
 
     const expert = experts[slot.expert_id];
     const endTs = slot.end_at || (slot.start_at + (slot.duration_min || 60) * 60);
-    const canCancel = isActionable(bookingStatus);
+    // D-195: время решает наравне со статусом. Подтверждённую бронь после
+    // начала занятия сервер отменять отказывается, и предлагать это действие
+    // здесь значило бы вести человека к гарантированному отказу.
+    const canCancel = canActNow(bookingStatus, slot.start_at);
+    const startedAndLocked = isActionable(bookingStatus) && !canCancel;
 
     const handleEscape = useCallback((e: KeyboardEvent) => {
         if (e.key === 'Escape') onClose();

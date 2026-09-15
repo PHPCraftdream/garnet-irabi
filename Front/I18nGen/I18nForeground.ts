@@ -298,6 +298,7 @@ class I18n extends I18nBase {
     Booking_Chat_Cancelled: t = (a = []) => this.t('Booking_Chat_Cancelled', a);
     Booking_Chat_LocationChanged: t = (a = []) => this.t('Booking_Chat_LocationChanged', a);
     Booking_Chat_Rescheduled: t = (a = []) => this.t('Booking_Chat_Rescheduled', a);
+    Booking_CannotCancelStarted: t = (a = []) => this.t('Booking_CannotCancelStarted', a);
     General_Yes: t = (a = []) => this.t('General_Yes', a);
     General_No: t = (a = []) => this.t('General_No', a);
     General_Error: t = (a = []) => this.t('General_Error', a);

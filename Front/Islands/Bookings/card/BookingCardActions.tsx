@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {PenaltyTerms, actionCostHint, actionLabel, isActionable, pendingTerms} from '../../../Common/bookingAction';
+import {PenaltyTerms, actionCostHint, actionLabel, canActNow, isActionable, pendingTerms} from '../../../Common/bookingAction';
 import {Booking, BookingsViewAs} from './bookingCardTypes';
 
 interface Props {
@@ -30,7 +30,11 @@ export const BookingCardActions: React.FC<Props> = ({
 }) => {
     const isExpertView = viewAs === 'expert';
     const isPending = booking.status === 'pending';
-    const cancellable = isActionable(booking.status);
+    const cancellable = canActNow(booking.status, terms.startAt);
+    // Кнопка исчезла из-за времени, а не из-за статуса — значит человеку надо
+    // сказать почему. Молчаливо пропавшее действие читается как поломка, и
+    // это мы уже проходили (D-169: кнопка без объяснения).
+    const startedAndLocked = isActionable(booking.status) && !cancellable;
     const costHint = actionCostHint(viewAs, booking.status, terms);
     const cardTerms = pendingTerms(viewAs, booking.status, terms);
 
@@ -70,6 +74,12 @@ export const BookingCardActions: React.FC<Props> = ({
             {costHint && (
                 <p className="mt-2 mb-0 text-xs text-muted" data-test-id={`booking-cost-hint-${booking.id}`}>
                     {costHint}
+                </p>
+            )}
+
+            {startedAndLocked && (
+                <p className="mt-2 mb-0 text-xs text-muted" data-test-id={`booking-started-lock-${booking.id}`}>
+                    {t.Booking_CannotCancelStarted()}
                 </p>
             )}
 

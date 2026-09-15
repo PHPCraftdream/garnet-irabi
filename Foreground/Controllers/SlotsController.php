@@ -15,8 +15,8 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\IRabi\Common\Services\AccountDisplay;
     use PHPCraftdream\IRabi\Common\Services\EmailNotifications;
     use PHPCraftdream\IRabi\Common\Services\ExpertDirectory;
-    use PHPCraftdream\IRabi\Common\Services\MeetingPlatform;
     use PHPCraftdream\IRabi\Common\Services\NewsService;
+    use PHPCraftdream\IRabi\Common\Services\SlotCardPayload;
     use PHPCraftdream\IRabi\Common\Tables\Bookings;
     use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
     use PHPCraftdream\IRabi\Common\Tables\UserCancellations;
@@ -137,24 +137,17 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 $experts[$disabledId]['display_name'] = AccountDisplay::disabledName($disabledId);
             }
 
-            foreach ($slots as &$s) {
-                // The meeting link stays private; the platform behind it does
-                // not. Blanking the field outright left the catalogue unable to
-                // answer "how does this lesson actually happen" — the question
-                // people were asking their teacher after paying (D-052).
-                if ((int)($s['is_online'] ?? 0)) {
-                    $s['platform'] = MeetingPlatform::publicName($s['location'] ?? null);
-                    $s['location'] = '';
-                } else {
-                    $s['platform'] = '';
-                }
-            }
-            unset($s);
+            // Третье место, где собиралась карточка занятия, — и до этой
+            // правки все три собирали её по-своему. Ссылка на онлайн-встречу
+            // прячется за именем площадки там же, внутри: вопрос «как вообще
+            // пройдёт занятие» человек задавал преподавателю уже после оплаты
+            // (D-052), а сама ссылка наружу не идёт.
+            $slots = SlotCardPayload::forViewerList($slots);
 
             $balance = \PHPCraftdream\IRabi\Common\Tables\AccountBalance::getBalance($accountId);
 
             $content = RenderIsland::render('slots-calendar', [
-                'slots' => array_values($slots),
+                'slots' => $slots,
                 'experts' => (object)$experts,
                 'title' => $t->Slots_Title(),
                 'bookedSlotIds' => $bookedSlotIds,
@@ -224,30 +217,11 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
 
             $balance = \PHPCraftdream\IRabi\Common\Tables\AccountBalance::getBalance($account->id());
 
-            $isOnline = (int)($slot['is_online'] ?? 0);
-
             return ControllerTools::JSON([
-                'slot' => [
-                    'id' => (int)$slot['id'],
-                    'expert_id' => $expertId,
-                    'start_at' => (int)$slot['start_at'],
-                    'end_at' => (int)($slot['end_at'] ?? 0),
-                    'duration_min' => (int)($slot['duration_min'] ?? 60),
-                    'cost' => (int)$slot['cost'],
-                    'cancellation_penalty_percent' => (int)($slot['cancellation_penalty_percent'] ?? 0),
-                    'is_online' => $isOnline,
-                    'location' => $isOnline ? '' : ($slot['location'] ?? ''),
-                    'platform' => $isOnline ? MeetingPlatform::publicName($slot['location'] ?? null) : '',
-                    'max_users' => (int)($slot['max_users'] ?? 1),
-                    // D-186: каталог показывал только вместимость («мест: 3»),
-                    // а сколько из них уже занято — нигде. Ученик не видел,
-                    // остаётся ли место, и не мог отличить «место только что
-                    // заняли» от поломки, когда бронь не проходила.
-                    'booked_count' => (int)($slot['booked_count'] ?? 0),
-                    'status' => (string)$slot['status'],
-                    'uid' => (string)($slot['uid'] ?? ''),
-                    'created_at' => (int)($slot['created_at'] ?? 0),
-                ],
+                // Форма ответа общая со страницей преподавателя: пока каждая
+                // витрина собирала её сама, они разошлись четыре раза подряд
+                // (D-141, D-178, D-189, D-200).
+                'slot' => SlotCardPayload::forViewer($slot),
                 'expert' => [
                     'account_id' => $expertId,
                     'display_name' => $expertDisplayName,

@@ -1,13 +1,12 @@
 import * as React from 'react';
 import {formatTs} from '@common/Utils/DateUtils';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
-import {SlotFormatSource, slotFormatLine} from '../../Common/slotFormat';
+import {SeatsSource, SlotFormatSource, slotFormatLine, slotSeatsLeftLine} from '../../Common/slotFormat';
 
-interface SlotLike extends SlotFormatSource {
+interface SlotLike extends SlotFormatSource, SeatsSource {
     id: number;
     start_at: number;
     cost: number;
-    max_users?: number;
 }
 
 interface Props {
@@ -32,6 +31,15 @@ export const ExpertSlotCard: React.FC<Props> = ({slot, isOwnProfile, canBook, on
                     {(slot.max_users ?? 1) > 1 && (
                         <span className="badge text-bg-primary ml-2" data-test-id={`slot-group-badge-${slot.id}`}>
                             {t.Slot_GroupBadge([slot.max_users ?? 1])}
+                        </span>
+                    )}
+                    {/* D-200: остаток мест появился в каталоге и не появился
+                        здесь — контроллер этой страницы не отдавал занятость
+                        вовсе. Четвёртый экран подряд, где признак слота решала
+                        показать сама витрина. */}
+                    {slotSeatsLeftLine(slot) && (
+                        <span className="text-muted text-xs ml-2" data-test-id={`slot-seats-left-${slot.id}`}>
+                            {slotSeatsLeftLine(slot)}
                         </span>
                     )}
                 </h5>

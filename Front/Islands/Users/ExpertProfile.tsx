@@ -34,6 +34,8 @@ interface ExpertSlot {
     /** Публичное имя площадки онлайн-занятия («Zoom»). */
     platform?: string;
     max_users?: number;
+    /** D-200: сколько мест уже занято — вместе с max_users даёт остаток. */
+    booked_count?: number;
 }
 
 interface ExpertProfileProps {
@@ -183,11 +185,21 @@ const ExpertProfileIslandInner: React.FC<ExpertProfileProps> = ({
                         Этот — их отсутствие: заявка истекла без ответа. Раньше
                         она не попадала ни в один счётчик на его стороне, хотя
                         у ученика была видна. */}
-                    <div className="profile-stat-cell" title={t.Expert_MissedHint()}>
+                    <div className="profile-stat-cell">
                         <div className="profile-stat-value text-muted" data-test-id="expert-stat-missed">{expert.missed_count ?? 0}</div>
                         <div className="stat-tile-label">{t.Expert_Missed()}</div>
                     </div>
                 </div>
+
+                {/* D-197: объяснение жило в атрибуте title, а на телефоне
+                    наведения нет — оставалась голая цифра в ряду с «Отклонил»
+                    и «Отменил», и читалась она как клеймо, хотя означает
+                    обратное: молчать преподаватель вправе. Видимая строка
+                    вместо всплывающей подсказки — тот же урок, что D-122 и
+                    D-131, где на телефоне терялось именно объяснение. */}
+                <p className="px-4 pb-3 mb-0 text-xs text-muted" data-test-id="expert-stat-missed-hint">
+                    {t.Expert_MissedHint()}
+                </p>
             </div>
 
             <h3 className="mt-6 mb-4">{t.Slot_AvailableSlots()}</h3>

@@ -6,7 +6,7 @@ import {SlotItem, ExpertMap} from './types';
 import {EntityLink, userLinks} from '../../Common/EntityLinks';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {formatTime} from '@common/Utils/DateUtils';
-import {slotFormatLine, slotPlaceLabel, slotPlaceValue} from '../../Common/slotFormat';
+import {slotFormatLine, slotPlaceLabel, slotPlaceValue, slotSeatsLeftLine} from '../../Common/slotFormat';
 import {translateStatus} from '../../Common/statusHelpers';
 import {statusClass} from '../../Common/StatusBadge';
 
@@ -91,13 +91,11 @@ export const SlotCard: React.FC<SlotCardProps> = ({slot, experts, isBooked, book
                     {/* D-186: бейдж называл только вместимость, и остаток мест
                         был не виден нигде. Ученик не понимал, успевает ли он,
                         а при неудачной брони не мог отличить «место только что
-                        заняли» от поломки. */}
-                    {typeof slot.booked_count === 'number' && (
+                        заняли» от поломки. Считается общим помощником — рядом
+                        в тултипе та же строка, и разойтись им нечем (D-196). */}
+                    {slotSeatsLeftLine(slot) && (
                         <span className="text-muted text-[11px] ml-2" data-test-id={`slot-seats-left-${slot.id}`}>
-                            {t.Slot_SeatsLeft([
-                                String(Math.max(0, slot.max_users - slot.booked_count)),
-                                String(slot.max_users),
-                            ])}
+                            {slotSeatsLeftLine(slot)}
                         </span>
                     )}
                 </div>
@@ -146,7 +144,17 @@ export const SlotCard: React.FC<SlotCardProps> = ({slot, experts, isBooked, book
                     <div className="mb-1"><span className="text-muted">{t.Slot_Format()}:</span> {slot.is_online ? t.Slots_Online() : t.Slots_Offline()}</div>
                     {slotPlaceValue(slot) && <div className="mb-1"><span className="text-muted">{slotPlaceLabel(slot)}:</span> {slotPlaceValue(slot)}</div>}
                     <div className="mb-1"><span className="text-muted">{t.Slot_Type()}:</span> {slot.max_users > 1 ? t.Slots_Group() : t.Slots_Individual()}</div>
-                    <div><span className="text-muted">{t.Slot_Seats()}:</span> {slot.max_users || 1}</div>
+                    {/* D-196: тултип называл вместимость и молчал о занятости,
+                        хотя карточка рядом уже показывала остаток. Человек,
+                        открывший подробности, узнавал меньше, чем видел до
+                        этого. Строка считается тем же помощником. */}
+                    <div><span className="text-muted">{t.Slot_Seats()}:</span> {slot.max_users || 1}
+                        {slotSeatsLeftLine(slot) && (
+                            <span className="text-muted ml-1" data-test-id={`slot-tooltip-seats-left-${slot.id}`}>
+                                ({slotSeatsLeftLine(slot)})
+                            </span>
+                        )}
+                    </div>
                 </div>,
                 document.body
             )}

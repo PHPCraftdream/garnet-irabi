@@ -13,7 +13,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Kernel\Io\Twig\TwigParams;
     use PHPCraftdream\IRabi\Common\Services\AccountDisplay;
     use PHPCraftdream\IRabi\Common\Services\ExpertDirectory;
-    use PHPCraftdream\IRabi\Common\Services\MeetingPlatform;
+    use PHPCraftdream\IRabi\Common\Services\SlotCardPayload;
     use PHPCraftdream\IRabi\Common\Tables\Bookings;
     use PHPCraftdream\IRabi\Common\Tables\ExpertCancellations;
     use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
@@ -73,24 +73,14 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                     ->limit(30);
             });
 
-            // The row goes into island props as it comes out of the table, and
-            // for an online slot `location` is the meeting link. On this page —
-            // a profile any signed-in person can open — that link was readable
-            // in the page source for lessons nobody had booked or paid for.
-            // The catalogue already blanked it; this page did not.
-            //
-            // The platform behind the link is not a secret and is exactly what
-            // people were asking their teacher about after paying (D-052), so
-            // it takes the field's place.
-            foreach ($slots as &$slot) {
-                if ((int)($slot['is_online'] ?? 0)) {
-                    $slot['platform'] = MeetingPlatform::publicName($slot['location'] ?? null);
-                    $slot['location'] = '';
-                } else {
-                    $slot['platform'] = '';
-                }
-            }
-            unset($slot);
+            // D-200: раньше строка таблицы уходила в пропсы как есть, и эта
+            // витрина сама решала, что из неё показать. Так она отстала от
+            // каталога на остаток мест (booked_count здесь не было вовсе) —
+            // четвёртый случай подряд после D-141/D-178/D-189. Теперь форму
+            // ответа задаёт SlotCardPayload, один на всех читателей витрины:
+            // он же прячет ссылку на онлайн-встречу за именем площадки, и
+            // обойти этот разбор мимо него уже нельзя.
+            $slots = SlotCardPayload::forViewerList($slots);
 
             // D-121/consolidation: was four independent queries, duplicated
             // (with subtly different SQL) across the full profile, the mini
@@ -167,7 +157,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                     'missed_count' => $missedCount,
                 ],
                 'expertId' => $expertId,
-                'slots' => array_values($slots),
+                'slots' => $slots,
                 'commentsListUrl' => IRabi::url(CommentsController::URL . '~list'),
                 'commentsCreateUrl' => IRabi::url(CommentsController::URL . '~create'),
                 'commentsDeleteUrl' => IRabi::url(CommentsController::URL . '~delete'),

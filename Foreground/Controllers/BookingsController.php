@@ -710,7 +710,15 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 if ($previousStatus === 'confirmed' && $booking['bookable_type'] === 'time_slot') {
                     $slotForTimeCheck = TimeSlots::get()->selectById((int)$booking['bookable_id']);
                     if ($slotForTimeCheck && (int)$slotForTimeCheck['start_at'] <= time()) {
-                        return ControllerTools::JSON(['error' => 'Cannot cancel a booking after the session has started'], status: 400);
+                        // Единственная английская строка на этом пути в русском
+                        // интерфейсе — и единственная, у которой не было ключа
+                        // перевода. Сюда человек теперь почти не попадает
+                        // (D-195 убрал само действие), но отказ он читает
+                        // глазами, а не разбирает по коду ответа.
+                        return ControllerTools::JSON(
+                            ['error' => ForegroundI18n::getInstance()->Booking_CannotCancelStarted()],
+                            status: 400,
+                        );
                     }
                 }
 

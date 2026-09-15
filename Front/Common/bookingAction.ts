@@ -40,6 +40,32 @@ export const isActionable = (status?: string): boolean =>
     status === 'pending' || status === 'confirmed';
 
 /**
+ * Можно ли действовать с бронью ПРЯМО СЕЙЧАС — статус плюс время.
+ *
+ * D-195: время участвовало только в расчёте суммы возврата, но не в решении
+ * «показывать ли действие». В секунду начала занятия удержание переставало
+ * применяться, подсказка переключалась на «деньги вернутся полностью» — а
+ * сервер ровно с этого момента отменять отказывался. Экран обещал выгодное
+ * действие, которого уже не было, в момент наибольшего волнения ученика.
+ *
+ * Правило симметрично для обеих сторон прилавка: подтверждённую бронь после
+ * начала занятия не отменяет ни ученик (BookingsController::post__cancel),
+ * ни преподаватель (ExpertBookingsService). Заявка, которую так и не
+ * подтвердили, отменяется и после начала — иначе деньги за несостоявшееся
+ * занятие остались бы запертыми.
+ *
+ * Время неизвестно — не запрещаем: сервер всё равно проверит, а прятать
+ * действие из-за отсутствия данных хуже, чем показать лишнее.
+ */
+export const canActNow = (status?: string, startAt?: number): boolean => {
+    if (!isActionable(status)) return false;
+    if (!isConfirmed(status)) return true;
+    if (typeof startAt !== 'number' || startAt <= 0) return true;
+
+    return startAt > Math.floor(Date.now() / 1000);
+};
+
+/**
  * Подтверждена ли бронь. Отдельная функция, а не сравнение по месту: именно
  * здесь трижды рождалась ошибка «всё, что не confirmed, — это pending».
  */
@@ -220,7 +246,10 @@ export const actionCostHint = (
     status: string | undefined,
     terms?: PenaltyTerms,
 ): string => {
-    if (!isActionable(status)) return '';
+    // Цена есть только у действия, которое возможно. Раньше здесь стоял
+    // isActionable() без времени, и после начала занятия подсказка обещала
+    // полный возврат за отмену, которую сервер уже не пропускал (D-195).
+    if (!canActNow(status, terms?.startAt)) return '';
 
     if (viewer === 'expert') {
         return isConfirmed(status) ? t.Booking_CostHint_CancelLesson() : t.Booking_CostHint_Decline();

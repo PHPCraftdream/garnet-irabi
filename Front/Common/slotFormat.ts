@@ -47,3 +47,30 @@ export function slotPlaceValue(slot: SlotFormatSource): string {
 
     return value.trim();
 }
+
+/**
+ * Занятость группового занятия одной строкой: «осталось 1 из 3».
+ *
+ * Живёт здесь, а не в карточке, по той же причине, по которой на сервере
+ * появился SlotCardPayload: пока каждая витрина решала сама, признак слота
+ * терялся то на одной, то на другой — «Групповое» пропадало на главной
+ * (D-141), на странице преподавателя (D-178) и на карточке брони (D-189), а
+ * остаток мест появился в каталоге и не появился ни в тултипе того же
+ * каталога (D-196), ни на странице преподавателя (D-200).
+ *
+ * Пустая строка означает «показывать нечего»: индивидуальное занятие или
+ * сервер не прислал занятость. Ноль местами не путается — 0 свободных мест
+ * это `осталось 0 из N`, а не отсутствие ответа.
+ */
+export interface SeatsSource {
+    max_users?: number;
+    booked_count?: number;
+}
+
+export function slotSeatsLeftLine(slot: SeatsSource): string {
+    const max = slot.max_users ?? 1;
+
+    if (max <= 1 || typeof slot.booked_count !== 'number') return '';
+
+    return t.Slot_SeatsLeft([String(Math.max(0, max - slot.booked_count)), String(max)]);
+}
