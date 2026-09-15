@@ -30,6 +30,10 @@ export interface SlotInfo {
     expert_id: number;
     cost: number;
     cancellation_penalty_percent: number;
+    /** Вместимость занятия: больше единицы — групповое. */
+    max_users?: number;
+    /** Сколько мест уже занято — вместе с вместимостью даёт остаток. */
+    booked_count?: number;
 }
 
 export interface ExpertInfo {

@@ -465,6 +465,8 @@ export class I18nDataEN {
     static Slot_Format = 'Format';
     static Slot_Seats = 'Seats';
     static Slot_GroupBadge = 'Group, seats: %s';
+    static Slot_SeatsLeft = '%s of %s seats left';
+    static Slot_SeatsTaken = '%s of %s seats taken';
     static Slot_Rescheduled = 'Slot has been rescheduled. Refreshing...';
     static Slot_PlaceUpdated = 'Meeting place updated; everyone booked has been notified';
     static Slot_Saved = 'Changes saved';

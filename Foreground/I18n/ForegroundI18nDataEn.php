@@ -524,6 +524,8 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Slot_Format' => 'Format',
             'Slot_Seats' => 'Seats',
             'Slot_GroupBadge' => 'Group, seats: %s',
+            'Slot_SeatsLeft' => '%s of %s seats left',
+            'Slot_SeatsTaken' => '%s of %s seats taken',
 
             'Slot_Rescheduled' => 'Slot has been rescheduled. Refreshing...',
             'Slot_PlaceUpdated' => 'Meeting place updated; everyone booked has been notified',

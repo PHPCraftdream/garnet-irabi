@@ -470,6 +470,8 @@ class I18n extends I18nBase {
     Slot_Format: t = (a = []) => this.t('Slot_Format', a);
     Slot_Seats: t = (a = []) => this.t('Slot_Seats', a);
     Slot_GroupBadge: t = (a = []) => this.t('Slot_GroupBadge', a);
+    Slot_SeatsLeft: t = (a = []) => this.t('Slot_SeatsLeft', a);
+    Slot_SeatsTaken: t = (a = []) => this.t('Slot_SeatsTaken', a);
     Slot_Rescheduled: t = (a = []) => this.t('Slot_Rescheduled', a);
     Slot_PlaceUpdated: t = (a = []) => this.t('Slot_PlaceUpdated', a);
     Slot_Saved: t = (a = []) => this.t('Slot_Saved', a);

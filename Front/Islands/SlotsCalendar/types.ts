@@ -12,6 +12,8 @@ export interface SlotItem {
     /** Публичное имя площадки онлайн-занятия («Zoom»). Пусто у очного. */
     platform?: string;
     max_users: number;
+    /** Сколько мест уже занято — вместе с max_users даёт остаток. */
+    booked_count?: number;
     status: string;
     uid?: string;
     created_at: number;

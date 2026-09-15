@@ -88,6 +88,18 @@ export const SlotCard: React.FC<SlotCardProps> = ({slot, experts, isBooked, book
                     <span className="badge text-bg-primary" data-test-id={`slot-group-badge-${slot.id}`}>
                         {t.Slot_GroupBadge([slot.max_users])}
                     </span>
+                    {/* D-186: бейдж называл только вместимость, и остаток мест
+                        был не виден нигде. Ученик не понимал, успевает ли он,
+                        а при неудачной брони не мог отличить «место только что
+                        заняли» от поломки. */}
+                    {typeof slot.booked_count === 'number' && (
+                        <span className="text-muted text-[11px] ml-2" data-test-id={`slot-seats-left-${slot.id}`}>
+                            {t.Slot_SeatsLeft([
+                                String(Math.max(0, slot.max_users - slot.booked_count)),
+                                String(slot.max_users),
+                            ])}
+                        </span>
+                    )}
                 </div>
             )}
 

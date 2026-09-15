@@ -112,6 +112,18 @@ export const BookingCard: React.FC<BookingCardProps> = ({
                     </p>
                 )}
 
+                {/* D-189: занятие с несколькими местами ничем не отличалось
+                    от индивидуального, и ученик из своего списка не понимал,
+                    что придёт не один. Признак берётся из тех же данных
+                    слота, что и всё остальное на карточке. */}
+                {isSlot && slot && (slot.max_users ?? 1) > 1 && (
+                    <p className="card-text mb-1">
+                        <span className="badge-soft" data-test-id={`booking-group-${booking.id}`}>
+                            {t.Slot_GroupBadge([String(slot.max_users)])}
+                        </span>
+                    </p>
+                )}
+
                 <BookingCancelCause booking={booking} viewAs={viewAs} />
 
                 <p className="card-text mb-0 text-sm text-muted">

@@ -239,6 +239,11 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                     'location' => $isOnline ? '' : ($slot['location'] ?? ''),
                     'platform' => $isOnline ? MeetingPlatform::publicName($slot['location'] ?? null) : '',
                     'max_users' => (int)($slot['max_users'] ?? 1),
+                    // D-186: каталог показывал только вместимость («мест: 3»),
+                    // а сколько из них уже занято — нигде. Ученик не видел,
+                    // остаётся ли место, и не мог отличить «место только что
+                    // заняли» от поломки, когда бронь не проходила.
+                    'booked_count' => (int)($slot['booked_count'] ?? 0),
                     'status' => (string)$slot['status'],
                     'uid' => (string)($slot['uid'] ?? ''),
                     'created_at' => (int)($slot['created_at'] ?? 0),

@@ -169,6 +169,15 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                         'expert_id' => (int)$slot['expert_id'],
                         'cost' => (int)($slot['cost'] ?? 0),
                         'cancellation_penalty_percent' => (int)($slot['cancellation_penalty_percent'] ?? 0),
+                        // D-189/D-186: карточка брони не знала о занятии
+                        // ничего группового, поэтому ученик, купивший место в
+                        // группе, из своего списка не понимал, что придёт не
+                        // один. Это третий экран с той же потерей признака
+                        // (до него — D-141 и D-178), поэтому признак едет
+                        // вместе со слотом, а не собирается на каждой витрине
+                        // заново.
+                        'max_users' => max(1, (int)($slot['max_users'] ?? 1)),
+                        'booked_count' => (int)($slot['booked_count'] ?? 0),
                     ];
                     $expertIds[] = (int)$slot['expert_id'];
                 }

@@ -464,6 +464,8 @@ export class I18nDataRU {
     static Slot_Format = 'Формат';
     static Slot_Seats = 'Мест';
     static Slot_GroupBadge = 'Групповое, мест: %s';
+    static Slot_SeatsLeft = 'осталось мест: %s из %s';
+    static Slot_SeatsTaken = 'занято %s из %s';
     static Slot_Rescheduled = 'Слот был перенесён. Обновляем страницу...';
     static Slot_PlaceUpdated = 'Место встречи обновлено, записавшимся отправлено сообщение';
     static Slot_Saved = 'Изменения сохранены';
