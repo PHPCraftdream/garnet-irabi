@@ -15,6 +15,7 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use PHPCraftdream\IRabi\Common\PaginationHelper;
     use PHPCraftdream\IRabi\Common\Services\EmailNotifications;
     use PHPCraftdream\IRabi\Common\Services\NewsService;
+    use PHPCraftdream\IRabi\Common\System\DateUtils;
     use PHPCraftdream\IRabi\Common\Tables\SupportAssignmentLog;
     use PHPCraftdream\IRabi\Common\Tables\SupportAttachments;
     use PHPCraftdream\IRabi\Common\Tables\SupportMessages;
@@ -36,6 +37,157 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
 
         protected static function ticketsTable(): DbTable {
             return SupportTickets::get();
+        }
+
+        /**
+         * Очередь обращений отвечает на два вопроса, на которые до этого не
+         * отвечала: сколько обращение уже ждёт и знает ли клиент о том, что
+         * внутри по нему происходило.
+         *
+         * D-201. Владелец ответил на тикет #5 внутренним комментарием
+         * 14.09 в 22:31. Клиент увидел ответ 15.09 в 13:17 — через 14 ч 46 мин.
+         * Всё это время статус был «Эскалирован», то есть «передано владельцу»,
+         * и читался он как «ждём владельца». Отличить «ответа ещё нет» от
+         * «ответ есть, но не передан» было нечем: дежурный видел одинаковую
+         * строку в обоих случаях. Это дыра в процессе, а не забывчивость
+         * конкретного человека.
+         *
+         * D-392. Возраст обращения не показывался нигде — тикет провисел
+         * 6 суток 23 часа, и заметить это можно было только вычитая даты
+         * вручную. В таблице комментариев колонка «Создано» есть, здесь не
+         * было.
+         *
+         * Оба числа считаются здесь, а не на клиенте: сетка показывает
+         * значения как есть, без вычислений, и unix-время в ячейке — это не
+         * ответ человеку.
+         *
+         * @return array<int, array<string, mixed>>
+         */
+        protected static function fetchTickets(): array {
+            $tickets = parent::fetchTickets();
+
+            if ($tickets === []) {
+                return $tickets;
+            }
+
+            $ids = array_map(static fn (array $row): int => (int)$row['id'], $tickets);
+            $relayPending = static::ticketsAwaitingRelay($ids);
+
+            $tz = Account::fromSession()?->readParam('time_zone') ?: null;
+            $now = time();
+            $t = ForegroundI18n::getInstance();
+
+            foreach ($tickets as &$ticket) {
+                $createdAt = (int)($ticket['created_at'] ?? 0);
+                $ticket['created_label'] = $createdAt > 0
+                    ? DateUtils::formatForUser($createdAt, $tz, 'd.m.Y H:i')
+                    : '';
+                $ticket['waiting_label'] = $createdAt > 0
+                    ? static::humanAge($now - $createdAt)
+                    : '';
+                $ticket['relay_label'] = isset($relayPending[(int)$ticket['id']])
+                    ? (string)$t->Support_InternalNewerValue()
+                    : '';
+            }
+            unset($ticket);
+
+            return $tickets;
+        }
+
+        /**
+         * Обращения, где последняя внутренняя запись сотрудника новее
+         * последнего видимого клиенту ответа — то есть внутри что-то
+         * происходило, а человек об этом не знает.
+         *
+         * Намеренно НЕ утверждается, что там лежит готовый ответ. На боевом
+         * тикете #5 это был именно он (владелец ответил, ответ пролежал
+         * 14 ч 46 мин), а на тикете #19 — вопрос модератора владельцу.
+         * Отличить одно от другого по тексту нельзя, и притворяться, что
+         * можно, хуже, чем сказать правду: действие в обоих случаях одно —
+         * открыть и замкнуть круг.
+         *
+         * Один запрос на всю страницу, а не по запросу на строку: очередь
+         * ограничена двумя сотнями, и двести обращений к базе ради одной
+         * колонки — это та же цена, что и сам разбор вручную.
+         *
+         * @param array<int, int> $ticketIds
+         * @return array<int, true>
+         */
+        private static function ticketsAwaitingRelay(array $ticketIds): array {
+            if ($ticketIds === []) {
+                return [];
+            }
+
+            $messages = SupportMessages::get()->selectAll(function (SelectInterface $q) use ($ticketIds): void {
+                $q->resetCols();
+                $q->cols([
+                    'ticket_id',
+                    'MAX(CASE WHEN is_internal = 1 THEN created_at ELSE 0 END) AS last_internal',
+                    'MAX(CASE WHEN is_internal = 0 THEN created_at ELSE 0 END) AS last_visible',
+                ]);
+                $q->where("msg_type = 'staff'");
+                $q->where('ticket_id IN (?)', [$ticketIds]);
+                $q->groupBy(['ticket_id']);
+            });
+
+            $pending = [];
+
+            foreach ($messages as $row) {
+                $lastInternal = (int)($row['last_internal'] ?? 0);
+                $lastVisible = (int)($row['last_visible'] ?? 0);
+
+                if ($lastInternal > 0 && $lastInternal > $lastVisible) {
+                    $pending[(int)$row['ticket_id']] = true;
+                }
+            }
+
+            if ($pending === []) {
+                return [];
+            }
+
+            // Выкидываем два случая, где внутренняя запись — это заметка для
+            // себя, а не незамкнутый круг с клиентом:
+            //
+            // - решённое и отклонённое: там внутренний текст это итог разбора;
+            // - «ждёт ответа пользователя»: клиенту уже ответили публично, а
+            //   заметку сотрудник добавил себе после. Проверено на боевых
+            //   данных — тикеты 1, 2 и 4 попадали в выборку именно так, с
+            //   разницей в полторы минуты между ответом и заметкой.
+            //
+            // Столбец, загорающийся не по делу на каждой пятой строке,
+            // перестают замечать за день, и тогда он не спасёт в тот раз,
+            // когда загорится по делу.
+            $notPending = static::ticketsTable()->selectAll(function (SelectInterface $q) use ($pending): void {
+                $q->resetCols();
+                $q->cols(['id']);
+                $q->where('id IN (?)', [array_keys($pending)]);
+                $q->where("status IN ('resolved', 'rejected', 'waiting_user')");
+            });
+
+            foreach ($notPending as $row) {
+                unset($pending[(int)$row['id']]);
+            }
+
+            return $pending;
+        }
+
+        /** Возраст обращения словами: «6 д 23 ч», «2 ч 15 м», «8 м». */
+        private static function humanAge(int $seconds): string {
+            $seconds = max(0, $seconds);
+            $days = intdiv($seconds, 86400);
+            $hours = intdiv($seconds % 86400, 3600);
+            $minutes = intdiv($seconds % 3600, 60);
+            $t = ForegroundI18n::getInstance();
+
+            if ($days > 0) {
+                return $days . ' ' . $t->Unit_DayShort() . ' ' . $hours . ' ' . $t->Unit_HourShort();
+            }
+
+            if ($hours > 0) {
+                return $hours . ' ' . $t->Unit_HourShort() . ' ' . $minutes . ' ' . $t->Unit_MinuteShort();
+            }
+
+            return $minutes . ' ' . $t->Unit_MinuteShort();
         }
 
         protected static function messagesTable(): DbTable {
@@ -263,11 +415,23 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
                         GridConfig::col('subject', $t->Support_Subject()),
                         GridConfig::col('user_login', $t->Support_User()),
                         GridConfig::col('status', $t->Slot_Status()),
+                        // D-201: колонка отвечает на вопрос «этот тикет ждёт
+                        // ответа или ответ уже написан и лежит внутри?».
+                        // Раньше и то и другое выглядело как «Эскалирован».
+                        GridConfig::col('relay_label', $t->Support_InternalNewer(), shrink: true),
                         GridConfig::col('assignee_name', $t->Support_Assignee()),
+                        // #392, подтверждено четырежды: возраст обращения не
+                        // показывался нигде, и «висит почти неделю» можно было
+                        // узнать только вычитая даты вручную.
+                        GridConfig::col('created_label', $t->Support_Created()),
+                        GridConfig::col('waiting_label', $t->Support_Waiting(), shrink: true),
                         GridConfig::col('updated_at', $t->Support_Updated()),
                     ],
                     searchFields: ['subject', 'user_login', 'user_name', 'status', 'assignee_name'],
-                    sortFields: ['id', 'status', 'updated_at', 'assignee_name'],
+                    // Сортировка по created_at, а не по created_label: в метке
+                    // строка вида «15.09.2026 13:32», и сортировка по ней
+                    // выстроит обращения по дню месяца.
+                    sortFields: ['id', 'status', 'created_at', 'updated_at', 'assignee_name'],
                     pageSize: PaginationHelper::DEFAULT_PER_PAGE,
                 ),
                 'ticketDetailUrl' => IRabi::url(static::URL . '~ticketDetail'),

@@ -354,6 +354,12 @@ class I18n extends I18nBase {
     Support_AssignmentHistory: t = (a = []) => this.t('Support_AssignmentHistory', a);
     Support_Created: t = (a = []) => this.t('Support_Created', a);
     Support_Updated: t = (a = []) => this.t('Support_Updated', a);
+    Support_Waiting: t = (a = []) => this.t('Support_Waiting', a);
+    Support_InternalNewer: t = (a = []) => this.t('Support_InternalNewer', a);
+    Support_InternalNewerValue: t = (a = []) => this.t('Support_InternalNewerValue', a);
+    Unit_DayShort: t = (a = []) => this.t('Unit_DayShort', a);
+    Unit_HourShort: t = (a = []) => this.t('Unit_HourShort', a);
+    Unit_MinuteShort: t = (a = []) => this.t('Unit_MinuteShort', a);
     Support_User: t = (a = []) => this.t('Support_User', a);
     Support_TicketCreated: t = (a = []) => this.t('Support_TicketCreated', a);
     Support_BackToList: t = (a = []) => this.t('Support_BackToList', a);

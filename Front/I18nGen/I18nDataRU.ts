@@ -348,6 +348,12 @@ export class I18nDataRU {
     static Support_AssignmentHistory = 'История назначений';
     static Support_Created = 'Создано';
     static Support_Updated = 'Обновлено';
+    static Support_Waiting = 'Ждёт';
+    static Support_InternalNewer = 'Внутри';
+    static Support_InternalNewerValue = 'новее ответа';
+    static Unit_DayShort = 'д';
+    static Unit_HourShort = 'ч';
+    static Unit_MinuteShort = 'мин';
     static Support_User = 'Пользователь';
     static Support_TicketCreated = 'Обращение создано';
     static Support_BackToList = 'Назад к списку';

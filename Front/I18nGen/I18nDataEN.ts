@@ -349,6 +349,12 @@ export class I18nDataEN {
     static Support_AssignmentHistory = 'Assignment History';
     static Support_Created = 'Created';
     static Support_Updated = 'Updated';
+    static Support_Waiting = 'Waiting';
+    static Support_InternalNewer = 'Internal';
+    static Support_InternalNewerValue = 'newer than reply';
+    static Unit_DayShort = 'd';
+    static Unit_HourShort = 'h';
+    static Unit_MinuteShort = 'min';
     static Support_User = 'User';
     static Support_TicketCreated = 'Ticket created';
     static Support_BackToList = 'Back to list';
