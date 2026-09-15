@@ -48,6 +48,8 @@ export interface BookingsTabProps {
     experts: Record<number, ExpertInfo>;
     users?: Record<number, UserInfo>;
     viewAs?: BookingsViewAs;
+    /** D-184: преподавателю доступны обе стороны — свои занятия и входящие заявки. */
+    canSwitchView?: boolean;
     confirmUrl?: string;
     rejectUrl?: string;
     title: string;
@@ -77,7 +79,8 @@ const BookingsTab: React.FC<BookingsTabProps> = ({
     slots: initialSlots,
     experts: initialExperts,
     users: initialUsers,
-    viewAs = 'user',
+    viewAs: initialViewAs = 'user',
+    canSwitchView = false,
     confirmUrl = appUrl('/expert/~confirmBooking'),
     rejectUrl = appUrl('/expert/~cancelBooking'),
     title,
@@ -94,6 +97,10 @@ const BookingsTab: React.FC<BookingsTabProps> = ({
     const [slots, setSlots] = React.useState<Record<number, SlotInfo>>(initialSlots);
     const [experts, setExperts] = React.useState<Record<number, ExpertInfo>>(initialExperts);
     const [users, setUsers] = React.useState<Record<number, UserInfo>>(initialUsers || {});
+    // D-184: сторона, с которой человек смотрит раздел. Преподаватель может
+    // переключаться между своими занятиями и входящими заявками; у остальных
+    // сторона одна и переключателя нет.
+    const [viewAs, setViewAs] = React.useState<BookingsViewAs>(initialViewAs);
     const [statusFilter, setStatusFilter] = React.useState<StatusFilter>(initialStatus);
     const [showPast, setShowPast] = React.useState<boolean>(initialShowPast);
     const [counts, setCounts] = React.useState<BookingCounts>(initialCounts || {
@@ -113,20 +120,24 @@ const BookingsTab: React.FC<BookingsTabProps> = ({
 
     const fetchPage = React.useCallback(async (
         targetPage: number,
-        opts: {status?: StatusFilter; showPast?: boolean} = {},
+        opts: {status?: StatusFilter; showPast?: boolean; view?: BookingsViewAs} = {},
     ) => {
         const status = opts.status ?? statusFilter;
         const past = opts.showPast ?? showPast;
+        // Вид передаётся явно: при переключении стороны состояние ещё не
+        // применилось, а сервер должен отдать список уже новой стороны.
+        const view = opts.view ?? viewAs;
         setPageLoading(true);
         try {
             const resp = await sendPost<
-                {page: number; perPage: number; status: string; showPast: boolean},
+                {page: number; perPage: number; status: string; showPast: boolean; view: BookingsViewAs},
                 BookingsPageResponse
             >(bookingsPageUrl, {
                 page: targetPage,
                 perPage: DEFAULT_PAGE_SIZE,
                 status: status === 'all' ? '' : status,
                 showPast: past,
+                view,
             });
             const data = ('data' in resp && resp.data) ? resp.data : resp as unknown as BookingsPageResponse;
             setBookings(data.items);
@@ -142,7 +153,7 @@ const BookingsTab: React.FC<BookingsTabProps> = ({
         } finally {
             setPageLoading(false);
         }
-    }, [bookingsPageUrl, statusFilter, showPast]);
+    }, [bookingsPageUrl, statusFilter, showPast, viewAs]);
 
     const handlePageChange = React.useCallback((p: number) => {
         if (p < 1 || p > totalPages || (p === page && !pageLoading)) return;
@@ -155,11 +166,28 @@ const BookingsTab: React.FC<BookingsTabProps> = ({
         fetchPage(1, {status: s});
     }, [statusFilter, fetchPage]);
 
+    const handleViewChange = React.useCallback((next: BookingsViewAs) => {
+        if (next === viewAs) return;
+        setViewAs(next);
+        // Фильтр по статусу и «показать прошедшие» осмысленны на обеих
+        // сторонах, поэтому сохраняются; страница сбрасывается на первую —
+        // списки разной длины, и третья страница входящих ничего не значит
+        // для своих занятий.
+        fetchPage(1, {view: next});
+    }, [viewAs, fetchPage]);
+
     const handleTogglePast = React.useCallback(() => {
         const next = !showPast;
         setShowPast(next);
         fetchPage(1, {showPast: next});
     }, [showPast, fetchPage]);
+
+    // Заголовок приходит с сервера для первой отрисовки, но после переключения
+    // стороны он обязан меняться вместе с содержимым — иначе «Входящие брони»
+    // окажется над списком собственных занятий.
+    const currentTitle = canSwitchView
+        ? (viewAs === 'expert' ? t.Bookings_IncomingTitle() : t.Bookings_Title())
+        : title;
 
     const groups = React.useMemo(() => groupBookings(bookings, slots), [bookings, slots]);
 
@@ -266,8 +294,35 @@ const BookingsTab: React.FC<BookingsTabProps> = ({
 
     return (
         <div data-test-id="bookings-tab">
+            {canSwitchView && (
+                // D-184: преподаватель учится и сам — обе стороны должны быть
+                // достижимы. Раньше раздел просто подменялся ролью, и свои
+                // занятия исчезали из навигации вместе с возможностью их
+                // отменить.
+                <div className="flex gap-2 mb-4" data-test-id="bookings-view-switch">
+                    <button
+                        type="button"
+                        className={`btn btn-sm ${viewAs === 'expert' ? 'btn-primary' : 'btn-outline'}`}
+                        aria-pressed={viewAs === 'expert'}
+                        data-test-id="bookings-view-expert"
+                        onClick={() => handleViewChange('expert')}
+                    >
+                        {t.Bookings_IncomingTitle()}
+                    </button>
+                    <button
+                        type="button"
+                        className={`btn btn-sm ${viewAs === 'user' ? 'btn-primary' : 'btn-outline'}`}
+                        aria-pressed={viewAs === 'user'}
+                        data-test-id="bookings-view-user"
+                        onClick={() => handleViewChange('user')}
+                    >
+                        {t.Bookings_Title()}
+                    </button>
+                </div>
+            )}
+
             <BookingsFilterTabs
-                title={title}
+                title={currentTitle}
                 counts={counts}
                 statusFilter={statusFilter}
                 showPast={showPast}

@@ -221,6 +221,33 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             return ['slots' => $slots, 'runs' => [], 'experts' => $experts, 'users' => $users];
         }
 
+        /**
+         * Чей список броней показывать: свои как ученика ('user') или
+         * входящие заявки на свои слоты ('expert').
+         *
+         * D-184: раньше это решала одна строка `isExpert() ? 'expert' : 'user'`,
+         * и выбора не было вовсе. Человек, который занимался, а потом сам стал
+         * преподавать (совершенно обычный путь на такой площадке), терял из
+         * навигации все свои ученические брони — включая активную, которую
+         * поэтому нельзя было ни открыть, ни вовремя отменить. А отмена
+         * завязана на сроки и неустойку, так что недоступность превращалась в
+         * деньги. Данные при этом были на месте: профиль честно показывал
+         * «1 в процессе», просто дороги к ним из раздела не существовало.
+         *
+         * Выбор вида доступен только преподавателю — ему есть что выбирать.
+         * Для всех остальных 'expert' недопустим независимо от того, что
+         * пришло в запросе: подставлять его бессмысленно (своих слотов нет,
+         * список всё равно будет пуст), но полагаться на пустоту выборки
+         * вместо явного запрета — плохая привычка.
+         */
+        private static function resolveViewAs(string $requested): string {
+            if (!UserEntityConfig::isExpert()) {
+                return 'user';
+            }
+
+            return $requested === 'user' ? 'user' : 'expert';
+        }
+
         public static function get__main(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
             $url = $globals->getUri();
             $t = ForegroundI18n::getInstance();
@@ -234,7 +261,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             // therefore has a bookings list. Experts additionally see incoming
             // bookings on their own slots (viewAs = 'expert').
             $userId = $account->id();
-            $viewAs = UserEntityConfig::isExpert() ? 'expert' : 'user';
+            $viewAs = static::resolveViewAs((string)$globals->readGetValue('view', ''));
 
             $status = (string)$globals->readGetValue('status', '');
             $showPast = false;
@@ -256,6 +283,11 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 'experts' => $auxMaps['experts'],
                 'users' => $auxMaps['users'],
                 'viewAs' => $viewAs,
+                // D-184: преподаватель — это часто вчерашний ученик, и свои
+                // занятия у него никуда не деваются. Раньше раздел просто
+                // подменялся по роли, и собственные брони (включая активную)
+                // становились недостижимы из меню вовсе.
+                'canSwitchView' => UserEntityConfig::isExpert(),
                 'confirmUrl' => IRabi::url('/expert/~confirmBooking'),
                 'rejectUrl' => IRabi::url('/expert/~cancelBooking'),
                 'title' => $title,
@@ -277,7 +309,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             }
 
             $userId = $account->id();
-            $viewAs = UserEntityConfig::isExpert() ? 'expert' : 'user';
+            $viewAs = static::resolveViewAs((string)$globals->readPostValue('view', ''));
             ['page' => $page, 'perPage' => $perPage] = PaginationHelper::readPageParams($globals);
 
             $status = (string)$globals->readPostValue('status', '');

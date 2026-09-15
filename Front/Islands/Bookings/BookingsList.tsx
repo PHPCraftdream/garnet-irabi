@@ -23,6 +23,8 @@ interface Props {
     experts: Record<number, ExpertInfo>;
     users?: Record<number, UserInfo>;
     viewAs?: BookingsViewAs;
+    /** D-184: у преподавателя есть обе стороны — свои занятия и входящие заявки. */
+    canSwitchView?: boolean;
     confirmUrl?: string;
     rejectUrl?: string;
     title: string;
@@ -37,7 +39,7 @@ interface Props {
 const BookingsListIslandInner: React.FC<Props> = (props) => {
     const {
         bookingsPagination, bookingsPageUrl,
-        slots, experts, users, viewAs = 'user',
+        slots, experts, users, viewAs = 'user', canSwitchView = false,
         confirmUrl, rejectUrl, title, isModerator = false,
         initialStatus, initialShowPast, initialCounts,
     } = props;
@@ -51,6 +53,7 @@ const BookingsListIslandInner: React.FC<Props> = (props) => {
                 experts={experts}
                 users={users}
                 viewAs={viewAs}
+                canSwitchView={canSwitchView}
                 confirmUrl={confirmUrl}
                 rejectUrl={rejectUrl}
                 title={title}
