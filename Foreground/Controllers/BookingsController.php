@@ -685,7 +685,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                             $penaltyKept = $cost - $expertDebit;
                             $expertNote = $penaltyKept > 0
                                 ? $t->Ledger_Type_Refund() . ' #' . $bookingId
-                                    . ' (' . $t->Ledger_Note_ExpertKeepsPenalty((string)$expertDebit, (string)$penaltyKept, (string)$penaltyPct) . ')'
+                                    . ' (' . $t->Ledger_Note_ExpertKeepsPenalty((string)$penaltyKept, (string)$penaltyPct) . ')'
                                 : $note;
                             BalanceLedger::tryAddRefund($expertId, false, $expertDebit, $bookingId, $expertNote);
                         }

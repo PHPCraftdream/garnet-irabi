@@ -39,6 +39,7 @@ class I18n extends I18nBase {
     Comment_ModerationNotice: t = (a = []) => this.t('Comment_ModerationNotice', a);
     Comment_SentForReview: t = (a = []) => this.t('Comment_SentForReview', a);
     Comment_StatusPending: t = (a = []) => this.t('Comment_StatusPending', a);
+    Comment_StatusApproved: t = (a = []) => this.t('Comment_StatusApproved', a);
     Comment_StatusRejected: t = (a = []) => this.t('Comment_StatusRejected', a);
     Comment_StatusMine: t = (a = []) => this.t('Comment_StatusMine', a);
     Comment_Moderation: t = (a = []) => this.t('Comment_Moderation', a);

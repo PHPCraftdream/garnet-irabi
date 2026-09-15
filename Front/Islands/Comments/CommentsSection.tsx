@@ -131,6 +131,15 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
             return `${t.Comment_StatusMine()} · ${t.Comment_StatusRejected()}`;
         }
 
+        // D-191: раньше одобренный отзыв автор видел просто как «Ваш отзыв»,
+        // и отличить его от ждущего проверки было нельзя — отсутствие
+        // подписи читается как «статус неизвестен», а не как «всё хорошо».
+        // Живой пользователь из-за этого решил, что его отзывы неделю
+        // игнорируют, хотя все они были опубликованы.
+        if (comment.moderation_status === 'approved') {
+            return `${t.Comment_StatusMine()} · ${t.Comment_StatusApproved()}`;
+        }
+
         return t.Comment_StatusMine();
     };
 

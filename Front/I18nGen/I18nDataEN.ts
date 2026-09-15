@@ -33,6 +33,7 @@ export class I18nDataEN {
     static Comment_ModerationNotice = 'Your review is published without your name, and a moderator reads it before it goes live. Nobody sees the name: not other readers, not the expert you are writing about, not the moderator — they judge the text. One exception: if the moderator marks the review as dangerous, the platform owner sees the name in order to deal with it. The review appears on the page once approved.';
     static Comment_SentForReview = 'Review sent for approval. It will appear on the page once a moderator approves it — until then only you can see it.';
     static Comment_StatusPending = 'Awaiting approval';
+    static Comment_StatusApproved = 'Published';
     static Comment_StatusRejected = 'Rejected by a moderator';
     static Comment_StatusMine = 'Your review';
     static Comment_Moderation = 'Review';
@@ -276,7 +277,7 @@ export class I18nDataEN {
     static Ledger_Type_Refund = 'Refund';
     static Ledger_Note_AutoCancel = 'Auto-cancelled: the session started without confirmation';
     static Ledger_Note_Penalty = '%s withheld — %s%% penalty';
-    static Ledger_Note_ExpertKeepsPenalty = '%s refunded to the student, you keep %s (%s%%) as compensation for the cancelled lesson';
+    static Ledger_Note_ExpertKeepsPenalty = 'this amount went back to the student; you keep the %s (%s%%) penalty as compensation for the cancelled lesson';
     static Ledger_Type_Manual = 'Manual';
     static User_Status_Disabled = 'Disabled';
     static User_Status_Approved = 'Approved';
@@ -547,8 +548,8 @@ export class I18nDataEN {
     static Booking_CancelTerms_Unanswered = 'If the expert declines, or never confirms before the session starts, you get a full refund';
     static Booking_CostHint_Decline = 'The student gets a full refund; your declines count goes up';
     static Booking_CostHint_CancelLesson = 'The student gets a refund; your cancellation count goes up';
-    static User_Cancellations = 'Booking Cancellations';
-    static User_Declines = 'Booking Withdrawals';
+    static User_Cancellations = 'Cancelled after confirmation';
+    static User_Declines = 'Withdrawn before confirmation';
     static Admin_NoUserCancellations = 'No cancellations found';
     static Slot_User = 'User';
     static QuickChat_Title = 'Quick Chat';

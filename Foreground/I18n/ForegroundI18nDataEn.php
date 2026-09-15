@@ -41,6 +41,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Comment_ModerationNotice' => 'Your review is published without your name, and a moderator reads it before it goes live. Nobody sees the name: not other readers, not the expert you are writing about, not the moderator — they judge the text. One exception: if the moderator marks the review as dangerous, the platform owner sees the name in order to deal with it. The review appears on the page once approved.',
             'Comment_SentForReview' => 'Review sent for approval. It will appear on the page once a moderator approves it — until then only you can see it.',
             'Comment_StatusPending' => 'Awaiting approval',
+            'Comment_StatusApproved' => 'Published',
             'Comment_StatusRejected' => 'Rejected by a moderator',
             'Comment_StatusMine' => 'Your review',
             'Comment_Moderation' => 'Review',
@@ -307,7 +308,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Ledger_Type_Refund' => 'Refund',
             'Ledger_Note_AutoCancel' => 'Auto-cancelled: the session started without confirmation',
             'Ledger_Note_Penalty' => '%s withheld — %s%% penalty',
-            'Ledger_Note_ExpertKeepsPenalty' => '%s refunded to the student, you keep %s (%s%%) as compensation for the cancelled lesson',
+            'Ledger_Note_ExpertKeepsPenalty' => 'this amount went back to the student; you keep the %s (%s%%) penalty as compensation for the cancelled lesson',
             'Ledger_Type_Manual' => 'Manual',
 
             'User_Status_Disabled' => 'Disabled',
@@ -615,8 +616,8 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Booking_CancelTerms_Unanswered' => 'If the expert declines, or never confirms before the session starts, you get a full refund',
             'Booking_CostHint_Decline' => 'The student gets a full refund; your declines count goes up',
             'Booking_CostHint_CancelLesson' => 'The student gets a refund; your cancellation count goes up',
-            'User_Cancellations' => 'Booking Cancellations',
-            'User_Declines' => 'Booking Withdrawals',
+            'User_Cancellations' => 'Cancelled after confirmation',
+            'User_Declines' => 'Withdrawn before confirmation',
             'Admin_NoUserCancellations' => 'No cancellations found',
 
             // User preview + Quick chat

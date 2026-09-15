@@ -33,6 +33,7 @@ export class I18nDataRU {
     static Comment_ModerationNotice = 'Отзыв публикуется без вашего имени, и до публикации его читает модератор. Имени не видит никто: ни другие читатели, ни преподаватель, о котором вы пишете, ни сам модератор — он решает по тексту. Единственное исключение: если модератор сочтёт отзыв опасным, имя увидит владелец платформы, чтобы разобраться. Отзыв появится на странице после одобрения.';
     static Comment_SentForReview = 'Отзыв отправлен на проверку. Он появится на странице после одобрения модератором — до тех пор его видите только вы.';
     static Comment_StatusPending = 'На проверке';
+    static Comment_StatusApproved = 'Опубликован';
     static Comment_StatusRejected = 'Отклонён модератором';
     static Comment_StatusMine = 'Ваш отзыв';
     static Comment_Moderation = 'Проверка';
@@ -275,7 +276,7 @@ export class I18nDataRU {
     static Ledger_Type_Refund = 'Возврат';
     static Ledger_Note_AutoCancel = 'Автоотмена: занятие началось без подтверждения';
     static Ledger_Note_Penalty = 'удержано %s ₽ — неустойка %s%%';
-    static Ledger_Note_ExpertKeepsPenalty = 'ученику возвращено %s ₽, вы сохраняете %s ₽ (%s%%) как компенсацию за отменённое занятие';
+    static Ledger_Note_ExpertKeepsPenalty = 'эта сумма возвращена ученику; неустойку %s ₽ (%s%%) вы сохраняете как компенсацию за отменённое занятие';
     static Ledger_Type_Manual = 'Вручную';
     static User_Status_Disabled = 'Отключён';
     static User_Status_Approved = 'Одобрен';
@@ -546,8 +547,8 @@ export class I18nDataRU {
     static Booking_CancelTerms_Unanswered = 'Если преподаватель откажет или не подтвердит до начала занятия, деньги вернутся полностью';
     static Booking_CostHint_Decline = 'Ученику вернутся деньги полностью, счётчик ваших отклонений вырастет';
     static Booking_CostHint_CancelLesson = 'Ученику вернутся деньги, счётчик ваших отмен вырастет';
-    static User_Cancellations = 'Отмен бронирований';
-    static User_Declines = 'Снятий бронирования';
+    static User_Cancellations = 'Отменено после подтверждения';
+    static User_Declines = 'Снято до подтверждения';
     static Admin_NoUserCancellations = 'Отмен не найдено';
     static Slot_User = 'Пользователь';
     static QuickChat_Title = 'Быстрый чат';
