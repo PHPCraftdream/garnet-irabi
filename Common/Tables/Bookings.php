@@ -66,7 +66,19 @@ namespace PHPCraftdream\IRabi\Common\Tables {
          * мини-превью), которые уже однажды разошлись («мини-карточка
          * говорила 6, полная страница — 4», D-121).
          *
-         * @return array{conducted:int,upcoming:int}
+         * D-190: заявка, которую преподаватель не подтвердил до начала
+         * занятия, снимается кроном с полным возвратом ученику. У ученика
+         * это видно («Снято до подтверждения»), у преподавателя не видно
+         * нигде. Отменой преподавателя это не считается — молчать он
+         * вправе, — но и пропадать бесследно факт не должен: считаем
+         * отдельной величиной. Выводим из самих броней, а не заводим
+         * четвёртый журнал: три расходящихся журнала мы уже разбирали
+         * (D-146/D-150/D-151). Условие по confirmed_at избыточно сегодня
+         * (крон трогает только 'pending'), но оно и есть определение
+         * «не дождалась ответа» — без него будущий системный путь по
+         * подтверждённой брони молча попал бы в этот счётчик.
+         *
+         * @return array{conducted:int,upcoming:int,missed:int}
          */
         public static function expertOutcomeCounts(int $expertId): array {
             $slotsTbl = TimeSlots::get()->getTableName();
@@ -87,7 +99,16 @@ namespace PHPCraftdream\IRabi\Common\Tables {
                 $q->where("{$slotsTbl}.start_at > UNIX_TIMESTAMP()");
             });
 
-            return ['conducted' => $conducted, 'upcoming' => $upcoming];
+            $missed = static::get()->getCount(function (SelectInterface $q) use ($slotsTbl, $bookingsTbl, $expertId): void {
+                $q->join('INNER', $slotsTbl, "{$slotsTbl}.id = {$bookingsTbl}.bookable_id");
+                $q->where("{$bookingsTbl}.bookable_type = ?", ['time_slot']);
+                $q->where("{$bookingsTbl}.status = ?", ['cancelled']);
+                $q->where("{$bookingsTbl}.cancelled_role = ?", [static::CANCELLED_BY_SYSTEM]);
+                $q->where("{$bookingsTbl}.confirmed_at IS NULL");
+                $q->where("{$slotsTbl}.expert_id = ?", [$expertId]);
+            });
+
+            return ['conducted' => $conducted, 'upcoming' => $upcoming, 'missed' => $missed];
         }
 
         /**

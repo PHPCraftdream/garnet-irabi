@@ -18,6 +18,8 @@ interface Expert {
     is_disabled?: boolean;
     cancellation_count?: number;
     decline_count?: number;
+    /** D-190: заявки, оставленные без ответа до начала занятия. */
+    missed_count?: number;
     conducted_count?: number;
     upcoming_count?: number;
 }
@@ -160,7 +162,7 @@ const ExpertProfileIslandInner: React.FC<ExpertProfileProps> = ({
             )}
 
             <div className="profile-card mb-5" data-test-id="expert-stats">
-                <div className="grid grid-cols-2 md:grid-cols-4">
+                <div className="grid grid-cols-2 md:grid-cols-5">
                     <div className="profile-stat-cell">
                         <div className="profile-stat-value text-success" data-test-id="expert-stat-conducted">{expert.conducted_count ?? 0}</div>
                         <div className="stat-tile-label">{t.Expert_Conducted()}</div>
@@ -176,6 +178,14 @@ const ExpertProfileIslandInner: React.FC<ExpertProfileProps> = ({
                     <div className="profile-stat-cell">
                         <div className="profile-stat-value text-warning" data-test-id="expert-stat-cancellations">{expert.cancellation_count ?? 0}</div>
                         <div className="stat-tile-label">{t.Expert_Cancellations()}</div>
+                    </div>
+                    {/* D-190: два соседних счётчика — решения преподавателя.
+                        Этот — их отсутствие: заявка истекла без ответа. Раньше
+                        она не попадала ни в один счётчик на его стороне, хотя
+                        у ученика была видна. */}
+                    <div className="profile-stat-cell" title={t.Expert_MissedHint()}>
+                        <div className="profile-stat-value text-muted" data-test-id="expert-stat-missed">{expert.missed_count ?? 0}</div>
+                        <div className="stat-tile-label">{t.Expert_Missed()}</div>
                     </div>
                 </div>
             </div>

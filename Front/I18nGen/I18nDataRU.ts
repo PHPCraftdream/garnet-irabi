@@ -492,6 +492,8 @@ export class I18nDataRU {
     static Expert_Cancellations = 'Отменил занятий';
     static Expert_Declines = 'Отклонил заявок';
     static Expert_Conducted = 'Проведено уроков';
+    static Expert_Missed = 'Не ответил на заявок';
+    static Expert_MissedHint = 'Заявки, до начала которых преподаватель не дал ответа. Занятие не состоялось, деньги ученику вернулись полностью.';
     static Slot_OwnSlot = 'Ваш слот';
     static Expert_Upcoming = 'Предстоящих';
     static Expert_Stats = 'Статистика';

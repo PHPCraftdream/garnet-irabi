@@ -112,6 +112,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             $expertBookingCounts = Bookings::expertOutcomeCounts($expertId);
             $conductedCount = $expertBookingCounts['conducted'];
             $upcomingCount = $expertBookingCounts['upcoming'];
+            $missedCount = $expertBookingCounts['missed'];
 
             $expertAccount = DbAccount::get()->selectById($expertId);
             $avatar = UserEntityConfig::avatarUrl([
@@ -139,6 +140,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 $declineCount = 0;
                 $conductedCount = 0;
                 $upcomingCount = 0;
+                $missedCount = 0;
                 // «О себе» — свободный текст, который человек писал о себе, и
                 // из него его узнают вернее, чем по имени. Раньше оно ничем не
                 // грозило, потому что всегда приходило пустым; теперь, когда
@@ -162,6 +164,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                     'decline_count' => $declineCount,
                     'conducted_count' => $conductedCount,
                     'upcoming_count' => $upcomingCount,
+                    'missed_count' => $missedCount,
                 ],
                 'expertId' => $expertId,
                 'slots' => array_values($slots),

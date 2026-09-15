@@ -498,6 +498,8 @@ class I18n extends I18nBase {
     Expert_Cancellations: t = (a = []) => this.t('Expert_Cancellations', a);
     Expert_Declines: t = (a = []) => this.t('Expert_Declines', a);
     Expert_Conducted: t = (a = []) => this.t('Expert_Conducted', a);
+    Expert_Missed: t = (a = []) => this.t('Expert_Missed', a);
+    Expert_MissedHint: t = (a = []) => this.t('Expert_MissedHint', a);
     Slot_OwnSlot: t = (a = []) => this.t('Slot_OwnSlot', a);
     Expert_Upcoming: t = (a = []) => this.t('Expert_Upcoming', a);
     Expert_Stats: t = (a = []) => this.t('Expert_Stats', a);

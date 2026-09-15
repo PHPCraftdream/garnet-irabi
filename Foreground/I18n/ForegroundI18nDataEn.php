@@ -557,6 +557,8 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Expert_Cancellations' => 'Cancelled by them',
             'Expert_Declines' => 'Declined by them',
             'Expert_Conducted' => 'Conducted lessons',
+            'Expert_Missed' => 'Left unanswered',
+            'Expert_MissedHint' => 'Requests the teacher never answered before the lesson was due. The lesson did not happen and the student was refunded in full.',
             'Slot_OwnSlot' => 'Your slot',
             'Expert_Upcoming' => 'Upcoming',
             'Expert_Stats' => 'Statistics',

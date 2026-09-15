@@ -61,6 +61,8 @@ interface DashboardProps {
     earningsThisMonth?: number;
     declines?: number;
     cancellations?: number;
+    /** D-190: заявки, истёкшие без ответа преподавателя. */
+    missed?: number;
     // Moderator data
     openTickets?: number;
     pendingApprovals?: number;
@@ -78,7 +80,7 @@ export const DashboardIsland: React.FC<DashboardProps> = (props) => {
         unreadSupport, unreadIm,
         upcomingBookings, recommendedSlots,
         expertSlots, pendingBookings, usersThisMonth, earningsThisMonth,
-        declines, cancellations,
+        declines, cancellations, missed,
         expertPendingBookingsList, expertConfirmedBookingsList,
         openTickets, pendingApprovals, totalUsers, bookingsThisMonth,
         newsApiUrl, unreadNews,
@@ -127,6 +129,7 @@ export const DashboardIsland: React.FC<DashboardProps> = (props) => {
                     earningsThisMonth={earningsThisMonth ?? 0}
                     declines={declines ?? 0}
                     cancellations={cancellations ?? 0}
+                    missed={missed ?? 0}
                 />
             )}
 

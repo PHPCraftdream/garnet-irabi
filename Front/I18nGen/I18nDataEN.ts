@@ -493,6 +493,8 @@ export class I18nDataEN {
     static Expert_Cancellations = 'Cancelled by them';
     static Expert_Declines = 'Declined by them';
     static Expert_Conducted = 'Conducted lessons';
+    static Expert_Missed = 'Left unanswered';
+    static Expert_MissedHint = 'Requests the teacher never answered before the lesson was due. The lesson did not happen and the student was refunded in full.';
     static Slot_OwnSlot = 'Your slot';
     static Expert_Upcoming = 'Upcoming';
     static Expert_Stats = 'Statistics';

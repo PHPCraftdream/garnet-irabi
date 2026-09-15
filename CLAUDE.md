@@ -4,7 +4,15 @@
 
 - После `composer update phpcraftdream/garnet-framework` сразу выполняй
   `npm install` в ТРЁХ каталогах внутри `vendor/phpcraftdream/garnet-framework`:
-  `FrontBuilder`, `tooling/mcp/browser`, `tooling/mcp/mysql`.
+  `FrontBuilder`, `tooling/mcp/browser`, `tooling/mcp/mysql`, **а затем
+  `php garnet prepare`**. Одного `npm install` мало: зависимости фронта
+  лежат в `FrontBuilder/node_modules`, а код бандла — в `Bundle/Front/`,
+  и связывает их junction `vendor/phpcraftdream/garnet-framework/node_modules`,
+  который composer сносит вместе с пакетом. Восстанавливает junction
+  именно `prepare` (он же перегенерирует `Front/I18nGen/` — без этого
+  новые ключи переводов не видны типизации). Без этого шага
+  `npm run typecheck` падает на `cropperjs` и `lucide` из vendor-файлов,
+  и выглядит это так, будто `npm install` не сработал.
   Composer переустанавливает пакет целиком и удаляет все установленные внутри
   него `node_modules`. Ломается сразу три вещи, и все — с симптомами, которые
   выглядят как что угодно, только не как последствие обновления:

@@ -273,6 +273,10 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 $expertCancelCounts = ExpertCancellations::countsFor($accountId);
                 $expertCancelCount = $expertCancelCounts['cancellations'];
                 $expertDeclineCount = $expertCancelCounts['declines'];
+                // D-190: заявки, истёкшие без ответа. Соседние два числа —
+                // решения преподавателя, это — их отсутствие; на его
+                // собственном экране оно нужно раньше, чем на публичном.
+                $expertMissedCount = Bookings::expertOutcomeCounts($accountId)['missed'];
 
                 // Full lists for the dashboard widgets
                 $expertPendingBookingsList = ExpertHelpers::buildPendingBookingsList($accountId);
@@ -354,6 +358,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 $props['earningsThisMonth'] = $earningsThisMonth;
                 $props['declines'] = $expertDeclineCount;
                 $props['cancellations'] = $expertCancelCount;
+                $props['missed'] = $expertMissedCount;
             }
 
             if ($isModerator) {
