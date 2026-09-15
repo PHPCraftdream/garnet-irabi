@@ -346,6 +346,7 @@ export class I18nDataRU {
     static Support_Assignee = 'Ответственный';
     static Support_Unassigned = 'Не назначен';
     static Support_TicketUpdatedWhileTyping = 'Пока вы печатали, в тикете появился новый ответ — проверьте переписку выше, прежде чем отправлять свой.';
+    static Support_StaleReplySent = 'Коллега ответил в этом тикете почти в тот же момент — проверьте переписку выше, ваши ответы могли пересечься.';
     static Support_HasAttachments = 'Вложений: %s';
     static Support_Assign = 'Назначить';
     static Support_ChangeStatus = 'Изменить статус';
@@ -360,6 +361,8 @@ export class I18nDataRU {
     static Unit_MinuteShort = 'мин';
     static Support_User = 'Пользователь';
     static Support_TicketCreated = 'Обращение создано';
+    static Support_TicketCreatedWithId = 'Обращение #%s принято.';
+    static Support_TicketEtaHint = 'Обычно отвечаем в течение %s мин.';
     static Support_BackToList = 'Назад к списку';
     static Support_ViewAll = 'Все обращения';
     static Support_Widget_Title = 'Поддержка';

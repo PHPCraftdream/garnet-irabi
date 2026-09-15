@@ -1,12 +1,15 @@
 import * as React from 'react';
 import {formatTs} from '@common/Utils/DateUtils';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
+import {translateStatus} from '../../Common/statusHelpers';
 import {SeatsSource, SlotFormatSource, slotFormatLine, slotSeatsLeftLine} from '../../Common/slotFormat';
 
 interface SlotLike extends SlotFormatSource, SeatsSource {
     id: number;
     start_at: number;
     cost: number;
+    /** D-187: своя открытая заявка на слот — сервер отдаёт то же условие, которым отклоняет повторную бронь. */
+    booking_status?: string | null;
 }
 
 interface Props {
@@ -50,7 +53,16 @@ export const ExpertSlotCard: React.FC<Props> = ({slot, isOwnProfile, canBook, on
                 {isOwnProfile && (
                     <span className="text-xs text-muted" data-test-id={`slot-own-${slot.id}`}>{t.Slot_OwnSlot()}</span>
                 )}
-                {!isOwnProfile && canBook && (
+                {/* D-187: на групповом слоте status остаётся 'free', пока есть
+                    свободные места, даже если ЭТОТ человек уже записан —
+                    страница не знала об этом и предлагала забронировать
+                    снова тому, у кого уже есть подтверждённая заявка. */}
+                {!isOwnProfile && slot.booking_status && (
+                    <span className="text-xs text-muted" data-test-id={`slot-already-booked-${slot.id}`}>
+                        {translateStatus(slot.booking_status)}
+                    </span>
+                )}
+                {!isOwnProfile && !slot.booking_status && canBook && (
                     <button
                         type="button"
                         onClick={() => onBook(slot.id)}

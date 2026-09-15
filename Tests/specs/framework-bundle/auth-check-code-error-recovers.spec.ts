@@ -96,20 +96,23 @@ test.describe('Auth code-verify — a failed request recovers instead of freezin
             }
             await route.continue();
         });
-        await page.locator('[data-test-id="auth-login-input"]').fill(code as string);
+        // Auth2's input carries a phase-specific test-id (auth-login-input in
+        // the email phase, auth-code-input once code entry is showing) — the
+        // requestCode POST above already flipped the phase.
+        await page.locator('[data-test-id="auth-code-input"]').fill(code as string);
         await page.locator('[data-test-id="auth-submit-btn"]').click();
 
         // ── 3. Loader visible, input/button hidden while the request is
         //     in flight.
         await expect(page.locator('[data-test-id="auth-loading"]')).toBeVisible({ timeout: 5000 });
-        await expect(page.locator('[data-test-id="auth-login-input"]')).toBeHidden();
+        await expect(page.locator('[data-test-id="auth-code-input"]')).toBeHidden();
         await expect(page.locator('[data-test-id="auth-submit-btn"]')).toBeHidden();
 
         // ── 4. The whole point of the regression: after the 500, the form
         //     recovers — loader gone, input/button visible again. Before the
         //     fix this hung forever (isSendingRequest never reset to false).
         await expect(page.locator('[data-test-id="auth-loading"]')).toBeHidden({ timeout: 10000 });
-        await expect(page.locator('[data-test-id="auth-login-input"]')).toBeVisible({ timeout: 5000 });
+        await expect(page.locator('[data-test-id="auth-code-input"]')).toBeVisible({ timeout: 5000 });
         await expect(page.locator('[data-test-id="auth-submit-btn"]')).toBeVisible();
         await expect(page.locator('[data-test-id="auth-submit-btn"]')).toBeEnabled();
 

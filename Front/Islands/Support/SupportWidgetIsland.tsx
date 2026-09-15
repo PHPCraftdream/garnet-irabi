@@ -60,7 +60,11 @@ export const SupportWidgetIsland: React.FC<Props> = ({unreadCount, unreadSupport
     // 20s counter poll (no extra request — same singleton the nav badges use).
     useEffect(() => {
         if (!live) return;
-        setBadge(live.unreadSupport + live.unreadIm);
+        // D-210: this button is labelled "поддержка" — summing in unread IM
+        // made it show "9+" with zero actual support unread, and a real
+        // client clicked expecting a support reply and found a chat with the
+        // teacher instead. Unread IM keeps its own badge inside the panel.
+        setBadge(live.unreadSupport);
         setImUnread(live.unreadIm);
     }, [live]);
 
@@ -133,14 +137,22 @@ export const SupportWidgetIsland: React.FC<Props> = ({unreadCount, unreadSupport
         if (!subject.trim() || !message.trim()) return;
         withSending(async () => {
             try {
-                await thread.createTicket(subject, message, createFiles);
+                const r = await thread.createTicket(subject, message, createFiles);
                 D('support.created', {source: 'widget'});
                 setSubject('');
                 setMessage('');
                 setCreateFiles([]);
                 setView('list');
                 fetchTickets();
-                showToast(t.Support_TicketCreated(), 'success');
+                // D-211: silence at the moment of sending read as "did this
+                // even go through?" — the ticket number and a real (measured,
+                // not hand-typed) ETA answer both questions at once.
+                const ticketId = r?.ticketId;
+                const etaMinutes = r?.responseEtaMinutes;
+                const confirmation = ticketId
+                    ? t.Support_TicketCreatedWithId([String(ticketId)]) + (etaMinutes ? ' ' + t.Support_TicketEtaHint([String(etaMinutes)]) : '')
+                    : t.Support_TicketCreated();
+                showToast(confirmation, 'success');
             } catch (err: any) {
                 D('support.error', {action: 'create', error: err});
                 showToast(err?.message || t.General_Error(), 'danger');

@@ -718,7 +718,10 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 // Ссылка не должна появиться молча: человек уже заглядывал
                 // в бронь, не нашёл её и ушёл — сам он больше не проверит.
                 if ($bookedSlot && isset($updateData['location'])) {
-                    static::notifyLocationChanged($slotId, $account->id(), (int)$slot['start_at']);
+                    // $slot is the row read BEFORE this UPDATE — the message
+                    // must describe the place people are actually meeting at
+                    // now, not the one they just left behind.
+                    static::notifyLocationChanged($slotId, $account->id(), array_merge($slot, $updateData));
                 }
             }
 
@@ -730,8 +733,10 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
          * Сообщить записавшимся, что место встречи у занятия обновилось.
          *
          * Ошибка отправки не должна ломать саму правку — она уже сохранена.
+         *
+         * @param array{start_at?: int, duration_min?: int, cost?: int, is_online?: int, location?: string} $slot
          */
-        private static function notifyLocationChanged(int $slotId, int $expertId, int $startAt): void {
+        private static function notifyLocationChanged(int $slotId, int $expertId, array $slot): void {
             try {
                 $bookings = Bookings::get()->selectAll(static function (SelectInterface $q) use ($slotId): void {
                     $q->where('bookable_id = :bid', ['bid' => $slotId]);
@@ -740,7 +745,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                 });
 
                 foreach ($bookings as $booking) {
-                    BookingChatNotifier::locationChanged($expertId, (int)$booking['user_id'], $startAt);
+                    BookingChatNotifier::locationChanged($expertId, (int)$booking['user_id'], $slot);
                 }
             } catch (Throwable) {
             }

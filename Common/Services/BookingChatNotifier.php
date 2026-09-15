@@ -14,31 +14,37 @@ namespace PHPCraftdream\IRabi\Common\Services {
      * sees a notice in their dialogs alongside the existing news + e-mail.
      */
     class BookingChatNotifier {
-        public static function confirmed(int $expertId, int $userId, int $startAt): void {
+        /**
+         * @param array{start_at?: int, duration_min?: int, cost?: int, is_online?: int, location?: string} $slot
+         */
+        public static function confirmed(int $expertId, int $userId, array $slot): void {
             static::send($expertId, $userId, sprintf(
                 (string)ForegroundI18n::getInstance()->Booking_Chat_Confirmed(),
-                static::when($userId, $startAt),
+                static::when($userId, $slot),
             ));
         }
 
-        public static function declined(int $expertId, int $userId, int $startAt): void {
+        /** @param array{start_at?: int, duration_min?: int, cost?: int, is_online?: int, location?: string} $slot */
+        public static function declined(int $expertId, int $userId, array $slot): void {
             static::send($expertId, $userId, sprintf(
                 (string)ForegroundI18n::getInstance()->Booking_Chat_Declined(),
-                static::when($userId, $startAt),
+                static::when($userId, $slot),
             ));
         }
 
-        public static function cancelled(int $expertId, int $userId, int $startAt): void {
+        /** @param array{start_at?: int, duration_min?: int, cost?: int, is_online?: int, location?: string} $slot */
+        public static function cancelled(int $expertId, int $userId, array $slot): void {
             static::send($expertId, $userId, sprintf(
                 (string)ForegroundI18n::getInstance()->Booking_Chat_Cancelled(),
-                static::when($userId, $startAt),
+                static::when($userId, $slot),
             ));
         }
 
-        public static function locationChanged(int $expertId, int $userId, int $startAt): void {
+        /** @param array{start_at?: int, duration_min?: int, cost?: int, is_online?: int, location?: string} $slot */
+        public static function locationChanged(int $expertId, int $userId, array $slot): void {
             static::send($expertId, $userId, sprintf(
                 (string)ForegroundI18n::getInstance()->Booking_Chat_LocationChanged(),
-                static::when($userId, $startAt),
+                static::when($userId, $slot),
             ));
         }
 
@@ -55,19 +61,21 @@ namespace PHPCraftdream\IRabi\Common\Services {
         public static function rescheduled(int $senderId, int $recipientId, int $oldStartAt, int $newStartAt): void {
             static::send($senderId, $recipientId, sprintf(
                 (string)ForegroundI18n::getInstance()->Booking_Chat_Rescheduled(),
-                static::when($recipientId, $oldStartAt),
-                static::when($recipientId, $newStartAt),
+                static::whenTime($recipientId, $oldStartAt),
+                static::whenTime($recipientId, $newStartAt),
             ));
         }
 
         /**
          * "Cancel" when the booking was already confirmed, otherwise "decline".
+         *
+         * @param array{start_at?: int, duration_min?: int, cost?: int, is_online?: int, location?: string} $slot
          */
-        public static function cancelledOrDeclined(int $expertId, int $userId, int $startAt, string $prevStatus): void {
+        public static function cancelledOrDeclined(int $expertId, int $userId, array $slot, string $prevStatus): void {
             if ($prevStatus === 'confirmed') {
-                static::cancelled($expertId, $userId, $startAt);
+                static::cancelled($expertId, $userId, $slot);
             } else {
-                static::declined($expertId, $userId, $startAt);
+                static::declined($expertId, $userId, $slot);
             }
         }
 
@@ -91,7 +99,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
          * рассинхрон/UTC, даже когда конвертация отработала правильно.
          * Подписываем пояс так же, как в письмах (`DateUtils::zoneLabel`).
          */
-        private static function when(int $userId, int $startAt): string {
+        private static function whenTime(int $userId, int $startAt): string {
             $rows = DbAccount::get()->selectAll(static function (SelectInterface $q) use ($userId): void {
                 $q->resetCols();
                 $q->cols(['time_zone']);
@@ -103,6 +111,41 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 : null;
 
             return DateUtils::formatForUser($startAt, $tz, 'd.m.Y, H:i') . ' (' . DateUtils::zoneLabel($startAt, $tz) . ')';
+        }
+
+        /**
+         * D-202: дата/время сообщение уже называло, но не длительность, цену
+         * и формат — тот же пробел, что закрыли в письмах (D-129/D-139).
+         * Один диалог у преподавателя и ученика на ВСЕ их занятия, и когда в
+         * нём подряд несколько «Ваша бронь на ... подтверждена», отличить их
+         * друг от друга можно было только по дате — здесь же, в одной строке.
+         *
+         * Формат — тем же правилом, что и везде: онлайн называет платформу,
+         * не ссылку (`MeetingPlatform::publicName`); очное — адрес, который
+         * получателю в любом случае уже открыт как участнику этой брони.
+         *
+         * @param array{start_at?: int, duration_min?: int, cost?: int, is_online?: int, location?: string} $slot
+         */
+        private static function when(int $userId, array $slot): string {
+            $startAt = (int)($slot['start_at'] ?? 0);
+            $durationMin = (int)($slot['duration_min'] ?? 0);
+            $cost = (int)($slot['cost'] ?? 0);
+            $isOnline = (int)($slot['is_online'] ?? 0) === 1;
+            $location = (string)($slot['location'] ?? '');
+            $format = $isOnline ? MeetingPlatform::publicName($location) : $location;
+
+            $parts = [static::whenTime($userId, $startAt)];
+            if ($durationMin > 0) {
+                $parts[] = $durationMin . ' ' . (string)ForegroundI18n::getInstance()->Slot_Duration_Min();
+            }
+            if ($cost > 0) {
+                $parts[] = $cost . ' ' . "\u{20BD}";
+            }
+            if ($format !== '') {
+                $parts[] = $format;
+            }
+
+            return implode(' · ', $parts);
         }
 
         /**

@@ -495,7 +495,13 @@ namespace PHPCraftdream\IRabi {
                 $unreadIm = Common\Tables\ImReadStatus::getUnreadCountForUser($account->id());
 
                 return RenderIsland::render('support-widget', [
-                    'unreadCount' => $unreadSupport + $unreadIm,
+                    // D-210: the floating button is labelled and shaped like a
+                    // support entry point — summing in personal messages made
+                    // it show "9+" while unreadSupport was 0, and a real client
+                    // clicked it looking for a support reply and landed on a
+                    // chat with the teacher instead. Unread IM still gets its
+                    // own badge inside the panel (`support-widget-im-link`).
+                    'unreadCount' => $unreadSupport,
                     'unreadSupport' => $unreadSupport,
                     'unreadIm' => $unreadIm,
                     'ticketsUrl' => self::url(SupportController::URL . '~tickets'),
@@ -612,7 +618,11 @@ namespace PHPCraftdream\IRabi {
 
                 $sessionAccount = Account::fromSession();
                 $userTimezone = $sessionAccount?->readParam('time_zone') ?? '';
-                $userName = $sessionAccount?->readData('name') ?? '';
+                // D-391: readData() читает EAV-таблицу accounts_data по параметру
+                // 'name' — там такой строки никогда не было, имя лежит колонкой
+                // accounts.name, которую отдаёт readParam(). window.__GARNET_USER__.name
+                // был пуст у всех аккаунтов независимо от того, заполнено ли имя.
+                $userName = $sessionAccount?->readParam('name') ?? '';
 
                 // Site-wide SEO/OG defaults (per-page values override these;
                 // HtmlLayout absolutises og_image and falls back to the favicon).

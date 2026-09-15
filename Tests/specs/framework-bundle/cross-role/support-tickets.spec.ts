@@ -308,9 +308,10 @@ test.describe('Support tickets — cross-role flow', () => {
         await userPage.goto('/support/');
         await userPage.locator(`[data-test-id="support-ticket-${ticketId}"]`).click();
 
-        // System message about status change should be visible
-        // System message is now localized — check for Russian text
-        await expect(userPage.locator('text=Статус изменён')).toBeVisible({ timeout: 5000 });
+        // System message about status change should be visible.
+        // D-205: client no longer sees the internal "Статус изменён: X → Y"
+        // line — a "resolved" transition speaks plainly instead.
+        await expect(userPage.locator('text=Обращение решено')).toBeVisible({ timeout: 5000 });
     });
 
     // ── Widget ───────────────────────────────────────────────────

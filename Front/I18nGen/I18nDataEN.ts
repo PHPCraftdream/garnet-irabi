@@ -347,6 +347,7 @@ export class I18nDataEN {
     static Support_Assignee = 'Assignee';
     static Support_Unassigned = 'Unassigned';
     static Support_TicketUpdatedWhileTyping = 'While you were typing, a new reply was posted to this ticket — check the conversation above before sending yours.';
+    static Support_StaleReplySent = 'A colleague replied to this ticket at nearly the same moment — check the conversation above, your replies may overlap.';
     static Support_HasAttachments = 'Attachments: %s';
     static Support_Assign = 'Assign';
     static Support_ChangeStatus = 'Change Status';
@@ -361,6 +362,8 @@ export class I18nDataEN {
     static Unit_MinuteShort = 'min';
     static Support_User = 'User';
     static Support_TicketCreated = 'Ticket created';
+    static Support_TicketCreatedWithId = 'Ticket #%s received.';
+    static Support_TicketEtaHint = 'We usually reply within %s min.';
     static Support_BackToList = 'Back to list';
     static Support_ViewAll = 'All tickets';
     static Support_Widget_Title = 'Support';

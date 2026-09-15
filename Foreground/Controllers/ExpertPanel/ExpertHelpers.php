@@ -47,13 +47,22 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
             $userTz = $account->readParam('time_zone') ?: 'UTC';
             $monthStart = DateUtils::startOfCurrentMonthForUser($userTz);
 
+            // D-207: считался только 'confirmed'/'completed' — заявка,
+            // ждущая ответа преподавателя, не попадала в число, хотя на
+            // экране «Входящие брони» (том самом, откуда человек и
+            // пересчитывал вручную) она уже стоит первой строкой и требует
+            // решения. Ручной пересчёт по списку закономерно давал на
+            // одного ученика больше счётчика — 8 вместо 7: список не
+            // различает «ждёт ответа» и «подтверждено», оба значат
+            // «я сейчас работаю с этим человеком». 'cancelled'/'declined'
+            // по-прежнему не считаются — из них ничего не вышло.
             $monthUsers = Bookings::get()->selectAll(function (SelectInterface $q) use ($expertSlotIds, $monthStart): void {
                 $q->resetCols();
                 $q->cols(['COUNT(DISTINCT user_id) as cnt']);
                 if (!empty($expertSlotIds)) {
                     $q->where('bookable_type = ?', ['time_slot'])
                         ->where('bookable_id IN (?)', [array_map('intval', $expertSlotIds)])
-                        ->where('status IN (?)', [['confirmed', 'completed']])
+                        ->where('status IN (?)', [['pending', 'confirmed', 'completed']])
                         ->where('created_at >= ?', [$monthStart]);
                 } else {
                     $q->where('1 = 0');

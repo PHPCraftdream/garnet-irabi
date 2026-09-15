@@ -352,6 +352,7 @@ class I18n extends I18nBase {
     Support_Assignee: t = (a = []) => this.t('Support_Assignee', a);
     Support_Unassigned: t = (a = []) => this.t('Support_Unassigned', a);
     Support_TicketUpdatedWhileTyping: t = (a = []) => this.t('Support_TicketUpdatedWhileTyping', a);
+    Support_StaleReplySent: t = (a = []) => this.t('Support_StaleReplySent', a);
     Support_HasAttachments: t = (a = []) => this.t('Support_HasAttachments', a);
     Support_Assign: t = (a = []) => this.t('Support_Assign', a);
     Support_ChangeStatus: t = (a = []) => this.t('Support_ChangeStatus', a);
@@ -366,6 +367,8 @@ class I18n extends I18nBase {
     Unit_MinuteShort: t = (a = []) => this.t('Unit_MinuteShort', a);
     Support_User: t = (a = []) => this.t('Support_User', a);
     Support_TicketCreated: t = (a = []) => this.t('Support_TicketCreated', a);
+    Support_TicketCreatedWithId: t = (a = []) => this.t('Support_TicketCreatedWithId', a);
+    Support_TicketEtaHint: t = (a = []) => this.t('Support_TicketEtaHint', a);
     Support_BackToList: t = (a = []) => this.t('Support_BackToList', a);
     Support_ViewAll: t = (a = []) => this.t('Support_ViewAll', a);
     Support_Widget_Title: t = (a = []) => this.t('Support_Widget_Title', a);

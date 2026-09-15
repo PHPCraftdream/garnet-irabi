@@ -132,6 +132,35 @@ namespace PHPCraftdream\IRabi\Common\Tables {
         }
 
         /**
+         * Слоты из `$slotIds`, на которые у пользователя уже есть открытая
+         * заявка (pending/confirmed) — ровно то же условие, которым сервер
+         * отклоняет повторную бронь (см. 'already_booked' в
+         * SlotsController::post__book). Витрина, которая не знает об этих
+         * слотах, предлагает кнопку «Забронировать» человеку, который уже
+         * записан (D-187) — тот же класс расхождения, что D-151/D-186/D-200:
+         * у состояния один источник правды, а читателей несколько.
+         *
+         * @param int[] $slotIds
+         * @return array<int, string> slotId => status ('pending'|'confirmed')
+         */
+        public static function activeBookingStatusesForUser(int $userId, array $slotIds): array {
+            if ($userId <= 0 || empty($slotIds)) {
+                return [];
+            }
+            $rows = static::get()->selectAll(function (SelectInterface $q) use ($userId, $slotIds): void {
+                $q->where(
+                    'user_id = ? AND bookable_type = ? AND bookable_id IN (?) AND status IN (?)',
+                    [$userId, 'time_slot', $slotIds, ['pending', 'confirmed']]
+                );
+            });
+            $statuses = [];
+            foreach ($rows as $row) {
+                $statuses[(int)$row['bookable_id']] = (string)$row['status'];
+            }
+            return $statuses;
+        }
+
+        /**
          * 'cancel' для брони, которая успела дойти до confirmed, иначе
          * 'decline' — формула переизобреталась одинаково в каждом месте
          * отмены (эксперт/модератор/студент); теперь один источник.

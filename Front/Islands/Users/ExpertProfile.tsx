@@ -36,6 +36,8 @@ interface ExpertSlot {
     max_users?: number;
     /** D-200: сколько мест уже занято — вместе с max_users даёт остаток. */
     booked_count?: number;
+    /** D-187: статус ('pending'|'confirmed'), если у текущего пользователя уже есть открытая заявка на этот слот. */
+    booking_status?: string | null;
 }
 
 interface ExpertProfileProps {

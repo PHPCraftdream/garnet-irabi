@@ -71,6 +71,8 @@ async function cleanupComments(entityId: number): Promise<void> {
 test.describe('L-01: comments only accept an active approved expert target', () => {
     test.describe.configure({ mode: 'serial' });
     let expertId = 0;
+    let userId = 0;
+    let seededSlotId = 0;
     let ctx: BrowserContext;
     let page: Page;
 
@@ -80,6 +82,28 @@ test.describe('L-01: comments only accept an active approved expert target', () 
         await cleanupComments(expertId);
 
         ({ context: ctx, page } = await devLogin(browser, 'user'));
+
+        // D-173: posting a comment requires a completed booking with the
+        // target expert — seed one so the baseline (happy-path) case can
+        // actually reach the 200, same gate the other cases never reach
+        // since they're rejected earlier (disabled/unapproved/demoted).
+        userId = await getAccountId('user1@dev.test');
+        expect(userId).toBeGreaterThan(0);
+        await withConnection(async (c) => {
+            const now = Math.floor(Date.now() / 1000);
+            const [slot]: any = await c.execute(
+                `INSERT INTO ${tn('time_slots')}
+                 (expert_id, start_at, end_at, duration_min, cost, is_online, location, max_users, status, uid, cancellation_penalty_percent, created_at)
+                 VALUES (?, ?, ?, 60, 500, 1, 'https://meet.example.com/l01-test', 1, 'completed', ?, 0, ?)`,
+                [expertId, now - 3600, now, [...Array(16)].map(() => Math.floor(Math.random() * 16).toString(16)).join(''), now]
+            );
+            seededSlotId = Number(slot.insertId);
+            await c.execute(
+                `INSERT INTO ${tn('bookings')} (user_id, bookable_type, bookable_id, status, confirmed_at, created_at)
+                 VALUES (?, 'time_slot', ?, 'completed', ?, ?)`,
+                [userId, seededSlotId, now, now]
+            );
+        });
     });
 
     test.afterAll(async () => {
@@ -88,6 +112,10 @@ test.describe('L-01: comments only accept an active approved expert target', () 
         await setAccountFlag(expertId, 'IS_APPROVED', '1');
         await withConnection(async (c) => {
             await c.execute(`UPDATE ${tn('accounts')} SET type = 'expert' WHERE id = ?`, [expertId]);
+            if (seededSlotId) {
+                await c.execute(`DELETE FROM ${tn('bookings')} WHERE bookable_id = ? AND bookable_type = 'time_slot'`, [seededSlotId]);
+                await c.execute(`DELETE FROM ${tn('time_slots')} WHERE id = ?`, [seededSlotId]);
+            }
         });
         await ctx?.close().catch(() => {});
     });

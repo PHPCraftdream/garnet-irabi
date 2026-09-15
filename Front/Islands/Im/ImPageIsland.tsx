@@ -217,6 +217,25 @@ const ImPageIslandInner: React.FC<Props> = ({
         setNewFiles([]);
     };
 
+    /**
+     * D-208: the recipient list in "+ Новый диалог" doesn't distinguish
+     * strangers from people already in `conversations` — it can't, it's the
+     * same list either way. Picking someone with an existing thread used to
+     * just fill in the new-message form, blank, as if nothing had been said
+     * before; the person's real history was one click away (the conversation
+     * list) and this form gave no hint it existed. The `#to=` deep-link path
+     * already checked for this (lines above); the picker didn't.
+     */
+    const handleRecipientPicked = (id: string) => {
+        const partnerId = parseInt(id, 10);
+        const existing = conversations.find(c => c.partner_id === partnerId);
+        if (existing) {
+            selectConversation(existing.id);
+            return;
+        }
+        setRecipientId(id);
+    };
+
     const selectedConversation = conversations.find(c => c.id === selectedId);
 
     return (
@@ -246,7 +265,7 @@ const ImPageIslandInner: React.FC<Props> = ({
                         <NewMessageForm
                             searchRecipientsUrl={searchRecipientsUrl}
                             recipientId={recipientId}
-                            onRecipientIdChange={setRecipientId}
+                            onRecipientIdChange={handleRecipientPicked}
                             newMessage={newMessage}
                             onNewMessageChange={setNewMessage}
                             newFiles={newFiles}

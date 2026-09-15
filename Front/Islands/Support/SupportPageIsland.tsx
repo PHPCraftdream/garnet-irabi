@@ -110,7 +110,13 @@ export const SupportPageIsland: React.FC<Props> = ({ticketsPagination, ticketPag
                     setSelectedTicketData(r.ticket);
                     setSelectedId(r.ticket.id);
                     fetchMessages(r.ticket.id);
-                    showToast(t.Support_TicketCreated(), 'success');
+                    // D-211: silence at send time read as "did this go
+                    // through?" — the ticket number and a measured ETA (not
+                    // a hand-typed one) answer both at once.
+                    const etaMinutes = r?.responseEtaMinutes;
+                    const confirmation = t.Support_TicketCreatedWithId([String(r.ticket.id)])
+                        + (etaMinutes ? ' ' + t.Support_TicketEtaHint([String(etaMinutes)]) : '');
+                    showToast(confirmation, 'success');
                 }
             } catch (err: any) {
                 D('support.error', {action: 'create', error: err});

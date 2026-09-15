@@ -128,7 +128,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                     'time' => (int)$slot['start_at'],
                 ], NewsService::slotKey((int)$slot['id']));
                 EmailNotifications::bookingConfirmed((int)$booking['user_id'], (int)($slot['start_at'] ?? 0), (int)($slot['duration_min'] ?? 0), $account->id(), (int)($slot['max_users'] ?? 1));
-                BookingChatNotifier::confirmed($account->id(), (int)$booking['user_id'], (int)$slot['start_at']);
+                BookingChatNotifier::confirmed($account->id(), (int)$booking['user_id'], $slot);
             } catch (Throwable) {
             }
 
@@ -249,7 +249,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                     // Stale slot_booked event for this slot is no longer meaningful.
                     NewsService::deleteByTargetKey(NewsService::slotKey((int)$slot['id']), NewsService::TYPE_SLOT_BOOKED);
                     EmailNotifications::bookingRejected((int)$booking['user_id'], (int)($slot['start_at'] ?? 0), (int)($slot['duration_min'] ?? 0), $account->id(), $reason, $maxUsers);
-                    BookingChatNotifier::cancelledOrDeclined($account->id(), (int)$booking['user_id'], (int)$slot['start_at'], (string)$booking['status']);
+                    BookingChatNotifier::cancelledOrDeclined($account->id(), (int)$booking['user_id'], $slot, (string)$booking['status']);
                 } catch (Throwable) {
                 }
             }
@@ -446,7 +446,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
                             'name' => $cancelledBy,
                             'time' => $slotStartAt,
                         ], NewsService::slotKey($slotId));
-                        BookingChatNotifier::cancelledOrDeclined($expertId, $userId, $slotStartAt, (string)$booking['status']);
+                        BookingChatNotifier::cancelledOrDeclined($expertId, $userId, $slot, (string)$booking['status']);
                         if ($cancelledBy !== '') {
                             EmailNotifications::bookingCancelled($userId, $slotStartAt, $durationMin, $cancelledBy, $reason, (int)($slot['max_users'] ?? 1));
                         }

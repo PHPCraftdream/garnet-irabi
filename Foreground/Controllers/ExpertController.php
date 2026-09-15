@@ -73,6 +73,15 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                     ->limit(30);
             });
 
+            // D-187: страница не знала о бронях текущего пользователя и
+            // предлагала «Забронировать» тому, кто на этот же слот уже
+            // записан (обнаружимо только на групповом слоте — там status
+            // остаётся 'free', пока есть свободные места). Тот же статус,
+            // которым сервер отклоняет повторную бронь, теперь виден и здесь.
+            $activeBookingStatuses = $accountId > 0
+                ? Bookings::activeBookingStatusesForUser($accountId, array_column($slots, 'id'))
+                : [];
+
             // D-200: раньше строка таблицы уходила в пропсы как есть, и эта
             // витрина сама решала, что из неё показать. Так она отстала от
             // каталога на остаток мест (booked_count здесь не было вовсе) —
@@ -81,6 +90,10 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             // он же прячет ссылку на онлайн-встречу за именем площадки, и
             // обойти этот разбор мимо него уже нельзя.
             $slots = SlotCardPayload::forViewerList($slots);
+            foreach ($slots as &$slot) {
+                $slot['booking_status'] = $activeBookingStatuses[$slot['id']] ?? null;
+            }
+            unset($slot);
 
             // D-121/consolidation: was four independent queries, duplicated
             // (with subtly different SQL) across the full profile, the mini

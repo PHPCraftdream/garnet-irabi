@@ -60,6 +60,13 @@ export default function SupportTicketTab({ticketId, ticketDetailUrl, clientConte
     const [replyFiles, setReplyFiles]   = useState<PendingFile[]>([]);
     const [internalFiles, setInternalFiles] = useState<PendingFile[]>([]);
     const [staleWarning, setStaleWarning] = useState(false);
+    // D-188: D-167's warning only fires on the next 15s poll — a reply sent
+    // within the same short window as a colleague's never triggers it,
+    // since at send time neither side has seen the other's message yet.
+    // The server now checks this at insert time and flags the response
+    // instead; this notice shows immediately, independent of the (already
+    // cleared) draft text.
+    const [staleReplySent, setStaleReplySent] = useState(false);
     const {sending, withSending} = useSending();
 
     const replyTextRef = React.useRef(replyText);
@@ -94,6 +101,7 @@ export default function SupportTicketTab({ticketId, ticketDetailUrl, clientConte
     useEffect(() => {
         setData(null);
         setStaleWarning(false);
+        setStaleReplySent(false);
         messageCountRef.current = null;
         // Открытие гасит непрочитанное на сервере — очередь должна это увидеть.
         loadDetail(true);
@@ -129,10 +137,16 @@ export default function SupportTicketTab({ticketId, ticketDetailUrl, clientConte
                 const fd = new FormData();
                 fd.append('ticket_id', String(ticketId));
                 fd.append('message', replyText.trim());
+                // D-188: what THIS moderator saw when they started composing.
+                // The server compares it against the actual count at insert
+                // time — the only way to catch two replies typed in the same
+                // short window, where neither side's 15s poll fires in time.
+                fd.append('known_message_count', String(messageCountRef.current ?? 0));
                 for (const f of replyFiles) fd.append('attachments[]', f.file, f.name);
                 const resp = await sendPostFormData<FormData, any>(replyUrl, fd);
                 setReplyText('');
                 setReplyFiles([]);
+                setStaleReplySent(!!resp?.staleReply);
                 loadDetail(true);
                 reportAttachmentErrors(resp);
             } catch (err: any) {
@@ -215,6 +229,20 @@ export default function SupportTicketTab({ticketId, ticketDetailUrl, clientConte
             {staleWarning && (
                 <div className="alert alert-warning mb-3" data-test-id="support-stale-warning">
                     {t.Support_TicketUpdatedWhileTyping()}
+                </div>
+            )}
+
+            {staleReplySent && (
+                <div className="alert alert-warning mb-3" data-test-id="support-stale-reply-notice">
+                    {t.Support_StaleReplySent()}
+                    <button
+                        type="button"
+                        className="btn btn-sm btn-link p-0 ml-2"
+                        onClick={() => setStaleReplySent(false)}
+                        data-test-id="support-stale-reply-notice-dismiss"
+                    >
+                        {t.Action_Close()}
+                    </button>
                 </div>
             )}
 

@@ -16,12 +16,17 @@
 import { test, expect, tn } from '../helpers/scoped-test';
 import mysql from 'mysql2/promise';
 import { DB } from '../helpers/db';
+import { USER_LOGIN } from '../helpers/logins';
 test.describe.configure({ mode: 'serial' });
 
 let expertAccountId: number;
+let seededSlotId: number;
 
 test.describe('Comments on expert profile', () => {
 
+    // D-173: commenting requires a completed booking with the expert — the
+    // default test user has none by default, so the form doesn't render at
+    // all without seeding one first.
     test.beforeAll(async () => {
         const conn = await mysql.createConnection(DB);
         try {
@@ -29,9 +34,38 @@ test.describe('Comments on expert profile', () => {
                 `SELECT id AS account_id FROM ${tn('accounts')}
             WHERE type = 'expert' LIMIT 1`
             );
-            if (rows.length > 0) {
-                expertAccountId = Number(rows[0].account_id);
-            }
+            if (rows.length === 0) { return; }
+            expertAccountId = Number(rows[0].account_id);
+
+            const [userRows] = await conn.execute<any[]>(
+                `SELECT id FROM ${tn('accounts')} WHERE login = ?`, [USER_LOGIN]
+            );
+            const userId = Number(userRows[0]?.id ?? 0);
+            if (!userId) { return; }
+
+            const now = Math.floor(Date.now() / 1000);
+            const startAt = now - 3600;
+            const [slot]: any = await conn.execute(
+                `INSERT INTO ${tn('time_slots')}
+                 (expert_id, start_at, end_at, duration_min, cost, is_online, location, max_users, status, uid, cancellation_penalty_percent, created_at)
+                 VALUES (?, ?, ?, 60, 500, 1, 'https://meet.example.com/comments-test', 1, 'completed', ?, 0, ?)`,
+                [expertAccountId, startAt, startAt + 3600, [...Array(16)].map(() => Math.floor(Math.random() * 16).toString(16)).join(''), now]
+            );
+            seededSlotId = Number(slot.insertId);
+            await conn.execute(
+                `INSERT INTO ${tn('bookings')} (user_id, bookable_type, bookable_id, status, confirmed_at, created_at)
+                 VALUES (?, 'time_slot', ?, 'completed', ?, ?)`,
+                [userId, seededSlotId, now, now]
+            );
+        } finally { await conn.end(); }
+    });
+
+    test.afterAll(async () => {
+        if (!seededSlotId) { return; }
+        const conn = await mysql.createConnection(DB);
+        try {
+            await conn.execute(`DELETE FROM ${tn('bookings')} WHERE bookable_id = ? AND bookable_type = 'time_slot'`, [seededSlotId]);
+            await conn.execute(`DELETE FROM ${tn('time_slots')} WHERE id = ?`, [seededSlotId]);
         } finally { await conn.end(); }
     });
 

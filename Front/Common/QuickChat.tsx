@@ -52,13 +52,34 @@ export default function QuickChat({partnerId, quickChatUrl, sendUrl, currentAcco
     const [replyText, setReplyText] = useState('');
     const {sending, withSending} = useSending();
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    // The mount effect, the 20s poll interval and a just-sent message can all
+    // call fetchMessages() within the same tick — without a guard each call
+    // fired its own POST, and a losing one sometimes came back 403 (D-203/D-185).
+    // A call that lands while one is already in flight doesn't fire a second
+    // request; it queues a single coalesced re-fetch for right after the
+    // current one resolves, so a send during an in-flight poll still shows up.
+    const fetchInFlight = useRef<Promise<void> | null>(null);
+    const refetchQueued = useRef(false);
 
-    const fetchMessages = React.useCallback(() => {
-        return sendPost(quickChatUrl, {partner_id: partnerId, limit: maxMessages})
+    const fetchMessages = React.useCallback((): Promise<void> => {
+        if (fetchInFlight.current) {
+            refetchQueued.current = true;
+            return fetchInFlight.current;
+        }
+        const req = sendPost(quickChatUrl, {partner_id: partnerId, limit: maxMessages})
             .then((resp: any) => {
                 setMessages(resp?.messages || []);
                 setConversationId(resp?.conversation_id ?? null);
+            })
+            .finally(() => {
+                fetchInFlight.current = null;
+                if (refetchQueued.current) {
+                    refetchQueued.current = false;
+                    fetchMessages();
+                }
             });
+        fetchInFlight.current = req;
+        return req;
     }, [partnerId, quickChatUrl, maxMessages]);
 
     useEffect(() => {

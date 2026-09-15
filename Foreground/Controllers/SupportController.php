@@ -6,7 +6,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Kernel\Db\Tables\DbTable;
     use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
+    use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
     use PHPCraftdream\IRabi\Common\Services\EmailNotifications;
+    use PHPCraftdream\IRabi\Common\Services\SupportResponseEta;
     use PHPCraftdream\IRabi\Common\Tables\SupportAttachments;
     use PHPCraftdream\IRabi\Common\Tables\SupportMessages;
     use PHPCraftdream\IRabi\Common\Tables\SupportTickets;
@@ -55,8 +57,21 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                     $q->limit(1);
                 });
                 if ($ticket) {
-                    $userName = $account->readData('name') ?: ('#' . $account->id());
+                    // Имя человека — колонка `accounts.name`, а не запись в
+                    // EAV-таблице `accounts_data` (там такого ключа не бывает
+                    // ни у кого — тот же разбор, что в D-391 для другого места).
+                    $userName = $account->readParam('name') ?: ('#' . $account->id());
                     EmailNotifications::supportTicketCreated((int)$ticket['id'], $subject, $userName);
+
+                    // D-211: в момент отправки экран молчал — ни номера
+                    // обращения, ни ориентира по времени ответа. Медиана
+                    // считается по факту (последние обращения с реальным
+                    // первым ответом), а не написана руками в шаблоне —
+                    // соврёт первой же, когда тайминги поддержки изменятся.
+                    $body = json_decode((string)$result->getBody(), true) ?: [];
+                    $body['ticketId'] = (int)$ticket['id'];
+                    $body['responseEtaMinutes'] = SupportResponseEta::medianFirstResponseMinutes();
+                    $result = ControllerTools::JSON($body);
                 }
             }
 
@@ -72,7 +87,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 if ($ticketId > 0) {
                     $ticket = static::ticketsTable()->selectOneByField('id', $ticketId);
                     if ($ticket) {
-                        $userName = $account->readData('name') ?: ('#' . $account->id());
+                        $userName = $account->readParam('name') ?: ('#' . $account->id());
                         EmailNotifications::supportUserReply($ticketId, $ticket['subject'] ?? '', $userName);
                     }
                 }
