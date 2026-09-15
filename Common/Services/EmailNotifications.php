@@ -457,6 +457,35 @@ namespace PHPCraftdream\IRabi\Common\Services {
         }
 
         /**
+         * Две даты подряд без подписей читаются наугад — это уже ловили в ленте
+         * событий (D-114). Поэтому «Было» и «Стало» названы явно, а не отданы
+         * порядку строк. Ниже отдельной строкой сказано про деньги: человек,
+         * которому перенесли занятие, первым делом думает именно о них.
+         *
+         * @return array{subject: string, body: string}
+         */
+        private static function buildBookingRescheduled(int $recipientId, int $oldStartAt, int $newStartAt, int $durationMin, string $movedBy, int $maxUsers = 1): array {
+            $t = ForegroundI18n::getInstance();
+            return [
+                'subject' => $t->Email_BookingRescheduled_Subject(FwAppSettings::brandName()),
+                'body' => static::renderEmail(
+                    $t->Email_BookingRescheduled_Title(),
+                    [
+                        ['label' => $t->Email_Row_RescheduledFrom(), 'value' => static::formatSlotInfo($recipientId, $oldStartAt, $durationMin)],
+                        ['label' => $t->Email_Row_RescheduledTo(),   'value' => static::formatSlotInfo($recipientId, $newStartAt, $durationMin)],
+                        ...static::groupLessonRow($maxUsers),
+                        ['label' => $t->Email_Row_RescheduledBy(), 'value' => $movedBy],
+                        ['label' => '', 'value' => $t->Email_Reschedule_NoMoney()],
+                    ],
+                    [
+                        'text' => $t->Email_Cta_OpenBooking(),
+                        'href' => static::absoluteUrl('/bookings/'),
+                    ],
+                ),
+            ];
+        }
+
+        /**
          * @return array{subject: string, body: string}
          */
         private static function buildNewMessage(string $senderName, string $messagePreview): array {
@@ -693,6 +722,22 @@ namespace PHPCraftdream\IRabi\Common\Services {
                 return;
             }
             $rendered = static::buildBookingCancelled($recipientId, $startAt, $durationMin, $cancelledBy, $reason, $maxUsers);
+            FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body'], self::MAX_SEND_ATTEMPTS);
+        }
+
+        /**
+         * D-193: письмо о переносе. Получатель — та сторона, которая перенос НЕ
+         * делала; инициатору сообщать о собственном действии незачем.
+         */
+        public static function bookingRescheduled(int $recipientId, int $oldStartAt, int $newStartAt, int $durationMin, string $movedBy, int $maxUsers = 1): void {
+            $email = static::getAccountEmail($recipientId);
+            if (!$email) {
+                return;
+            }
+            if (!static::gate($recipientId, self::CAT_BOOKINGS)) {
+                return;
+            }
+            $rendered = static::buildBookingRescheduled($recipientId, $oldStartAt, $newStartAt, $durationMin, $movedBy, $maxUsers);
             FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body'], self::MAX_SEND_ATTEMPTS);
         }
 

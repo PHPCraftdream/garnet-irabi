@@ -43,6 +43,24 @@ namespace PHPCraftdream\IRabi\Common\Services {
         }
 
         /**
+         * Перенос занятия (D-193). Отличается от соседей отправителем: остальные
+         * сообщения всегда идут от преподавателя, потому что и действие всегда
+         * его. Перенести может любая из двух сторон, и сообщение должно быть
+         * подписано тем, кто действительно перенёс, — иначе ученик получает от
+         * себя же уведомление о собственном действии.
+         *
+         * Оба времени печатаются в поясе получателя и подписываются поясом —
+         * тот же приём, что у соседей (D-157/D-166).
+         */
+        public static function rescheduled(int $senderId, int $recipientId, int $oldStartAt, int $newStartAt): void {
+            static::send($senderId, $recipientId, sprintf(
+                (string)ForegroundI18n::getInstance()->Booking_Chat_Rescheduled(),
+                static::when($recipientId, $oldStartAt),
+                static::when($recipientId, $newStartAt),
+            ));
+        }
+
+        /**
          * "Cancel" when the booking was already confirmed, otherwise "decline".
          */
         public static function cancelledOrDeclined(int $expertId, int $userId, int $startAt, string $prevStatus): void {
@@ -87,17 +105,22 @@ namespace PHPCraftdream\IRabi\Common\Services {
             return DateUtils::formatForUser($startAt, $tz, 'd.m.Y, H:i') . ' (' . DateUtils::zoneLabel($startAt, $tz) . ')';
         }
 
-        private static function send(int $expertId, int $userId, string $body): void {
-            if ($expertId <= 0 || $userId <= 0 || $expertId === $userId || $body === '') {
+        /**
+         * Отправитель здесь — параметр, а не «всегда преподаватель»: почти все
+         * сообщения выше действительно от него, но перенос (D-193) может
+         * сделать и ученик, и подписать его чужим именем нельзя.
+         */
+        private static function send(int $senderId, int $recipientId, string $body): void {
+            if ($senderId <= 0 || $recipientId <= 0 || $senderId === $recipientId || $body === '') {
                 return;
             }
 
-            $convId = ImConversations::findOrCreate($expertId, $userId);
+            $convId = ImConversations::findOrCreate($senderId, $recipientId);
             $now = time();
 
             ImMessages::get()->insert([
                 'conversation_id' => $convId,
-                'sender_id' => $expertId,
+                'sender_id' => $senderId,
                 'body' => $body,
                 'created_at' => $now,
             ]);

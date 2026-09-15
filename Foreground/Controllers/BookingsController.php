@@ -17,6 +17,8 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\IRabi\Common\Exceptions\AccountLockAcquireException;
     use PHPCraftdream\IRabi\Common\PaginationHelper;
     use PHPCraftdream\IRabi\Common\Services\AccountDisplay;
+    use PHPCraftdream\IRabi\Common\Services\BookingChatNotifier;
+    use PHPCraftdream\IRabi\Common\Services\BookingRescheduleService;
     use PHPCraftdream\IRabi\Common\Services\EmailNotifications;
     use PHPCraftdream\IRabi\Common\Services\ExpertDirectory;
     use PHPCraftdream\IRabi\Common\Services\MeetingPlatform;
@@ -543,6 +545,111 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             }
 
             return ControllerTools::JSON(['success' => true, 'redirect' => '/bookings']);
+        }
+
+        /**
+         * Сопоставление кодов сервиса переноса с текстами. Каждый отказ
+         * получает свой — общий 400 «Bad request» здесь запрещён: ровно на нём
+         * держался D-180, когда два законных статуса тикета молча отдавали
+         * ошибку без единого слова о причине.
+         */
+        private static function rescheduleErrorText(string $code): string {
+            $t = ForegroundI18n::getInstance();
+
+            return match ($code) {
+                BookingRescheduleService::ERR_NOT_FOUND => (string)$t->Reschedule_Err_NotFound(),
+                BookingRescheduleService::ERR_ACCESS => (string)$t->Reschedule_Err_Access(),
+                BookingRescheduleService::ERR_STATUS => (string)$t->Reschedule_Err_Status(),
+                BookingRescheduleService::ERR_SOURCE_STARTED => (string)$t->Reschedule_Err_SourceStarted(),
+                BookingRescheduleService::ERR_TARGET_MISSING => (string)$t->Reschedule_Err_TargetMissing(),
+                BookingRescheduleService::ERR_TARGET_PAST => (string)$t->Reschedule_Err_TargetPast(),
+                BookingRescheduleService::ERR_TARGET_OTHER_EXPERT => (string)$t->Reschedule_Err_TargetOtherExpert(),
+                BookingRescheduleService::ERR_TARGET_OTHER_COST => (string)$t->Reschedule_Err_TargetOtherCost(),
+                BookingRescheduleService::ERR_TARGET_SAME => (string)$t->Reschedule_Err_TargetSame(),
+                BookingRescheduleService::ERR_TARGET_FULL => (string)$t->Reschedule_Err_TargetFull(),
+                BookingRescheduleService::ERR_ALREADY_BOOKED => (string)$t->Reschedule_Err_AlreadyBooked(),
+                default => (string)$t->Reschedule_Err_Raced(),
+            };
+        }
+
+        /**
+         * D-193: перенос занятия на другое время того же преподавателя.
+         * Появился из вопроса Анны Ковальской (тикет #19) — до этого сменить
+         * время можно было только отменой с удержанием неустойки, то есть за
+         * деньги. Вся логика в BookingRescheduleService; здесь — вход, права
+         * по CSRF и рассылка уведомлений.
+         */
+        public static function post__reschedule(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
+            $account = Account::fromSession();
+            if (!$account) {
+                return ControllerTools::JSON(['error' => 'Not authenticated'], status: 401);
+            }
+
+            $postCsrf = $globals->readPostValue(Session::CSRF_TOKEN, '');
+            if (!hash_equals(Session::touchCSRF_(), (string)$postCsrf)) {
+                return ControllerTools::JSON(['error' => 'CSRF check failed'], status: 403);
+            }
+
+            $bookingId = (int)$params->getUriParam('id');
+            $targetSlotId = (int)$globals->readPostValue('slot_id', 0);
+            if ($targetSlotId <= 0) {
+                return ControllerTools::JSON(['error' => static::rescheduleErrorText(BookingRescheduleService::ERR_TARGET_MISSING)], status: 400);
+            }
+
+            // Состояние ДО переноса нужно прочитать здесь: после успеха бронь
+            // уже указывает на новый слот, и старое время из неё не достать.
+            $before = Bookings::get()->selectById($bookingId);
+            $oldSlot = $before ? TimeSlots::get()->selectById((int)$before['bookable_id']) : null;
+
+            $result = BookingRescheduleService::reschedule($bookingId, $targetSlotId, $account->id());
+
+            if ($result['ok'] !== true) {
+                $code = (string)$result['error'];
+                $status = match ($code) {
+                    BookingRescheduleService::ERR_NOT_FOUND => 404,
+                    BookingRescheduleService::ERR_ACCESS => 403,
+                    BookingRescheduleService::ERR_RACED => 409,
+                    default => 400,
+                };
+
+                return ControllerTools::JSON(['error' => static::rescheduleErrorText($code)], status: $status);
+            }
+
+            $newSlot = TimeSlots::get()->selectById($targetSlotId);
+            $studentId = (int)($before['user_id'] ?? 0);
+            $expertId = (int)($oldSlot['expert_id'] ?? 0);
+            $oldStartAt = (int)($oldSlot['start_at'] ?? 0);
+            $newStartAt = (int)($newSlot['start_at'] ?? 0);
+
+            // Узнать о переносе обязана вторая сторона — та, которая его не
+            // делала. Уведомлять инициатора о собственном действии незачем.
+            $recipientId = $account->id() === $studentId ? $expertId : $studentId;
+
+            if ($recipientId > 0 && $oldStartAt > 0 && $newStartAt > 0) {
+                try {
+                    BookingChatNotifier::rescheduled($account->id(), $recipientId, $oldStartAt, $newStartAt);
+                } catch (Throwable) {
+                }
+                try {
+                    $actorName = $account->readParam('name') ?: ('#' . $account->id());
+                    EmailNotifications::bookingRescheduled(
+                        $recipientId,
+                        $oldStartAt,
+                        $newStartAt,
+                        (int)($newSlot['duration_min'] ?? 0),
+                        $actorName,
+                        (int)($newSlot['max_users'] ?? 1),
+                    );
+                } catch (Throwable) {
+                }
+            }
+
+            return ControllerTools::JSON([
+                'success' => true,
+                'status' => $result['status'],
+                'slot_id' => $targetSlotId,
+                'message' => (string)ForegroundI18n::getInstance()->Reschedule_Success(),
+            ]);
         }
 
         public static function post__cancel(IGlobalReqParams $globals, IRouterUriParams $params): mixed {

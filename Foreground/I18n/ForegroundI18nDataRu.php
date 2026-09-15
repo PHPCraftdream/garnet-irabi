@@ -345,6 +345,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Booking_Chat_Declined' => 'Ваша бронь на %s отклонена.',
             'Booking_Chat_Cancelled' => 'Ваша бронь на %s отменена.',
             'Booking_Chat_LocationChanged' => 'Обновилось место встречи для занятия %s — посмотрите в своей брони.',
+            'Booking_Chat_Rescheduled' => 'Занятие перенесено: было %s, стало %s.',
 
             'General_Yes' => 'Да',
             'General_No' => 'Нет',
@@ -583,6 +584,28 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Cancel_ReasonRequired' => 'Укажите причину отмены',
             'Cancel_Submit' => 'Отменить бронь',
             'Cancel_Success' => 'Бронь отменена, средства возвращены пользователю',
+            // D-193. Перенос — не отмена: цена действия ноль, и это первое,
+            // что должно быть написано, потому что спрашивают именно об этом.
+            'Reschedule_Action' => 'Перенести',
+            'Reschedule_Title' => 'Перенести занятие',
+            'Reschedule_PickSlot' => 'Выберите новое время',
+            'Reschedule_Free' => 'Перенос бесплатный: деньги остаются на этом же занятии, неустойка не удерживается.',
+            'Reschedule_NeedsReconfirm' => 'После переноса занятие снова будет ждать подтверждения преподавателя. Если он не ответит до начала, бронь снимется, а деньги вернутся полностью.',
+            'Reschedule_NoSlots' => 'У преподавателя нет другого свободного времени той же стоимости.',
+            'Reschedule_Submit' => 'Перенести занятие',
+            'Reschedule_Success' => 'Занятие перенесено',
+            'Reschedule_Err_NotFound' => 'Бронь не найдена',
+            'Reschedule_Err_Access' => 'Перенести это занятие могут только его ученик и преподаватель',
+            'Reschedule_Err_Status' => 'Эту бронь уже нельзя перенести: она отменена или занятие завершено',
+            'Reschedule_Err_SourceStarted' => 'Занятие уже началось — перенести его нельзя, только отменить',
+            'Reschedule_Err_TargetMissing' => 'Выбранное время больше не доступно',
+            'Reschedule_Err_TargetPast' => 'Это время уже прошло',
+            'Reschedule_Err_TargetOtherExpert' => 'Перенести можно только на другое время того же преподавателя',
+            'Reschedule_Err_TargetOtherCost' => 'Перенести можно только на занятие той же стоимости — иначе пришлось бы доплачивать или возвращать разницу, а перенос обещан бесплатным',
+            'Reschedule_Err_TargetSame' => 'Это то же самое время',
+            'Reschedule_Err_TargetFull' => 'Место только что заняли — выберите другое время. Ваша бронь осталась на прежнем месте',
+            'Reschedule_Err_AlreadyBooked' => 'Вы уже записаны на это время',
+            'Reschedule_Err_Raced' => 'Бронь изменилась, пока вы выбирали время — откройте её заново',
             'Expert_Cancellations' => 'Отменил занятий',
             'Expert_Declines' => 'Отклонил заявок',
             'Expert_Conducted' => 'Проведено уроков',
@@ -1008,6 +1031,14 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Email_BookingCancelled_Subject' => 'Бронь отменена на %s',
             'Email_BookingCancelled_Title' => 'Бронь отменена',
             'Email_BookingCancelled_Body' => 'Бронь отменена (%s).',
+            // D-193. В письме о переносе две даты подряд, и без подписей их
+            // путают местами — это уже разбирали на ленте событий (D-114).
+            'Email_BookingRescheduled_Subject' => 'Занятие перенесено — %s',
+            'Email_BookingRescheduled_Title' => 'Занятие перенесено',
+            'Email_Row_RescheduledFrom' => 'Было',
+            'Email_Row_RescheduledTo' => 'Стало',
+            'Email_Row_RescheduledBy' => 'Кто перенёс',
+            'Email_Reschedule_NoMoney' => 'Деньги остались на этом же занятии: ни доплаты, ни возврата, неустойка не удерживалась.',
             // Напоминания о занятии. Тема называет, за сколько до начала
             // письмо пришло: у человека в ящике их два, и по теме должно быть
             // видно, суточное это или «уже скоро».
