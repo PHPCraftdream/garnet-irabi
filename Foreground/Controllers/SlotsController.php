@@ -178,6 +178,42 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
          * Fetch the data needed to render a BookingModal for a single slot —
          * used by the news feed to open the booking dialog without leaving the page.
          */
+        /**
+         * Текущее состояние одного занятия — чтобы экран мог перечитать его
+         * после своего же действия.
+         *
+         * D-198. После брони обновлялось то, что кто-то не забыл подключить:
+         * кнопка, баланс, список своих броней. Сам слот приезжал в пропсах при
+         * отрисовке страницы и не менялся уже никогда, поэтому остаток мест
+         * оставался прежним до перезагрузки — человек видел результат
+         * собственного действия наполовину. За один цикл это поймали в четырёх
+         * местах, а точечно тот же класс уже чинили (D-133, баланс в шапке).
+         *
+         * Намеренно НЕ переиспользуется `~bookData`: тот отдаёт контекст
+         * бронирования и отказывает, как только слот перестал быть свободным
+         * (409) — то есть ровно в том случае, ради которого перечитывание и
+         * нужно. Здесь никаких условий: это те же данные, что страница и так
+         * показывает в каталоге, и ссылка на онлайн-встречу спрятана внутри
+         * SlotCardPayload.
+         */
+        public static function post__slotCard(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
+            if (!Account::fromSession()) {
+                return ControllerTools::JSON(['error' => 'Not authenticated'], status: 401);
+            }
+
+            $slotId = (int)$globals->readPostValue('slot_id', 0);
+            if ($slotId <= 0) {
+                return ControllerTools::JSON(['error' => 'slot_id required'], status: 400);
+            }
+
+            $slot = TimeSlots::get()->selectById($slotId);
+            if (!$slot) {
+                return ControllerTools::JSON(['error' => 'slot_unavailable'], status: 404);
+            }
+
+            return ControllerTools::JSON(['slot' => SlotCardPayload::forViewer($slot)]);
+        }
+
         public static function post__bookData(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
             $account = Account::fromSession();
             if (!$account) {

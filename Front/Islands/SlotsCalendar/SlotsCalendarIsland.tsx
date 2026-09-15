@@ -16,6 +16,8 @@ import {PageHeader} from '@common/Components/PageHeader';
 import {CalendarDays} from 'lucide-react';
 import {weekStartTs, addDaysTs, tsToInputDate, tsToHour} from '@common/Utils/DateUtils';
 import {refreshLiveCounts} from '@common/Utils/liveCounts';
+import {sendPost} from '@common/Api/sendPost';
+import {appUrl} from '@common/Utils/appUrl';
 
 function buildWeekDays(weekStartUnix: number, nowSec: number): DayInfo[] {
     const todayStr = tsToInputDate(nowSec);
@@ -45,7 +47,15 @@ const DEFAULT_FILTERS: FiltersState = {
     onlineFilter: 'all',
 };
 
-const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots, experts, title, bookedSlotIds = [], bookedSlotStatuses = {}, bookedSlotBookingIds = {}, csrf = '', balance = 0, bookUrl = '/slots/~book', isModerator = false, canBook = false, isExpertViewer = false, quickChatUrl, sendUrl, currentAccountId, cancelReasons = {}}) => {
+const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots: initialSlots, experts, title, bookedSlotIds = [], bookedSlotStatuses = {}, bookedSlotBookingIds = {}, csrf = '', balance = 0, bookUrl = '/slots/~book', isModerator = false, canBook = false, isExpertViewer = false, quickChatUrl, sendUrl, currentAccountId, cancelReasons = {}}) => {
+    // D-198: занятия приезжали в пропсах и не менялись уже никогда. Всё
+    // остальное после брони обновлялось — кнопка, баланс, список своих
+    // броней, — а остаток мест на карточке оставался прежним до
+    // перезагрузки. Человек видел итог собственного действия наполовину.
+    // Теперь слот после мутации перечитывается с сервера: не арифметикой на
+    // клиенте, а тем, что там на самом деле, — иначе чужая параллельная бронь
+    // всё равно осталась бы незамеченной.
+    const [slots, setSlots] = useState<SlotItem[]>(initialSlots);
     const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
     const [bookingSlot, setBookingSlot] = useState<SlotItem | null>(null);
     const [detailSlot, setDetailSlot] = useState<SlotItem | null>(null);
@@ -56,6 +66,30 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots, experts,
     const [weekOffset, setWeekOffset] = useState(0);
     // Everyone defaults to "all" (free slots of others + the viewer's own bookings).
     const [statusFilter, setStatusFilter] = useState<SlotStatusFilter>('all');
+
+    /**
+     * Перечитать одно занятие после действия над ним (D-198).
+     *
+     * Сервер, а не арифметика на клиенте: пока мы бронировали, место мог
+     * занять кто-то ещё, и прибавленная руками единица показала бы неправду
+     * увереннее, чем устаревшее число. Молчаливый отказ здесь — это ровно то
+     * поведение, что было до правки (значение останется прежним до
+     * перезагрузки), поэтому ошибку не показываем: она сама по себе ничего
+     * человеку не даёт, а действие его уже состоялось.
+     */
+    const refreshSlot = useCallback(async (slotId: number) => {
+        try {
+            const res = await sendPost<{slot_id: number}, {slot?: SlotItem; error?: string}>(
+                appUrl('/slots/~slotCard'), {slot_id: slotId}
+            );
+            const data = ('data' in res && res.data ? res.data : res) as {slot?: SlotItem; error?: string};
+            if (!data.slot) return;
+
+            setSlots(prev => prev.map(s => (s.id === slotId ? {...s, ...data.slot} : s)));
+        } catch {
+            // см. комментарий выше
+        }
+    }, []);
 
     D('slots-calendar.init', {slotCount: slots.length, expertCount: Object.keys(experts).length});
 
@@ -292,6 +326,10 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots, experts,
                         // The cost has just left the account; the header still
                         // shows what it held when the page loaded.
                         refreshLiveCounts();
+                        // Занятость слота изменило то же самое действие — и
+                        // до этой правки она единственная оставалась прежней
+                        // до перезагрузки (D-198).
+                        void refreshSlot(bookingSlot.id);
                     }}
                 />
             )}
@@ -311,6 +349,10 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots, experts,
                     onCancelled={(slotId) => {
                         setSlotStatuses(prev => ({...prev, [String(slotId)]: 'cancelled'}));
                         setDetailSlot(null);
+                        // Отмена освободила место — и деньги вернулись.
+                        // Обе половины результата обновляются вместе.
+                        refreshLiveCounts();
+                        void refreshSlot(slotId);
                     }}
                 />
             )}
