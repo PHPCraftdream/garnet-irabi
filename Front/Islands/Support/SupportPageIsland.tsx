@@ -10,6 +10,7 @@ import {showToast} from '@common/Components/GlobalToast';
 import SendButton from '@common/Components/SendButton';
 import {useCtrlEnter, CTRL_ENTER_HINT} from '@common/hooks/useCtrlEnter';
 import {usePagination, PageResponse} from '@common/hooks/usePagination';
+import {refreshLiveCounts} from '@common/Utils/liveCounts';
 import Pagination, {PaginationLabels} from '@common/Components/Pagination';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {SupportTicket, SupportMessage} from './supportTypes';
@@ -73,6 +74,11 @@ export const SupportPageIsland: React.FC<Props> = ({ticketsPagination, ticketPag
             // погаснуть сразу, а не после следующей загрузки списка.
             setReadTicketIds(prev => new Set(prev).add(ticketId));
             if (r.ticket) setSelectedTicketData({...r.ticket, unread_user: 0});
+            // D-198: открыв обращение, пользователь его прочитал — значок в
+            // шапке обязан погаснуть сразу. Он жил своей жизнью на опросе раз
+            // в 20 секунд, и всё это время показывал непрочитанное, которое
+            // человек читает прямо сейчас.
+            refreshLiveCounts();
         });
     };
 
@@ -121,6 +127,11 @@ export const SupportPageIsland: React.FC<Props> = ({ticketsPagination, ticketPag
                 setReplyText('');
                 setReplyFiles([]);
                 fetchMessages(selectedId);
+                // D-198: ответ меняет и статус обращения, и время последнего
+                // события — то есть ровно то, что показывает строка слева.
+                // Создание тикета список перечитывало, ответ — нет, и строка
+                // держала прежний статус до перезагрузки страницы.
+                ticketRefresh();
             } catch (err: any) {
                 D('support.error', {action: 'reply', error: err});
                 showToast(err?.message || t.General_Error(), 'danger');

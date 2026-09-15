@@ -2,6 +2,7 @@ import * as React from 'react';
 import {useState, useEffect, useRef} from 'react';
 import {sendPost} from '@common/Api/sendPost';
 import {useLiveCounts} from '@common/hooks/useLiveCounts';
+import {refreshLiveCounts} from '@common/Utils/liveCounts';
 import {sendPostFormData} from '@common/Api/sendPostFormData';
 import {D} from '@common/Debug/D';
 import {formatTs} from '@common/Utils/DateUtils';
@@ -77,7 +78,13 @@ export const SupportWidgetIsland: React.FC<Props> = ({unreadCount, unreadSupport
     };
 
     const fetchMessages = (ticketId: number, silent = false) => {
-        void thread.loadMessages(ticketId, silent);
+        // D-198: чтение обращения гасит непрочитанное на сервере — значок на
+        // кнопке обязан погаснуть тогда же, а не на следующем 20-секундном
+        // такте общего опроса. Фоновое обновление (silent) сюда не входит: оно
+        // ничего не читает впервые и дёргать счётчики ему незачем.
+        void thread.loadMessages(ticketId, silent).then(() => {
+            if (!silent) refreshLiveCounts();
+        });
     };
 
     // Пока панель открыта, её содержимое обновляется само: иначе активная
@@ -148,6 +155,9 @@ export const SupportWidgetIsland: React.FC<Props> = ({unreadCount, unreadSupport
                 await thread.reply(selectedTicketId, replyText, []);
                 setReplyText('');
                 fetchMessages(selectedTicketId);
+                // Ответ меняет статус и время обращения — то есть строку,
+                // к которой пользователь вернётся, закрыв переписку.
+                fetchTickets(true);
             } catch (err: any) {
                 D('support.error', {action: 'reply', error: err});
                 showToast(err?.message || t.General_Error(), 'danger');

@@ -31,6 +31,15 @@ interface Props {
     changeStatusUrl: string;
     assignUrl: string;
     moderators: Moderator[];
+    /**
+     * D-198: очередь слева живёт в другом компоненте и о том, что произошло
+     * внутри вкладки, не узнаёт ничем, кроме перезагрузки страницы. Зовётся в
+     * те и только те моменты, когда обращение меняет то, что о нём показано
+     * снаружи: открытие (непрочитанное погасло), ответ, внутренний
+     * комментарий, смена статуса, назначение. Фоновый опрос сюда НЕ входит —
+     * он ничего не меняет, а дёргал бы очередь раз в 15 секунд на вкладку.
+     */
+    onTicketChanged?: () => void;
 }
 
 interface TicketDetailData {
@@ -40,7 +49,7 @@ interface TicketDetailData {
     context?: AutoContext | null;
 }
 
-export default function SupportTicketTab({ticketId, ticketDetailUrl, replyUrl, internalCommentUrl, changeStatusUrl, assignUrl, moderators}: Props) {
+export default function SupportTicketTab({ticketId, ticketDetailUrl, replyUrl, internalCommentUrl, changeStatusUrl, assignUrl, moderators, onTicketChanged}: Props) {
     const [data, setData]               = useState<TicketDetailData | null>(null);
     const [error, setError]             = useState<string | null>(null);
     const [replyText, setReplyText]     = useState('');
@@ -55,7 +64,7 @@ export default function SupportTicketTab({ticketId, ticketDetailUrl, replyUrl, i
     useEffect(() => { if (!replyText.trim()) setStaleWarning(false); }, [replyText]);
     const messageCountRef = React.useRef<number | null>(null);
 
-    const loadDetail = () => {
+    const loadDetail = (notify = false) => {
         setError(null);
         D('support.admin.detail', {ticketId});
         sendPost(ticketDetailUrl, {ticket_id: ticketId}).then((r: any) => {
@@ -74,6 +83,7 @@ export default function SupportTicketTab({ticketId, ticketDetailUrl, replyUrl, i
                 messageCountRef.current = newData.messages.length;
                 D('support.admin.detail.loaded', {ticketId, messages: newData.messages.length});
                 setData(newData);
+                if (notify) onTicketChanged?.();
             }
         }).catch((err) => { D('support.error', {action: 'loadDetail', ticketId, error: err}); setError(t.User_LoadError()); });
     };
@@ -82,7 +92,8 @@ export default function SupportTicketTab({ticketId, ticketDetailUrl, replyUrl, i
         setData(null);
         setStaleWarning(false);
         messageCountRef.current = null;
-        loadDetail();
+        // Открытие гасит непрочитанное на сервере — очередь должна это увидеть.
+        loadDetail(true);
     }, [ticketId, ticketDetailUrl]);
 
     /**
@@ -119,7 +130,7 @@ export default function SupportTicketTab({ticketId, ticketDetailUrl, replyUrl, i
                 const resp = await sendPostFormData<FormData, any>(replyUrl, fd);
                 setReplyText('');
                 setReplyFiles([]);
-                loadDetail();
+                loadDetail(true);
                 reportAttachmentErrors(resp);
             } catch (err: any) {
                 D('support.error', {action: 'admin.reply', error: err});
@@ -140,7 +151,7 @@ export default function SupportTicketTab({ticketId, ticketDetailUrl, replyUrl, i
                 const resp = await sendPostFormData<FormData, any>(internalCommentUrl, fd);
                 setInternalText('');
                 setInternalFiles([]);
-                loadDetail();
+                loadDetail(true);
                 reportAttachmentErrors(resp);
             } catch (err: any) {
                 D('support.error', {action: 'admin.internal', error: err});
@@ -154,7 +165,7 @@ export default function SupportTicketTab({ticketId, ticketDetailUrl, replyUrl, i
             D('support.admin.status', {ticketId, status: newStatus});
             await sendPost(changeStatusUrl, {ticket_id: ticketId, status: newStatus});
             showToast(t.Support_StatusChanged(), 'success');
-            loadDetail();
+            loadDetail(true);
         } catch (err: any) {
             D('support.error', {action: 'admin.status', error: err});
             showToast(err?.message || t.General_Error(), 'danger');
@@ -165,7 +176,7 @@ export default function SupportTicketTab({ticketId, ticketDetailUrl, replyUrl, i
         try {
             D('support.admin.assign', {ticketId, assigneeId});
             await sendPost(assignUrl, {ticket_id: ticketId, assignee_id: assigneeId});
-            loadDetail();
+            loadDetail(true);
         } catch (err: any) {
             D('support.error', {action: 'admin.assign', error: err});
             showToast(err?.message || t.General_Error(), 'danger');

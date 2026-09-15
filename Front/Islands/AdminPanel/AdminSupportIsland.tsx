@@ -1,5 +1,7 @@
 import * as React from 'react';
 import {useState, useMemo, useEffect} from 'react';
+import {sendPost} from '@common/Api/sendPost';
+import {refreshLiveCounts} from '@common/Utils/liveCounts';
 import {GridConfig} from './types';
 import {TabNav, TabDef} from '@common/Components/Navigation/TabNav';
 import {AdminGrid} from './AdminGrid';
@@ -37,6 +39,7 @@ interface Props {
     assignUrl: string;
     moderators: Moderator[];
     userDetailUrl: string;
+    ticketsListUrl: string;
 }
 
 interface TicketTabKind {
@@ -55,10 +58,25 @@ interface InternalTab extends TabDef {
 }
 
 export const AdminSupportIsland: React.FC<Props> = ({
-    tickets, gridConfig, ticketDetailUrl, replyUrl, internalCommentUrl,
-    changeStatusUrl, assignUrl, moderators, userDetailUrl,
+    tickets: initialTickets, gridConfig, ticketDetailUrl, replyUrl, internalCommentUrl,
+    changeStatusUrl, assignUrl, moderators, userDetailUrl, ticketsListUrl,
 }) => {
     const mainTabId = 'main';
+
+    // D-198: очередь больше не заморожена в HTML. Перечитывается ровно тогда,
+    // когда открытая вкладка сообщает, что обращение изменилось.
+    const [tickets, setTickets] = useState<SupportTicket[]>(initialTickets);
+
+    const reloadTickets = React.useCallback(() => {
+        sendPost(ticketsListUrl, {}).then((r: any) => {
+            if (Array.isArray(r?.tickets)) setTickets(r.tickets);
+        }).catch(() => {
+            // Очередь осталась прежней — врать ей нечем, следующее действие
+            // модератора попробует снова.
+        });
+        // Значок непрочитанных обращений в шапке считает тот же сервер.
+        refreshLiveCounts();
+    }, [ticketsListUrl]);
 
     const [dynamicTabs, setDynamicTabs] = useState<InternalTab[]>([]);
     const [activeId, setActiveId]       = useState<string>(mainTabId);
@@ -370,6 +388,7 @@ export const AdminSupportIsland: React.FC<Props> = ({
                     changeStatusUrl={changeStatusUrl}
                     assignUrl={assignUrl}
                     moderators={moderators}
+                    onTicketChanged={reloadTickets}
                 />
             );
         }

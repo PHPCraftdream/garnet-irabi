@@ -721,6 +721,13 @@ test.describe('Fix 7: cron complete-expired completes orphan confirmed booking; 
 	let pastPendingSlotId = 0;
 	let pastPendingBookingId = 0;
 
+	// D-183: slots with NO bookings at all. The past one was the case nobody
+	// handled — it stayed 'free' forever, counted by the expert's status filter
+	// while the calendar window never showed it. The future one is the control
+	// that keeps the sweep time-scoped.
+	let emptyPastSlotId = 0;
+	let emptyFutureSlotId = 0;
+
 	// Balances + email-queue watermark captured before the cron runs, so the
 	// refund + notification assertions can compare against a known baseline.
 	const PENDING_SLOT_COST = 300;
@@ -796,6 +803,28 @@ test.describe('Fix 7: cron complete-expired completes orphan confirmed booking; 
 			expertId,
 		});
 		expect(pastPendingBookingId).toBeGreaterThan(0);
+
+		// D-183 TARGET: past slot, status=free, and nobody ever booked it.
+		emptyPastSlotId = await seedSlot({
+			expertId,
+			startAt: pastStart,
+			endAt: pastEnd,
+			status: 'free',
+			cost: 0,
+			maxUsers: 5,
+		});
+		expect(emptyPastSlotId).toBeGreaterThan(0);
+
+		// D-183 CONTROL: same thing in the future — must stay bookable.
+		emptyFutureSlotId = await seedSlot({
+			expertId,
+			startAt: futureStart,
+			endAt: futureStart + 3600,
+			status: 'free',
+			cost: 0,
+			maxUsers: 5,
+		});
+		expect(emptyFutureSlotId).toBeGreaterThan(0);
 	});
 
 	test('before cron: target booking is confirmed, controls are correct', async () => {
@@ -873,6 +902,27 @@ test.describe('Fix 7: cron complete-expired completes orphan confirmed booking; 
 		expect(userEmailMaxIdAfter).toBeGreaterThan(userEmailMaxIdBefore);
 	});
 
+	test('D-183: past slot nobody booked stops being "free" — it is over, not available', async () => {
+		if (!emptyPastSlotId) { test.skip(); return; }
+		// Before the fix this stayed 'free' forever: the expert's status filter
+		// counted it, the calendar window (four weeks from today) never showed
+		// it, and the two numbers disagreed on the same screen.
+		expect(await getSlotStatus(emptyPastSlotId)).toBe('completed');
+	});
+
+	test('D-183 control: a future slot nobody booked is left alone', async () => {
+		if (!emptyFutureSlotId) { test.skip(); return; }
+		expect(await getSlotStatus(emptyFutureSlotId)).toBe('free');
+	});
+
+	test('D-183: slot whose only request the cron just declined is closed in the same pass', async () => {
+		if (!pastPendingSlotId) { test.skip(); return; }
+		// The auto-cancel above releases the seat and leaves the slot open.
+		// Without the closing sweep it would be back to the D-183 state: past,
+		// empty, and still advertised as free.
+		expect(await getSlotStatus(pastPendingSlotId)).toBe('completed');
+	});
+
 	test('D-146: auto-cancelled pending booking gets a user_cancellations row (kind=decline)', async () => {
 		if (!pastPendingBookingId) { test.skip(); return; }
 		expect(await getUserCancellationKind(pastPendingBookingId)).toBe('decline');
@@ -899,6 +949,8 @@ test.describe('Fix 7: cron complete-expired completes orphan confirmed booking; 
 		if (targetSlotId) await cleanupSlot(targetSlotId);
 		if (futureSlotId) await cleanupSlot(futureSlotId);
 		if (pastPendingSlotId) await cleanupSlot(pastPendingSlotId);
+		if (emptyPastSlotId) await cleanupSlot(emptyPastSlotId);
+		if (emptyFutureSlotId) await cleanupSlot(emptyFutureSlotId);
 		// Clean the rejection email enqueued by the cron so it does not leak
 		// into subsequent test runs that share this isolated scope.
 		if (userEmailMaxIdBefore > 0) {

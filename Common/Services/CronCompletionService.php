@@ -206,6 +206,31 @@ class CronCompletionService {
             }
         }
 
+        // D-183: всё, что после разбора выше осталось в открытом статусе, —
+        // это прошедшее время, навсегда застрявшее «Свободным». Два случая:
+        // слот, который никто так и не забронировал, и слот, чью единственную
+        // заявку крон только что снял. Каталог их не показывал (он фильтрует
+        // по времени), а календарь преподавателя показывал — зелёной
+        // карточкой «Свободен» и цифрой в фильтре: счётчик считал по статусу,
+        // список отбирал по времени, и числа расходились на двух экранах
+        // сразу. Статус здесь терминальный, так что повторный тик — no-op.
+        $staleOpenSlots = TimeSlots::get()->selectAll(function (SelectInterface $q) use ($now, $limit, $slotIds): void {
+            $q->where('end_at > 0')
+                ->where('end_at < ?', [$now])
+                ->where("status IN ('free', 'booked')")
+                ->limit($limit);
+
+            if ($slotIds !== null) {
+                $q->where('id IN (?)', [$slotIds]);
+            }
+        });
+
+        $staleOpenSlotIds = array_map(fn (array $s): int => (int)$s['id'], $staleOpenSlots);
+        if (!empty($staleOpenSlotIds)) {
+            TimeSlots::get()->updateById(['status' => 'completed'], $staleOpenSlotIds);
+            $stats['slots'] += count($staleOpenSlotIds);
+        }
+
         return $stats;
     }
 

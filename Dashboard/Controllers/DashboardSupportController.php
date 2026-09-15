@@ -399,6 +399,22 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
             return $result;
         }
 
+        /**
+         * D-198: очередь обращений приходила один раз внутри HTML, и ничто на
+         * странице не могло её перечитать. Модератор открывал обращение —
+         * непрочитанное гасло на сервере, а пометка в очереди оставалась до
+         * перезагрузки; отвечал — строка держала прежний статус. Тот же приём,
+         * что и для карточки занятия в каталоге: отдельное чтение без условий,
+         * ровно тех же данных, что и при первой отрисовке.
+         */
+        public static function post__ticketsList(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
+            if (!static::isModerator()) {
+                return ControllerTools::JSON(['error' => 'Forbidden'], status: 403);
+            }
+
+            return ControllerTools::JSON(['tickets' => static::fetchTickets()]);
+        }
+
         public static function get__main(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
             if (!static::isModerator()) {
                 return ControllerTools::redirect(IRabi::url('/'));
@@ -434,6 +450,7 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
                     sortFields: ['id', 'status', 'created_at', 'updated_at', 'assignee_name'],
                     pageSize: PaginationHelper::DEFAULT_PER_PAGE,
                 ),
+                'ticketsListUrl' => IRabi::url(static::URL . '~ticketsList'),
                 'ticketDetailUrl' => IRabi::url(static::URL . '~ticketDetail'),
                 'replyUrl' => IRabi::url(static::URL . '~reply'),
                 'internalCommentUrl' => IRabi::url(static::URL . '~internalComment'),
