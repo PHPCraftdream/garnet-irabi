@@ -8,11 +8,87 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
     use Aura\SqlQuery\Common\SelectInterface;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
     use PHPCraftdream\IRabi\Common\System\DateUtils;
+    use PHPCraftdream\IRabi\Common\Tables\BalanceLedger;
     use PHPCraftdream\IRabi\Common\Tables\Bookings;
+    use PHPCraftdream\IRabi\Common\Tables\ExpertCancellations;
     use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
+    use PHPCraftdream\IRabi\Foreground\Params\Menu;
 
     class ExpertHelpers {
+        /**
+         * Числа в шапке преподавательского дашборда — заявки, ученики за
+         * месяц, доход за месяц, отклонения, отмены, пропущенные заявки.
+         *
+         * D-206: жили прямо в теле get__main и уезжали на клиент один раз
+         * вместе с HTML. Стоило преподавателю отклонить заявку — список слева
+         * обновлялся живьём, а «Отклонений» и «Доход за месяц» продолжали
+         * показывать прежнее: на боевом это выглядело как 2 вместо 3 и
+         * 9280 ₽ вместо 8780 ₽, то есть экран не учитывал возврат, который
+         * уже произошёл. Считать их стало нужно дважды — при отрисовке
+         * страницы и по запросу после действия, — и оба раза одинаково,
+         * иначе расхождение просто переехало бы внутрь одного экрана.
+         *
+         * @return array{
+         *     pendingBookings:int, usersThisMonth:int, earningsThisMonth:int,
+         *     declines:int, cancellations:int, missed:int,
+         * }
+         */
+        public static function dashboardStats(Account $account): array {
+            $expertId = $account->id();
+
+            $expertSlotIds = array_column(
+                TimeSlots::get()->selectByField('expert_id', $expertId),
+                'id',
+            );
+
+            // Граница месяца — в поясе самого преподавателя: «за месяц»
+            // значит за его месяц, а не за месяц сервера.
+            $userTz = $account->readParam('time_zone') ?: 'UTC';
+            $monthStart = DateUtils::startOfCurrentMonthForUser($userTz);
+
+            $monthUsers = Bookings::get()->selectAll(function (SelectInterface $q) use ($expertSlotIds, $monthStart): void {
+                $q->resetCols();
+                $q->cols(['COUNT(DISTINCT user_id) as cnt']);
+                if (!empty($expertSlotIds)) {
+                    $q->where('bookable_type = ?', ['time_slot'])
+                        ->where('bookable_id IN (?)', [array_map('intval', $expertSlotIds)])
+                        ->where('status IN (?)', [['confirmed', 'completed']])
+                        ->where('created_at >= ?', [$monthStart]);
+                } else {
+                    $q->where('1 = 0');
+                }
+            });
+
+            // D-156: суммировались только начисления booking_payment — бронь,
+            // оплаченная и возвращённая в одном месяце, продолжала числиться
+            // здесь полной суммой после того, как возврат уже забрал деньги
+            // обратно. Считаем нетто по тем же строкам, из которых выводится
+            // сам баланс.
+            $monthEarnings = BalanceLedger::get()->selectAll(function (SelectInterface $q) use ($expertId, $monthStart): void {
+                $q->resetCols();
+                $q->cols(['COALESCE(SUM(CASE WHEN is_credit = 1 THEN amount ELSE -amount END), 0) as total']);
+                $q->where('account_id = ?', [$expertId])
+                    ->where('entry_type IN (?)', [['booking_payment', 'booking_refund']])
+                    ->where('created_at >= ?', [$monthStart]);
+            });
+
+            $cancelCounts = ExpertCancellations::countsFor($expertId);
+
+            return [
+                'pendingBookings' => Menu::expertPendingBookingsCount(),
+                'usersThisMonth' => (int)($monthUsers[0]['cnt'] ?? 0),
+                'earningsThisMonth' => (int)($monthEarnings[0]['total'] ?? 0),
+                // Отклонение — до подтверждения, отмена — после: разные
+                // решения, и на экране они стоят порознь.
+                'declines' => $cancelCounts['declines'],
+                'cancellations' => $cancelCounts['cancellations'],
+                // D-190: заявки, истёкшие без ответа. Соседние два числа —
+                // решения преподавателя, это — их отсутствие.
+                'missed' => Bookings::expertOutcomeCounts($expertId)['missed'],
+            ];
+        }
+
         public static function findOverlap(int $expertId, int $startAt, int $endAt, ?int $excludeSlotId = null): ?array {
             $existingSlots = TimeSlots::get()->selectAll(function (SelectInterface $query) use ($expertId, $startAt, $endAt, $excludeSlotId): void {
                 $query->where('expert_id = ?', [$expertId])

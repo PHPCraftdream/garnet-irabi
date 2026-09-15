@@ -338,6 +338,9 @@ export class I18nDataEN {
     static Support_Send = 'Send';
     static Support_Reply = 'Reply';
     static Support_NoTickets = 'No tickets yet';
+    static Support_ClientContextTitle = 'Client lessons and money';
+    static Support_ClientContextEmpty = 'This client has no lessons and no balance operations yet';
+    static Balance_Current = 'Balance';
     static Support_NoMessages = 'No messages yet';
     static Support_SelectTicket = 'Select a ticket from the list on the left';
     static Support_InternalComment = 'Internal Comment';
@@ -382,6 +385,11 @@ export class I18nDataEN {
     static Support_Context_NetErrors = 'Network Errors';
     static Support_Context_Breadcrumb = 'Navigation';
     static Support_StatusChanged = 'Status changed';
+    static Support_ClientStatus_InProgress = 'We have started working on your request';
+    static Support_ClientStatus_Investigation = 'We are looking into your request';
+    static Support_ClientStatus_WaitingUser = 'We have replied and are waiting for your answer';
+    static Support_ClientStatus_Resolved = 'Request resolved. If anything is left — write here';
+    static Support_ClientStatus_Rejected = 'Request closed without a resolution';
     static Comment_Title = 'Reviews';
     static MyReviews_Title = 'My reviews';
     static Comment_Write = 'Write a review';

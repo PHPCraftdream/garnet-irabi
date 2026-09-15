@@ -33,6 +33,7 @@ interface Props {
     tickets: SupportTicket[];
     gridConfig: GridConfig;
     ticketDetailUrl: string;
+    clientContextUrl?: string;
     replyUrl: string;
     internalCommentUrl: string;
     changeStatusUrl: string;
@@ -58,7 +59,7 @@ interface InternalTab extends TabDef {
 }
 
 export const AdminSupportIsland: React.FC<Props> = ({
-    tickets: initialTickets, gridConfig, ticketDetailUrl, replyUrl, internalCommentUrl,
+    tickets: initialTickets, gridConfig, ticketDetailUrl, clientContextUrl, replyUrl, internalCommentUrl,
     changeStatusUrl, assignUrl, moderators, userDetailUrl, ticketsListUrl,
 }) => {
     const mainTabId = 'main';
@@ -383,6 +384,7 @@ export const AdminSupportIsland: React.FC<Props> = ({
                 <SupportTicketTab
                     ticketId={tabKind.ticketId}
                     ticketDetailUrl={ticketDetailUrl}
+                    clientContextUrl={clientContextUrl}
                     replyUrl={replyUrl}
                     internalCommentUrl={internalCommentUrl}
                     changeStatusUrl={changeStatusUrl}

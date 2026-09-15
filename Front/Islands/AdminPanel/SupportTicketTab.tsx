@@ -12,6 +12,7 @@ import {PendingFile} from '../../Common/AttachmentPicker';
 import {reportAttachmentErrors} from '../../Common/attachmentErrors';
 import TicketHeader from './SupportTicket/TicketHeader';
 import TicketContext from './SupportTicket/TicketContext';
+import TicketClientContext from './SupportTicket/TicketClientContext';
 import TicketAttachments from './SupportTicket/TicketAttachments';
 import TicketTimeline from './SupportTicket/TicketTimeline';
 import TicketReplyForm from './SupportTicket/TicketReplyForm';
@@ -26,6 +27,8 @@ interface Moderator {
 interface Props {
     ticketId: number;
     ticketDetailUrl: string;
+    /** D-209: занятия и деньги клиента. Необязателен — панель просто не рисуется. */
+    clientContextUrl?: string;
     replyUrl: string;
     internalCommentUrl: string;
     changeStatusUrl: string;
@@ -49,7 +52,7 @@ interface TicketDetailData {
     context?: AutoContext | null;
 }
 
-export default function SupportTicketTab({ticketId, ticketDetailUrl, replyUrl, internalCommentUrl, changeStatusUrl, assignUrl, moderators, onTicketChanged}: Props) {
+export default function SupportTicketTab({ticketId, ticketDetailUrl, clientContextUrl, replyUrl, internalCommentUrl, changeStatusUrl, assignUrl, moderators, onTicketChanged}: Props) {
     const [data, setData]               = useState<TicketDetailData | null>(null);
     const [error, setError]             = useState<string | null>(null);
     const [replyText, setReplyText]     = useState('');
@@ -199,6 +202,13 @@ export default function SupportTicketTab({ticketId, ticketDetailUrl, replyUrl, i
             />
 
             {data.context && <TicketContext context={data.context} />}
+
+            {/*
+              * D-209: рядом с обращением — занятия и деньги того, кто его
+              * написал. Без этого модератор уходил искать их в другой раздел
+              * по имени, на каждое обращение заново.
+              */}
+            <TicketClientContext ticketId={ticketId} clientContextUrl={clientContextUrl} />
 
             <TicketAttachments messages={messages} />
 

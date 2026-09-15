@@ -63,6 +63,8 @@ interface DashboardProps {
     cancellations?: number;
     /** D-190: заявки, истёкшие без ответа преподавателя. */
     missed?: number;
+    /** D-206: адрес, по которому перечитываются числа шапки после действия. */
+    expertStatsUrl?: string;
     // Moderator data
     openTickets?: number;
     pendingApprovals?: number;
@@ -80,7 +82,7 @@ export const DashboardIsland: React.FC<DashboardProps> = (props) => {
         unreadSupport, unreadIm,
         upcomingBookings, recommendedSlots,
         expertSlots, pendingBookings, usersThisMonth, earningsThisMonth,
-        declines, cancellations, missed,
+        declines, cancellations, missed, expertStatsUrl,
         expertPendingBookingsList, expertConfirmedBookingsList,
         openTickets, pendingApprovals, totalUsers, bookingsThisMonth,
         newsApiUrl, unreadNews,
@@ -93,16 +95,53 @@ export const DashboardIsland: React.FC<DashboardProps> = (props) => {
     const [pending, setPending] = React.useState<PendingBookingItem[]>(expertPendingBookingsList ?? []);
     const [confirmed, setConfirmed] = React.useState<ConfirmedBookingItem[]>(expertConfirmedBookingsList ?? []);
 
+    // D-206: та же болезнь, что вылечили у списка, оставалась у чисел над ним.
+    // Список стал живым, а «Отклонений», «Доход за месяц» и остальные четыре
+    // так и приходили пропсами один раз вместе с HTML. Преподаватель отклонял
+    // заявку — карточка исчезала, а рядом продолжало висеть прежнее число
+    // отклонений и прежний доход, не учитывающий уже сделанный возврат.
+    const [stats, setStats] = React.useState({
+        usersThisMonth: usersThisMonth ?? 0,
+        earningsThisMonth: earningsThisMonth ?? 0,
+        declines: declines ?? 0,
+        cancellations: cancellations ?? 0,
+        missed: missed ?? 0,
+    });
+
+    const reloadStats = React.useCallback((): void => {
+        if (!expertStatsUrl) return;
+        fetch(expertStatsUrl, {headers: {Accept: 'application/json'}, credentials: 'same-origin'})
+            .then(res => (res.ok ? res.json() : null))
+            .then((r: any) => {
+                if (!r || typeof r !== 'object' || r.error) return;
+                setStats({
+                    usersThisMonth: Number(r.usersThisMonth) || 0,
+                    earningsThisMonth: Number(r.earningsThisMonth) || 0,
+                    declines: Number(r.declines) || 0,
+                    cancellations: Number(r.cancellations) || 0,
+                    missed: Number(r.missed) || 0,
+                });
+            })
+            .catch(() => {
+                // Сеть моргнула — числа остались прежними. Показать вместо них
+                // нули было бы хуже самой находки.
+            });
+    }, [expertStatsUrl]);
+
     const handleConfirmed = React.useCallback((booking: PendingBookingItem): void => {
         setPending(prev => prev.filter(b => b.booking_id !== booking.booking_id));
         // Inserted in start order, the same order the server sends them in, so
         // a confirmed booking does not jump to the end of the list.
         setConfirmed(prev => [...prev, booking].sort((a, b) => a.start_at - b.start_at));
-    }, []);
+        reloadStats();
+    }, [reloadStats]);
 
     const handleRejected = React.useCallback((bookingId: number): void => {
         setPending(prev => prev.filter(b => b.booking_id !== bookingId));
-    }, []);
+        // Отклонение двигает сразу два числа: счётчик отклонений и доход —
+        // потому что вместе с отказом уходит возврат.
+        reloadStats();
+    }, [reloadStats]);
 
     return (
         <IrabiPreviewProvider>
@@ -125,11 +164,11 @@ export const DashboardIsland: React.FC<DashboardProps> = (props) => {
             {isExpert && (
                 <ExpertStats
                     pendingBookings={pending.length}
-                    usersThisMonth={usersThisMonth ?? 0}
-                    earningsThisMonth={earningsThisMonth ?? 0}
-                    declines={declines ?? 0}
-                    cancellations={cancellations ?? 0}
-                    missed={missed ?? 0}
+                    usersThisMonth={stats.usersThisMonth}
+                    earningsThisMonth={stats.earningsThisMonth}
+                    declines={stats.declines}
+                    cancellations={stats.cancellations}
+                    missed={stats.missed}
                 />
             )}
 

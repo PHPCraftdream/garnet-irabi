@@ -19,9 +19,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\IRabi\Common\System\DateUtils;
     use PHPCraftdream\IRabi\Common\System\ThirdPartyAssets;
     use PHPCraftdream\IRabi\Common\Tables\AccountBalance;
-    use PHPCraftdream\IRabi\Common\Tables\BalanceLedger;
     use PHPCraftdream\IRabi\Common\Tables\Bookings;
-    use PHPCraftdream\IRabi\Common\Tables\ExpertCancellations;
     use PHPCraftdream\IRabi\Common\Tables\ImReadStatus;
     use PHPCraftdream\IRabi\Common\Tables\SupportTickets;
     use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
@@ -228,55 +226,19 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                     ];
                 }
 
-                // Pending bookings count (expert's slots with pending bookings) —
-                // was a second copy of Menu::expertPendingBookingsCount() (used
-                // elsewhere in this same file for the nav badge, line ~607).
-                $expertSlotIds = array_column(
-                    TimeSlots::get()->selectByField('expert_id', $accountId),
-                    'id'
-                );
-                $pendingBookings = Menu::expertPendingBookingsCount();
-
-                // Monthly stats from BalanceLedger — month boundary in expert's tz
-                $userTz = $account->readParam('time_zone') ?: 'UTC';
-                $monthStart = DateUtils::startOfCurrentMonthForUser($userTz);
-                $monthUsers = Bookings::get()->selectAll(function (SelectInterface $q) use ($expertSlotIds, $monthStart): void {
-                    $q->resetCols();
-                    $q->cols(['COUNT(DISTINCT user_id) as cnt']);
-                    if (!empty($expertSlotIds)) {
-                        $q->where('bookable_type = ?', ['time_slot'])
-                            ->where('bookable_id IN (?)', [array_map('intval', $expertSlotIds)])
-                            ->where('status IN (?)', [['confirmed', 'completed']])
-                            ->where('created_at >= ?', [$monthStart]);
-                    } else {
-                        $q->where('1 = 0');
-                    }
-                });
-                $usersThisMonth = (int)($monthUsers[0]['cnt'] ?? 0);
-
-                // D-156: summed only booking_payment credits — a booking paid
-                // and refunded within the same month still showed its full
-                // payment here after the refund had already taken the money
-                // back out (баланс/«Доход за месяц» разошлись на ровно сумму
-                // возврата). Net against booking_refund debits, same as the
-                // balance itself is derived from the full ledger.
-                $monthEarnings = BalanceLedger::get()->selectAll(function (SelectInterface $q) use ($accountId, $monthStart): void {
-                    $q->resetCols();
-                    $q->cols(['COALESCE(SUM(CASE WHEN is_credit = 1 THEN amount ELSE -amount END), 0) as total']);
-                    $q->where('account_id = ?', [$accountId])
-                        ->where('entry_type IN (?)', [['booking_payment', 'booking_refund']])
-                        ->where('created_at >= ?', [$monthStart]);
-                });
-                $earningsThisMonth = (int)($monthEarnings[0]['total'] ?? 0);
-
-                // Decline (pre-confirmation) vs cancellation (post-confirmation) tallies.
-                $expertCancelCounts = ExpertCancellations::countsFor($accountId);
-                $expertCancelCount = $expertCancelCounts['cancellations'];
-                $expertDeclineCount = $expertCancelCounts['declines'];
-                // D-190: заявки, истёкшие без ответа. Соседние два числа —
-                // решения преподавателя, это — их отсутствие; на его
-                // собственном экране оно нужно раньше, чем на публичном.
-                $expertMissedCount = Bookings::expertOutcomeCounts($accountId)['missed'];
+                // D-206: все шесть чисел шапки считаются в одном месте —
+                // ExpertHelpers::dashboardStats(). Раньше они жили здесь и
+                // уходили на клиент только вместе с HTML; теперь тот же расчёт
+                // доступен точке ~expertStats, которую экран зовёт после
+                // своего же действия. Две копии формул разошлись бы в первый
+                // же раз, когда правку внесли бы в одну из них.
+                $expertStats = ExpertHelpers::dashboardStats($account);
+                $pendingBookings = $expertStats['pendingBookings'];
+                $usersThisMonth = $expertStats['usersThisMonth'];
+                $earningsThisMonth = $expertStats['earningsThisMonth'];
+                $expertDeclineCount = $expertStats['declines'];
+                $expertCancelCount = $expertStats['cancellations'];
+                $expertMissedCount = $expertStats['missed'];
 
                 // Full lists for the dashboard widgets
                 $expertPendingBookingsList = ExpertHelpers::buildPendingBookingsList($accountId);
@@ -305,8 +267,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 );
                 $totalUsers = (int)($tuRows[0]['cnt'] ?? 0);
 
-                // Bookings this month — month boundary in viewing moderator's tz
-                $monthStart ??= DateUtils::startOfCurrentMonthForUser($account->readParam('time_zone') ?: 'UTC');
+                // Bookings this month — month boundary in viewing moderator's tz.
+                // Было `??=`: значение подхватывалось из экспертного блока выше,
+                // если смотрящий оказывался ещё и преподавателем. Связь была
+                // невидимой и держалась только на порядке строк — стоило унести
+                // экспертный расчёт в ExpertHelpers, как она порвалась.
+                $monthStart = DateUtils::startOfCurrentMonthForUser($account->readParam('time_zone') ?: 'UTC');
                 $bmRows = Bookings::get()->selectAll(function (SelectInterface $q) use ($monthStart): void {
                     $q->resetCols();
                     $q->cols(['COUNT(*) as cnt']);
@@ -352,6 +318,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             if ($isExpert) {
                 $props['expertSlots'] = $expertSlots;
                 $props['pendingBookings'] = $pendingBookings;
+                // D-206: адрес, по которому экран перечитывает свои числа
+                // после собственного действия.
+                $props['expertStatsUrl'] = IRabi::url('/~expertStats');
                 $props['expertPendingBookingsList'] = $expertPendingBookingsList;
                 $props['expertConfirmedBookingsList'] = $expertConfirmedBookingsList;
                 $props['usersThisMonth'] = $usersThisMonth;
@@ -584,6 +553,36 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
          * client every ~20s. Returns the current pending-bookings count (experts),
          * unread IM messages and unread support replies for the session account.
          */
+        /**
+         * D-206: числа шапки преподавательского дашборда по запросу.
+         *
+         * Экран зовёт эту точку ровно в те моменты, когда его собственное
+         * действие меняет то, что в этих числах показано: подтверждение заявки
+         * и отклонение. Отклонение задевает сразу два — счётчик отклонений и
+         * доход за месяц (из-за возврата), — и оба обязаны сойтись до рубля в
+         * тот же момент, когда преподаватель принимает следующее решение.
+         *
+         * Не входит в ~counts: те счётчики опрашиваются каждые 20 секунд всеми
+         * страницами подряд, а эти шесть чисел нужны одному экрану и только
+         * после действия.
+         */
+        public static function get__expertStats(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
+            $account = Account::fromSession();
+            // Та же проверка, по которой страница решает показывать эти числа
+            // вообще: тип аккаунта плюс одобрение администратора. Неодобренный
+            // преподаватель не ведёт занятий, и статистики у него нет.
+            $isExpert = $account
+                && $account->id()
+                && $account->readParam('type', 'user') === 'expert'
+                && $account->isApproved();
+
+            if (!$isExpert) {
+                return ControllerTools::JSON(['error' => 'Forbidden'], status: 403);
+            }
+
+            return ControllerTools::JSON(ExpertHelpers::dashboardStats($account));
+        }
+
         public static function get__counts(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
             $account = Account::fromSession();
             if (!$account || !$account->id()) {

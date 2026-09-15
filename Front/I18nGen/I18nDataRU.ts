@@ -337,6 +337,9 @@ export class I18nDataRU {
     static Support_Send = 'Отправить';
     static Support_Reply = 'Ответить';
     static Support_NoTickets = 'Обращений пока нет';
+    static Support_ClientContextTitle = 'Занятия и деньги клиента';
+    static Support_ClientContextEmpty = 'У клиента пока нет ни занятий, ни операций по балансу';
+    static Balance_Current = 'Баланс';
     static Support_NoMessages = 'Сообщений пока нет';
     static Support_SelectTicket = 'Выберите обращение из списка слева';
     static Support_InternalComment = 'Внутренний комментарий';
@@ -381,6 +384,11 @@ export class I18nDataRU {
     static Support_Context_NetErrors = 'Сетевые ошибки';
     static Support_Context_Breadcrumb = 'Навигация';
     static Support_StatusChanged = 'Статус изменён';
+    static Support_ClientStatus_InProgress = 'Мы взяли обращение в работу';
+    static Support_ClientStatus_Investigation = 'Разбираемся в вашем обращении';
+    static Support_ClientStatus_WaitingUser = 'Мы ответили и ждём вашего ответа';
+    static Support_ClientStatus_Resolved = 'Обращение решено. Если вопрос остался — напишите здесь же';
+    static Support_ClientStatus_Rejected = 'Обращение закрыто без решения';
     static Comment_Title = 'Отзывы';
     static MyReviews_Title = 'Мои отзывы';
     static Comment_Write = 'Написать отзыв';

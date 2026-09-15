@@ -380,6 +380,9 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Support_Send' => 'Send',
             'Support_Reply' => 'Reply',
             'Support_NoTickets' => 'No tickets yet',
+            'Support_ClientContextTitle' => 'Client lessons and money',
+            'Support_ClientContextEmpty' => 'This client has no lessons and no balance operations yet',
+            'Balance_Current' => 'Balance',
             'Support_NoMessages' => 'No messages yet',
             'Support_SelectTicket' => 'Select a ticket from the list on the left',
             'Support_InternalComment' => 'Internal Comment',
@@ -424,6 +427,12 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Support_Context_NetErrors' => 'Network Errors',
             'Support_Context_Breadcrumb' => 'Navigation',
             'Support_StatusChanged' => 'Status changed',
+            // D-205: the same event in the client's words, not the queue's.
+            'Support_ClientStatus_InProgress' => 'We have started working on your request',
+            'Support_ClientStatus_Investigation' => 'We are looking into your request',
+            'Support_ClientStatus_WaitingUser' => 'We have replied and are waiting for your answer',
+            'Support_ClientStatus_Resolved' => 'Request resolved. If anything is left — write here',
+            'Support_ClientStatus_Rejected' => 'Request closed without a resolution',
 
             // Comments
             'Comment_Title' => 'Reviews',

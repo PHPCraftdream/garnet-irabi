@@ -403,6 +403,9 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Support_Send' => 'Отправить',
             'Support_Reply' => 'Ответить',
             'Support_NoTickets' => 'Обращений пока нет',
+            'Support_ClientContextTitle' => 'Занятия и деньги клиента',
+            'Support_ClientContextEmpty' => 'У клиента пока нет ни занятий, ни операций по балансу',
+            'Balance_Current' => 'Баланс',
             'Support_NoMessages' => 'Сообщений пока нет',
             'Support_SelectTicket' => 'Выберите обращение из списка слева',
             'Support_InternalComment' => 'Внутренний комментарий',
@@ -458,6 +461,12 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Support_Context_NetErrors' => 'Сетевые ошибки',
             'Support_Context_Breadcrumb' => 'Навигация',
             'Support_StatusChanged' => 'Статус изменён',
+            // D-205: то же событие словами клиента, а не очереди поддержки.
+            'Support_ClientStatus_InProgress' => 'Мы взяли обращение в работу',
+            'Support_ClientStatus_Investigation' => 'Разбираемся в вашем обращении',
+            'Support_ClientStatus_WaitingUser' => 'Мы ответили и ждём вашего ответа',
+            'Support_ClientStatus_Resolved' => 'Обращение решено. Если вопрос остался — напишите здесь же',
+            'Support_ClientStatus_Rejected' => 'Обращение закрыто без решения',
 
             // Отзывы. Слово одно на всё: вход назывался
             // «комментарием», а всё остальное на том же экране — «отзывом», и

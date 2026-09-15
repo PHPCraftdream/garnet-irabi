@@ -343,6 +343,9 @@ class I18n extends I18nBase {
     Support_Send: t = (a = []) => this.t('Support_Send', a);
     Support_Reply: t = (a = []) => this.t('Support_Reply', a);
     Support_NoTickets: t = (a = []) => this.t('Support_NoTickets', a);
+    Support_ClientContextTitle: t = (a = []) => this.t('Support_ClientContextTitle', a);
+    Support_ClientContextEmpty: t = (a = []) => this.t('Support_ClientContextEmpty', a);
+    Balance_Current: t = (a = []) => this.t('Balance_Current', a);
     Support_NoMessages: t = (a = []) => this.t('Support_NoMessages', a);
     Support_SelectTicket: t = (a = []) => this.t('Support_SelectTicket', a);
     Support_InternalComment: t = (a = []) => this.t('Support_InternalComment', a);
@@ -387,6 +390,11 @@ class I18n extends I18nBase {
     Support_Context_NetErrors: t = (a = []) => this.t('Support_Context_NetErrors', a);
     Support_Context_Breadcrumb: t = (a = []) => this.t('Support_Context_Breadcrumb', a);
     Support_StatusChanged: t = (a = []) => this.t('Support_StatusChanged', a);
+    Support_ClientStatus_InProgress: t = (a = []) => this.t('Support_ClientStatus_InProgress', a);
+    Support_ClientStatus_Investigation: t = (a = []) => this.t('Support_ClientStatus_Investigation', a);
+    Support_ClientStatus_WaitingUser: t = (a = []) => this.t('Support_ClientStatus_WaitingUser', a);
+    Support_ClientStatus_Resolved: t = (a = []) => this.t('Support_ClientStatus_Resolved', a);
+    Support_ClientStatus_Rejected: t = (a = []) => this.t('Support_ClientStatus_Rejected', a);
     Comment_Title: t = (a = []) => this.t('Comment_Title', a);
     MyReviews_Title: t = (a = []) => this.t('MyReviews_Title', a);
     Comment_Write: t = (a = []) => this.t('Comment_Write', a);

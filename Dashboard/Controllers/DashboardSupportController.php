@@ -16,10 +16,14 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use PHPCraftdream\IRabi\Common\Services\EmailNotifications;
     use PHPCraftdream\IRabi\Common\Services\NewsService;
     use PHPCraftdream\IRabi\Common\System\DateUtils;
+    use PHPCraftdream\IRabi\Common\Tables\AccountBalance;
+    use PHPCraftdream\IRabi\Common\Tables\BalanceLedger;
+    use PHPCraftdream\IRabi\Common\Tables\Bookings;
     use PHPCraftdream\IRabi\Common\Tables\SupportAssignmentLog;
     use PHPCraftdream\IRabi\Common\Tables\SupportAttachments;
     use PHPCraftdream\IRabi\Common\Tables\SupportMessages;
     use PHPCraftdream\IRabi\Common\Tables\SupportTickets;
+    use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
     use PHPCraftdream\IRabi\Dashboard\GridConfig;
     use PHPCraftdream\IRabi\Dashboard\IrabiDashboardMenuTrait;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
@@ -268,6 +272,37 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
             return ForegroundI18n::getInstance()->Support_StatusChanged();
         }
 
+        /**
+         * D-205: эту строку читает не только сотрудник.
+         *
+         * Она пишется с is_internal = 0, то есть уходит в переписку клиенту —
+         * и клиент видел «Статус изменён: Ожидание ответа → В работе». Названия
+         * наших состояний очереди человеку снаружи не говорят ничего: они
+         * описывают, чего ждём МЫ, а не что происходит с его обращением. Тот же
+         * класс, что закрытая D-172, где наружу протекала внутренняя
+         * маршрутизация; там закрыли маршрутизацию, здесь остался статус.
+         *
+         * Само событие клиенту нужно — «взяли в работу», «решили» стоят того,
+         * чтобы о них сказать. Испорчена была формулировка, а не факт. Поэтому
+         * переходы, у которых для клиента есть смысл, получают человеческую
+         * фразу, а чисто служебные (эскалация, ожидание нашего же ответа,
+         * пауза) молчат: null — сообщение не пишется вовсе.
+         */
+        protected static function buildStatusChangeBody(string $oldStatus, string $newStatus): ?string {
+            $t = ForegroundI18n::getInstance();
+
+            return match ($newStatus) {
+                'in_progress' => $t->Support_ClientStatus_InProgress(),
+                'investigation' => $t->Support_ClientStatus_Investigation(),
+                'waiting_user' => $t->Support_ClientStatus_WaitingUser(),
+                'resolved' => $t->Support_ClientStatus_Resolved(),
+                'rejected' => $t->Support_ClientStatus_Rejected(),
+                // open / waiting_support / escalated / on_hold — движение внутри
+                // нашей очереди. Для человека это не новость, а шум.
+                default => null,
+            };
+        }
+
         protected static function getAssignedToLabel(): string {
             return ForegroundI18n::getInstance()->Support_AssignedTo();
         }
@@ -415,6 +450,140 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
             return ControllerTools::JSON(['tickets' => static::fetchTickets()]);
         }
 
+        /**
+         * D-209: чем живёт человек, который написал в поддержку, — его занятия
+         * и его деньги.
+         *
+         * Обращение знает, кто его написал, но на экране об этом человеке не
+         * было ничего, кроме имени. Чтобы ответить по существу — «что с моей
+         * бронью», «куда делись деньги» — модератор уходил в раздел «Брони» и
+         * искал там по имени, на каждое обращение заново (замерено mod-1 на
+         * тикете #23). Данные всё это время лежали в двух запросах отсюда.
+         *
+         * Живёт в приложении, а не во фреймворке: брони и баланс — понятия
+         * IRabi, у фреймворкового модуля поддержки их нет и быть не должно.
+         */
+        public static function post__clientContext(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
+            if (!static::isModerator()) {
+                return ControllerTools::JSON(['error' => 'Forbidden'], status: 403);
+            }
+
+            $ticketId = (int)$globals->readPostValue('ticket_id', '0');
+            if ($ticketId <= 0) {
+                return ControllerTools::JSON(['error' => 'Invalid params'], status: 400);
+            }
+
+            $ticket = SupportTickets::get()->selectOneByField('id', $ticketId);
+            if (!$ticket) {
+                return ControllerTools::JSON(['error' => 'Ticket not found'], status: 404);
+            }
+
+            $accountId = (int)($ticket['account_id'] ?? 0);
+            if ($accountId <= 0) {
+                return ControllerTools::JSON(['balance' => 0, 'bookings' => [], 'ledger' => []]);
+            }
+
+            return ControllerTools::JSON([
+                'balance' => AccountBalance::getBalance($accountId),
+                'bookings' => static::clientBookings($accountId),
+                'ledger' => static::clientLedger($accountId),
+            ]);
+        }
+
+        /**
+         * Последние занятия человека — столько, сколько нужно, чтобы узнать
+         * ту самую бронь, про которую он пишет, и не больше: длинный список на
+         * этом экране пришлось бы снова читать глазами.
+         *
+         * @return list<array{id:int,status:string,start_at:int,duration_min:int,cost:int,expert_name:string,is_group:bool}>
+         */
+        private static function clientBookings(int $accountId, int $limit = 5): array {
+            $rows = Bookings::get()->selectAll(function (SelectInterface $q) use ($accountId, $limit): void {
+                $q->where('user_id = ?', [$accountId])
+                    ->where("bookable_type = 'time_slot'")
+                    ->orderBy(['created_at DESC'])
+                    ->limit($limit);
+            });
+
+            if (empty($rows)) {
+                return [];
+            }
+
+            $slotIds = array_values(array_unique(array_map(
+                static fn (array $b): int => (int)$b['bookable_id'],
+                $rows,
+            )));
+
+            $slots = [];
+            foreach (TimeSlots::get()->selectAll(function (SelectInterface $q) use ($slotIds): void {
+                $q->where('id IN (?)', [$slotIds]);
+            }) as $slot) {
+                $slots[(int)$slot['id']] = $slot;
+            }
+
+            $expertIds = array_values(array_unique(array_filter(array_map(
+                static fn (array $s): int => (int)($s['expert_id'] ?? 0),
+                $slots,
+            ))));
+
+            $expertNames = [];
+            if (!empty($expertIds)) {
+                foreach (Account::getAccounts(
+                    selectCallback: static function (SelectInterface $select) use ($expertIds): void {
+                        $select->resetCols();
+                        $select->cols(['id', 'name']);
+                        $select->where('id IN (?)', [array_map('intval', $expertIds)]);
+                    },
+                ) as $acc) {
+                    $expertNames[(int)$acc['id']] = (string)($acc['name'] ?? '');
+                }
+            }
+
+            $out = [];
+            foreach ($rows as $b) {
+                $slot = $slots[(int)$b['bookable_id']] ?? null;
+                $expertId = (int)($slot['expert_id'] ?? 0);
+                $maxUsers = (int)($slot['max_users'] ?? 1);
+
+                $out[] = [
+                    'id' => (int)$b['id'],
+                    'status' => (string)$b['status'],
+                    'start_at' => (int)($slot['start_at'] ?? 0),
+                    'duration_min' => (int)($slot['duration_min'] ?? 0),
+                    'cost' => (int)($slot['cost'] ?? 0),
+                    'expert_name' => $expertNames[$expertId] ?? '',
+                    // Групповое занятие объясняет часть вопросов само по себе
+                    // («почему место заняли»), поэтому видно сразу.
+                    'is_group' => $maxUsers > 1,
+                ];
+            }
+
+            return $out;
+        }
+
+        /**
+         * Последние движения денег. Именно они превращают «деньги пропали» в
+         * «вот списание, вот возврат, вот их даты».
+         *
+         * @return list<array{id:int,is_credit:bool,amount:int,entry_type:string,note:string,created_at:int}>
+         */
+        private static function clientLedger(int $accountId, int $limit = 5): array {
+            $rows = BalanceLedger::get()->selectAll(function (SelectInterface $q) use ($accountId, $limit): void {
+                $q->where('account_id = ?', [$accountId])
+                    ->orderBy(['created_at DESC', 'id DESC'])
+                    ->limit($limit);
+            });
+
+            return array_map(static fn (array $r): array => [
+                'id' => (int)$r['id'],
+                'is_credit' => (int)$r['is_credit'] === 1,
+                'amount' => (int)$r['amount'],
+                'entry_type' => (string)$r['entry_type'],
+                'note' => (string)($r['note'] ?? ''),
+                'created_at' => (int)$r['created_at'],
+            ], $rows);
+        }
+
         public static function get__main(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
             if (!static::isModerator()) {
                 return ControllerTools::redirect(IRabi::url('/'));
@@ -452,6 +621,8 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
                 ),
                 'ticketsListUrl' => IRabi::url(static::URL . '~ticketsList'),
                 'ticketDetailUrl' => IRabi::url(static::URL . '~ticketDetail'),
+                // D-209: занятия и деньги человека, написавшего в поддержку.
+                'clientContextUrl' => IRabi::url(static::URL . '~clientContext'),
                 'replyUrl' => IRabi::url(static::URL . '~reply'),
                 'internalCommentUrl' => IRabi::url(static::URL . '~internalComment'),
                 'changeStatusUrl' => IRabi::url(static::URL . '~changeStatus'),
