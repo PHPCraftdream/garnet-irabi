@@ -20,14 +20,9 @@
  * именно так её запускает человек: вызов сервиса напрямую прошёл бы мимо
  * затвора по режиму тестирования и мимо разбора аргументов.
  */
-import { spawnSync } from 'node:child_process';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import { test, expect, tn, getDbPrefix } from './helpers/scoped-test';
 import { withConnection } from './helpers/db';
-
-const APP_DIR = path.resolve(__dirname, '..');
-const TEST_MODE_FILE = path.join(APP_DIR, '.test-mode');
+import { runServerCommand } from './helpers/server-command';
 
 const RUN_ID = `${process.env.TEST_PARALLEL_INDEX ?? '0'}-${Date.now()}`;
 
@@ -41,18 +36,16 @@ function runTimeShift(args: string[]): ShiftResult {
     // Без DB_PREFIX_OVERRIDE команда смотрела бы в общие таблицы, а спек
     // засеивает изолированные для своего воркера: она бы «не нашла занятие»
     // и тест провалился бы по причине, не имеющей отношения к проверяемому.
-    const res = spawnSync('php', ['run_cmd.php', 'time-shift', ...args], {
-        cwd: APP_DIR,
-        env: { ...process.env, DB_PREFIX_OVERRIDE: getDbPrefix() },
-        encoding: 'utf8',
-        timeout: 60000,
-    });
+    // #396: runServerCommand ходит по SSH под PW_PROD=1 вместо локального
+    // spawnSync — иначе на удалённом прогоне команда работала бы с данными
+    // локальной установки, а не той, куда спек реально сеет строки.
+    const res = runServerCommand(['time-shift', ...args], getDbPrefix(), 60000);
 
     // Отказ — ожидаемый исход половины этих проверок, а не сбой прогона.
     return {
-        status: res.status ?? 1,
-        stdout: res.stdout ?? '',
-        stderr: res.stderr ?? '',
+        status: res.exitCode ?? 1,
+        stdout: res.stdout,
+        stderr: res.stderr,
     };
 }
 
@@ -145,15 +138,21 @@ async function reminderMark(bookingId: number): Promise<number | null> {
 let markerWasOurs = false;
 
 test.beforeAll(() => {
-    if (!fs.existsSync(TEST_MODE_FILE)) {
-        fs.writeFileSync(TEST_MODE_FILE, '1\n');
+    // #397: `php garnet test-mode ...` — same officially-supported command a
+    // human runs, over the same local/remote path as runServerCommand()
+    // itself. Poking .test-mode directly (the old approach) only ever
+    // touched the LOCAL filesystem — a no-op against the remote app dir
+    // under PW_PROD.
+    const wasOn = runServerCommand(['test-mode', 'status']).stdout.includes('ON');
+    if (!wasOn) {
+        runServerCommand(['test-mode', 'on']);
         markerWasOurs = true;
     }
 });
 
 test.afterAll(() => {
-    if (markerWasOurs && fs.existsSync(TEST_MODE_FILE)) {
-        fs.unlinkSync(TEST_MODE_FILE);
+    if (markerWasOurs) {
+        runServerCommand(['test-mode', 'off']);
     }
 });
 

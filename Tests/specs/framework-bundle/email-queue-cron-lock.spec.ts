@@ -26,16 +26,17 @@
  */
 
 import { test, expect, tn, getDbPrefix } from '../../helpers/scoped-test';
-import { spawnSync } from 'child_process';
-import * as path from 'path';
+import { runServerCommand } from '../../helpers/server-command';
+import { isProd, remoteRuntimeDir } from '../../helpers/ssh-bridge';
+import { execFileSync } from 'node:child_process';
+import * as path from 'node:path';
 import mysql from 'mysql2/promise';
 import { DB } from '../../helpers/db';
 
+const APP_ROOT = path.resolve(__dirname, '../../..');
+
 test.describe.configure({ mode: 'serial' });
 
-// __dirname = <app>/Tests/specs/framework-bundle → three levels up = <app>.
-// Same depth as cron-cli.spec.ts::REPO_ROOT; run_cmd.php lives at the app root.
-const APP_DIR = path.resolve(__dirname, '../../..');
 const LOCK_NAME = 'irabi_email_queue';
 // Unique recipient per process+run so concurrent workers / re-runs never
 // collide on the same seeded row. The `.test` suffix keeps processQueue in
@@ -52,12 +53,8 @@ let queueId = 0;
  * isolation-setup.ts::runCli() and booking-time-guards Fix 7.
  */
 function runEmailQueueCron(prefix: string): { stdout: string; stderr: string; status: number | null } {
-    const res = spawnSync('php', ['run_cmd.php', 'cron', 'email-queue'], {
-        cwd: APP_DIR,
-        env: { ...process.env, DB_PREFIX_OVERRIDE: prefix },
-        encoding: 'utf8',
-    });
-    return { stdout: res.stdout ?? '', stderr: res.stderr ?? '', status: res.status };
+    const res = runServerCommand(['cron', 'email-queue'], prefix);
+    return { stdout: res.stdout, stderr: res.stderr, status: res.exitCode };
 }
 
 async function readQueueRow(id: number): Promise<{ status: string; attempts: number; sent_at: number | null }> {
@@ -74,6 +71,24 @@ async function readQueueRow(id: number): Promise<{ status: string; attempts: num
 }
 
 test.describe('email-queue cron: named-lock serialises overlapping ticks', () => {
+    // test:hold-lock (remote holder path below) is test-mode gated.
+    let markerWasOurs = false;
+
+    test.beforeAll(() => {
+        if (!isProd()) return;
+        const wasOn = runServerCommand(['test-mode', 'status']).stdout.includes('ON');
+        if (!wasOn) {
+            runServerCommand(['test-mode', 'on']);
+            markerWasOurs = true;
+        }
+    });
+
+    test.afterAll(() => {
+        if (markerWasOurs) {
+            runServerCommand(['test-mode', 'off']);
+        }
+    });
+
     test('seed a queued .test email', async () => {
         const conn = await mysql.createConnection(DB);
         try {
@@ -93,39 +108,69 @@ test.describe('email-queue cron: named-lock serialises overlapping ticks', () =>
     });
 
     test('while another connection holds the lock, cron skips and leaves the email queued', async () => {
-        // Hold the GLOBAL named lock from a separate mysql2 connection —
-        // this stands in for "a previous cron tick still mid-flight". The
-        // PHP cron run opens its OWN DB connection, so its GET_LOCK(…, 0)
-        // must return 0 (cross-connection exclusivity) and the task must
-        // skip. A 5s acquire timeout absorbs transient contention from any
-        // other spec that briefly touches this global lock (e.g. cron-cli
-        // running all tasks).
-        const holder = await mysql.createConnection(DB);
-        try {
-            const [acq] = await holder.execute<any[]>(`SELECT GET_LOCK(?, 5) AS got`, [LOCK_NAME]);
-            expect(Number(acq[0]?.got)).toBe(1);
+        // GET_LOCK() is session-scoped: it only holds for the lifetime of
+        // the ONE connection that acquired it.
+        //
+        // Locally that's a plain mysql2 connection kept open across the
+        // `await` below — straightforward.
+        //
+        // Under PW_PROD, ssh-bridge.ts issues each remote SQL call as its
+        // own fresh process/connection (documented limitation — no
+        // transactions across calls, same root cause). A lock "held" via
+        // one ssh round-trip is already released by the time a LATER ssh
+        // round-trip runs the cron. So the holder and the cron under test
+        // must be two processes within the SAME remote shell invocation —
+        // one backgrounded via `php garnet test:hold-lock` (see
+        // CMDTestHoldLock.php), one foregrounded — so both genuinely hold
+        // open, concurrent connections on the same box.
+        let out: string;
 
-            const res = runEmailQueueCron(getDbPrefix());
-            const out = res.stdout + res.stderr;
-            // eslint-disable-next-line no-console
-            console.log('[email-queue cron skip-path output]', out.trim());
+        if (isProd()) {
+            // Mirrors runServerCommand's remote quoting (helpers/server-command.ts)
+            // for the cron leg — DB_PREFIX_OVERRIDE only takes effect with a
+            // matching GARNET_TEST_TOKEN (TestScope), same rule as everywhere else.
+            const token = process.env.RUN_TEST_TOKEN ?? '';
+            if (!token) {
+                throw new Error('[email-queue-cron-lock] PW_PROD=1 but RUN_TEST_TOKEN is unset.');
+            }
+            const q = (s: string): string => `'${s.replace(/'/g, "'\\''")}'`;
+            const prefix = getDbPrefix();
+            const remoteCmd = `php garnet test:hold-lock ${q(LOCK_NAME)} 6 & sleep 1; `
+                + `DB_PREFIX_OVERRIDE=${q(prefix)} GARNET_TEST_TOKEN=${q(token)} php garnet cron email-queue; wait`;
+            out = execFileSync(
+                'php',
+                ['garnet', 'ssh', remoteCmd, `--cwd=${remoteRuntimeDir()}`, '--no-tty'],
+                { cwd: APP_ROOT, encoding: 'utf8', timeout: 30000 },
+            );
+        } else {
+            const holder = await mysql.createConnection(DB);
+            try {
+                const [acq] = await holder.execute<any[]>(`SELECT GET_LOCK(?, 5) AS got`, [LOCK_NAME]);
+                expect(Number(acq[0]?.got)).toBe(1);
 
-            // The task callback printed the skip line — CapturingStdio
-            // forwards to real stdout — proving tryAcquire() returned false
-            // while another connection held the lock.
-            expect(out).toContain('previous run still active, skipping');
-
-            // The queued email must be untouched: processQueue never ran.
-            const row = await readQueueRow(queueId);
-            expect(row.status).toBe('queued');
-            expect(row.attempts).toBe(0);
-            expect(row.sent_at).toBeNull();
-        } finally {
-            // Closing the connection would free the lock too, but release
-            // explicitly so the next test can acquire deterministically.
-            await holder.execute(`SELECT RELEASE_LOCK(?)`, [LOCK_NAME]).catch(() => {});
-            await holder.end();
+                const res = runEmailQueueCron(getDbPrefix());
+                out = res.stdout + res.stderr;
+            } finally {
+                // Closing the connection would free the lock too, but release
+                // explicitly so the next test can acquire deterministically.
+                await holder.execute(`SELECT RELEASE_LOCK(?)`, [LOCK_NAME]).catch(() => {});
+                await holder.end();
+            }
         }
+
+        // eslint-disable-next-line no-console
+        console.log('[email-queue cron skip-path output]', out.trim());
+
+        // The task callback printed the skip line — CapturingStdio
+        // forwards to real stdout — proving tryAcquire() returned false
+        // while another connection held the lock.
+        expect(out).toContain('previous run still active, skipping');
+
+        // The queued email must be untouched: processQueue never ran.
+        const row = await readQueueRow(queueId);
+        expect(row.status).toBe('queued');
+        expect(row.attempts).toBe(0);
+        expect(row.sent_at).toBeNull();
     });
 
     test('once the lock is free, cron acquires it and processes the email exactly once', async () => {

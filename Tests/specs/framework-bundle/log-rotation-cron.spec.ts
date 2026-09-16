@@ -37,6 +37,7 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import mysql from 'mysql2/promise';
 import { DB, withConnection } from '../../helpers/db';
+import { runServerCommand } from '../../helpers/server-command';
 
 const APP_DIR = path.resolve(__dirname, '../../..');
 const LOG_JOURNAL_DIR = path.join(APP_DIR, 'WorkDir', 'LogJournal');
@@ -117,13 +118,7 @@ function snapshotTree(root: string): string {
  * against the worker-isolated tables. Returns captured stdio + exit.
  */
 function runLogRotationCron(prefix: string): { stdout: string; stderr: string; exitCode: number | null } {
-    const res = spawnSync('php', ['run_cmd.php', 'cron', 'log-rotation'], {
-        cwd: APP_DIR,
-        env: { ...process.env, DB_PREFIX_OVERRIDE: prefix },
-        encoding: 'utf8',
-        timeout: 60000,
-    });
-    return { stdout: res.stdout ?? '', stderr: res.stderr ?? '', exitCode: res.status };
+    return runServerCommand(['cron', 'log-rotation'], prefix, 60000);
 }
 
 const DAY = 86400;

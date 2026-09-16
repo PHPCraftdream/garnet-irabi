@@ -37,12 +37,10 @@
  */
 
 import { test, expect, tn, getDbPrefix } from '../../helpers/scoped-test';
-import { spawnSync } from 'child_process';
+import { runServerCommand } from '../../helpers/server-command';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { withConnection } from '../../helpers/db';
-
-const APP_DIR = path.resolve(__dirname, '../../..');
 
 /**
  * Final filesystem version — читается прямо из
@@ -70,13 +68,7 @@ const FS_VERSION = (() => {
  * invocation pattern in log-rotation-cron.spec.ts / db-backup-cron.spec.ts.
  */
 function runMigration(prefix: string): { stdout: string; stderr: string; exitCode: number | null } {
-    const res = spawnSync('php', ['run_cmd.php', 'migration'], {
-        cwd: APP_DIR,
-        env: { ...process.env, DB_PREFIX_OVERRIDE: prefix },
-        encoding: 'utf8',
-        timeout: 120000,
-    });
-    return { stdout: res.stdout ?? '', stderr: res.stderr ?? '', exitCode: res.status };
+    return runServerCommand(['migration'], prefix, 120000);
 }
 
 test.describe('migration idempotency — M_0001/M_0002 guards survive a tracker reset', () => {

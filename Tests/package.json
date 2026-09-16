@@ -2,7 +2,7 @@
   "name": "garnet-playwright-tests",
   "version": "1.0.0",
   "scripts": {
-    "test": "playwright test",
+    "test": "node scripts/run-target.js",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",
     "test:debug": "playwright test --debug",

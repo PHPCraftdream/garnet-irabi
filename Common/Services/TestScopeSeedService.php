@@ -110,6 +110,15 @@ namespace PHPCraftdream\IRabi\Common\Services {
         }
 
         private static function seedExpert(int $accountId, string $name): void {
+            // Mirrors isolation-setup.ts's `about = 'Test expert bio'` write —
+            // admin/users/user-detail.spec.ts asserts on it.
+            $account = Account::get((string)$accountId);
+
+            if (empty($account->readParam('about'))) {
+                $account->setParam('about', 'Test expert bio');
+                $account->flush();
+            }
+
             $futureSlots = count(TimeSlots::get()->selectAll(static function (SelectInterface $q) use ($accountId): void {
                 $q->cols(['id'])
                     ->where('expert_id = ?', [$accountId])

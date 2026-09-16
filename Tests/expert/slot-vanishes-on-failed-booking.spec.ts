@@ -30,11 +30,7 @@
 import { test, expect, tn, getDbPrefix } from '../helpers/scoped-test';
 import mysql from 'mysql2/promise';
 import { DB, withConnection } from '../helpers/db';
-import { spawnSync } from 'child_process';
-import * as path from 'path';
-
-// __dirname = Apps/IRabi/Tests/expert → two levels up → Apps/IRabi
-const APP_DIR = path.resolve(__dirname, '../..');
+import { runServerCommand } from '../helpers/server-command';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -159,12 +155,8 @@ test.describe('D-163: reconcile-slot-seats cron heals a stuck booked_count', () 
 
 	test('run real cron reconcile-slot-seats (CronCompletionService)', () => {
 		const prefix = getDbPrefix();
-		const res = spawnSync('php', ['run_cmd.php', 'cron', 'reconcile-slot-seats'], {
-			cwd: APP_DIR,
-			env: { ...process.env, DB_PREFIX_OVERRIDE: prefix },
-			encoding: 'utf8',
-		});
-		const out = (res.stdout ?? '') + (res.stderr ?? '');
+		const res = runServerCommand(['cron', 'reconcile-slot-seats'], prefix);
+		const out = res.stdout + res.stderr;
 		console.log('[cron output]', out.trim());
 		// Same rationale as booking-time-guards.spec.ts's Fix 7 test: the cron_log
 		// INSERT fails in isolated test-worker scopes (table not migrated there),

@@ -25,15 +25,14 @@
  * 4 canonical pages exist), exactly like every other DB-touching spec.
  */
 import { test, expect } from '@playwright/test';
+import { scopeHeaders } from '../../helpers/scoped-test';
 
 const BASE = process.env.BASE_URL || 'http://localhost:8001';
 const WORKER = process.env.TEST_PARALLEL_INDEX ?? '0';
 
-const scopeHeaders = () => ({ 'X-Test-Worker': WORKER });
-
 test.describe('SEO: robots.txt and sitemap.xml', () => {
     test('/robots.txt is served at root, text/plain, with a sitemap reference', async ({ request }) => {
-        const res = await request.get(`${BASE}/robots.txt`, { headers: scopeHeaders() });
+        const res = await request.get(`${BASE}/robots.txt`, { headers: scopeHeaders(WORKER) });
 
         expect(res.status(), `expected 200 for /robots.txt`).toBe(200);
 
@@ -60,7 +59,7 @@ test.describe('SEO: robots.txt and sitemap.xml', () => {
     });
 
     test('/sitemap.xml is valid XML listing every published page with absolute URLs', async ({ request }) => {
-        const res = await request.get(`${BASE}/sitemap.xml`, { headers: scopeHeaders() });
+        const res = await request.get(`${BASE}/sitemap.xml`, { headers: scopeHeaders(WORKER) });
 
         expect(res.status(), `expected 200 for /sitemap.xml`).toBe(200);
 
@@ -99,8 +98,8 @@ test.describe('SEO: robots.txt and sitemap.xml', () => {
     test('both endpoints are reachable anonymously (no auth state)', async ({ request }) => {
         // A bare APIRequestContext (no storageState, no cookies) stands in
         // for a search-engine crawler. Both must return 2xx without login.
-        const robots = await request.get(`${BASE}/robots.txt`, { headers: scopeHeaders() });
-        const sitemap = await request.get(`${BASE}/sitemap.xml`, { headers: scopeHeaders() });
+        const robots = await request.get(`${BASE}/robots.txt`, { headers: scopeHeaders(WORKER) });
+        const sitemap = await request.get(`${BASE}/sitemap.xml`, { headers: scopeHeaders(WORKER) });
 
         expect(robots.status()).toBe(200);
         expect(sitemap.status()).toBe(200);

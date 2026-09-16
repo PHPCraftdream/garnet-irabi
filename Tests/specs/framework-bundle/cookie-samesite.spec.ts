@@ -13,6 +13,7 @@
  * back to Strict — fails immediately.
  */
 import { test, expect } from '@playwright/test';
+import { scopeHeaders } from '../../helpers/scoped-test';
 
 const BASE = process.env.BASE_URL || 'http://localhost:8001';
 const WORKER = process.env.TEST_PARALLEL_INDEX ?? '0';
@@ -24,9 +25,12 @@ const MUST_BE_LAX = ['session', 'CSRF_TOKEN'];
 test('auth cookies are SameSite=Lax (survive webmail magic-link navigation)', async ({ request }) => {
     // The consent "start-session" POST is the point where both the session and
     // the CSRF cookie are (re)minted.
+    // #394: start-session WRITES (mints a session row) — a bare X-Test-Worker
+    // header without the prod token would land on LIVE tables, not
+    // test_worker_0 (scopeHeaders() is a no-op outside PW_PROD).
     const res = await request.post(`${BASE}/system/`, {
         form: { action: 'start-session', consent_pd: '1' },
-        headers: { 'X-Test-Worker': WORKER },
+        headers: scopeHeaders(WORKER),
     });
 
     const setCookies = res.headersArray()

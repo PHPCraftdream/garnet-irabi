@@ -35,11 +35,9 @@
  */
 
 import { test, expect, tn, getDbPrefix } from '../../helpers/scoped-test';
-import { spawnSync } from 'child_process';
-import * as path from 'node:path';
 import { withConnection } from '../../helpers/db';
+import { runServerCommand } from '../../helpers/server-command';
 
-const APP_DIR = path.resolve(__dirname, '../../..');
 const DAY = 86400;
 
 /**
@@ -82,54 +80,31 @@ const INSIDE_NAME = `${MARKER}_inside`;
  * log-rotation-cron.spec.ts / email-queue-cron-lock.spec.ts.
  */
 function runSessionRetentionCron(prefix: string): { stdout: string; stderr: string; exitCode: number | null } {
-    const res = spawnSync('php', ['run_cmd.php', 'cron', 'session-retention'], {
-        cwd: APP_DIR,
-        env: { ...process.env, DB_PREFIX_OVERRIDE: prefix },
-        encoding: 'utf8',
-        timeout: 60000,
-    });
-    return { stdout: res.stdout ?? '', stderr: res.stderr ?? '', exitCode: res.status };
+    return runServerCommand(['cron', 'session-retention'], prefix, 60000);
 }
 
 /**
- * Invoke SessionRetentionService::pruneSessions($fixedNow) directly with
- * an injected clock, against the worker-isolated tables. Boots the app
- * inline (mirrors run_cmd.php's boot, minus IoRunConsole::run) so the
- * DB_PREFIX_OVERRIDE applies. Used for the boundary half where the real
- * cron's time() would make the exact-boundary row flaky.
+ * Invoke SessionRetentionService::pruneSessions($fixedNow) with an injected
+ * clock, against the worker-isolated tables, via the `test:prune-sessions`
+ * app command (test-mode gated — see beforeAll/afterAll below). Used for the
+ * boundary half where the real cron's time() would make the exact-boundary
+ * row flaky.
+ *
+ * #397: this used to spawn a raw local `php -r <inline bootstrap>` — always
+ * ran on the ORCHESTRATOR machine, never the remote box under PW_PROD, so it
+ * silently queried the wrong (local, table-less) DB there. Routed through
+ * runServerCommand like every other server call in this file.
  */
 function runServiceWithFixedClock(prefix: string, nowTs: number): { sessions_deleted: number; session_data_deleted: number } {
-    // NOTE: namespace backslashes are doubled (\\ → \) for the JS template
-    // literal; PHP vars use a lone $ (no ${} appears, so no JS interpolation).
-    const code = `
-require getcwd() . "/autoload.php";
-use PHPCraftdream\\Garnet\\Kernel\\Core\\Env\\Env;
-use PHPCraftdream\\Garnet\\Kernel\\Io\\IniConfig\\IniConfig;
-use PHPCraftdream\\IRabi\\IRabi;
-use PHPCraftdream\\IRabi\\Common\\Services\\SessionRetentionService;
-IRabi::setPublicDirInit(getcwd() . DS . "WorkDir" . DS . "public" . DS);
-$app = new IRabi(Env::isDevDir());
-$app->consoleInit();
-$override = getenv("DB_PREFIX_OVERRIDE");
-if (is_string($override) && preg_match('/^[A-Za-z0-9_]{1,40}$/', $override) === 1) {
-    IniConfig::db()->setRuntimeOverride("prefix", $override);
-}
-echo "RESULT=" . json_encode(SessionRetentionService::pruneSessions((int)$argv[1]));
-`;
-    const res = spawnSync('php', ['-r', code, '--', String(nowTs)], {
-        cwd: APP_DIR,
-        env: { ...process.env, DB_PREFIX_OVERRIDE: prefix },
-        encoding: 'utf8',
-        timeout: 60000,
-    });
-    if (res.status !== 0) {
-        throw new Error(`pruneSessions direct call failed (exit=${res.status}): ${res.stdout} ${res.stderr}`);
+    const res = runServerCommand(['test:prune-sessions', String(nowTs)], prefix, 60000);
+    if (res.exitCode !== 0) {
+        throw new Error(`pruneSessions direct call failed (exit=${res.exitCode}): ${res.stdout} ${res.stderr}`);
     }
-    const line = res.stdout.split(/\r?\n/).find((l) => l.startsWith('RESULT='));
+    const line = res.stdout.split(/\r?\n/).find((l) => l.trim().startsWith('{'));
     if (!line) {
-        throw new Error(`pruneSessions direct call produced no RESULT line: ${res.stdout} ${res.stderr}`);
+        throw new Error(`pruneSessions direct call produced no JSON line: ${res.stdout} ${res.stderr}`);
     }
-    return JSON.parse(line.slice('RESULT='.length));
+    return JSON.parse(line.trim());
 }
 
 /** Insert a session row + N session_data children. Returns the session id. */
@@ -297,8 +272,17 @@ test.describe('SessionRetentionService — boundary-inclusive cutoff (fixed cloc
     let pastSessionId = 0;
     let boundarySessionId = 0;
     let insideSessionId = 0;
+    // test:prune-sessions is test-mode gated (same lock clear-user uses);
+    // restore the prior state so this doesn't leave it flipped for other specs.
+    let markerWasOurs = false;
 
     test.beforeAll(async () => {
+        const wasOn = runServerCommand(['test-mode', 'status']).stdout.includes('ON');
+        if (!wasOn) {
+            runServerCommand(['test-mode', 'on']);
+            markerWasOurs = true;
+        }
+
         // Three rows straddling the cutoff by 1 second each:
         //   PAST     lastUsage = cutoff - 1  → DELETED (< cutoff)
         //   BOUNDARY lastUsage = cutoff      → KEPT   (== cutoff, strict <)
@@ -336,6 +320,10 @@ test.describe('SessionRetentionService — boundary-inclusive cutoff (fixed cloc
                 [`${MARKER}_%`],
             );
         });
+
+        if (markerWasOurs) {
+            runServerCommand(['test-mode', 'off']);
+        }
     });
 
     test('keeps the exact-boundary row, deletes only strictly-older rows', async () => {

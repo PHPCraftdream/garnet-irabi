@@ -27,9 +27,15 @@
  * (`curl -I http://slotbook.ru/`) that originally surfaced C-2.
  */
 import { test, expect } from '@playwright/test';
+import { scopeHeaders } from '../../helpers/scoped-test';
 
 const BASE = process.env.BASE_URL || 'http://localhost:8001';
 const WORKER = process.env.TEST_PARALLEL_INDEX ?? '0';
+
+// #394: this spec's whole premise is the dev server's isDev=true no-op gate —
+// it asserts the ABSENCE of HTTPS-redirect/HSTS, which is exactly what a real
+// prod box legitimately DOES emit. Never meaningful against PW_PROD.
+test.skip(process.env.PW_PROD === '1', 'dev-only: asserts isDev=true no-op behavior, not applicable to a real prod box');
 
 test('dev server (isDev=true) does not HTTPS-redirect and does not emit HSTS', async ({ request }) => {
     const res = await request.get(`${BASE}/`, {
@@ -37,7 +43,7 @@ test('dev server (isDev=true) does not HTTPS-redirect and does not emit HSTS', a
         // strictly required for a header-only check, but it keeps this
         // request consistent with every other request the suite makes
         // and avoids surprising the worker-scope middleware.
-        headers: { 'X-Test-Worker': WORKER },
+        headers: scopeHeaders(WORKER),
         // Playwright follows redirects by default; force the raw response
         // so a stray 301 would surface as the actual status code rather
         // than the post-redirect 200.

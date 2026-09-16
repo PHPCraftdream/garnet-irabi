@@ -25,10 +25,12 @@
  */
 
 import { test, expect } from '../../helpers/scoped-test';
-import { spawnSync } from 'child_process';
+import { execFileSync, spawnSync } from 'child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import { runServerCommand } from '../../helpers/server-command';
+import { isProd, remoteRuntimeDir } from '../../helpers/ssh-bridge';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -63,12 +65,48 @@ foreach ($deleted as $p) { echo basename($p) . PHP_EOL; }
  * the captured stdout+stderr and the process exit code.
  */
 function runDbBackupCron(): { stdout: string; stderr: string; exitCode: number | null } {
-    const res = spawnSync('php', ['run_cmd.php', 'cron', 'db-backup'], {
-        cwd: APP_DIR,
-        encoding: 'utf8',
-        timeout: 60000,
-    });
-    return { stdout: res.stdout ?? '', stderr: res.stderr ?? '', exitCode: res.status };
+    return runServerCommand(['cron', 'db-backup'], undefined, 60000);
+}
+
+/**
+ * Stat a backup file — locally under `fs` when running local, over SSH
+ * (`stat` + `od` for the gzip magic bytes) when PW_PROD=1. `runDbBackupCron`
+ * ran the cron over runServerCommand, so under PW_PROD the file it wrote
+ * lives on the REMOTE box's WorkDir/Backups/, not this machine's — checking
+ * it with local `fs` always threw ENOENT there.
+ */
+function statBackupFile(basename: string): { size: number; mtimeSec: number; magic: [number, number] } {
+    if (!isProd()) {
+        const fullPath = path.join(BACKUPS_DIR, basename);
+        const stat = fs.statSync(fullPath);
+        const fd = fs.openSync(fullPath, 'r');
+        const buf = Buffer.alloc(2);
+        fs.readSync(fd, buf, 0, 2, 0);
+        fs.closeSync(fd);
+        return { size: stat.size, mtimeSec: Math.floor(stat.mtimeMs / 1000), magic: [buf[0], buf[1]] };
+    }
+    // basename is regex-validated by the caller (backup_\d{8}-\d{6}_cron\.sql\.gz)
+    // before ever reaching here — safe to interpolate into the remote command.
+    const remoteCmd = `stat -c '%s %Y' 'WorkDir/Backups/${basename}' && od -An -tu1 -N2 'WorkDir/Backups/${basename}'`;
+    const out = execFileSync(
+        'php',
+        ['garnet', 'ssh', remoteCmd, `--cwd=${remoteRuntimeDir()}`, '--no-tty'],
+        { cwd: APP_DIR, encoding: 'utf8' },
+    );
+    const lines = out.trim().split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const [size, mtimeSec] = lines[0].split(/\s+/).map(Number);
+    const [b0, b1] = lines[1].split(/\s+/).map(Number);
+    return { size, mtimeSec, magic: [b0, b1] };
+}
+
+function deleteBackupFile(basename: string): void {
+    if (!isProd()) {
+        const p = path.join(BACKUPS_DIR, basename);
+        if (fs.existsSync(p)) fs.unlinkSync(p);
+        return;
+    }
+    const remoteCmd = `rm -f 'WorkDir/Backups/${basename}'`;
+    execFileSync('php', ['garnet', 'ssh', remoteCmd, `--cwd=${remoteRuntimeDir()}`, '--no-tty'], { cwd: APP_DIR, encoding: 'utf8' });
 }
 
 function listBackups(): string[] {
@@ -218,10 +256,7 @@ test.describe('cron db-backup — live run + off-site-not-configured warning', (
         // so a file whose mtime is at or after the suite's start time was
         // made by us (the dev stand does not run db-backup on a schedule).
         for (const name of createdByTest.splice(0)) {
-            const p = path.join(BACKUPS_DIR, name);
-            if (fs.existsSync(p)) {
-                fs.unlinkSync(p);
-            }
+            deleteBackupFile(name);
         }
     });
 
@@ -248,19 +283,14 @@ test.describe('cron db-backup — live run + off-site-not-configured warning', (
 
         // The file exists and is a non-trivial gzip — proves real content
         // was written, not a zero-byte stub.
-        const fullPath = path.join(BACKUPS_DIR, basename as string);
-        const stat = fs.statSync(fullPath);
+        const stat = statBackupFile(basename as string);
         expect(stat.size).toBeGreaterThan(100);
-        expect(stat.mtimeMs / 1000).toBeGreaterThanOrEqual(startSec - 1);
+        expect(stat.mtimeSec).toBeGreaterThanOrEqual(startSec - 1);
 
         // gzip magic bytes (1f 8b) — the framework writes a real .sql.gz,
         // restore is documented to detect gzip by these bytes.
-        const fd = fs.openSync(fullPath, 'r');
-        const buf = Buffer.alloc(2);
-        fs.readSync(fd, buf, 0, 2, 0);
-        fs.closeSync(fd);
-        expect(buf[0]).toBe(0x1f);
-        expect(buf[1]).toBe(0x8b);
+        expect(stat.magic[0]).toBe(0x1f);
+        expect(stat.magic[1]).toBe(0x8b);
     });
 
     test('logs the explicit "off-site upload not configured" warning', () => {

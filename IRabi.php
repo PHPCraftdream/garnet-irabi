@@ -44,8 +44,10 @@ namespace PHPCraftdream\IRabi {
     use PHPCraftdream\IRabi\Common\Commands\CMDRemoteSql;
     use PHPCraftdream\IRabi\Common\Commands\CMDRemoteTestMode;
     use PHPCraftdream\IRabi\Common\Commands\CMDSeed;
+    use PHPCraftdream\IRabi\Common\Commands\CMDTestHoldLock;
     use PHPCraftdream\IRabi\Common\Commands\CMDTestMode;
     use PHPCraftdream\IRabi\Common\Commands\CMDTestProvision;
+    use PHPCraftdream\IRabi\Common\Commands\CMDTestPruneSessions;
     use PHPCraftdream\IRabi\Common\Commands\CMDTestTeardown;
     use PHPCraftdream\IRabi\Common\Commands\CMDTimeShift;
     use PHPCraftdream\IRabi\Common\Mail\AppMailer;
@@ -523,6 +525,8 @@ namespace PHPCraftdream\IRabi {
             CommandClasses::set('test:provision', CMDTestProvision::class);
             CommandClasses::set('test:teardown', CMDTestTeardown::class);
             CommandClasses::set('test-mode', CMDTestMode::class);
+            CommandClasses::set('test:prune-sessions', CMDTestPruneSessions::class);
+            CommandClasses::set('test:hold-lock', CMDTestHoldLock::class);
             CommandClasses::set('time-shift', CMDTimeShift::class);
             CommandClasses::set('clear-user', CMDClearUser::class);
             CommandClasses::set('clear-logs', CMDClearLogs::class);

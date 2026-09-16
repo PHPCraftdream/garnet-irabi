@@ -9,11 +9,12 @@
  * deliberately raises console errors, which the console-guard would flag.
  */
 import { test, expect } from '@playwright/test';
+import { scopeHeaders } from '../../helpers/scoped-test';
 
 const BASE = process.env.BASE_URL || 'http://localhost:8001';
 const WORKER = process.env.TEST_PARALLEL_INDEX ?? '0';
 
-test.use({ extraHTTPHeaders: { 'X-Test-Worker': WORKER } });
+test.use({ extraHTTPHeaders: scopeHeaders(WORKER) });
 
 test('unhandled backend error shows a toast; unrelated rejections do not', async ({ page }) => {
     await page.goto(`${BASE}/system/`);

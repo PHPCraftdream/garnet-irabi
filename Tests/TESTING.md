@@ -267,6 +267,40 @@ php garnet test:remote --base-url=https://example.com --project=admin-tests
 php garnet test:remote --base-url=https://example.com --keep   # skip teardown
 ```
 
+### Which target does bare `npm test` use? (#395)
+
+`npm test` dispatches through `scripts/run-target.js`, which reads
+`helpers/target-config.js`'s `resolveTarget()`:
+
+- **`PW_TARGET` unset or `local`** (shipped default — zero behavior change):
+  runs `playwright test` against the local dev server, exactly as before.
+- **`PW_TARGET=remote`**: `npm test` becomes `php garnet test:remote
+  --base-url=$PW_REMOTE_BASE_URL` (defaults to `https://slotbook.ru`),
+  passing through any extra CLI args. Set it for one run
+  (`PW_TARGET=remote npm test`) or persistently in your shell/CI env.
+
+This only decides WHICH command `npm test` runs — it does not bypass
+`TestScope`'s server-side token gate (see the safety audit doc). A
+misconfigured remote run fails loudly on a missing `BASE_URL`/token, it
+never silently lands on live tables.
+
+Config surface for a remote run, all in one place: `BASE_URL` /
+`PW_REMOTE_BASE_URL` (target URL), `RUN_TEST_TOKEN` (minted by
+`test:remote`, not set by hand), `ssh.ini` (SSH params for provision/
+teardown/SQL bridge), `deploy.ini` (`remote_path`/`runtime_dir`, used by
+both the orchestrator and `helpers/ssh-bridge.ts` to resolve where the
+deployed `garnet` lives). DB access is decided and already implemented:
+`helpers/ssh-bridge.ts` routes every `mysql2` call through `php garnet sql
+--json` over SSH (no DB port exposed to the internet) — see its docblock
+for the tradeoffs (one round-trip per query, no cross-call transactions).
+
+The test path never reads the local `WorkDir/ConfigDev/app.ini` for
+`base_url` (confirmed — no spec or helper does). The historical "Bad
+origin" break came from the LOCAL dev server's own `app.ini` disagreeing
+with the harness's `BASE_URL` default (`http://localhost:8001`); that's a
+local-environment invariant to keep straight, not something the test code
+depends on or can drift against on its own.
+
 What happens:
 
 1. A one-time secret token is generated.

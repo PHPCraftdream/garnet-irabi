@@ -30,16 +30,11 @@
  */
 
 import { test, expect, tn, getDbPrefix } from '../../helpers/scoped-test';
-import { spawnSync } from 'child_process';
-import * as path from 'path';
+import { runServerCommand } from '../../helpers/server-command';
 import mysql from 'mysql2/promise';
 import { DB } from '../../helpers/db';
 
 test.describe.configure({ mode: 'serial' });
-
-// __dirname = <app>/Tests/specs/framework-bundle → three levels up = <app>.
-// Same depth as cron-cli.spec.ts::REPO_ROOT; run_cmd.php lives at the app root.
-const APP_DIR = path.resolve(__dirname, '../../..');
 
 // Unique recipient per process+run so concurrent workers / re-runs never
 // collide on the same seeded row. The `.test` suffix keeps processQueue in
@@ -48,12 +43,8 @@ const SUFFIX = `${process.pid}_${Date.now().toString(36)}`;
 const recip = (label: string) => `${label}_${SUFFIX}@dev.test`;
 
 function runEmailQueueCron(prefix: string): { stdout: string; stderr: string; status: number | null } {
-    const res = spawnSync('php', ['run_cmd.php', 'cron', 'email-queue'], {
-        cwd: APP_DIR,
-        env: { ...process.env, DB_PREFIX_OVERRIDE: prefix },
-        encoding: 'utf8',
-    });
-    return { stdout: res.stdout ?? '', stderr: res.stderr ?? '', status: res.status };
+    const res = runServerCommand(['cron', 'email-queue'], prefix);
+    return { stdout: res.stdout, stderr: res.stderr, status: res.exitCode };
 }
 
 type QueueRow = {

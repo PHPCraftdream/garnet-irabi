@@ -30,12 +30,9 @@
  */
 
 import { test, expect, tn, getDbPrefix } from '../../helpers/scoped-test';
-import { spawnSync } from 'child_process';
-import * as path from 'node:path';
+import { runServerCommand } from '../../helpers/server-command';
 import { withConnection } from '../../helpers/db';
 import type { Connection } from 'mysql2/promise';
-
-const APP_DIR = path.resolve(__dirname, '../../..');
 
 test.describe.configure({ mode: 'serial' });
 
@@ -45,13 +42,7 @@ test.describe.configure({ mode: 'serial' });
  * db-backup / log-rotation cron runners.
  */
 function runFinanceAudit(prefix: string): { stdout: string; stderr: string; exitCode: number | null } {
-    const res = spawnSync('php', ['run_cmd.php', 'finance-audit'], {
-        cwd: APP_DIR,
-        env: { ...process.env, DB_PREFIX_OVERRIDE: prefix },
-        encoding: 'utf8',
-        timeout: 60000,
-    });
-    return { stdout: res.stdout ?? '', stderr: res.stderr ?? '', exitCode: res.status };
+    return runServerCommand(['finance-audit'], prefix, 60000);
 }
 
 /**
@@ -60,13 +51,7 @@ function runFinanceAudit(prefix: string): { stdout: string; stderr: string; exit
  * logged by AppCronService, not as a CLI failure.
  */
 function runFinanceAuditCron(prefix: string): { stdout: string; stderr: string; exitCode: number | null } {
-    const res = spawnSync('php', ['run_cmd.php', 'cron', 'finance-audit'], {
-        cwd: APP_DIR,
-        env: { ...process.env, DB_PREFIX_OVERRIDE: prefix },
-        encoding: 'utf8',
-        timeout: 60000,
-    });
-    return { stdout: res.stdout ?? '', stderr: res.stderr ?? '', exitCode: res.status };
+    return runServerCommand(['cron', 'finance-audit'], prefix, 60000);
 }
 
 /**

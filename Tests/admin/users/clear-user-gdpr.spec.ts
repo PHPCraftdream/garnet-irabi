@@ -179,7 +179,16 @@ test.describe('F-02: owner/admin clearUser — happy path', () => {
     test('admin POST clearUser with matching confirm_login → success, account gone, log written', async ({ ownerPage }) => {
         if (!scratchId) { test.skip(); return; }
 
+        // Wait for the grid to actually render, not just the `load` event —
+        // the admin SPA does async client-side work after `load` (auth/CSRF
+        // bootstrap) that can still be mid-flight and tear down the execution
+        // context right as postClearUser's page.evaluate() starts, producing
+        // "Execution context was destroyed, most likely because of a
+        // navigation". Only ever hit on a role page's FIRST navigation in
+        // this worker (a fresh page fixture never shows it) — reproduced
+        // deterministically in isolation, not a full-run accumulation fluke.
         await ownerPage.goto('/admin/');
+        await ownerPage.waitForSelector('table', { timeout: 12000 });
         const { status, body } = await postClearUser(ownerPage, {
             user_id: String(scratchId),
             confirm_login: SCRATCH_EMAIL,
@@ -218,7 +227,16 @@ test.describe('F-02: clearUser rejects confirm_login mismatch', () => {
     test('admin POST clearUser with WRONG confirm_login → 400, account NOT deleted', async ({ ownerPage }) => {
         if (!scratchId) { test.skip(); return; }
 
+        // Wait for the grid to actually render, not just the `load` event —
+        // the admin SPA does async client-side work after `load` (auth/CSRF
+        // bootstrap) that can still be mid-flight and tear down the execution
+        // context right as postClearUser's page.evaluate() starts, producing
+        // "Execution context was destroyed, most likely because of a
+        // navigation". Only ever hit on a role page's FIRST navigation in
+        // this worker (a fresh page fixture never shows it) — reproduced
+        // deterministically in isolation, not a full-run accumulation fluke.
         await ownerPage.goto('/admin/');
+        await ownerPage.waitForSelector('table', { timeout: 12000 });
         const { status, body } = await postClearUser(ownerPage, {
             user_id: String(scratchId),
             confirm_login: 'someone_else@irabi.test',
@@ -254,6 +272,7 @@ test.describe('F-02: moderator cannot call clearUser (owner-only)', () => {
         if (!scratchId) { test.skip(); return; }
 
         await moderatorPage.goto('/admin/');
+        await moderatorPage.waitForSelector('table', { timeout: 12000 });
         const { status } = await postClearUser(moderatorPage, {
             user_id: String(scratchId),
             confirm_login: SCRATCH_EMAIL,
@@ -286,6 +305,7 @@ test.describe('F-02: rank guard — moderator cannot clear owner/admin', () => {
     test('moderator POST clearUser on owner → 403, owner still exists', async ({ moderatorPage }) => {
         if (!ownerId) { test.skip(); return; }
         await moderatorPage.goto('/admin/');
+        await moderatorPage.waitForSelector('table', { timeout: 12000 });
         const { status } = await postClearUser(moderatorPage, {
             user_id: String(ownerId), confirm_login: OWNER_LOGIN,
         });
@@ -296,6 +316,7 @@ test.describe('F-02: rank guard — moderator cannot clear owner/admin', () => {
     test('moderator POST clearUser on admin → 403, admin still exists', async ({ moderatorPage }) => {
         if (!adminId) { test.skip(); return; }
         await moderatorPage.goto('/admin/');
+        await moderatorPage.waitForSelector('table', { timeout: 12000 });
         const { status } = await postClearUser(moderatorPage, {
             user_id: String(adminId), confirm_login: ADMIN_LOGIN,
         });

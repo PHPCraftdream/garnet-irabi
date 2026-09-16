@@ -72,7 +72,7 @@ function readDeployIni(): Record<string, string> {
 }
 
 let cachedRemoteDir: string | null = null;
-function remoteRuntimeDir(): string {
+export function remoteRuntimeDir(): string {
     if (cachedRemoteDir !== null) return cachedRemoteDir;
     const ini = readDeployIni();
     const remotePath = (process.env.PW_PROD_REMOTE_PATH ?? ini.remote_path ?? '').replace(/\/+$/, '');
@@ -86,22 +86,27 @@ function remoteRuntimeDir(): string {
 
 /**
  * Run one SQL statement on the remote box and return its JSON result.
- * The statement is base64-wrapped so neither the local nor the remote shell
- * has to quote arbitrary SQL — only `[A-Za-z0-9+/=]` crosses the wire.
+ *
+ * The statement travels as the child process's stdin, not as a command-line
+ * argument. `garnet ssh` runs in its default stream mode, which wires this
+ * process's own STDIN straight through to the remote command's STDIN over
+ * the SSH channel — the same plumbing `ssh host cmd < file` relies on — so
+ * `garnet sql --json` (which already reads its statement from stdin when
+ * none is given as an arg) receives it with no shell/argv involved at any
+ * hop. A prior version base64-embedded the SQL directly into the ssh argv;
+ * on a large bulk INSERT (many rows restored from a snapshot) that blew
+ * past the local Windows CreateProcess command-line limit (`ENAMETOOLONG`)
+ * or got truncated crossing the wire, surfacing on the remote as `bash: -c:
+ * line 1: syntax error: unexpected end of file`. Streaming has no such
+ * length limit — the payload is bytes on a pipe, not a shell token.
  */
 export function runRemoteSql(sql: string): { rows?: any[]; affected?: number } {
-    const b64 = Buffer.from(sql, 'utf8').toString('base64');
-    // Remote: decode the SQL and pipe it into `garnet sql --json` (which reads
-    // its statement from stdin when none is given as an arg). `--cd-remote`
-    // runs this inside remote_path, where the deployed `garnet` lives.
-    const remoteCmd = `echo ${b64} | base64 -d | php garnet sql --json`;
-
     let out: string;
     try {
         out = execFileSync(
             'php',
-            ['garnet', 'ssh', remoteCmd, `--cwd=${remoteRuntimeDir()}`, '--no-tty'],
-            { cwd: REPO_ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
+            ['garnet', 'ssh', 'php garnet sql --json', `--cwd=${remoteRuntimeDir()}`, '--no-tty'],
+            { cwd: REPO_ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, input: sql },
         );
     } catch (e: any) {
         const stderr = e?.stderr ? `\n${e.stderr}` : '';

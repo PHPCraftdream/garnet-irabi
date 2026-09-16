@@ -12,10 +12,20 @@
  * the code page mints + injects a token.
  */
 import { test, expect } from '@playwright/test';
+import { scopeHeaders } from '../../helpers/scoped-test';
 
 const BASE = process.env.BASE_URL || 'http://localhost:8001';
 const WORKER = process.env.TEST_PARALLEL_INDEX ?? '0';
-const HDR = { 'X-Test-Worker': WORKER };
+// #394: this spec builds its own request context instead of using
+// newScopedContext(), so it must stamp the isolation headers itself — a
+// context missing the prod token would write session/CSRF state into LIVE
+// tables instead of test_worker_0 (scopeHeaders() is a no-op outside PW_PROD).
+const HDR = scopeHeaders(WORKER);
+
+// #394: the spec deliberately uses a non-.test address (see below) to reach
+// the real code-entry phase — FwAppMailer only suppresses *.test wire-sends,
+// so under PW_PROD this would fire an actual email. Local-only.
+test.skip(process.env.PW_PROD === '1', 'sends a real auth email to a non-.test address — not safe against a live mail queue');
 
 test('code-phase auth page mints CSRF without a prior CSRF cookie (email-link sign-in)', async ({ playwright }) => {
     const ctx = await playwright.request.newContext({ baseURL: BASE, extraHTTPHeaders: HDR });
@@ -26,6 +36,8 @@ test('code-phase auth page mints CSRF without a prior CSRF cookie (email-link si
         expect(csrf, 'start-session returns a csrf token').toBeTruthy();
 
         // 2. Request a code → session advances to the code-entry phase.
+        // Deliberately non-.test — a .test address gets the dev/TestScope
+        // auto-login bypass and never reaches INPUT_CODE, defeating this spec.
         await ctx.post('/system/', { data: { auth_email: `csrftest_${WORKER}@example.com`, CSRF_TOKEN: csrf } });
 
         // Grab the session cookie so we can replay WITHOUT the CSRF cookie.

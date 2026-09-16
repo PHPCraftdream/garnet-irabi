@@ -27,12 +27,7 @@ import type { BrowserContext, Page } from '@playwright/test';
 import mysql from 'mysql2/promise';
 import { DB, withConnection } from '../helpers/db';
 import { roleLogin } from '../helpers/role-login';
-import { spawnSync } from 'child_process';
-import * as path from 'path';
-
-// Absolute path to Apps/IRabi — cwd for php run_cmd.php calls.
-// __dirname = Apps/IRabi/Tests/user → two levels up → Apps/IRabi
-const APP_DIR = path.resolve(__dirname, '../..');
+import { runServerCommand } from '../helpers/server-command';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -880,7 +875,8 @@ test.describe('Fix 7: cron complete-expired completes orphan confirmed booking; 
 		// php run_cmd.php honours DB_PREFIX_OVERRIDE to target the isolated
 		// test_worker_N tables — same mechanism as isolation-setup.ts::runCli().
 		//
-		// NOTE: spawnSync is used instead of execSync because the cron task
+		// NOTE: runServerCommand captures stdout/stderr even on a non-zero
+		// exit (unlike execSync, which would throw) because the cron task
 		// completes its real work (UPDATE bookings) before attempting to write
 		// to the `cron_log` table. That table does NOT exist in isolated test
 		// worker scopes (it is not part of the migrations run during isolation
@@ -890,12 +886,8 @@ test.describe('Fix 7: cron complete-expired completes orphan confirmed booking; 
 		// this by checking that stdout contains "Completed:" (printed by the
 		// task callback before the log write attempt).
 		const prefix = getDbPrefix();
-		const res = spawnSync('php', ['run_cmd.php', 'cron', 'complete-expired'], {
-			cwd: APP_DIR,
-			env: { ...process.env, DB_PREFIX_OVERRIDE: prefix },
-			encoding: 'utf8',
-		});
-		const out = (res.stdout ?? '') + (res.stderr ?? '');
+		const res = runServerCommand(['cron', 'complete-expired'], prefix);
+		const out = res.stdout + res.stderr;
 		console.log('[cron output]', out.trim());
 		// The task output line "Completed: X slots, Y bookings" confirms
 		// CronCompletionService ran. The subsequent log-write failure (exit 1)
@@ -1150,12 +1142,8 @@ test.describe('D-199: the money follows the words — an unanswered request is d
 
 	test('run real cron complete-expired', () => {
 		const prefix = getDbPrefix();
-		const res = spawnSync('php', ['run_cmd.php', 'cron', 'complete-expired'], {
-			cwd: APP_DIR,
-			env: { ...process.env, DB_PREFIX_OVERRIDE: prefix },
-			encoding: 'utf8',
-		});
-		const out = (res.stdout ?? '') + (res.stderr ?? '');
+		const res = runServerCommand(['cron', 'complete-expired'], prefix);
+		const out = res.stdout + res.stderr;
 		console.log('[cron output]', out.trim());
 		expect(out).toContain('Completed:');
 	});
@@ -1246,12 +1234,8 @@ test.describe('D-147: meeting link stays visible after the session (booked slot)
 
 	test('run real cron complete-expired', () => {
 		const prefix = getDbPrefix();
-		const res = spawnSync('php', ['run_cmd.php', 'cron', 'complete-expired'], {
-			cwd: APP_DIR,
-			env: { ...process.env, DB_PREFIX_OVERRIDE: prefix },
-			encoding: 'utf8',
-		});
-		const out = (res.stdout ?? '') + (res.stderr ?? '');
+		const res = runServerCommand(['cron', 'complete-expired'], prefix);
+		const out = res.stdout + res.stderr;
 		expect(out).toContain('Completed:');
 	});
 
