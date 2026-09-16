@@ -292,7 +292,7 @@ export class I18nDataEN {
     static Booking_Chat_Confirmed = 'Your booking for %s is confirmed.';
     static Booking_Chat_Declined = 'Your booking for %s was declined.';
     static Booking_Chat_Cancelled = 'Your booking for %s was cancelled.';
-    static Booking_Chat_LocationChanged = 'The meeting place for the session on %s has been updated — check your booking.';
+    static Booking_Chat_LocationChanged = 'The meeting place for the session on %s has changed — any link or address you received earlier in chat no longer works. Check your booking for the current one.';
     static Booking_Chat_Rescheduled = 'The lesson has been moved: it was %s, it is now %s.';
     static Booking_CannotCancelStarted = 'The lesson has started — the booking can no longer be cancelled. If it did not take place, write to support.';
     static General_Yes = 'Yes';

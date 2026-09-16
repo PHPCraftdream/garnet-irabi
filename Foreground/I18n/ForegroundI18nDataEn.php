@@ -325,7 +325,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Booking_Chat_Confirmed' => 'Your booking for %s is confirmed.',
             'Booking_Chat_Declined' => 'Your booking for %s was declined.',
             'Booking_Chat_Cancelled' => 'Your booking for %s was cancelled.',
-            'Booking_Chat_LocationChanged' => 'The meeting place for the session on %s has been updated — check your booking.',
+            'Booking_Chat_LocationChanged' => 'The meeting place for the session on %s has changed — any link or address you received earlier in chat no longer works. Check your booking for the current one.',
             'Booking_Chat_Rescheduled' => 'The lesson has been moved: it was %s, it is now %s.',
             'Booking_CannotCancelStarted' => 'The lesson has started — the booking can no longer be cancelled. If it did not take place, write to support.',
 

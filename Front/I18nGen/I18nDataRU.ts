@@ -291,7 +291,7 @@ export class I18nDataRU {
     static Booking_Chat_Confirmed = 'Ваша бронь на %s подтверждена.';
     static Booking_Chat_Declined = 'Ваша бронь на %s отклонена.';
     static Booking_Chat_Cancelled = 'Ваша бронь на %s отменена.';
-    static Booking_Chat_LocationChanged = 'Обновилось место встречи для занятия %s — посмотрите в своей брони.';
+    static Booking_Chat_LocationChanged = 'Место встречи для занятия %s изменилось — прежняя ссылка или адрес, которые вы получали раньше в переписке, больше не действительны. Актуальное место — в карточке брони.';
     static Booking_Chat_Rescheduled = 'Занятие перенесено: было %s, стало %s.';
     static Booking_CannotCancelStarted = 'Занятие началось — отменить бронь уже нельзя. Если оно не состоялось, напишите в поддержку.';
     static General_Yes = 'Да';
