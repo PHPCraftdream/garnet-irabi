@@ -106,11 +106,20 @@ export function runRemoteSql(sql: string): { rows?: any[]; affected?: number } {
         out = execFileSync(
             'php',
             ['garnet', 'ssh', 'php garnet sql --json', `--cwd=${remoteRuntimeDir()}`, '--no-tty'],
-            { cwd: REPO_ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, input: sql },
+            // `execFileSync` has no default timeout — a wedged SSH round-trip
+            // (network stall, remote process stuck) would block forever. Worse
+            // than a slow test: this call is SYNCHRONOUS, so it freezes the
+            // whole single-threaded Node event loop, including Playwright's
+            // own async per-test timeout timer — the run hangs with no
+            // recovery and no error, indistinguishable from a live process
+            // until manually killed. Bound it so a stuck round-trip surfaces
+            // as a normal thrown error instead.
+            { cwd: REPO_ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, input: sql, timeout: 30000 },
         );
     } catch (e: any) {
         const stderr = e?.stderr ? `\n${e.stderr}` : '';
-        throw new Error(`[ssh-bridge] remote SQL failed: ${e?.message ?? e}${stderr}\n  SQL: ${sql.slice(0, 200)}`);
+        const timeoutNote = e?.signal === 'SIGTERM' ? ' (timed out after 30s)' : '';
+        throw new Error(`[ssh-bridge] remote SQL failed${timeoutNote}: ${e?.message ?? e}${stderr}\n  SQL: ${sql.slice(0, 200)}`);
     }
 
     // The remote prints exactly one JSON line; tolerate banner noise by
