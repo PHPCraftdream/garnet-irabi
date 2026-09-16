@@ -20,6 +20,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
         public const TYPE_BOOKING_CONFIRMED = 'booking_confirmed';
         public const TYPE_BOOKING_REJECTED = 'booking_rejected';
         public const TYPE_BOOKING_CANCELLED = 'booking_cancelled';
+        public const TYPE_BOOKING_RESCHEDULED = 'booking_rescheduled';
         public const TYPE_SLOT_CANCELLED = 'slot_cancelled';
         public const TYPE_SUPPORT_REPLY = 'support_reply';
         public const TYPE_NEW_MESSAGE = 'new_message';

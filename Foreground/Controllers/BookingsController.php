@@ -626,12 +626,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             $recipientId = $account->id() === $studentId ? $expertId : $studentId;
 
             if ($recipientId > 0 && $oldStartAt > 0 && $newStartAt > 0) {
+                $actorName = $account->readParam('name') ?: ('#' . $account->id());
                 try {
                     BookingChatNotifier::rescheduled($account->id(), $recipientId, $oldStartAt, $newStartAt);
                 } catch (Throwable) {
                 }
                 try {
-                    $actorName = $account->readParam('name') ?: ('#' . $account->id());
                     EmailNotifications::bookingRescheduled(
                         $recipientId,
                         $oldStartAt,
@@ -640,6 +640,27 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                         $actorName,
                         (int)($newSlot['max_users'] ?? 1),
                     );
+                } catch (Throwable) {
+                }
+                // Same "лента событий" duty booking/cancel already carry —
+                // without this the only trace of a reschedule for the
+                // recipient is chat + email, and the news feed (D-113's
+                // lesson: events that skip the feed get "found" as bugs later).
+                try {
+                    // Either side can initiate a reschedule (unlike cancel,
+                    // which is always expert vs. user) — carry the actor's
+                    // role in the same user_id/expert_id shape booking_cancelled
+                    // already uses, so the feed can branch the wording the
+                    // same way.
+                    $isActorStudent = $account->id() === $studentId;
+                    NewsService::createPersonal(NewsService::TYPE_BOOKING_RESCHEDULED, $account->id(), $recipientId, [
+                        'booking_id' => $bookingId,
+                        'slot_id' => $targetSlotId,
+                        'user_id' => $isActorStudent ? $account->id() : null,
+                        'expert_id' => $isActorStudent ? null : $account->id(),
+                        'name' => $actorName,
+                        'time' => $newStartAt,
+                    ], NewsService::slotKey($targetSlotId));
                 } catch (Throwable) {
                 }
             }
