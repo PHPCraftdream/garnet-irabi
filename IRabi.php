@@ -577,6 +577,24 @@ namespace PHPCraftdream\IRabi {
             Mailer::setInstance(new AppMailer(Mailer::get()));
         }
 
+        /**
+         * Language is a product property for IRabi, not a deployment
+         * parameter — a fresh host/config that forgets `default_locale`
+         * must not silently fall back to Twig::resolveLocale()'s hardcoded
+         * 'en' (D-найдено 2026-09-15: maintenance page showed English on an
+         * all-Russian product because no app.ini ever set this key). Seed
+         * the app default here, after the ini loads but before any Twig
+         * render — `set()` only fills data the ini itself left absent, so
+         * an explicit `default_locale` in app.ini still wins.
+         */
+        protected function defineConfigs(): void {
+            parent::defineConfigs();
+            [, $hasLocale] = IniConfig::app()->paramWithFlag('default_locale');
+            if (!$hasLocale) {
+                IniConfig::app()->set('default_locale', 'ru');
+            }
+        }
+
         protected function defineTwigParams(): void {
             $lang = 'RU';
             FwI18n::getInstance()->setLang($lang);
