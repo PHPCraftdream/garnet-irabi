@@ -84,3 +84,4 @@ agents/_meta/**/locks/
 .gemini/
 .opencode/
 .dsh/
+/test-results/
