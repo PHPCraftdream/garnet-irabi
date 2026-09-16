@@ -109,8 +109,12 @@ export function remoteRuntimeDir(): string {
  * handle a duplicate key the mysql2 way keep working unmodified remotely.
  */
 function classifyMysqlError(message: string): { code?: string; errno?: number } {
-    const m = message.match(/\b(\d{3,5})\b\s+Duplicate entry/);
-    if (m) return { code: 'ER_DUP_ENTRY', errno: Number(m[1]) };
+    // The PHP exception text observed in practice is just "Duplicate entry
+    // '...' for key '...'" — no leading numeric code (that's a raw mysqli
+    // driver message shape, not what the app's DB layer wraps it as). Match
+    // the text itself; it's the one part of a duplicate-key message MySQL
+    // has never changed across versions.
+    if (/Duplicate entry/i.test(message)) return { code: 'ER_DUP_ENTRY', errno: 1062 };
 
     return {};
 }
