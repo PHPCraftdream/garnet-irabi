@@ -100,6 +100,49 @@ export function remoteRuntimeDir(): string {
  * line 1: syntax error: unexpected end of file`. Streaming has no such
  * length limit — the payload is bytes on a pipe, not a shell token.
  */
+/**
+ * `GarnetSqlCommand::run()` prints `{"error": "<PHP exception message>"}` to
+ * STDOUT and exits 1 on a SQL error (a real MySQL error, e.g. a duplicate
+ * key, isn't infra failure — it's the query's own outcome). mysql2 gives
+ * specs `.code`/`.errno` (e.g. `ER_DUP_ENTRY`/1062) to branch on; recover the
+ * same shape from the PHP exception text so bridge-driven specs that already
+ * handle a duplicate key the mysql2 way keep working unmodified remotely.
+ */
+function classifyMysqlError(message: string): { code?: string; errno?: number } {
+    const m = message.match(/\b(\d{3,5})\b\s+Duplicate entry/);
+    if (m) return { code: 'ER_DUP_ENTRY', errno: Number(m[1]) };
+
+    return {};
+}
+
+/**
+ * Scan output for the remote's one JSON line (tolerating banner noise) and
+ * either return the payload or throw a shaped MySQL error. Returns `null`
+ * when no JSON line is found at all, so the caller can fall back to its own
+ * "nothing here" message with the context it has (stdout vs. a failed
+ * process's captured stdout differ).
+ */
+function parseRemoteSqlOutput(out: string, sql: string): { rows?: any[]; affected?: number } | null {
+    const lines = out.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    for (let i = lines.length - 1; i >= 0; i--) {
+        try {
+            const parsed = JSON.parse(lines[i]);
+            if (parsed && typeof parsed === 'object') {
+                if ('error' in parsed) {
+                    const err: any = new Error(`[ssh-bridge] remote MySQL error: ${parsed.error}\n  SQL: ${sql.slice(0, 200)}`);
+                    Object.assign(err, classifyMysqlError(String(parsed.error)));
+                    throw err;
+                }
+                return parsed;
+            }
+        } catch (err) {
+            if (err instanceof Error && err.message.startsWith('[ssh-bridge]')) throw err;
+            // not JSON — keep scanning upward
+        }
+    }
+    return null;
+}
+
 export function runRemoteSql(sql: string): { rows?: any[]; affected?: number } {
     let out: string;
     try {
@@ -117,6 +160,18 @@ export function runRemoteSql(sql: string): { rows?: any[]; affected?: number } {
             { cwd: REPO_ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, input: sql, timeout: 30000 },
         );
     } catch (e: any) {
+        // `garnet sql --json` exits 1 on a SQL error but still PRINTS the
+        // `{"error": ...}` JSON to stdout before exiting — execFileSync's
+        // thrown error still carries that captured stdout. Parse it before
+        // falling back to a generic message, or a real MySQL error (e.g. a
+        // duplicate key a spec already knows how to handle) surfaces as an
+        // opaque "Command failed" instead of the shaped error it expects.
+        const stdout = typeof e?.stdout === 'string' ? e.stdout : (e?.stdout?.toString?.('utf8') ?? '');
+        if (stdout) {
+            const parsed = parseRemoteSqlOutput(stdout, sql); // throws the shaped MySQL error if `{"error": ...}` is there
+            if (parsed) return parsed; // shouldn't happen (exit 1 implies an error payload), but don't discard a real result
+        }
+
         const stderr = e?.stderr ? `\n${e.stderr}` : '';
         const timeoutNote = e?.signal === 'SIGTERM' ? ' (timed out after 30s)' : '';
         throw new Error(`[ssh-bridge] remote SQL failed${timeoutNote}: ${e?.message ?? e}${stderr}\n  SQL: ${sql.slice(0, 200)}`);
@@ -124,21 +179,8 @@ export function runRemoteSql(sql: string): { rows?: any[]; affected?: number } {
 
     // The remote prints exactly one JSON line; tolerate banner noise by
     // scanning for the last line that parses as JSON.
-    const lines = out.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-    for (let i = lines.length - 1; i >= 0; i--) {
-        try {
-            const parsed = JSON.parse(lines[i]);
-            if (parsed && typeof parsed === 'object') {
-                if ('error' in parsed) {
-                    throw new Error(`[ssh-bridge] remote MySQL error: ${parsed.error}\n  SQL: ${sql.slice(0, 200)}`);
-                }
-                return parsed;
-            }
-        } catch (err) {
-            if (err instanceof Error && err.message.startsWith('[ssh-bridge]')) throw err;
-            // not JSON — keep scanning upward
-        }
-    }
+    const parsed = parseRemoteSqlOutput(out, sql);
+    if (parsed) return parsed;
     throw new Error(`[ssh-bridge] no JSON in remote output:\n${out.slice(0, 500)}`);
 }
 
