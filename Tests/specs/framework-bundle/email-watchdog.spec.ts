@@ -139,9 +139,12 @@ test.describe('email-watchdog: recovers stuck `sending` rows on the next cron ti
         // formula. attempts 0→1 is the first failure → tier[0] = 60s. Bound
         // with a window (not an exact equality) to absorb the cron process's
         // own wall-clock time between `time()` inside PHP and our Node-side
-        // before/after reads.
-        expect(row.next_attempt_at!).toBeGreaterThanOrEqual(beforeRun + 60);
-        expect(row.next_attempt_at!).toBeLessThanOrEqual(afterRun + 60);
+        // before/after reads — plus, under PW_PROD, a few seconds of slack
+        // for clock skew between this machine and the remote box `time()`
+        // actually runs on (observed live: exactly 1s off with no slack).
+        const skew = 5;
+        expect(row.next_attempt_at!).toBeGreaterThanOrEqual(beforeRun + 60 - skew);
+        expect(row.next_attempt_at!).toBeLessThanOrEqual(afterRun + 60 + skew);
     });
 
     test('last-attempt sending row (attempts=2/max=3) → error, attempts=3, terminal (NULL)', async () => {
