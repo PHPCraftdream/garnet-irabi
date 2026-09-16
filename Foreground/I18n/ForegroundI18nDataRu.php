@@ -1038,6 +1038,15 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'News_BookingCancelledByUser_Action' => ': бронь на ',
             'News_BookingCancelledByUser_Link' => 'слот',
             'News_BookingCancelledByUser_Suffix' => ' отменена',
+            // D-193: перенос, как и отмена, асимметричен — переносит либо
+            // ученик, либо преподаватель, и текст называет именно того, кто
+            // это сделал (та же развилка по user_id/expert_id в payload).
+            'News_BookingRescheduled_Action' => ': ',
+            'News_BookingRescheduled_Link' => 'занятие',
+            'News_BookingRescheduled_Suffix' => ' перенесено на другое время',
+            'News_BookingRescheduledByUser_Action' => ': бронь на ',
+            'News_BookingRescheduledByUser_Link' => 'слот',
+            'News_BookingRescheduledByUser_Suffix' => ' перенесена на другое время',
             'News_SupportReply_Prefix' => 'Ответ от поддержки по тикету ',
             'News_NewMessage_Prefix' => 'Новое ',
             'News_NewMessage_Link' => 'сообщение',

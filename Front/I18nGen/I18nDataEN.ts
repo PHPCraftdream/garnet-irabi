@@ -838,6 +838,12 @@ export class I18nDataEN {
     static News_BookingCancelledByUser_Action = ' cancelled their booking on your ';
     static News_BookingCancelledByUser_Link = 'slot';
     static News_BookingCancelledByUser_Suffix = '';
+    static News_BookingRescheduled_Action = ' rescheduled your ';
+    static News_BookingRescheduled_Link = 'session';
+    static News_BookingRescheduled_Suffix = '';
+    static News_BookingRescheduledByUser_Action = ' rescheduled their booking on your ';
+    static News_BookingRescheduledByUser_Link = 'slot';
+    static News_BookingRescheduledByUser_Suffix = '';
     static News_SupportReply_Prefix = 'Support reply on ticket ';
     static News_NewMessage_Prefix = 'New ';
     static News_NewMessage_Link = 'message';

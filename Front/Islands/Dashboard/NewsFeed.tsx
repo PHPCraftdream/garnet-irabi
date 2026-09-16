@@ -64,6 +64,12 @@ function EventMessage({event, onBookSlot}: {event: NewsEvent; onBookSlot: (slotI
             return p.user_id
                 ? <><PersonLink id={p.user_id} name={p.name} />{t.News_BookingCancelledByUser_Action()}<a href={appUrl('/expert/~slots')} className={linkCls}>{t.News_BookingCancelledByUser_Link()}</a>{t.News_BookingCancelledByUser_Suffix()}</>
                 : <><PersonLink id={p.expert_id} name={p.name} isExpert />{t.News_BookingCancelled_Action()}<a href={appUrl('/bookings')} className={linkCls}>{t.News_BookingCancelled_Link()}</a>{t.News_BookingCancelled_Suffix()}</>;
+        case 'booking_rescheduled':
+            // Тот же расклад «кто есть в payload», что у booking_cancelled —
+            // перенести может любая сторона, и текст называет её.
+            return p.user_id
+                ? <><PersonLink id={p.user_id} name={p.name} />{t.News_BookingRescheduledByUser_Action()}<a href={appUrl('/expert/~slots')} className={linkCls}>{t.News_BookingRescheduledByUser_Link()}</a>{t.News_BookingRescheduledByUser_Suffix()}</>
+                : <><PersonLink id={p.expert_id} name={p.name} isExpert />{t.News_BookingRescheduled_Action()}<a href={appUrl('/bookings')} className={linkCls}>{t.News_BookingRescheduled_Link()}</a>{t.News_BookingRescheduled_Suffix()}</>;
         case 'comment_approved':
             return <>{t.News_CommentApproved_Prefix()}<PersonLink id={p.expert_id} name={p.name} isExpert />{t.News_CommentApproved_Suffix()}<a href={appUrl(`/expert/id~${p.expert_id}`)} className={linkCls}>{t.News_CommentApproved_Link()}</a></>;
         case 'support_reply':
@@ -84,6 +90,7 @@ function groupKey(event: NewsEvent): string | null {
         case 'booking_confirmed':
         case 'booking_rejected':
         case 'booking_cancelled':
+        case 'booking_rescheduled':
             if (p.expert_id && p.time) return `${event.event_type}:${p.expert_id}:${p.time}`;
             return null;
         case 'new_message':
@@ -125,7 +132,7 @@ function eventDetail(event: NewsEvent): string | null {
     const p = event.payload;
     if ((event.event_type === 'new_slot' || event.event_type === 'slot_booked' ||
          event.event_type === 'booking_confirmed' || event.event_type === 'booking_rejected' ||
-         event.event_type === 'booking_cancelled') && p.time) {
+         event.event_type === 'booking_cancelled' || event.event_type === 'booking_rescheduled') && p.time) {
         return t.News_LessonAt([formatTs(p.time)]) + (p.cost ? ` · ${p.cost}₽` : '');
     }
     return null;

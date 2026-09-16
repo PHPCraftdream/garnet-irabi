@@ -673,6 +673,77 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             ]);
         }
 
+        /**
+         * Candidate target slots for the reschedule modal — same expert, same
+         * cost, free, in the future. Read-only counterpart to post__reschedule's
+         * own validation (BookingRescheduleService), kept here rather than in
+         * the service since it's a listing query, not a mutation.
+         */
+        public static function post__rescheduleOptions(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
+            $account = Account::fromSession();
+            if (!$account) {
+                return ControllerTools::JSON(['error' => 'Not authenticated'], status: 401);
+            }
+
+            $bookingId = (int)$params->getUriParam('id');
+            $booking = Bookings::get()->selectById($bookingId);
+            if (!$booking || (string)$booking['bookable_type'] !== 'time_slot') {
+                return ControllerTools::JSON(['error' => static::rescheduleErrorText(BookingRescheduleService::ERR_NOT_FOUND)], status: 404);
+            }
+
+            $oldSlot = TimeSlots::get()->selectById((int)$booking['bookable_id']);
+            if (!$oldSlot) {
+                return ControllerTools::JSON(['error' => static::rescheduleErrorText(BookingRescheduleService::ERR_NOT_FOUND)], status: 404);
+            }
+
+            $studentId = (int)$booking['user_id'];
+            $expertId = (int)($oldSlot['expert_id'] ?? 0);
+            if ($account->id() !== $studentId && $account->id() !== $expertId) {
+                return ControllerTools::JSON(['error' => static::rescheduleErrorText(BookingRescheduleService::ERR_ACCESS)], status: 403);
+            }
+
+            $oldSlotId = (int)$oldSlot['id'];
+            $cost = (int)($oldSlot['cost'] ?? 0);
+            $now = time();
+
+            // Slots the student is already actively booked on would only fail
+            // ERR_ALREADY_BOOKED on submit — filter them out here so the list
+            // never offers a choice guaranteed to be refused.
+            $activeSlotIds = array_map(
+                static fn (array $b): int => (int)$b['bookable_id'],
+                Bookings::get()->selectAll(function (SelectInterface $q) use ($studentId): void {
+                    $q->where(
+                        "user_id = ? AND bookable_type = 'time_slot' AND status IN ('pending','confirmed')",
+                        [$studentId]
+                    );
+                })
+            );
+
+            $candidates = TimeSlots::get()->selectAll(function (SelectInterface $q) use ($expertId, $cost, $oldSlotId, $now): void {
+                $q->where(
+                    'expert_id = ? AND status = ? AND start_at > ? AND cost = ? AND id <> ?',
+                    [$expertId, 'free', $now, $cost, $oldSlotId]
+                );
+                $q->orderBy(['start_at ASC']);
+                $q->limit(50);
+            });
+
+            $options = [];
+            foreach ($candidates as $slot) {
+                $slotId = (int)$slot['id'];
+                if (in_array($slotId, $activeSlotIds, true)) {
+                    continue;
+                }
+                $options[] = [
+                    'id' => $slotId,
+                    'start_at' => (int)$slot['start_at'],
+                    'duration_min' => (int)$slot['duration_min'],
+                ];
+            }
+
+            return ControllerTools::JSON(['success' => true, 'options' => $options]);
+        }
+
         public static function post__cancel(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
             $account = Account::fromSession();
             if (!$account) {

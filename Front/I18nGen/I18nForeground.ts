@@ -844,6 +844,12 @@ class I18n extends I18nBase {
     News_BookingCancelledByUser_Action: t = (a = []) => this.t('News_BookingCancelledByUser_Action', a);
     News_BookingCancelledByUser_Link: t = (a = []) => this.t('News_BookingCancelledByUser_Link', a);
     News_BookingCancelledByUser_Suffix: t = (a = []) => this.t('News_BookingCancelledByUser_Suffix', a);
+    News_BookingRescheduled_Action: t = (a = []) => this.t('News_BookingRescheduled_Action', a);
+    News_BookingRescheduled_Link: t = (a = []) => this.t('News_BookingRescheduled_Link', a);
+    News_BookingRescheduled_Suffix: t = (a = []) => this.t('News_BookingRescheduled_Suffix', a);
+    News_BookingRescheduledByUser_Action: t = (a = []) => this.t('News_BookingRescheduledByUser_Action', a);
+    News_BookingRescheduledByUser_Link: t = (a = []) => this.t('News_BookingRescheduledByUser_Link', a);
+    News_BookingRescheduledByUser_Suffix: t = (a = []) => this.t('News_BookingRescheduledByUser_Suffix', a);
     News_SupportReply_Prefix: t = (a = []) => this.t('News_SupportReply_Prefix', a);
     News_NewMessage_Prefix: t = (a = []) => this.t('News_NewMessage_Prefix', a);
     News_NewMessage_Link: t = (a = []) => this.t('News_NewMessage_Link', a);

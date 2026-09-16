@@ -11,6 +11,7 @@ interface Props {
     onCancelOpen: (bookingId: number) => void;
     onConfirm: (bookingId: number) => void;
     onReject: (bookingId: number) => void;
+    onRescheduleOpen: (bookingId: number) => void;
 }
 
 /**
@@ -27,6 +28,7 @@ export const BookingCardActions: React.FC<Props> = ({
     onCancelOpen,
     onConfirm,
     onReject,
+    onRescheduleOpen,
 }) => {
     const isExpertView = viewAs === 'expert';
     const isPending = booking.status === 'pending';
@@ -67,6 +69,17 @@ export const BookingCardActions: React.FC<Props> = ({
                         onClick={() => onCancelOpen(booking.id)}
                     >
                         {actionLabel('user', booking.status)}
+                    </button>
+                )}
+                {/* D-193: тот же порог, что у отмены — переносить можно ровно
+                    то, что ещё можно отменить (не начавшееся, pending/confirmed). */}
+                {cancellable && (
+                    <button
+                        className="btn btn-sm btn-outline-secondary"
+                        data-test-id={`reschedule-btn-${booking.id}`}
+                        onClick={() => onRescheduleOpen(booking.id)}
+                    >
+                        {t.Reschedule_Action()}
                     </button>
                 )}
             </div>

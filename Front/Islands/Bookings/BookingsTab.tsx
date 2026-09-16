@@ -18,6 +18,7 @@ import {
     actionTitle,
 } from '../../Common/bookingAction';
 import {ReasonModal} from '../../Common/Components/ReasonModal';
+import {RescheduleModal} from './RescheduleModal';
 import {CancelRefundDetails} from './CancelRefundDetails';
 import {
     Booking,
@@ -115,6 +116,10 @@ const BookingsTab: React.FC<BookingsTabProps> = ({
 
     const [rejectBookingId, setRejectBookingId] = React.useState<number | null>(null);
     const {sending: rejectSending, withSending: withRejectSending} = useSending();
+
+    const [rescheduleBookingId, setRescheduleBookingId] = React.useState<number | null>(null);
+    const [rescheduleError, setRescheduleError] = React.useState<string | undefined>(undefined);
+    const {sending: rescheduleSending, withSending: withRescheduleSending} = useSending();
 
     const [confirmingId, setConfirmingId] = React.useState<number | null>(null);
 
@@ -257,6 +262,30 @@ const BookingsTab: React.FC<BookingsTabProps> = ({
         });
     };
 
+    const handleRescheduleSubmit = (slotId: number) => {
+        const bookingId = rescheduleBookingId;
+        setRescheduleError(undefined);
+        withRescheduleSending(async () => {
+            try {
+                const res = await sendPost<{slot_id: number}, {error?: string; message?: string}>(
+                    appUrl(`/bookings/id~${bookingId}/~reschedule`),
+                    {slot_id: slotId},
+                );
+                const data = ('data' in res && res.data) ? res.data : (res as unknown as {error?: string; message?: string});
+                if (data?.error) {
+                    setRescheduleError(data.error);
+                    return;
+                }
+                showToast(data?.message || t.Reschedule_Success(), 'success');
+                setRescheduleBookingId(null);
+                await refreshAfterAction();
+            } catch (err) {
+                D('booking.error', {action: 'reschedule', bookingId, error: err});
+                showToast(t.General_Error(), 'danger');
+            }
+        });
+    };
+
     const handleConfirm = async (bookingId: number) => {
         if (confirmingId !== null) return;
         setConfirmingId(bookingId);
@@ -346,6 +375,7 @@ const BookingsTab: React.FC<BookingsTabProps> = ({
                         onCancelOpen={setCancelBookingId}
                         onConfirm={handleConfirm}
                         onReject={setRejectBookingId}
+                        onRescheduleOpen={setRescheduleBookingId}
                         confirmingId={confirmingId}
                     />
                 ))}
@@ -380,6 +410,15 @@ const BookingsTab: React.FC<BookingsTabProps> = ({
                 testId="expert-reject-modal"
                 onSubmit={handleRejectSubmit}
                 onClose={() => setRejectBookingId(null)}
+            />
+
+            <RescheduleModal
+                open={rescheduleBookingId !== null}
+                bookingId={rescheduleBookingId}
+                sending={rescheduleSending}
+                error={rescheduleError}
+                onSubmit={handleRescheduleSubmit}
+                onClose={() => { setRescheduleBookingId(null); setRescheduleError(undefined); }}
             />
         </div>
     );

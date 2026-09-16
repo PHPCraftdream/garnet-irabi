@@ -52,6 +52,7 @@ export interface BookingCardProps {
     onCancelOpen: (bookingId: number) => void;
     onConfirm: (bookingId: number) => void;
     onReject: (bookingId: number) => void;
+    onRescheduleOpen: (bookingId: number) => void;
     confirmingId: number | null;
     /** Внутри группового занятия цену уже назвал заголовок группы — второй раз не повторяем. */
     hideCost?: boolean;
@@ -67,6 +68,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
     onCancelOpen,
     onConfirm,
     onReject,
+    onRescheduleOpen,
     confirmingId,
     hideCost = false,
 }) => {
@@ -138,6 +140,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
                     onCancelOpen={onCancelOpen}
                     onConfirm={onConfirm}
                     onReject={onReject}
+                    onRescheduleOpen={onRescheduleOpen}
                 />
             </div>
         </div>

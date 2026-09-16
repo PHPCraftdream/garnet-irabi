@@ -838,6 +838,12 @@ export class I18nDataRU {
     static News_BookingCancelledByUser_Action = ': бронь на ';
     static News_BookingCancelledByUser_Link = 'слот';
     static News_BookingCancelledByUser_Suffix = ' отменена';
+    static News_BookingRescheduled_Action = ': ';
+    static News_BookingRescheduled_Link = 'занятие';
+    static News_BookingRescheduled_Suffix = ' перенесено на другое время';
+    static News_BookingRescheduledByUser_Action = ': бронь на ';
+    static News_BookingRescheduledByUser_Link = 'слот';
+    static News_BookingRescheduledByUser_Suffix = ' перенесена на другое время';
     static News_SupportReply_Prefix = 'Ответ от поддержки по тикету ';
     static News_NewMessage_Prefix = 'Новое ';
     static News_NewMessage_Link = 'сообщение';

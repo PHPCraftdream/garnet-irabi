@@ -14,6 +14,7 @@ interface Props {
     onCancelOpen: (bookingId: number) => void;
     onConfirm: (bookingId: number) => void;
     onReject: (bookingId: number) => void;
+    onRescheduleOpen: (bookingId: number) => void;
     confirmingId: number | null;
 }
 
