@@ -35,7 +35,8 @@ export interface ServerCommandResult {
  * @param args argv passed to the app's command dispatch (e.g. `['cron', 'email-queue']`)
  * @param prefix `DB_PREFIX_OVERRIDE` value; omit to run without one (a
  *   handful of callers intentionally don't scope by worker — preserved as-is)
- * @param timeoutMs local-mode only, forwarded to `spawnSync`'s `timeout`
+ * @param timeoutMs forwarded to `spawnSync`'s `timeout`; defaults to 30s on
+ *   the remote branch (a wedged SSH round-trip must not hang the run forever)
  */
 export function runServerCommand(args: string[], prefix?: string, timeoutMs?: number): ServerCommandResult {
     if (!isProd()) {
@@ -81,7 +82,7 @@ export function runServerCommand(args: string[], prefix?: string, timeoutMs?: nu
     const res = spawnSync(
         'php',
         ['garnet', 'ssh', remoteCmd, `--cwd=${remoteRuntimeDir()}`, '--no-tty'],
-        { cwd: APP_ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
+        { cwd: APP_ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: timeoutMs ?? 30000 },
     );
 
     return { stdout: res.stdout ?? '', stderr: res.stderr ?? '', exitCode: res.status };
