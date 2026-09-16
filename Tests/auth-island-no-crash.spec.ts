@@ -36,7 +36,12 @@ test('auth island hydrates under concurrent load — no React #130', async ({ br
             // Logged-out /balance renders the Auth2 island (auth-login-input).
             await page.goto('/balance');
             // If the island crashed (#130) its input never renders → this fails too.
-            await expect(page.locator('[data-test-id="auth-login-input"]')).toBeVisible({ timeout: 15000 });
+            // 30s, not 15s: 8 truly concurrent PHP-FPM requests against a
+            // shared-hosting worker pool can legitimately queue past 15s under
+            // load — that's host contention, not the React #130 this test
+            // guards against. The regression signal is REACT_130 below, not
+            // this deadline.
+            await expect(page.locator('[data-test-id="auth-login-input"]')).toBeVisible({ timeout: 30000 });
             return errors;
         }));
 
