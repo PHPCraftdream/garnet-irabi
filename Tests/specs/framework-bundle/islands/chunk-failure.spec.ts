@@ -73,16 +73,30 @@ test.describe('createIsland: сорванный чанк', () => {
         // проверять нечего — честнее сказать это, чем утверждать неверное.
         test.skip(islandChunk === '', 'код островка не в отложенном чанке — повторять нечего');
         expect(islandChunk).toContain('.gen.js');
+
+        // Здоровая загрузка просит этот чанк ДВА раза: сначала предзагрузка
+        // из разметки, потом сам `import()`. Это не придирка к числу, а
+        // условие осмысленности проверок ниже: сорвав ровно один запрос,
+        // ничего не докажешь — импорт спокойно возьмёт второй, и островок
+        // смонтируется без всякого повтора. Поэтому дальше срываются первые
+        // ДВА запроса, а третий (повторная попытка) пропускается.
+        expect(seen.filter((u) => u === islandChunk)).toHaveLength(2);
     });
 
-    test('один сорванный запрос островок переживает', async () => {
+    test('сорванный import() островок переживает — повторной попыткой', async () => {
         test.skip(islandChunk === '', 'чанк островка не найден');
 
         const page = await ctx.newPage();
-        let aborts = 0;
+        let attempts = 0;
         await page.route(islandChunk, async (route) => {
-            if (aborts === 0) {
-                aborts++;
+            attempts++;
+
+            // Первые два запроса (предзагрузка и сам импорт) — мимо, третий
+            // пропускаем. Так проверка не зависит от порядка: третий запрос
+            // за этим чанком может появиться только как повтор из
+            // createIsland, и никак иначе. Со старым кодом третьего запроса
+            // не было бы вовсе, а островок не смонтировался бы.
+            if (attempts <= 2) {
                 await route.abort('failed');
 
                 return;
@@ -91,9 +105,8 @@ test.describe('createIsland: сорванный чанк', () => {
         });
 
         await page.goto(GUEST_PAGE);
-        // Смонтировался — значит повторная попытка импорта сработала.
         await expect(page.locator(ISLAND_INPUT)).toBeVisible({ timeout: 30000 });
-        expect(aborts, 'запрос чанка так и не был сорван — проверка ничего не проверила').toBe(1);
+        expect(attempts, 'повторной попытки импорта не было').toBe(3);
         await page.close();
     });
 
@@ -102,12 +115,17 @@ test.describe('createIsland: сорванный чанк', () => {
 
         const page = await ctx.newPage();
         const reports: string[] = [];
+        let attempts = 0;
         page.on('request', (r) => {
             if (r.url().includes('/js-error/~report')) {
                 reports.push(r.postData() ?? '');
             }
         });
-        await page.route(islandChunk, (route) => route.abort('failed'));
+        await page.route(islandChunk, (route) => {
+            attempts++;
+
+            return route.abort('failed');
+        });
 
         await page.goto(GUEST_PAGE);
 
@@ -116,6 +134,11 @@ test.describe('createIsland: сорванный чанк', () => {
         await expect.poll(() => reports.join('\n'), { timeout: 25000 }).toContain('did not mount');
         // И островка на экране действительно нет — ради этого и запись.
         await expect(page.locator(ISLAND_INPUT)).toBeHidden();
+
+        // Три запроса: предзагрузка, импорт и ОДИН повтор. Не два (значит
+        // повтор был) и не больше (значит попытка ровно одна, а не цикл,
+        // добивающий отказавший хост).
+        expect(attempts, 'повтор импорта либо не случился, либо ушёл в цикл').toBe(3);
         await page.close();
     });
 });
