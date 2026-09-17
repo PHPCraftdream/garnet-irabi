@@ -189,9 +189,16 @@ test.describe('Cross-role: booking + expert cancels + refund', () => {
 	test('step 3: expert balance increased by SLOT_COST', async () => {
 		if (!slotId) { test.skip(); return; }
 
-		const expertBalanceAfter = await getBalance(expertId);
-		expect(expertBalanceAfter).toBe(expertBalanceBefore + SLOT_COST);
-		console.log('Expert balance after booking:', expertBalanceAfter);
+		// Ждём значение, а не читаем один раз. Зачисление эксперту приходит
+		// после ответа на бронирование, и разовое чтение сразу после шага 2
+		// периодически попадало в окно до записи — проверка падала и
+		// проходила на повторе. Ожидаемая сумма та же, требование не
+		// ослаблено: изменилось только то, сколько мы готовы ждать.
+		await expect.poll(
+			async () => await getBalance(expertId),
+			{ timeout: 10000, message: 'баланс эксперта после бронирования' },
+		).toBe(expertBalanceBefore + SLOT_COST);
+		console.log('Expert balance after booking:', await getBalance(expertId));
 	});
 
 	// ── Step 4: Expert cancels booking with reason ──────────────────────────
