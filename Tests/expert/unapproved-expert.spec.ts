@@ -9,6 +9,7 @@
 
 import { test, expect, tn } from '../helpers/scoped-test';
 import mysql from 'mysql2/promise';
+import type { RowDataPacket } from 'mysql2/promise';
 import { DB } from '../helpers/db';
 
 test.describe.configure({ mode: 'serial' });
@@ -16,7 +17,7 @@ test.describe.configure({ mode: 'serial' });
 async function withConnCount(sql: string, params: unknown[]): Promise<number> {
     const conn = await mysql.createConnection(DB);
     try {
-        const [rows] = await conn.execute<any[]>(sql, params);
+        const [rows] = await conn.execute<RowDataPacket[]>(sql, params as unknown[] as any[]);
         return Number(rows[0]?.cnt ?? 0);
     } finally {
         await conn.end();

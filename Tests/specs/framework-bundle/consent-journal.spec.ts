@@ -13,6 +13,7 @@
  * short-circuits processPhaseNullPost before sendSuccessLogin ever runs, so
  * it can't exercise the journal. Pattern mirrors magic-link.spec.ts.
  */
+import type { RowDataPacket } from 'mysql2/promise';
 import { test, expect, tn } from '../../helpers/scoped-test';
 import { newScopedContext } from '../../helpers/scoped-test';
 import { withConnection } from '../../helpers/db';
@@ -60,7 +61,7 @@ async function getAccountId(email: string): Promise<number | null> {
 
 async function getConsentRows(accountId: number): Promise<ConsentRow[]> {
     return withConnection(async (conn) => {
-        const [rows] = await conn.execute<ConsentRow[]>(
+        const [rows] = await conn.execute<(ConsentRow & RowDataPacket)[]>(
             `SELECT consent_type, action, document_version, ip, user_agent
              FROM ${tn('consents')} WHERE account_id = ? ORDER BY id ASC`,
             [accountId],

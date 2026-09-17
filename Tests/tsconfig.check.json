@@ -1,0 +1,33 @@
+// Гейт типизации для ВСЕХ тестов.
+//
+// Существует потому, что tsconfig.json покрывает только specs/ и helpers/,
+// а Front-проверка приложения (tsconfig.tsgo.json) — только Front/**. То
+// есть каталоги user/, admin/, cross-role/, expert/, moderator/ и корневые
+// спеки не проверялись типами вообще: 429 файлов, о которых знал только
+// прогон. Забытый импорт в спеке доезжал до боевого прогона и выглядел там
+// как падение продукта.
+//
+// Режим не строгий — сознательно. Строгий даёт 1484 замечания на строках
+// вида `rows[0].cnt` (строки из базы типизированы как any) и требует
+// отдельной большой работы. Задача этого файла другая: ловить то, что
+// действительно ломает прогон, — неопределённые имена, оборванные импорты,
+// несовпадение сигнатур. Это ловится и без строгого режима.
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": false,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "types": ["node"],
+    "lib": ["ES2022", "DOM"]
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "test-results", "playwright-report", ".auth"]
+}

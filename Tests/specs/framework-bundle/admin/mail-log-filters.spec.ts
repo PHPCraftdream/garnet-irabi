@@ -20,12 +20,12 @@ const ROW_SEL = 'tbody tr:not(:has(td[colspan]))';
 
 async function dbExec(sql: string, params: unknown[] = []) {
 	const conn = await mysql.createConnection(DB);
-	try { await conn.execute(sql, params); } finally { await conn.end(); }
+	try { await conn.execute(sql, params as unknown[] as any[]); } finally { await conn.end(); }
 }
 
 async function dbQuery<T extends RowDataPacket>(sql: string, params: unknown[] = []): Promise<T[]> {
 	const conn = await mysql.createConnection(DB);
-	try { const [rows] = await conn.execute<T[]>(sql, params); return rows; }
+	try { const [rows] = await conn.execute<RowDataPacket[]>(sql, params as unknown[] as any[]); return rows as T[]; }
 	finally { await conn.end(); }
 }
 

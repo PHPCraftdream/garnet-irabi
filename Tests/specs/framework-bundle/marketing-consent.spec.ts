@@ -19,6 +19,7 @@
 import { test, expect, tn } from '../../helpers/scoped-test';
 import type { Page, BrowserContext } from '@playwright/test';
 import mysql from 'mysql2/promise';
+import type { RowDataPacket } from 'mysql2/promise';
 import { newScopedContext } from '../../helpers/scoped-test';
 import { DB } from '../../helpers/db';
 
@@ -117,7 +118,7 @@ interface ConsentRow {
 async function getMarketingConsentRows(id: number): Promise<ConsentRow[]> {
     const conn = await mysql.createConnection(DB);
     try {
-        const [rows] = await conn.execute<ConsentRow[]>(
+        const [rows] = await conn.execute<(ConsentRow & RowDataPacket)[]>(
             `SELECT consent_type, action, document_version, ip, user_agent
              FROM ${tn('consents')} WHERE account_id = ? AND consent_type = 'marketing' ORDER BY id ASC`,
             [id],

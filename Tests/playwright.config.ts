@@ -120,8 +120,11 @@ export default defineConfig({
 		// individually, but they shave the per-worker browser startup
 		// cost and remove background syncing/translation that can
 		// race with the test's own JS.
-		chromiumSandbox: false,
 		launchOptions: {
+			// chromiumSandbox стоял в `use` и не действовал вовсе:
+			// Playwright такой опции там не знает и молча её игнорирует.
+			// Настройка запуска браузера живёт в launchOptions.
+			chromiumSandbox: false,
 			args: [
 				'--disable-background-networking',
 				'--disable-background-timer-throttling',

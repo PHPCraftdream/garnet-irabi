@@ -367,7 +367,16 @@ function roleStateFile(workerIndex: number, role: string): string {
         : path.resolve(__dirname, '..', '.auth', `${role}.json`);
 }
 
-function makeRoleContextFixture(role: string) {
+/**
+ * Тип возврата объявлен явно, и это не формальность: Playwright ждёт
+ * КОРТЕЖ [функция, опции], а вывод типов даёт обычный массив с union'ом
+ * элементов — фикстура такой не принимает. Сказать `as const` тоже нельзя:
+ * получится readonly-кортеж, который не подходит по другой причине.
+ */
+function makeRoleContextFixture(role: string): [
+    (args: { browser: Browser }, use: (ctx: BrowserContext) => Promise<void>, workerInfo: any) => Promise<void>,
+    { scope: 'worker' },
+] {
     return [
         async ({ browser }: { browser: Browser }, use: (ctx: BrowserContext) => Promise<void>, workerInfo: any) => {
             recordCtxEvent(`${role}Context`);
@@ -376,8 +385,8 @@ function makeRoleContextFixture(role: string) {
             await use(ctx);
             await ctx.close();
         },
-        { scope: 'worker' as const },
-    ] as const;
+        { scope: 'worker' },
+    ];
 }
 
 // Note: Playwright's fixture runtime inspects the function signature
