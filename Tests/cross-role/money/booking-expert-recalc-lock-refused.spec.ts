@@ -110,19 +110,30 @@ test.describe('money: отказ пересчёта эксперту запис�
         await page.goto('/');
         await roleLogin(page, 'user');
 
+        // Те же фикстуры, в какие входит roleLogin: на проде роли 'expert' и
+        // 'user' — это expert1@dev.test и user1@dev.test (PROD_ROLE_LOGIN в
+        // helpers/auth/role-login.ts). Баланс должен принадлежать ИМЕННО тому
+        // аккаунту, чья сессия бронирует.
         expertId = Number((await sql(`SELECT id FROM ${tn('accounts')} WHERE login = ?`, ['expert1@dev.test']))[0]?.id ?? 0);
-        userId = Number((await sql(`SELECT id FROM ${tn('accounts')} WHERE login = ?`, ['testuser_setup_user@irabi.test']))[0]?.id ?? 0);
+        userId = Number((await sql(`SELECT id FROM ${tn('accounts')} WHERE login = ?`, ['user1@dev.test']))[0]?.id ?? 0);
         expect(expertId).toBeGreaterThan(0);
         expect(userId).toBeGreaterThan(0);
 
         await syncCache(expertId);
         await syncCache(userId);
 
-        // Денег покупателю — через журнал И кэш, чтобы они остались согласованы.
+        // Денег покупателю — через журнал, потом свести кэш.
+        //
+        // `ON DUPLICATE KEY UPDATE`, а не простой INSERT: у журнала есть
+        // уникальный ключ `uq_idempotent` по (account_id, entry_type,
+        // ref_type, ref_id), и второй `top_up` с теми же ref-полями падает с
+        // duplicate entry. Именно так эта проверка и упала на повторе: первый
+        // заход строку создал, beforeAll второго — уже нет.
         await sql(
             `INSERT INTO ${tn('balance_ledger')}
              (account_id, is_credit, amount, entry_type, ref_type, ref_id, note, created_at)
-             VALUES (?, 1, ?, 'top_up', '', 0, 'recalc-lock spec top-up', UNIX_TIMESTAMP())`,
+             VALUES (?, 1, ?, 'top_up', '', 0, 'recalc-lock spec top-up', UNIX_TIMESTAMP())
+             ON DUPLICATE KEY UPDATE amount = amount + VALUES(amount), created_at = UNIX_TIMESTAMP()`,
             [userId, SLOT_COST * 2],
         );
         await syncCache(userId);
@@ -146,12 +157,22 @@ test.describe('money: отказ пересчёта эксперту запис�
     test('бронь проходит, кэш эксперта отстаёт от журнала, и провал есть в логе', async () => {
         const page = ctx.pages()[0] ?? await ctx.newPage();
 
-        // CSRF и адрес брони отдаёт сам продукт — тем же вызовом, каким их
-        // берёт витрина слотов.
-        const dataResp = await page.request.post('/slots/~bookData', { form: { slot_id: slotId } });
-        expect(dataResp.status()).toBe(200);
+        // CSRF берём оттуда же, откуда его берёт фронт: startSession кладёт
+        // токен в `window.__GARNET_CSRF__`, а sendPost() добавляет его в
+        // каждый POST. Без него любой POST получает 403 — так этот заход и
+        // упал в первый раз.
+        await page.goto('/slots/');
+        await page.waitForFunction(() => Boolean((window as any).__GARNET_CSRF__), { timeout: 20000 });
+        const csrf = String(await page.evaluate(() => (window as any).__GARNET_CSRF__));
+        expect(csrf).toBeTruthy();
+
+        // Адрес брони отдаёт сам продукт — тем же вызовом, каким его берёт
+        // витрина слотов.
+        const dataResp = await page.request.post('/slots/~bookData', {
+            form: { slot_id: slotId, CSRF_TOKEN: csrf },
+        });
+        expect(dataResp.status(), await dataResp.text()).toBe(200);
         const data = await dataResp.json();
-        expect(data.csrf).toBeTruthy();
 
         const expertCacheBefore = await cachedBalance(expertId);
         const expertLedgerBefore = await ledgerSum(expertId);
@@ -166,7 +187,7 @@ test.describe('money: отказ пересчёта эксперту запис�
         expect(held, `держатель лока не поднялся: ${held}`).toContain('HELD lock');
 
         const bookResp = await page.request.post(String(data.bookUrl ?? '/slots/~book'), {
-            form: { CSRF_TOKEN: String(data.csrf), 'slot_ids[]': String(slotId) },
+            form: { CSRF_TOKEN: String(data.csrf ?? csrf), 'slot_ids[]': String(slotId) },
             timeout: 60000,
         });
 
@@ -179,13 +200,18 @@ test.describe('money: отказ пересчёта эксперту запис�
         expect(await ledgerSum(expertId)).toBe(expertLedgerBefore + SLOT_COST);
         expect(await cachedBalance(expertId)).toBe(expertCacheBefore);
 
-        // 3. И об этом есть запись. Логгер дедуплицирует одинаковый текст до
-        //    одной записи в день, поэтому утверждаем наличие, а не прирост.
-        const logFile = `WorkDir/Logs/$(date +%F)/ERROR_LOGGER-${LOG_CAT}.log`;
-        const logText = ssh(`cat ${logFile} 2>&1 || true`);
-        expect(logText, `в ${logFile} нет записи о провале пересчёта:\n${logText}`)
+        // 3. И об этом есть запись.
+        //
+        // Раскладка журнала ошибок: `WorkDir/LogJournal/Errors/<Y-m-d>/
+        // ERROR_LOGGER-<категория>-<хеш сообщения>.log` — хеш в имени и есть
+        // дедупликация (одинаковый текст за день пишется один раз), поэтому
+        // читаем по маске и утверждаем наличие, а не прирост.
+        const logGlob = `WorkDir/LogJournal/Errors/$(date +%F)/ERROR_LOGGER-${LOG_CAT}-*.log`;
+        const logText = ssh(`cat ${logGlob} 2>&1 || true`);
+        expect(logText, `в ${logGlob} нет записи о провале пересчёта:\n${logText}`)
             .toContain('SlotsController::post__book expert');
-        expect(logText).toContain(String(expertId));
+        expect(logText).toContain(`recalculate(${expertId})`);
+        expect(logText).toContain(`irabi_bal_${expertId}`);
     });
 
     test.afterAll(async () => {
