@@ -68,64 +68,6 @@
             "time": "2017-02-09T17:14:27+00:00"
         },
         {
-            "name": "aura/sql",
-            "version": "5.0.3",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/auraphp/Aura.Sql.git",
-                "reference": "fd7a6dd1c9d2a1da5754c50f287f8be8a27db0e7"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/auraphp/Aura.Sql/zipball/fd7a6dd1c9d2a1da5754c50f287f8be8a27db0e7",
-                "reference": "fd7a6dd1c9d2a1da5754c50f287f8be8a27db0e7",
-                "shasum": ""
-            },
-            "require": {
-                "ext-pdo": "*",
-                "php": ">=8.1",
-                "psr/log": "^1.0 || ^2.0 || ^3.0"
-            },
-            "require-dev": {
-                "pds/skeleton": "~1.0",
-                "phpunit/phpunit": "^9.5"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Aura\\Sql\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Aura.Sql Contributors",
-                    "homepage": "https://github.com/auraphp/Aura.Sql/contributors"
-                }
-            ],
-            "description": "A PDO extension that provides lazy connections, array quoting, query profiling, value binding, and convenience methods for common fetch styles. Because it extends PDO, existing code that uses PDO can use this without any changes to the existing code.",
-            "homepage": "https://github.com/auraphp/Aura.Sql",
-            "keywords": [
-                "mysql",
-                "pdo",
-                "pgsql",
-                "postgres",
-                "postgresql",
-                "sql server",
-                "sqlite",
-                "sqlserver",
-                "sqlsrv"
-            ],
-            "support": {
-                "issues": "https://github.com/auraphp/Aura.Sql/issues",
-                "source": "https://github.com/auraphp/Aura.Sql/tree/5.0.3"
-            },
-            "time": "2025-01-22T06:39:17+00:00"
-        },
-        {
             "name": "aura/sqlquery",
             "version": "3.0.0",
             "source": {
@@ -1173,21 +1115,20 @@
         },
         {
             "name": "phpcraftdream/garnet-framework",
-            "version": "v0.1.0-alpha85",
+            "version": "v0.1.0-alpha87",
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHPCraftdream/garnet-framework.git",
-                "reference": "6252c8f9c6454a857b8b7591cfd41f2c277d6f0b"
+                "reference": "31d7510a521c6f6f8a93b0e38cdc67c60806b0b2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHPCraftdream/garnet-framework/zipball/6252c8f9c6454a857b8b7591cfd41f2c277d6f0b",
-                "reference": "6252c8f9c6454a857b8b7591cfd41f2c277d6f0b",
+                "url": "https://api.github.com/repos/PHPCraftdream/garnet-framework/zipball/31d7510a521c6f6f8a93b0e38cdc67c60806b0b2",
+                "reference": "31d7510a521c6f6f8a93b0e38cdc67c60806b0b2",
                 "shasum": ""
             },
             "require": {
                 "aura/cli": "^2.2",
-                "aura/sql": "^5.0 || ^6.0",
                 "aura/sqlquery": "^3.0",
                 "ext-fileinfo": "*",
                 "ext-json": "*",
@@ -1251,7 +1192,7 @@
                 "issues": "https://github.com/PHPCraftdream/garnet-framework/issues",
                 "source": "https://github.com/PHPCraftdream/garnet-framework"
             },
-            "time": "2026-09-17T18:16:21+00:00"
+            "time": "2026-09-17T21:31:03+00:00"
         },
         {
             "name": "psr/clock",
