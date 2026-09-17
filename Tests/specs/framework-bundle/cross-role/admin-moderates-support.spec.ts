@@ -344,9 +344,15 @@ test.describe('Cross-role: admin moderates user support ticket', () => {
 
 		await userPage.locator(`[data-test-id="support-ticket-${ticketId}"]`).click();
 
-		// System message about status change should be visible (Russian)
-		// Multiple status change messages may exist — use .first()
-		await expect(userPage.locator('text=Статус изменён').first()).toBeVisible({ timeout: 5000 });
+		// Клиент должен увидеть, что обращение решено — но человеческими
+		// словами. Прежняя формулировка «Статус изменён: … → …» намеренно
+		// убрана (D-205: это язык нашей очереди, а не новость для человека),
+		// и с тех пор здесь проверялось поведение, которого у продукта уже
+		// нет. Падение не всплывало, потому что файл последовательный и до
+		// этой проверки прогон не доходил.
+		await expect(userPage.locator('text=Обращение решено').first()).toBeVisible({ timeout: 5000 });
+		// И заодно: внутреннего словаря в переписке быть не должно.
+		await expect(userPage.locator('text=Статус изменён')).toHaveCount(0);
 	});
 
 	// ── DB consistency ──────────────────────────────────────────────────────
