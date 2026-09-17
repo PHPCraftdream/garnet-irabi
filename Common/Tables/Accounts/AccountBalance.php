@@ -125,6 +125,56 @@ namespace PHPCraftdream\IRabi\Common\Tables\Accounts {
             );
         }
 
+        /**
+         * recalculate() для finally-блоков: наружу провал не выпускает, но и
+         * не исчезает.
+         *
+         * Зачем отдельный метод. В денежном пути пересчёт стоит в finally
+         * (SlotsController::post__book), а исключение из finally ЗАМЕНЯЕТ
+         * настоящий исход секции (семантика PHP): успешная бронь превратилась
+         * бы в 500 при уже записанных строках журнала. Поэтому глотать
+         * приходится — но раньше глоталось в `catch (Throwable) {}` без
+         * единой записи, и это худший из вариантов: кэш
+         * `account_balance.balance` остаётся прежним, журнал — уже с новой
+         * строкой, `getBalance()` (а значит и экран человека) читает кэш и
+         * показывает неверную сумму. Починить это некому: сверка
+         * (BalanceReconciliationService) только ОБНАРУЖИВАЕТ расхождение, а
+         * в самом запросе повтора нет — кэш выровняется лишь на следующей
+         * денежной операции по этому аккаунту. Реальный сценарий провала —
+         * не экзотика: `recalculate()` берёт именной лок с таймаутом
+         * LOCK_TIMEOUT_SECONDS и кидает AccountLockAcquireException, а лок
+         * по чужой вине может держаться долго (см. докблок releaseLock()).
+         *
+         * Так что: возвращаем признак успеха, а провал пишем в ERROR_LOGGER —
+         * тем же способом, что и releaseLock(). Запись дедуплицируется
+         * логгером до одной на день на одинаковый текст, поэтому в сообщение
+         * входят и место, и account_id: два разных аккаунта не сольются в
+         * одну строку. Второй след того же события — `cache_vs_ledger` в
+         * тике `finance-audit`; вместе они дают и факт, и масштаб.
+         *
+         * @param string $where место вызова, попадает в запись лога
+         * @return bool удалось ли пересчитать
+         */
+        public static function recalculateOrLog(int $accountId, string $where): bool {
+            try {
+                static::recalculate($accountId);
+
+                return true;
+            } catch (Throwable $e) {
+                try {
+                    Logger::get(Logger::ERROR_LOGGER)->write(
+                        'balance_recalc_failed',
+                        "{$where}: recalculate({$accountId}) failed — cached balance now disagrees with the ledger: "
+                        . ErrorCatcher::getExceptionStrResult($e),
+                    );
+                } catch (Throwable) {
+                    // Логгер недоступен — но исход секции важнее записи.
+                }
+
+                return false;
+            }
+        }
+
         protected static function lockNameFor(int $accountId): string {
             return 'irabi_bal_' . $accountId;
         }

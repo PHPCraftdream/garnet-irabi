@@ -23,7 +23,14 @@ import { spawnSync } from 'node:child_process';
 import * as path from 'node:path';
 import { isProd, remoteRuntimeDir } from './ssh-bridge';
 
-const APP_ROOT = path.resolve(__dirname, '..', '..', '..');
+/**
+ * Корень приложения. Экспортируется, чтобы проверкам, которым нужен `cwd`
+ * для `php garnet …`, не приходилось считать уровни каталогов от своего
+ * места: такой путь ломается при переезде файла молча — он указывает на
+ * СУЩЕСТВУЮЩИЙ каталог, просто не тот (за один переезд так сломалось 21
+ * место, D-216). Здесь уровни считаются один раз, от helpers/db.
+ */
+export const APP_ROOT = path.resolve(__dirname, '..', '..', '..');
 
 export interface ServerCommandResult {
     stdout: string;

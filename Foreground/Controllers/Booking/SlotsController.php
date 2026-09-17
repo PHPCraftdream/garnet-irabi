@@ -483,16 +483,23 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\Booking {
                     // Always reconcile balances from ledger, even if the loop above threw.
                     // Ledger contains booking_invoice rows for every booking actually inserted,
                     // so this is the authoritative final balance for both user and experts.
+                    // Провал пересчёта наружу не выпускаем (исключение из
+                    // finally заменило бы исход уже записанной брони), но и
+                    // не теряем: recalculateOrLog() пишет его в ERROR_LOGGER.
+                    // Без этого расхождение кэша с журналом оставалось
+                    // полностью немым — а у эксперта зачисление попадает в
+                    // кэш ТОЛЬКО через этот пересчёт (у покупателя есть ещё
+                    // прямой CAS-UPDATE выше).
                     foreach ($touchedExpertIds as $expertId => $_) {
-                        try {
-                            \PHPCraftdream\IRabi\Common\Tables\Accounts\AccountBalance::recalculate($expertId);
-                        } catch (Throwable) {
-                        }
+                        \PHPCraftdream\IRabi\Common\Tables\Accounts\AccountBalance::recalculateOrLog(
+                            $expertId,
+                            'SlotsController::post__book expert',
+                        );
                     }
-                    try {
-                        \PHPCraftdream\IRabi\Common\Tables\Accounts\AccountBalance::recalculate($accountId);
-                    } catch (Throwable) {
-                    }
+                    \PHPCraftdream\IRabi\Common\Tables\Accounts\AccountBalance::recalculateOrLog(
+                        $accountId,
+                        'SlotsController::post__book buyer',
+                    );
                 }
             } finally {
                 \PHPCraftdream\IRabi\Common\Tables\Accounts\AccountBalance::releaseAccountLock($accountId);
