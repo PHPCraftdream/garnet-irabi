@@ -185,18 +185,21 @@ test.describe('D-150: profile counters add up regardless of who cancelled', () =
 	// user_cancellations-only query even after the /user/id~X fix landed,
 	// which is exactly what a live persona caught (same numbers, different
 	// route). Same invariant, different URL.
-	test('own-profile page (/system/~profile) matches the same invariant', async () => {
+	test('own-profile page (/system/~profile) shows the same numbers as /user/id~N', async () => {
+		// Утверждение здесь — про согласие двух маршрутов, и именно его
+		// поймала живая персона: «те же числа, другой адрес». Прежняя
+		// формулировка проверяла тождество суммы категорий с общим числом —
+		// оно неверно (бронь в ожидании входит в «Всего» и ни в одну
+		// категорию, см. D-215), и падала на этом, а не на расхождении
+		// маршрутов. Заодно проверка была недостижима: файл
+		// последовательный, и до неё прогон не доходил.
+		await userPage.goto(`/user/id~${userId}`, { waitUntil: 'domcontentloaded' });
+		const onPublic = await readCounters(userPage);
+
 		await userPage.goto('/system/~profile', { waitUntil: 'domcontentloaded' });
+		const onOwn = await readCounters(userPage);
 
-		const readNum = async (testId: string): Promise<number> =>
-			parseInt((await userPage.locator(`[data-test-id="${testId}"]`).innerText()).trim(), 10);
-
-		const completed = await readNum('user-stat-completed');
-		const total = await readNum('user-stat-total');
-		const declines = await readNum('user-stat-declines');
-		const cancellations = await readNum('user-stat-cancellations');
-
-		expect(cancellations).toBeGreaterThanOrEqual(2);
-		expect(completed + declines + cancellations).toBe(total);
+		expect(onOwn).toEqual(onPublic);
+		expect(onOwn.cancellations).toBeGreaterThanOrEqual(2);
 	});
 });

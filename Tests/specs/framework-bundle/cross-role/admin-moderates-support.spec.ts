@@ -143,11 +143,16 @@ test.describe('Cross-role: admin moderates user support ticket', () => {
 		if (!ticketId) { test.skip(); return; }
 
 		await openAdminSupportQueue(adminPage);
+		await expect(adminPage.locator('[data-test-id="support-filter-all"]')).toBeVisible({ timeout: 8000 });
 
-		await Promise.all([
-			expect(adminPage.locator('[data-test-id="support-filter-all"]')).toBeVisible({ timeout: 8000 }),
-			expect(adminPage.locator(`[data-test-id="support-ticket-${ticketId}"]`)).toBeVisible({ timeout: 5000 }),
-		]);
+		// Очередь пагинирована по 10 строк и отсортирована по времени
+		// обновления: под полным прогоном соседние проверки создают более
+		// свежие обращения, и наше законно уходит со первой страницы.
+		// Утверждение здесь — «тикет есть в очереди», а не «он самый
+		// свежий», поэтому ищем его поиском, а не глазами по первой
+		// странице.
+		await adminPage.locator('[data-test-id="admin-grid-search"]').fill(TICKET_SUBJECT);
+		await expect(adminPage.locator(`[data-test-id="support-ticket-${ticketId}"]`)).toBeVisible({ timeout: 8000 });
 	});
 
 	// ── Step 3: Admin opens ticket and changes status ───────────────────────
