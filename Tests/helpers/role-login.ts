@@ -16,6 +16,7 @@
  */
 import { Page } from '@playwright/test';
 import { isProd } from './ssh-bridge';
+import { warmAntiBotCookie } from './anti-bot';
 
 /** Prod email login per role — mirrors DevLoginController's role→login map. */
 const PROD_ROLE_LOGIN: Record<string, string> = {
@@ -106,4 +107,8 @@ export async function roleLogin(page: Page, role: string): Promise<void> {
         }
     }
     await page.goto('/');
+    // Вход дважды чистит куки (см. clearCookies выше), унося вместе с ними и
+    // анти-бот куку хоста. Без этого первый же POST теста уходит в барьер, а
+    // проверка видит 200 от страницы-барьера вместо ответа приложения.
+    await warmAntiBotCookie(page.context());
 }
