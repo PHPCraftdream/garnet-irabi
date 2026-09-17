@@ -1,98 +1,37 @@
 /**
- * Cross-role: User books expert's slot, expert sees booking, user cancels
+ * Сквозная цепочка: пользователь бронирует слот, эксперт видит бронь,
+ * пользователь отменяет — и деньги возвращаются.
  *
- * Story:
- *   1. Expert creates a slot via UI (create-slot-modal)
- *   2. User browses /slots/, finds the slot, books it via BookingModal
- *   3. Expert sees slot status change to "booked" with user name
- *   4. User cancels booking via cancel modal with reason
- *   5. User verifies refund in /balance/
- *   6. Expert sees slot revert to "free"
- *
- * State machines exercised:
- *   TimeSlotSM: (new) -> free -> booked -> free
- *   BookingSM:  (new) -> pending -> cancelled
- *   BalanceSM:  balance - cost -> balance + cost (restored)
- *   LedgerSM:  +booking_invoice -> +booking_refund
+ * Часть разобранного user-expert-booking.spec.ts. Шаги идут по порядку и
+ * делят слот и бронь.
  */
 
-import { test, expect, tn } from '../helpers/scoped-test';
-import type { BrowserContext, Page } from '@playwright/test';
-import { resolveStorageStatePath } from '../helpers/state';
+import { test, expect, tn } from '../../helpers/scoped-test';
+import { newScopedContext } from '../../helpers/scoped-test';
+import { resolveStorageStatePath } from '../../helpers/state';
+import { DB } from '../../helpers/db';
 import mysql from 'mysql2/promise';
+import type { BrowserContext, Page } from '@playwright/test';
+import {
+    SLOT_COST,
+    getBalance,
+    getSlotStatus,
+    cleanupSlot,
+    getTomorrowStr,
+} from './helpers';
 
-import { newScopedContext } from '../helpers/scoped-test';
-import { DB } from '../helpers/db';
 test.describe.configure({ mode: 'serial' });
 
-const SLOT_COST = 1000;
-
+// Состояние цепочки живёт здесь, а не в helpers: helpers — инструменты,
+// а это то, что цепочка помнит о себе между шагами.
 let expertContext: BrowserContext;
 let userContext: BrowserContext;
 let expertPage: Page;
 let userPage: Page;
 
-// State shared across tests
 let createdSlotId = 0;
 let bookingId = 0;
 let userBalanceBefore = 0;
-
-// ── DB helpers ─────────────────────────────────────────────────────────────────
-
-async function getBalance(login: string): Promise<number> {
-	const conn = await mysql.createConnection(DB);
-	try {
-		const [rows] = await conn.execute<any[]>(
-			`SELECT ab.balance FROM ${tn('account_balance')} ab
-			 JOIN ${tn('accounts')} a ON a.id = ab.account_id
-			 WHERE a.login = ?`, [login]
-		);
-		return rows.length ? Number(rows[0].balance) : 0;
-	} finally { await conn.end(); }
-}
-
-async function getSlotStatus(slotId: number): Promise<string> {
-	const conn = await mysql.createConnection(DB);
-	try {
-		const [rows] = await conn.execute<any[]>(
-			`SELECT status FROM ${tn('time_slots')} WHERE id = ?`, [slotId]
-		);
-		return rows[0]?.status ?? 'unknown';
-	} finally { await conn.end(); }
-}
-
-async function getLedgerRefundCount(userLogin: string): Promise<number> {
-	const conn = await mysql.createConnection(DB);
-	try {
-		const [rows] = await conn.execute<any[]>(
-			`SELECT COUNT(*) as cnt FROM ${tn('balance_ledger')} bl
-			 JOIN ${tn('accounts')} a ON a.id = bl.account_id
-			 WHERE a.login = ? AND bl.entry_type = 'booking_refund'`, [userLogin]
-		);
-		return rows[0]?.cnt ?? 0;
-	} finally { await conn.end(); }
-}
-
-async function cleanupSlot(slotId: number): Promise<void> {
-	if (!slotId) return;
-	const conn = await mysql.createConnection(DB);
-	try {
-		await conn.execute(`DELETE FROM ${tn('user_cancellations')} WHERE slot_id = ?`, [slotId]);
-		await conn.execute(`DELETE FROM ${tn('balance_ledger')} WHERE ref_type = 'booking' AND ref_id IN (SELECT id FROM ${tn('bookings')} WHERE bookable_type = 'time_slot' AND bookable_id = ?)`, [slotId]);
-		await conn.execute(`DELETE FROM ${tn('bookings')} WHERE bookable_type = 'time_slot' AND bookable_id = ?`, [slotId]);
-		await conn.execute(`DELETE FROM ${tn('time_slots')} WHERE id = ?`, [slotId]);
-	} finally { await conn.end(); }
-}
-
-// ── Helpers ─────────────────────────────────────────────────────────────────
-
-function getTomorrowStr(): string {
-	const d = new Date();
-	d.setDate(d.getDate() + 1);
-	return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-// ── Tests ─────────────────────────────────────────────────────────────────────
 
 test.describe('Cross-role: user books slot, expert sees booking, user cancels', () => {
 
