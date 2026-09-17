@@ -86,7 +86,7 @@ Global POST protection remains present for authenticated routes: `EmailAuthMiddl
 
 | Finding | Current status | Evidence |
 |---|---|---|
-| F-08-01 expert confirmation can resurrect cancelled booking | **fixed** | `ExpertBookingsService::confirmBooking()` now uses `CasUpdate::exec('UPDATE ... WHERE id = ? AND status = ''pending''')` and returns 409 on `affected === 0`, `Foreground/Controllers/ExpertPanel/ExpertBookingsService.php:113-120`. Regression passed: `Tests/cross-role/confirm-cancelled-booking-race.spec.ts`. |
+| F-08-01 expert confirmation can resurrect cancelled booking | **fixed** | `ExpertBookingsService::confirmBooking()` now uses `CasUpdate::exec('UPDATE ... WHERE id = ? AND status = ''pending''')` and returns 409 on `affected === 0`, `Foreground/Controllers/Expert/ExpertPanel/ExpertBookingsService.php:113-120`. Regression passed: `Tests/cross-role/confirm-cancelled-booking-race.spec.ts`. |
 | F-08-02 `/slots~book` reports/notifies non-inserted slots after duplicate-key race | **fixed** | controller tracks `$createdBookingIds` and `$createdSlotIds`, skips notification/news deletion for non-created slots, and returns `booked_count => count($createdBookingIds)`, `Foreground/Controllers/SlotsController.php:331-358`, `:441-473`. Regression passed: `Tests/user/booking-race-booked-count.spec.ts`. |
 | F-08-03 moderator can remove owner/admin profile photo | **fixed** | `post__removeUserPhoto()` now calls `UserEntityConfig::actorMayActOn($userId)` before loading/moving photo fields, `Dashboard/Controllers/DashboardUsersController.php:231-235`. Regression passed in `Tests/moderator/security-rank-guard.spec.ts`. |
 | F-IM-01 `/im~send` bypasses recipient boundary | **fixed** | `ImController::post__send()` checks `canMessage(sender, recipient)` before `parent::post__send()`, `Foreground/Controllers/ImController.php:95-199`. Regression passed: `Tests/cross-role/im-send-allowlist.spec.ts`. |
@@ -135,7 +135,7 @@ Global POST protection remains present for authenticated routes: `EmailAuthMiddl
 
 - **Severity:** Low.
 - **Status:** **fixed** (2026-07-15). `UsersController::post__preview()` now anonymises disabled accounts via `AccountDisplay::isDisabled()`/`disabledName()` and suppresses their avatar + expertProfile; `ExpertSlotsService::userPreview()` drops the `name ?: login` fallback (returns `#{id}` when name is empty) and applies the same disabled-anonymisation. Regression: `Tests/cross-role/preview-disabled-anonymization.spec.ts` (4 tests). Was: duplicate/residual of `01-foreground-controllers.md` finding 3.
-- **Files/lines:** `Foreground/Controllers/UsersController.php:43-55` returns raw `name`; `Foreground/Controllers/ExpertPanel/ExpertSlotsService.php:178-182` returns `name ?: login`.
+- **Files/lines:** `Foreground/Controllers/UsersController.php:43-55` returns raw `name`; `Foreground/Controllers/Expert/ExpertPanel/ExpertSlotsService.php:178-182` returns `name ?: login`.
 - **Impact:** blocked/disabled account identity can be revealed where other surfaces use disabled-user anonymization. In the expert preview fallback this can disclose login/email when name is empty.
 - **Preconditions:** authenticated user/expert, known target account id; for expert preview, caller must be an expert and target must be reachable by that endpoint's booking/user checks.
 - **Exploit scenario:** authenticated user posts `user_id=<disabled account id>` to `/users/~preview` and receives real name instead of disabled placeholder; expert posts to `/expert/~userPreview` and can receive login as fallback.

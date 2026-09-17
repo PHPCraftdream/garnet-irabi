@@ -7,11 +7,11 @@ namespace PHPCraftdream\IRabi\Foreground\Params {
     use PHPCraftdream\Garnet\Kernel\Io\Http\Router\RouterUriParams;
     use PHPCraftdream\IRabi\Common\Tables\Booking\Bookings;
     use PHPCraftdream\IRabi\Common\Tables\Booking\TimeSlots;
-    use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardMainController;
-    use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardUsersController;
-    use PHPCraftdream\IRabi\Foreground\Controllers\BookingsController;
-    use PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanelController;
-    use PHPCraftdream\IRabi\Foreground\Controllers\SlotsController;
+    use PHPCraftdream\IRabi\Dashboard\Controllers\People\DashboardUsersController;
+    use PHPCraftdream\IRabi\Dashboard\Controllers\Shell\DashboardMainController;
+    use PHPCraftdream\IRabi\Foreground\Controllers\Booking\BookingsController;
+    use PHPCraftdream\IRabi\Foreground\Controllers\Booking\SlotsController;
+    use PHPCraftdream\IRabi\Foreground\Controllers\Expert\ExpertPanelController;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
     use PHPCraftdream\IRabi\IRabi;
 

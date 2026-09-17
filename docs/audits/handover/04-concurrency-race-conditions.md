@@ -138,7 +138,7 @@ foreach ($items as $item) {
 
 #### M-2. `ExpertBookingsService::cancelBooking()` — возврат `status = 'free'` без CAS-условия (низкий ущерб, но не соответствует паттерну, принятому в остальном коде)
 
-**Файл:** `Apps/IRabi/Foreground/Controllers/ExpertPanel/ExpertBookingsService.php`, строки 200-210.
+**Файл:** `Apps/IRabi/Foreground/Controllers/Expert/ExpertPanel/ExpertBookingsService.php`, строки 200-210.
 
 ```php
 $activeBookings = Bookings::get()->selectAll(...); // COUNT активных броней на слот

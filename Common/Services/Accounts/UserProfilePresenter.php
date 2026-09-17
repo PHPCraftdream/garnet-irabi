@@ -4,7 +4,7 @@ namespace PHPCraftdream\IRabi\Common\Services\Accounts {
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\DbAccount;
     use PHPCraftdream\IRabi\Common\Tables\Booking\Bookings;
-    use PHPCraftdream\IRabi\Foreground\Controllers\CommentsController;
+    use PHPCraftdream\IRabi\Foreground\Controllers\Comms\CommentsController;
     use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;
     use PHPCraftdream\IRabi\IRabi;
 

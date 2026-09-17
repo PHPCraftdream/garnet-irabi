@@ -73,8 +73,8 @@ Severity: **MEDIUM**.
 - `Apps/IRabi/IRabi.php:214-217`: `/expert/` защищён `expertOnly`, без `isApproved`.
 - `Apps/IRabi/Foreground/Middlewares/UserDataMiddleware.php:87-93`: `expertOnly()` проверяет только business role.
 - `Apps/IRabi/Foreground/Params/UserEntityConfig.php:154-155`: `isExpert()` равен `type === 'expert'`.
-- `Apps/IRabi/Foreground/Controllers/ExpertPanelController.php:84-121`: create/edit/delete slot endpoints доступны после `expertOnly`.
-- `Apps/IRabi/Foreground/Controllers/ExpertPanel/ExpertSlotsService.php:258-271`: создаётся `time_slots` row.
+- `Apps/IRabi/Foreground/Controllers/Expert/ExpertPanelController.php:84-121`: create/edit/delete slot endpoints доступны после `expertOnly`.
+- `Apps/IRabi/Foreground/Controllers/Expert/ExpertPanel/ExpertSlotsService.php:258-271`: создаётся `time_slots` row.
 - Invariant в документации ролей: `Apps/IRabi/docs/guides/product/roles.md:144-150` описывает approval перед доступом к `/expert`.
 
 Impact: неутверждённый expert может прямыми POST-запросами создавать и менять слоты, наполняя операционные таблицы и готовя слоты, которые станут публичными после approval. Бронирование таких слотов дополнительно блокируется проверкой approved active expert, поэтому прямого списания денег не найдено, но server-side gate не соответствует бизнес-инварианту approval.
@@ -102,8 +102,8 @@ Remediation:
 - Disabled-account deny стоит до role gates и idempotency: `Apps/IRabi/IRabi.php:198-210`, `Apps/IRabi/Foreground/Middlewares/UserDataMiddleware.php:78-85`.
 - Booking direct-ID guards: self-booking, past slot, unapproved/disabled expert, duplicate active booking и CAS seat reservation: `Apps/IRabi/Foreground/Controllers/SlotsController.php:242-325`, `:341-412`.
 - Capacity race guard: `TimeSlots::reserveSeat()` атомарно инкрементирует `booked_count` только при `booked_count < max_users`: `Apps/IRabi/Common/Tables/TimeSlots.php:27-31`.
-- User booking cancellation ограничен owner-or-moderator и CAS status transition: `Apps/IRabi/Foreground/Controllers/BookingsController.php:480-520`.
-- Expert booking actions проверяют ownership слота перед confirm/cancel: `Apps/IRabi/Foreground/Controllers/ExpertPanel/ExpertBookingsService.php:95-98`, `:152-155`, `:244-247`, `:316-319`.
+- User booking cancellation ограничен owner-or-moderator и CAS status transition: `Apps/IRabi/Foreground/Controllers/Booking/BookingsController.php:480-520`.
+- Expert booking actions проверяют ownership слота перед confirm/cancel: `Apps/IRabi/Foreground/Controllers/Expert/ExpertPanel/ExpertBookingsService.php:95-98`, `:152-155`, `:244-247`, `:316-319`.
 - Balance manual adjustment owner/admin-only, с target-rank guard и self-adjust deny: `Apps/IRabi/Dashboard/Controllers/DashboardFinanceController.php:340-366`.
 - Manual debit не уводит баланс ниже нуля: `Apps/IRabi/Dashboard/Controllers/DashboardFinanceController.php:382-399`.
 - Support user endpoints фильтруют tickets/messages по `account_id`; internal comments не отдаются user; attachment download дополнительно проверяет ticket ownership: `Apps/IRabi/vendor/phpcraftdream/garnet-framework/Bundle/Modules/Comms/Support/Controllers/FwSupportController.php:203-265`, `:335-383`, `:388-433`.

@@ -3,7 +3,7 @@
 Дата: 2026-07-17. Аудитор: независимая проверка перед финальной поставкой.
 Область: `Common/Tables/AccountBalance.php`, `Common/Tables/BalanceLedger.php`, `Common/Tables/Payments.php`,
 `Foreground/Controllers/BalanceController.php`, `Foreground/Controllers/SlotsController.php`,
-`Foreground/Controllers/BookingsController.php`, `Foreground/Controllers/ExpertPanel/*`,
+`Foreground/Controllers/Booking/BookingsController.php`, `Foreground/Controllers/Expert/ExpertPanel/*`,
 `Dashboard/Controllers/DashboardFinanceController.php`, `Dashboard/Controllers/DashboardBalancesController.php`,
 фреймворковые `FwAccountBalance` / `FwBalanceLedger` / `FwBalanceController` / `CasUpdate`
 (vendor-копия побайтно совпадает с `D:\dev\garnet\garnet-framework` — проверено `diff -r`),
@@ -51,7 +51,7 @@ UNIQUE-индексами на леджере (`uq_ledger_ref` из M_0002 и д
 
 **Файлы:**
 - `Foreground/Controllers/SlotsController.php:316-325` (CAS-списание totalCost), `:371-404` (вставка invoice/payment), `:428-442` (finally → recalculate)
-- `Foreground/Controllers/BookingsController.php:369-424, 440-442`
+- `Foreground/Controllers/Booking/BookingsController.php:369-424, 440-442`
 - `Dashboard/Controllers/DashboardFinanceController.php:391-418`
 - `vendor/phpcraftdream/garnet-framework/Bundle/Modules/Accounts/Balance/Tables/FwAccountBalance.php:42-57` (recalculate), `FwBalanceLedger.php:58-88` (addEntry → recalculate)
 
@@ -94,9 +94,9 @@ overdraft-инвариант в кэше: убрать пересборку кэ
 #### H-2. Отмена бронирования неидемпотентна по деньгам: сбой между сменой статуса и refund = безвозвратная потеря денег пользователя
 
 **Файлы:**
-- `Foreground/Controllers/BookingsController.php:511-557` — CAS `status='cancelled'` (513-516), ранний выход
+- `Foreground/Controllers/Booking/BookingsController.php:511-557` — CAS `status='cancelled'` (513-516), ранний выход
   «уже отменено — success» (518-521), и только ПОСЛЕ этого вставка refund-записей (549-556).
-- `Foreground/Controllers/ExpertPanel/ExpertBookingsService.php:167-187` (`cancelBooking`), `:269-300`
+- `Foreground/Controllers/Expert/ExpertPanel/ExpertBookingsService.php:167-187` (`cancelBooking`), `:269-300`
   (`cancelBookedSlot`), `:340-355` (`cancelSlot`) — та же схема: refund только в ветке `affected === 1`.
 
 **Суть.** Переход `pending/confirmed → cancelled` и запись возврата в леджер — две независимые операции без
@@ -124,10 +124,10 @@ overdraft-инвариант в кэше: убрать пересборку кэ
 #### H-3. Возврат считается от текущей цены слота, а не от суммы invoice; цена редактируема при активных бронированиях → создание/уничтожение денег
 
 **Файлы:**
-- `Foreground/Controllers/BookingsController.php:532-556` — `$cost = (int)($slot2['cost'] ?? 0)` читается
+- `Foreground/Controllers/Booking/BookingsController.php:532-556` — `$cost = (int)($slot2['cost'] ?? 0)` читается
   из слота В МОМЕНТ ОТМЕНЫ и передаётся в `computeRefundAmounts()`.
-- `Foreground/Controllers/ExpertPanel/ExpertBookingsService.php:178, 265, 335` — то же (`$slotCost = (int)$slot['cost']`).
-- `Foreground/Controllers/ExpertPanel/ExpertSlotsService.php:469-571` (`editSlot`) — редактирование
+- `Foreground/Controllers/Expert/ExpertPanel/ExpertBookingsService.php:178, 265, 335` — то же (`$slotCost = (int)$slot['cost']`).
+- `Foreground/Controllers/Expert/ExpertPanel/ExpertSlotsService.php:469-571` (`editSlot`) — редактирование
   разрешено при `status === 'free'` (477-479, CAS на 562), при этом **групповой слот с активными
   бронированиями остаётся `free`, пока не заполнен** (`booked_count < max_users` — статус `booked`
   выставляется только при заполнении, см. SlotsController:409-412). Смена `cost` не ротирует `uid`
@@ -199,7 +199,7 @@ UI/человек повторяет запрос → две записи `manua
 
 #### M-2. Обход штрафа за отмену: `previousStatus` читается до CAS
 
-**Файл:** `Foreground/Controllers/BookingsController.php:474-547`.
+**Файл:** `Foreground/Controllers/Booking/BookingsController.php:474-547`.
 `$previousStatus` берётся из SELECT (488), а CAS-отмена (513) принимает оба статуса
 (`IN ('pending','confirmed')`). Гонка: бронирование `pending`; пользователь запускает отмену; параллельно
 эксперт подтверждает (`ExpertBookingsService::confirmBooking`, CAS pending→confirmed). CAS-отмена
@@ -226,7 +226,7 @@ UI/человек повторяет запрос → две записи `manua
 
 #### M-4. TOCTOU в `deleteSlot`: удаление слота параллельно с бронированием → деньги пользователя пропадают без возврата
 
-**Файл:** `Foreground/Controllers/ExpertPanel/ExpertSlotsService.php:576-608`.
+**Файл:** `Foreground/Controllers/Expert/ExpertPanel/ExpertSlotsService.php:576-608`.
 Проверка «нет активных бронирований» (592-600) и `deleteById` (602) не атомарны. Параллельное
 бронирование, прошедшее `reserveSeat` + INSERT + списание в этом окне, оставляет: слот удалён, бронирование
 `pending` живо, invoice списан. Дальше `post__cancel` читает слот (`selectById` → null), `$cost = 0`

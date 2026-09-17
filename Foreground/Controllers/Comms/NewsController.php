@@ -1,0 +1,14 @@
+<?php declare(strict_types=1);
+
+namespace PHPCraftdream\IRabi\Foreground\Controllers\Comms {
+    use PHPCraftdream\Garnet\Bundle\Modules\Content\News\Controllers\FwNewsController;
+    use PHPCraftdream\IRabi\Common\Services\Content\NewsService;
+
+    class NewsController extends FwNewsController {
+        public const URL = '/news';
+
+        protected static function newsService(): string {
+            return NewsService::class;
+        }
+    }
+}

@@ -1,0 +1,801 @@
+<?php declare(strict_types=1);
+
+/**
+ * Сервис управления слотами эксперта: создание, редактирование, пакетное создание, удаление.
+ */
+
+namespace PHPCraftdream\IRabi\Foreground\Controllers\Expert\ExpertPanel {
+    use Aura\SqlQuery\Common\SelectInterface;
+    use PHPCraftdream\Garnet\Bundle\Support\Utils\RenderIsland;
+    use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
+    use PHPCraftdream\Garnet\Kernel\Db\Link\CasUpdate;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Core\IGlobalReqParams;
+    use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
+    use PHPCraftdream\IRabi\Common\Services\Accounts\AccountDisplay;
+    use PHPCraftdream\IRabi\Common\Services\Comms\BookingChatNotifier;
+    use PHPCraftdream\IRabi\Common\Services\Content\NewsService;
+    use PHPCraftdream\IRabi\Common\Support\Calendar\SlotDateFilter;
+    use PHPCraftdream\IRabi\Common\System\AppSettings;
+    use PHPCraftdream\IRabi\Common\System\DateUtils;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\Bookings;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\TimeSlots;
+    use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
+    use PHPCraftdream\IRabi\IRabi;
+    use Throwable;
+
+    class ExpertSlotsService {
+        /**
+         * Страница управления слотами эксперта.
+         *
+         * @param callable(string): string $renderContent
+         */
+        public static function slotsPage(IGlobalReqParams $globals, Account $account, callable $renderContent): mixed {
+            $accountId = $account->id();
+            $slots = TimeSlots::get()->selectByField('expert_id', $accountId, function (SelectInterface $query): void {
+                $query->orderBy(['start_at ASC']);
+            });
+
+            // Enrich booked slots with user info
+            $bookedSlotIds = [];
+            foreach ($slots as $s) {
+                if ($s['status'] === 'booked') {
+                    $bookedSlotIds[] = (int)$s['id'];
+                }
+            }
+
+            $userMap = []; // slotId => ['user_id' => ..., 'user_name' => ...]
+            if (!empty($bookedSlotIds)) {
+                $bookings = Bookings::get()->selectAll(function (SelectInterface $q) use ($bookedSlotIds): void {
+                    $q->where('bookable_type = ?', ['time_slot']);
+                    $q->where('bookable_id IN (?)', [array_map('intval', $bookedSlotIds)]);
+                    $q->where("status IN ('pending','confirmed')");
+                });
+
+                $userIds = array_unique(array_filter(array_map(fn ($b) => (int)$b['user_id'], $bookings)));
+                $users = [];
+                if (!empty($userIds)) {
+                    $accs = Account::getAccounts(
+                        selectCallback: static function (SelectInterface $select) use ($userIds): void {
+                            $select->resetCols();
+                            $select->cols(['id', 'name', 'login']);
+                            $select->where('id IN (?)', [array_map('intval', $userIds)]);
+                        },
+                    );
+                    foreach ($accs as $a) {
+                        $users[(int)$a['id']] = $a;
+                    }
+                }
+
+                $disabledUserIds = AccountDisplay::disabledIds(array_values($userIds));
+                foreach ($bookings as $b) {
+                    $slotId = (int)$b['bookable_id'];
+                    $sid = (int)$b['user_id'];
+                    if (isset($disabledUserIds[$sid])) {
+                        $userName = AccountDisplay::disabledName($sid);
+                    } else {
+                        $acc = $users[$sid] ?? null;
+                        $userName = $acc ? ($acc['name'] ?: $acc['login']) : '';
+                    }
+                    $userMap[$slotId] = [
+                        'user_id' => $sid,
+                        'user_name' => $userName,
+                        'booking_id' => (int)$b['id'],
+                        'booking_status' => $b['status'],
+                    ];
+                }
+            }
+
+            // Merge user info into slots
+            foreach ($slots as &$slot) {
+                $sid = (int)$slot['id'];
+                if (isset($userMap[$sid])) {
+                    $slot['user_id'] = $userMap[$sid]['user_id'];
+                    $slot['user_name'] = $userMap[$sid]['user_name'];
+                    $slot['booking_id'] = $userMap[$sid]['booking_id'];
+                    $slot['booking_status'] = $userMap[$sid]['booking_status'];
+                }
+            }
+            unset($slot);
+
+            $content = RenderIsland::render('expert-slots', [
+                'slots' => array_values($slots),
+                'slotFieldsInfo' => ExpertHelpers::slotFieldsInfo(),
+                'currentAccountId' => $accountId,
+                'isApproved' => $account->isApproved(),
+                'messagesUrl' => IRabi::url('/im/~messages'),
+                'sendUrl' => IRabi::url('/im/~send'),
+                'quickChatUrl' => IRabi::url('/im/~quickChat'),
+                'userPreviewUrl' => IRabi::url('/expert/~userPreview'),
+                'defaultPenaltyPercent' => AppSettings::cancellationPenaltyPercent(),
+            ]);
+
+            return $renderContent($content);
+        }
+
+        /**
+         * Быстрый предпросмотр профиля пользователя, забронировавшего слот.
+         */
+        public static function userPreview(IGlobalReqParams $globals, Account $account): mixed {
+            $expertId = $account->id();
+            $userId = (int)$globals->readPostValue('user_id', '0');
+
+            if (!$userId) {
+                return ControllerTools::JSON(['error' => 'Invalid params'], status: 400);
+            }
+
+            // Returned data is non-sensitive (id + name + per-expert stats);
+            // login is never exposed. Same info is visible on the public profile.
+            // Stats are scoped to this expert's slots; 0 if expert has none.
+            $expertSlotIds = array_column(
+                TimeSlots::get()->selectByField('expert_id', $expertId),
+                'id'
+            );
+
+            // Get user account info
+            $userAccs = Account::getAccounts(
+                selectCallback: static function (SelectInterface $select) use ($userId): void {
+                    $select->resetCols();
+                    $select->cols(['id', 'name', 'login']);
+                    $select->where('id = ?', [$userId]);
+                },
+            );
+            $userAcc = $userAccs[0] ?? null;
+            if (!$userAcc) {
+                return ControllerTools::JSON(['error' => 'User not found'], status: 404);
+            }
+
+            // Stats: completed sessions (completed bookings on expert's slots)
+            $completedBookings = 0;
+            $totalBookings = 0;
+            if (!empty($expertSlotIds)) {
+                $completedRows = Bookings::get()->selectAll(function (SelectInterface $q) use ($expertSlotIds, $userId): void {
+                    $q->resetCols()->cols(['COUNT(*) as cnt']);
+                    $q->where('bookable_type = ?', ['time_slot']);
+                    $q->where('bookable_id IN (?)', [array_map('intval', $expertSlotIds)]);
+                    $q->where('user_id = ?', [$userId]);
+                    $q->where('status = ?', ['completed']);
+                });
+                $completedBookings = (int)($completedRows[0]['cnt'] ?? 0);
+
+                $totalRows = Bookings::get()->selectAll(function (SelectInterface $q) use ($expertSlotIds, $userId): void {
+                    $q->resetCols()->cols(['COUNT(*) as cnt']);
+                    $q->where('bookable_type = ?', ['time_slot']);
+                    $q->where('bookable_id IN (?)', [array_map('intval', $expertSlotIds)]);
+                    $q->where('user_id = ?', [$userId]);
+                });
+                $totalBookings = (int)($totalRows[0]['cnt'] ?? 0);
+            }
+
+            // Cancellations by user on expert's slots
+            $cancelledRows = Bookings::get()->selectAll(function (SelectInterface $q) use ($expertSlotIds, $userId): void {
+                $q->resetCols()->cols(['COUNT(*) as cnt']);
+                $q->where('bookable_type = ?', ['time_slot']);
+                $q->where('bookable_id IN (?)', [array_map('intval', $expertSlotIds)]);
+                $q->where('user_id = ?', [$userId]);
+                $q->where('status = ?', ['cancelled']);
+            });
+            $userCancellations = (int)($cancelledRows[0]['cnt'] ?? 0);
+
+            // Never fall back to login/email as a display name — that would leak
+            // the account's login handle. Disabled accounts are anonymised with the
+            // shared "Пользователь #{id} отключён" placeholder, consistent with
+            // every other user-facing surface.
+            if (AccountDisplay::isDisabled($userId)) {
+                $displayName = AccountDisplay::disabledName($userId);
+            } else {
+                $displayName = trim((string)($userAcc['name'] ?? ''));
+                if ($displayName === '') {
+                    $displayName = '#' . $userId;
+                }
+            }
+
+            return ControllerTools::JSON([
+                'user' => [
+                    'id' => (int)$userAcc['id'],
+                    'name' => $displayName,
+                    'completedBookings' => $completedBookings,
+                    'totalBookings' => $totalBookings,
+                    'userCancellations' => $userCancellations,
+                ],
+            ]);
+        }
+
+        /**
+         * Создание одиночного слота.
+         */
+        public static function createSlot(IGlobalReqParams $globals, Account $account): mixed {
+            $date = $globals->readPostValue('date');
+            $time = $globals->readPostValue('time');
+            $duration = (int)$globals->readPostValue('duration', 60);
+            $cost = (int)$globals->readPostValue('cost', 0);
+            $isOnline = (int)$globals->readPostValue('is_online', 1);
+            $location = $globals->readPostValue('location', '');
+            $maxUsers = max(1, (int)$globals->readPostValue('max_users', 1));
+
+            $penaltyRaw = $globals->readPostValue('cancellation_penalty_percent');
+            if ($penaltyRaw === null || $penaltyRaw === '') {
+                $penaltyPercent = AppSettings::cancellationPenaltyPercent();
+            } else {
+                $penaltyPercent = max(0, min(100, (int)$penaltyRaw));
+            }
+
+            if (!$date || !$time) {
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_DateTimeRequired()], status: 400);
+            }
+
+            if ($cost < 0) {
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_InvalidCost()], status: 400);
+            }
+
+            $expertTz = $account->readParam('time_zone') ?: 'UTC';
+            $startAt = DateUtils::parseUserDateTime($date, $time, $expertTz);
+            if ($startAt <= 0) {
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_InvalidDateTime()], status: 400);
+            }
+            if ($startAt < time()) {
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_PastSlot()], status: 400);
+            }
+            $endAt = $startAt + $duration * 60;
+
+            // Overlap check
+            $t = ForegroundI18n::getInstance();
+            $overlap = ExpertHelpers::findOverlap($account->id(), $startAt, $endAt);
+            if ($overlap !== null) {
+                return ControllerTools::JSON([
+                    'error' => $t->Slot_OverlapError(),
+                    'overlap' => true,
+                ], status: 400);
+            }
+
+            $slotId = TimeSlots::get()->insert([
+                'expert_id' => $account->id(),
+                'start_at' => $startAt,
+                'end_at' => $endAt,
+                'duration_min' => $duration,
+                'cost' => $cost,
+                'is_online' => $isOnline,
+                'location' => $location,
+                'max_users' => $maxUsers,
+                'status' => 'free',
+                'uid' => TimeSlots::generateUid(),
+                'created_at' => time(),
+                'cancellation_penalty_percent' => $penaltyPercent,
+            ]);
+
+            // News: broadcast new slot (only for approved experts)
+            $expertName = ($account->readParam('name') ?: ('#' . $account->id()));
+            if ($account->isApproved()) {
+                NewsService::createBroadcast(NewsService::TYPE_NEW_SLOT, $account->id(), [
+                    'slot_id' => (int)$slotId,
+                    'expert_id' => $account->id(),
+                    'name' => $expertName,
+                    'time' => $startAt,
+                    'cost' => $cost,
+                ], NewsService::slotKey((int)$slotId));
+            }
+
+            return ControllerTools::JSON([
+                'success' => true,
+                'slot_id' => $slotId,
+                'slot' => [
+                    'id' => (int)$slotId,
+                    'start_at' => $startAt,
+                    'end_at' => $endAt,
+                    'duration_min' => $duration,
+                    'cost' => $cost,
+                    'status' => 'free',
+                    'max_users' => $maxUsers,
+                    'cancellation_penalty_percent' => $penaltyPercent,
+                ],
+            ]);
+        }
+
+        /**
+         * Предпросмотр пакетного создания слотов: анализ диапазона дат.
+         */
+        public static function batchPreview(IGlobalReqParams $globals, Account $account): mixed {
+            $startDate = $globals->readPostValue('start_date');
+            $endDate = $globals->readPostValue('end_date');
+            $count = (int)$globals->readPostValue('count', 4);
+            $duration = (int)$globals->readPostValue('duration', 60);
+
+            if (!$startDate || !$endDate) {
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_RangeRequired()], status: 400);
+            }
+
+            $expertTz = $account->readParam('time_zone') ?: 'UTC';
+            $rangeStart = DateUtils::startOfDayForUser($startDate, $expertTz);
+            $rangeEnd = DateUtils::endOfDayForUser($endDate, $expertTz);
+            if ($rangeStart <= 0 || $rangeEnd <= 0) {
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_InvalidDateTime()], status: 400);
+            }
+
+            $analysis = SlotDateFilter::analyzeDateRange($startDate, $endDate);
+            $proposed = SlotDateFilter::distributeSlots($analysis['available'], $count);
+
+            $existing = TimeSlots::get()->selectByField('expert_id', $account->id(), function (SelectInterface $q) use ($rangeStart, $rangeEnd): void {
+                $q->where('start_at >= ? AND start_at <= ?', [$rangeStart, $rangeEnd]);
+                $q->where("status != 'cancelled'");
+            });
+
+            $existingSlots = ExpertHelpers::formatExistingItems($existing, $expertTz);
+
+            return ControllerTools::JSON([
+                'availableDates' => $analysis['available'],
+                'restrictedDates' => $analysis['restricted'],
+                'proposedDates' => $proposed,
+                'existingSlots' => $existingSlots,
+                'totalAvailable' => count($analysis['available']),
+                'totalRestricted' => count($analysis['restricted']),
+            ]);
+        }
+
+        /**
+         * Пакетное создание слотов с проверкой пересечений.
+         */
+        public static function batchSlots(IGlobalReqParams $globals, Account $account): mixed {
+            $slotsJson = $globals->readPostValue('slots');
+            $cost = (int)$globals->readPostValue('cost', 500);
+            $maxUsers = max(1, (int)$globals->readPostValue('max_users', 1));
+            $isOnline = (int)$globals->readPostValue('is_online', 1);
+            $location = (string)$globals->readPostValue('location', '');
+
+            $penaltyRaw = $globals->readPostValue('cancellation_penalty_percent');
+            if ($penaltyRaw === null || $penaltyRaw === '') {
+                $penaltyPercent = AppSettings::cancellationPenaltyPercent();
+            } else {
+                $penaltyPercent = max(0, min(100, (int)$penaltyRaw));
+            }
+
+            if ($cost < 0) {
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_InvalidCost()], status: 400);
+            }
+
+            $slots = json_decode($slotsJson, true);
+            if (!is_array($slots) || empty($slots)) {
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_NoSlots()], status: 400);
+            }
+
+            $allDates = array_column($slots, 'date');
+            sort($allDates);
+            $analysis = SlotDateFilter::analyzeDateRange($allDates[0], $allDates[count($allDates) - 1]);
+            $availableDateStrings = array_column($analysis['available'], 'date');
+
+            $expertId = $account->id();
+            $expertTz = $account->readParam('time_zone') ?: 'UTC';
+            $minDate = $allDates[0];
+            $maxDate = $allDates[count($allDates) - 1];
+            $rangeStart = DateUtils::startOfDayForUser($minDate, $expertTz);
+            $rangeEnd = DateUtils::endOfDayForUser($maxDate, $expertTz);
+            if ($rangeStart <= 0 || $rangeEnd <= 0) {
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_InvalidDateTime()], status: 400);
+            }
+
+            $existing = TimeSlots::get()->selectByField('expert_id', $expertId, function (SelectInterface $q) use ($rangeStart, $rangeEnd): void {
+                $q->where('start_at >= ? AND start_at <= ?', [$rangeStart, $rangeEnd]);
+                $q->where("status != 'cancelled'");
+            });
+
+            $t = ForegroundI18n::getInstance();
+
+            // First, parse all proposed slots with their start/end times
+            $proposedSlots = [];
+            foreach ($slots as $slot) {
+                $date = $slot['date'] ?? '';
+                $time = $slot['time'] ?? '10:00';
+                $duration = (int)($slot['duration'] ?? 60);
+
+                $proposedStart = DateUtils::parseUserDateTime($date, $time, $expertTz);
+                if ($proposedStart <= 0) {
+                    continue;
+                }
+                // Whole-batch rejection, matching the overlap check below: a
+                // single past-time row must not silently drop that row while
+                // creating the rest — the caller gets a 400 and nothing is
+                // created (see the "Cannot create a slot in the past" gate
+                // in createSlot() above for the single-slot equivalent).
+                // Must run BEFORE the availableDateStrings check below: a
+                // past date that also happens to fall on a calendar-
+                // restricted day (Shabbat, a holiday) would otherwise be
+                // silently `continue`d past this whole check, letting the
+                // rest of a batch containing a past row through with 200.
+                if ($proposedStart < time()) {
+                    return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_PastSlot()], status: 400);
+                }
+
+                if (!in_array($date, $availableDateStrings, true)) {
+                    continue;
+                }
+
+                $proposedEnd = $proposedStart + $duration * 60;
+
+                $proposedSlots[] = [
+                    'date' => $date,
+                    'time' => $time,
+                    'duration' => $duration,
+                    'start_at' => $proposedStart,
+                    'end_at' => $proposedEnd,
+                ];
+            }
+
+            // Check for overlaps within the batch itself
+            $proposedCount = count($proposedSlots);
+            for ($i = 0; $i < $proposedCount; $i++) {
+                for ($j = $i + 1; $j < $proposedCount; $j++) {
+                    $slotA = $proposedSlots[$i];
+                    $slotB = $proposedSlots[$j];
+                    if ($slotA['start_at'] < $slotB['end_at'] && $slotA['end_at'] > $slotB['start_at']) {
+                        return ControllerTools::JSON([
+                            'error' => $t->Slot_OverlapError(),
+                            'overlap' => true,
+                        ], status: 400);
+                    }
+                }
+            }
+
+            $rows = [];
+            $overlaps = [];
+
+            foreach ($proposedSlots as $slot) {
+                $proposedStart = $slot['start_at'];
+                $proposedEnd = $slot['end_at'];
+                $date = $slot['date'];
+                $time = $slot['time'];
+                $duration = $slot['duration'];
+
+                $hasOverlap = false;
+
+                // Check against existing slots
+                foreach ($existing as $ex) {
+                    $exStart = (int)$ex['start_at'];
+                    $exEnd = (int)$ex['end_at'];
+                    if ($proposedStart < $exEnd && $proposedEnd > $exStart) {
+                        $hasOverlap = true;
+                        $overlaps[] = ['date' => $date, 'time' => $time, 'reason' => $t->Slot_OverlapError()];
+                        break;
+                    }
+                }
+
+                if ($hasOverlap) {
+                    continue;
+                }
+
+                $rows[] = [
+                    'expert_id' => $account->id(),
+                    'start_at' => $proposedStart,
+                    'end_at' => $proposedEnd,
+                    'duration_min' => $duration,
+                    'cost' => $cost,
+                    'is_online' => $isOnline,
+                    'location' => $location,
+                    'max_users' => $maxUsers,
+                    'status' => 'free',
+                    'uid' => TimeSlots::generateUid(),
+                    'created_at' => time(),
+                    'cancellation_penalty_percent' => $penaltyPercent,
+                ];
+            }
+
+            $createdSlots = [];
+            foreach ($rows as $row) {
+                $newId = TimeSlots::get()->insert($row);
+                $createdSlots[] = [
+                    'id' => (int)$newId,
+                    'start_at' => (int)$row['start_at'],
+                    'end_at' => (int)$row['end_at'],
+                    'duration_min' => (int)$row['duration_min'],
+                    'cost' => (int)$row['cost'],
+                    'status' => 'free',
+                    'max_users' => (int)$row['max_users'],
+                    'cancellation_penalty_percent' => (int)$row['cancellation_penalty_percent'],
+                ];
+            }
+
+            return ControllerTools::JSON(['success' => true, 'created' => count($rows), 'overlaps' => $overlaps, 'slots' => $createdSlots]);
+        }
+
+        /**
+         * Редактирование свободного слота (дата/время, стоимость и т.д.).
+         */
+        public static function editSlot(IGlobalReqParams $globals, Account $account): mixed {
+            $slotId = (int)$globals->readPostValue('slot_id', '0');
+
+            $slot = TimeSlots::get()->selectOneByField('id', $slotId);
+            if (!$slot || (int)$slot['expert_id'] !== $account->id()) {
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_AccessDenied()], status: 403);
+            }
+
+            // Забронированный слот правится, но только в одном месте — где
+            // проходит занятие. Онлайн-слот, созданный без ссылки и тут же
+            // забронированный, иначе не починить вовсе: время и деньги трогать
+            // нельзя (люди записались на эти условия), а ссылку дописать
+            // жизненно нужно. До этой правки преподаватель был вынужден
+            // передавать её вручную в переписке (нашёл expert-3).
+            $bookedSlot = $slot['status'] !== 'free';
+            if ($bookedSlot && $slot['status'] !== 'booked') {
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_OnlyFreeEditable()], status: 400);
+            }
+
+            if ((int)$slot['start_at'] < time()) {
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_PastNotEditable()], status: 400);
+            }
+
+            // Audit C-2: a partially-booked multi-slot stays status='free'
+            // while holding active bookings (booked_count > 0). Blocking
+            // cost/cancellation_penalty_percent edits on such slots prevents
+            // an expert from retroactively manipulating the price/refund
+            // terms of users who already paid under the old values.
+            //
+            // Gate on an actual VALUE change, not mere presence of the field:
+            // EditSlotModal (task #55) always echoes the slot's current cost/
+            // penalty back in every save — including saves that only touch
+            // unrelated fields like is_online/location. A presence-only check
+            // would reject every edit on a booked slot, not just money edits.
+            $costRaw = $globals->readPostValue('cost');
+            $changesCost = $costRaw !== null && (int)$costRaw !== (int)$slot['cost'];
+            $penaltyRaw = $globals->readPostValue('cancellation_penalty_percent');
+            $changesPenalty = $penaltyRaw !== null && (int)$penaltyRaw !== (int)$slot['cancellation_penalty_percent'];
+            if (($changesCost || $changesPenalty) && (int)$slot['booked_count'] > 0) {
+                return ControllerTools::JSON(
+                    ['error' => ForegroundI18n::getInstance()->Slot_Error_CostLockedByBookings()],
+                    status: 400,
+                );
+            }
+
+            $date = $globals->readPostValue('date', '');
+            $time = $globals->readPostValue('time', '');
+
+            // На забронированном слоте меняется только место встречи. Всё
+            // остальное — условия, на которые человек уже согласился.
+            //
+            // Сравниваются ПРИСЛАННЫЕ значения, а не собранный набор правок:
+            // форма всегда шлёт все поля целиком, а в собранный набор при
+            // переданных дате и времени попадает заново сгенерированный `uid`,
+            // который не совпадает с текущим никогда. Первая версия этой
+            // проверки сравнивала именно его — и отказывала в любом
+            // сохранении, включая разрешённое (поймал expert-3 на боевом).
+            if ($bookedSlot) {
+                $locked = [
+                    'cost' => (int)$slot['cost'],
+                    'cancellation_penalty_percent' => (int)$slot['cancellation_penalty_percent'],
+                    'max_users' => (int)($slot['max_users'] ?? 1),
+                    'is_online' => (int)($slot['is_online'] ?? 0),
+                ];
+
+                foreach ($locked as $field => $current) {
+                    $raw = $globals->readPostValue($field);
+                    if ($raw !== null && (int)$raw !== $current) {
+                        return ControllerTools::JSON(
+                            ['error' => ForegroundI18n::getInstance()->Slot_Error_BookedOnlyLocation()],
+                            status: 400,
+                        );
+                    }
+                }
+
+                $postedDuration = (int)$globals->readPostValue('duration_min', $globals->readPostValue('duration', '0'));
+                if ($postedDuration > 0 && $postedDuration !== (int)$slot['duration_min']) {
+                    return ControllerTools::JSON(
+                        ['error' => ForegroundI18n::getInstance()->Slot_Error_BookedOnlyLocation()],
+                        status: 400,
+                    );
+                }
+
+                if ($date !== '' && $time !== '') {
+                    $expertTz = $account->readParam('time_zone') ?: 'UTC';
+                    $postedStart = DateUtils::parseUserDateTime((string)$date, (string)$time, $expertTz);
+                    // С точностью до минуты: форма отдаёт время без секунд, и
+                    // слот с ненулевыми секундами иначе получил бы отказ на
+                    // ровном месте.
+                    if ($postedStart > 0 && intdiv($postedStart, 60) !== intdiv((int)$slot['start_at'], 60)) {
+                        return ControllerTools::JSON(
+                            ['error' => ForegroundI18n::getInstance()->Slot_Error_BookedOnlyLocation()],
+                            status: 400,
+                        );
+                    }
+                }
+            }
+            // Both spellings: the edit modal posts `duration`, the same name
+            // the create form uses, while this handler only ever read
+            // `duration_min`. Changing a slot's length therefore did nothing
+            // and reported success.
+            $durationMin = (int)$globals->readPostValue('duration_min', $globals->readPostValue('duration', '0'));
+            $cost = (int)$globals->readPostValue('cost', '0');
+            if ($cost < 0) {
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_InvalidCost()], status: 400);
+            }
+            $maxUsers = (int)$globals->readPostValue('max_users', '1');
+            $isOnline = (int)$globals->readPostValue('is_online', '0');
+            $location = $globals->readPostValue('location', '');
+
+            $updateData = [];
+
+            if (!empty($date) && !empty($time)) {
+                $expertTz = $account->readParam('time_zone') ?: 'UTC';
+                $startAt = DateUtils::parseUserDateTime($date, $time, $expertTz);
+                if ($startAt <= 0) {
+                    return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_InvalidDateTime()], status: 400);
+                }
+                if ($startAt < time()) {
+                    return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_PastReschedule()], status: 400);
+                }
+                $updateData['start_at'] = $startAt;
+
+                if ($durationMin > 0) {
+                    $updateData['end_at'] = $startAt + $durationMin * 60;
+                    $updateData['duration_min'] = $durationMin;
+                } else {
+                    $updateData['end_at'] = $startAt + (int)$slot['duration_min'] * 60;
+                }
+
+                // Rotate uid when time changes — invalidates any pending bookings
+                $updateData['uid'] = TimeSlots::generateUid();
+            } elseif ($durationMin > 0) {
+                $updateData['duration_min'] = $durationMin;
+                $updateData['end_at'] = (int)$slot['start_at'] + $durationMin * 60;
+            }
+
+            // Overlap check when time range changes
+            $newStart = (int)($updateData['start_at'] ?? $slot['start_at']);
+            $newEnd = (int)($updateData['end_at'] ?? $slot['end_at']);
+            if (isset($updateData['start_at']) || isset($updateData['end_at'])) {
+                $t = ForegroundI18n::getInstance();
+                $overlap = ExpertHelpers::findOverlap($account->id(), $newStart, $newEnd, $slotId);
+                if ($overlap !== null) {
+                    return ControllerTools::JSON([
+                        'error' => $t->Slot_OverlapError(),
+                        'overlap' => true,
+                    ], status: 400);
+                }
+            }
+
+            if ($globals->readPostValue('cost') !== null) {
+                $updateData['cost'] = $cost;
+            }
+            if ($globals->readPostValue('max_users') !== null) {
+                // Capacity can never drop below the seats already taken —
+                // otherwise people who booked in good faith would be sitting
+                // in a slot that no longer has room for them, and the
+                // free/booked bookkeeping would disagree with the bookings.
+                $bookedCount = (int)($slot['booked_count'] ?? 0);
+                if ($maxUsers < $bookedCount) {
+                    return ControllerTools::JSON(
+                        ['error' => ForegroundI18n::getInstance()->Slot_Error_MaxUsersBelowBooked($bookedCount)],
+                        status: 400,
+                    );
+                }
+                $updateData['max_users'] = max(1, $maxUsers);
+            }
+            if ($globals->readPostValue('is_online') !== null) {
+                $updateData['is_online'] = $isOnline;
+            }
+            if ($globals->readPostValue('location') !== null) {
+                $updateData['location'] = $location;
+            }
+            if ($globals->readPostValue('cancellation_penalty_percent') !== null) {
+                $penaltyPercent = max(0, min(100, (int)$globals->readPostValue('cancellation_penalty_percent', '0')));
+                $updateData['cancellation_penalty_percent'] = $penaltyPercent;
+            }
+
+            if ($bookedSlot) {
+                $updateData = array_key_exists('location', $updateData)
+                    ? ['location' => $updateData['location']]
+                    : [];
+            }
+
+            if (!empty($updateData)) {
+                $setParts = [];
+                $params = [];
+                foreach ($updateData as $col => $val) {
+                    $setParts[] = "$col = ?";
+                    $params[] = $val;
+                }
+                $params[] = $slotId;
+                // CAS: status='free' covers single-seat slots that flipped to
+                // 'booked' on the first reservation. For partially-booked
+                // multi-slots (status stays 'free' until full), adding
+                // `booked_count = 0` only when cost/penalty is ACTUALLY
+                // changing (same $changesCost/$changesPenalty as the gate
+                // above, not mere presence of the field — EditSlotModal
+                // always echoes the current cost/penalty even on a
+                // location-only edit) closes the race window between the
+                // check above and this UPDATE — a concurrent booking that
+                // lands in between makes the UPDATE match 0 rows and falls
+                // through to the 409 below.
+                $whereExtra = ($changesCost || $changesPenalty)
+                    ? ' AND booked_count = 0'
+                    : '';
+                // Забронированный слот сюда доходит только с правкой места —
+                // сторожевое условие меняется на его собственный статус.
+                $statusGuard = $bookedSlot ? "status = 'booked'" : "status = 'free'";
+                $sql = 'UPDATE ' . TimeSlots::get()->getTableName()
+                    . ' SET ' . implode(', ', $setParts)
+                    . " WHERE id = ? AND {$statusGuard}" . $whereExtra;
+                $affected = CasUpdate::exec($sql, $params);
+                if ($affected === 0) {
+                    return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_SlotTaken()], status: 409);
+                }
+
+                // Ссылка не должна появиться молча: человек уже заглядывал
+                // в бронь, не нашёл её и ушёл — сам он больше не проверит.
+                if ($bookedSlot && isset($updateData['location'])) {
+                    // $slot is the row read BEFORE this UPDATE — the message
+                    // must describe the place people are actually meeting at
+                    // now, not the one they just left behind.
+                    static::notifyLocationChanged($slotId, $account->id(), array_merge($slot, $updateData));
+                }
+            }
+
+            $updated = TimeSlots::get()->selectOneByField('id', $slotId);
+            return ControllerTools::JSON(['success' => true, 'slot' => $updated]);
+        }
+
+        /**
+         * Сообщить записавшимся, что место встречи у занятия обновилось.
+         *
+         * Ошибка отправки не должна ломать саму правку — она уже сохранена.
+         *
+         * @param array{start_at?: int, duration_min?: int, cost?: int, is_online?: int, location?: string} $slot
+         */
+        private static function notifyLocationChanged(int $slotId, int $expertId, array $slot): void {
+            try {
+                $bookings = Bookings::get()->selectAll(static function (SelectInterface $q) use ($slotId): void {
+                    $q->where('bookable_id = :bid', ['bid' => $slotId]);
+                    $q->where('bookable_type = :btype', ['btype' => 'time_slot']);
+                    $q->where("status IN ('pending', 'confirmed')");
+                });
+
+                foreach ($bookings as $booking) {
+                    BookingChatNotifier::locationChanged($expertId, (int)$booking['user_id'], $slot);
+                }
+            } catch (Throwable) {
+            }
+        }
+
+        /**
+         * Удаление свободного слота без активных бронирований.
+         */
+        public static function deleteSlot(IGlobalReqParams $globals, Account $account): mixed {
+            $slotId = (int)$globals->readPostValue('slot_id', '0');
+
+            $slot = TimeSlots::get()->selectOneByField('id', $slotId);
+            if (!$slot || (int)$slot['expert_id'] !== $account->id()) {
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_AccessDenied()], status: 403);
+            }
+
+            if ($slot['status'] !== 'free') {
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_OnlyFreeDeletable()], status: 400);
+            }
+
+            if ((int)$slot['start_at'] < time()) {
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_PastNotDeletable()], status: 400);
+            }
+
+            $activeBookings = Bookings::get()->selectAll(function (SelectInterface $query) use ($slotId): void {
+                $query->where('bookable_id = :bid', ['bid' => $slotId]);
+                $query->where('bookable_type = :btype', ['btype' => 'time_slot']);
+                $query->where("status IN ('pending', 'confirmed')");
+            });
+
+            // D-163: this used to check ONLY the `bookings` table. A booking
+            // write reserves capacity first (TimeSlots::reserveSeat() —
+            // booked_count+1) and only inserts the `bookings` row a moment
+            // later — the real concurrency boundary is booked_count, same as
+            // every booking controller already treats it. A delete landing in
+            // that window saw zero active bookings, deleted the row out from
+            // under the in-flight request, and the booking write that followed
+            // had nowhere left to record itself: no charge, no booking, the
+            // slot just gone (support ticket #3, traced from "confirm button
+            // hung, no response").
+            if (!empty($activeBookings) || (int)($slot['booked_count'] ?? 0) > 0) {
+                return ControllerTools::JSON(['error' => ForegroundI18n::getInstance()->Slot_Error_DeleteLockedByBookings()], status: 400);
+            }
+
+            TimeSlots::get()->deleteById($slotId);
+
+            // Slot is gone — purge every event associated with this slot for everyone.
+            NewsService::deleteByTargetKey(NewsService::slotKey($slotId));
+
+            return ControllerTools::JSON(['success' => true]);
+        }
+    }
+}

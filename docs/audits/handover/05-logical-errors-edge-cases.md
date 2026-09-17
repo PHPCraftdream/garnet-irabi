@@ -38,8 +38,8 @@
 **L1. Несогласованная граница "слот уже начался" (`<` vs `<=`) между операциями бронирования и операциями отмены/редактирования**
 
 - Файлы/строки:
-  - `<=` (строже, "начинающийся прямо сейчас слот — уже прошлое"): `Foreground/Controllers/ExpertPanel/ExpertBookingsService.php:104` (confirmBooking), `Foreground/Controllers/BookingsController.php:310,499`, `Foreground/Controllers/SlotsController.php:194`
-  - `<` (мягче, "начинающийся прямо сейчас слот — ещё будущее"): `Foreground/Controllers/ExpertPanel/ExpertBookingsService.php:163,253,321` (cancelBooking/cancelBookedSlot/cancelSlot), `Foreground/Controllers/ExpertPanel/ExpertSlotsService.php:481,588` (editSlot/deleteSlot), `Foreground/Controllers/ExpertPanel/ExpertHelpers.php:161` (futureOnly)
+  - `<=` (строже, "начинающийся прямо сейчас слот — уже прошлое"): `Foreground/Controllers/Expert/ExpertPanel/ExpertBookingsService.php:104` (confirmBooking), `Foreground/Controllers/Booking/BookingsController.php:310,499`, `Foreground/Controllers/SlotsController.php:194`
+  - `<` (мягче, "начинающийся прямо сейчас слот — ещё будущее"): `Foreground/Controllers/Expert/ExpertPanel/ExpertBookingsService.php:163,253,321` (cancelBooking/cancelBookedSlot/cancelSlot), `Foreground/Controllers/Expert/ExpertPanel/ExpertSlotsService.php:481,588` (editSlot/deleteSlot), `Foreground/Controllers/Expert/ExpertPanel/ExpertHelpers.php:161` (futureOnly)
 - Сценарий: если `start_at === time()` (окно в одну секунду), бронирование/подтверждение слота в этот момент уже отклоняется как "прошедшее" (`<=`), но отмена или редактирование того же слота в ту же секунду ещё разрешены (`<`). Реального вреда почти нет (окно в 1 секунду, крайне маловероятно попасть точно в него), но семантика "что считать прошедшим" не унифицирована по кодовой базе — риск при будущем рефакторинге/копировании кода.
 - Severity: low.
 - Рекомендация: вынести в `DateUtils::isPast(int $ts): bool` единую семантику и использовать её везде, чтобы устранить дрейф между копиями похожего кода.
@@ -88,7 +88,7 @@
 - `Common/Services/BookingChatNotifier.php`, `Common/Services/CronCompletionService.php` — таймстампы сравниваются как int, границы завершения слотов/броней последовательны.
 - `Common/Services/NewsService.php` — TTL ленты через простой `time() - const`, не привязан к календарным границам — DST не влияет.
 - `Dashboard/Controllers/DashboardInviteTokensController.php` — проверки TTL токена (`expires_at > :now` активен / `expires_at <= :now` истёк) взаимно дополняют друг друга без зазора и без пересечения на границе.
-- `Dashboard/Controllers/DashboardMainController.php`, `Foreground/Controllers/ExpertPanel/ExpertDashboardService.php` — границы месяца/дня построены через цепочку `DateUtils::startOf*ForUser`, без сложения секунд.
+- `Dashboard/Controllers/DashboardMainController.php`, `Foreground/Controllers/Expert/ExpertPanel/ExpertDashboardService.php` — границы месяца/дня построены через цепочку `DateUtils::startOf*ForUser`, без сложения секунд.
 - `mktime()` — не используется нигде в прикладном коде проекта. `strtotime()` — единственное использование в dev-only `DevSeedService.php` (не прод-путь).
 - Строковое сравнение дат в формате, зависящем от локали/паддинга (`'2026-1-5' < '2026-1-10'`) — паттерн не встречается: все даты либо unix-timestamp (int), либо парсятся через `DateUtils`/`DateTime::createFromFormat` с фиксированным форматом.
 

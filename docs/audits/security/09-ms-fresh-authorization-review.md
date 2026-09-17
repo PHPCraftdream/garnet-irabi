@@ -43,7 +43,7 @@ Preconditions: два или более аутентифицированных �
 
 Code:
 
-- `Apps/IRabi/Foreground/Controllers/BookingsController.php:316`-`:324` считает активные брони до insert, затем insert делает без атомарного capacity predicate (`:341`-`:349`), а статус слота меняет уже после insert (`:416`-`:421`).
+- `Apps/IRabi/Foreground/Controllers/Booking/BookingsController.php:316`-`:324` считает активные брони до insert, затем insert делает без атомарного capacity predicate (`:341`-`:349`), а статус слота меняет уже после insert (`:416`-`:421`).
 - `Apps/IRabi/Foreground/Controllers/SlotsController.php:297`-`:305` проверяет только свою уже существующую бронь, а общий capacity пересчитывает после insert (`:398`-`:409`).
 - storage guard `active_dup_key` уникален по `(user_id, bookable_type, bookable_id)`, а не по capacity слота (`Apps/IRabi/Migrations/Items/M_0002.php:68`-`:85`).
 
@@ -144,8 +144,8 @@ Regression tests: имитировать exception в throttle table и ожид
 - Session и CSRF cookies выставляются `HttpOnly`, `SameSite=Lax`, `Secure` для HTTPS (`garnet-framework/Kernel/Db/Entity/Session/Session.php:105`-`:121`, `:218`-`:233`).
 - Idempotency middleware привязан после auth и replay scope включает `(account_id, key, route_path)` (`garnet-framework/Bundle/Modules/Ops/Idempotency/IdempotencyMiddleware.php:62`-`:128`, `:179`-`:183`).
 - Admin rank guard для user flags/type/photo/balance блокирует self-target и upward rank operations (`Apps/IRabi/Foreground/Params/UserEntityConfig.php:273`-`:282`; uses in `DashboardUsersController.php:82`-`:87`, `:173`-`:177`, `:231`-`:235`; `DashboardFinanceController.php:340`-`:366`).
-- Expert actions проверяют ownership слота/booking перед confirm/cancel/edit/delete (`Apps/IRabi/Foreground/Controllers/ExpertPanel/ExpertBookingsService.php:95`-`:98`, `:152`-`:155`, `:240`-`:243`; `ExpertSlotsService.php:472`-`:473`, `:579`-`:580`).
-- Direct booking проверяет own-slot запрет, future slot, free status, approved/non-disabled expert (`Apps/IRabi/Foreground/Controllers/BookingsController.php:298`-`:339`; `SlotsController.php:270`-`:284`).
+- Expert actions проверяют ownership слота/booking перед confirm/cancel/edit/delete (`Apps/IRabi/Foreground/Controllers/Expert/ExpertPanel/ExpertBookingsService.php:95`-`:98`, `:152`-`:155`, `:240`-`:243`; `ExpertSlotsService.php:472`-`:473`, `:579`-`:580`).
+- Direct booking проверяет own-slot запрет, future slot, free status, approved/non-disabled expert (`Apps/IRabi/Foreground/Controllers/Booking/BookingsController.php:298`-`:339`; `SlotsController.php:270`-`:284`).
 - User support and IM downloads enforce ownership/participant checks (`garnet-framework/Bundle/Modules/Comms/Support/Controllers/FwSupportController.php:420`-`:433`; `garnet-framework/Bundle/Modules/Comms/Messaging/Controllers/FwImController.php:380`-`:389`).
 - `/sys/opcache-reset` публичен, но требует configured shared secret header and denies empty token (`Apps/IRabi/Foreground/Controllers/SysOpcacheResetController.php:31`-`:47`).
 - `/dev-login` и `/dev-login~resetDb` требуют одновременно `isDev()` и dev directory marker (`Apps/IRabi/Foreground/Controllers/DevLoginController.php:35`-`:43`, `:155`-`:159`).

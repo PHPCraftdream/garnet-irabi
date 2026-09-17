@@ -23,7 +23,8 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\IRabi\Common\Tables\Booking\TimeSlots;
     use PHPCraftdream\IRabi\Common\Tables\Messaging\ImReadStatus;
     use PHPCraftdream\IRabi\Common\Tables\Support\SupportTickets;
-    use PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel\ExpertHelpers;
+    use PHPCraftdream\IRabi\Foreground\Controllers\Comms\NewsController;
+    use PHPCraftdream\IRabi\Foreground\Controllers\Expert\ExpertPanel\ExpertHelpers;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
     use PHPCraftdream\IRabi\Foreground\Middlewares\UserDataMiddleware;
     use PHPCraftdream\IRabi\Foreground\Params\Menu;

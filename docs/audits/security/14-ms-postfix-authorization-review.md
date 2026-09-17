@@ -15,7 +15,7 @@
 - Общие защищённые foreground routes подключены через `IrabiAuthMiddleware::authOnly`, `UserDataMiddleware::notDisabled`, `UserDataMiddleware::process`, `IdempotencyMiddleware::before`: `IRabi.php:196-209`.
 - `authOnly` на каждый POST защищённого route проверяет Origin/Referer и CSRF до контроллера: `vendor/phpcraftdream/garnet-framework/Bundle/Modules/Accounts/Auth/Middlewares/EmailAuthMiddleware.php:123-143`, `:213-223`.
 - Disabled-session deny стоит сразу после auth и до бизнес/ staff gates: `Foreground/Middlewares/UserDataMiddleware.php:78-86`.
-- Expert panel дополнительно gated по business role `expertOnly`: `IRabi.php:214-218`; state-changing expert actions требуют `isApproved()` или moderator+: `Foreground/Controllers/ExpertPanelController.php:62-77`, `:108-207`.
+- Expert panel дополнительно gated по business role `expertOnly`: `IRabi.php:214-218`; state-changing expert actions требуют `isApproved()` или moderator+: `Foreground/Controllers/Expert/ExpertPanelController.php:62-77`, `:108-207`.
 - Admin dashboard gated по moderator+: `IRabi.php:248-264`; system/pages gated по owner+: `IRabi.php:265-272`.
 - Staff hierarchy: admin >= owner >= moderator, business roles user/expert независимы: `Foreground/Params/UserEntityConfig.php:178-201`.
 - Mutating account/balance actions используют `actorMayActOn` для запрета self-target и действий по target rank выше actor rank: `Foreground/Params/UserEntityConfig.php:273-284`, `Dashboard/Controllers/DashboardUsersController.php:88`, `:178`, `:236`, `Dashboard/Controllers/DashboardFinanceController.php:364`.

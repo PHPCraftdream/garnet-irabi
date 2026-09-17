@@ -136,7 +136,7 @@ List-Unsubscribe) не описана и не реализована (M-5).
   с явным комментарием «Never falls back to login so e-mail addresses are not leaked» —
   т.е. проектное правило существует, но `EmailNotifications` его нарушает. Тот же паттерн
   `$a['name'] ?: $a['login']` есть в UI эксперта
-  (`Foreground/Controllers/ExpertPanel/ExpertBookingsService.php:60`).
+  (`Foreground/Controllers/Expert/ExpertPanel/ExpertBookingsService.php:60`).
 - Это ответ на п.7 задания: данные ДРУГОГО участника (его email) попадают в письмо без
   необходимости. Рекомендация: использовать `NewsService::resolveDisplayNames()` (или тот же
   фолбэк `'#'.$id`) в `getAccountName()`.

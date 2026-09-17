@@ -211,7 +211,7 @@ ExpertProfileSM: approved → not_approved
 
 | Операция | Метод | Файл |
 |----------|-------|------|
-| Создание слота | `post__slots()` | `Apps/IRabi/Foreground/Controllers/ExpertPanelController.php` |
-| Пакетное создание | `post__batchSlots()` | `Apps/IRabi/Foreground/Controllers/ExpertPanelController.php` |
+| Создание слота | `post__slots()` | `Apps/IRabi/Foreground/Controllers/Expert/ExpertPanelController.php` |
+| Пакетное создание | `post__batchSlots()` | `Apps/IRabi/Foreground/Controllers/Expert/ExpertPanelController.php` |
 | Просмотр слотов | `get__slots()` | `Apps/IRabi/Foreground/Controllers/SlotsController.php` |
 | Профиль эксперта | `get__main()` | `Apps/IRabi/Foreground/Controllers/ExpertController.php` |

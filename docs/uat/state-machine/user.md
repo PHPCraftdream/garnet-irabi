@@ -211,8 +211,8 @@ TimeSlotSM: booked → free (если место освободилось)
 
 | Операция | Метод | Файл |
 |----------|-------|------|
-| Бронирование | `post__book()` | `Apps/IRabi/Foreground/Controllers/BookingsController.php` |
-| Отмена | `post__cancel()` | `Apps/IRabi/Foreground/Controllers/BookingsController.php` |
-| Список броней | `get__main()` | `Apps/IRabi/Foreground/Controllers/BookingsController.php` |
+| Бронирование | `post__book()` | `Apps/IRabi/Foreground/Controllers/Booking/BookingsController.php` |
+| Отмена | `post__cancel()` | `Apps/IRabi/Foreground/Controllers/Booking/BookingsController.php` |
+| Список броней | `get__main()` | `Apps/IRabi/Foreground/Controllers/Booking/BookingsController.php` |
 | Пополнение баланса | `post__topup()` | `Apps/IRabi/Foreground/Controllers/BalanceController.php` |
 | Форма бронирования | `BookingForm.tsx` | `Front/Islands/Bookings/BookingForm.tsx` |

@@ -44,17 +44,17 @@
 
 2. **Захардкоженные английские строки ошибок в JSON API, минующие i18n — видимый баг прямо в текущей (RU) локали.**
    Десятки контроллеров возвращают литеральные английские строки через `ControllerTools::JSON(['error' => '...'])`, которые фронтенд рендерит без i18n-обёртки. Примеры (не исчерпывающий список):
-   - `Foreground/Controllers/BookingsController.php:263,290` — `'Not authenticated'`
-   - `Foreground/Controllers/BookingsController.php:295` — `'CSRF check failed'`
-   - `Foreground/Controllers/BookingsController.php:307,342` — `'Slot not found or not available'`
-   - `Foreground/Controllers/BookingsController.php:311` — `'Cannot book a past slot'`
-   - `Foreground/Controllers/BookingsController.php:327,348` — `'Slot is full'`
-   - `Foreground/Controllers/BookingsController.php:335` — `'Cannot book your own slot'`
-   - `Foreground/Controllers/BookingsController.php:363` — `'Already booked'`
-   - `Foreground/Controllers/BookingsController.php:386` — `'Insufficient balance'`
+   - `Foreground/Controllers/Booking/BookingsController.php:263,290` — `'Not authenticated'`
+   - `Foreground/Controllers/Booking/BookingsController.php:295` — `'CSRF check failed'`
+   - `Foreground/Controllers/Booking/BookingsController.php:307,342` — `'Slot not found or not available'`
+   - `Foreground/Controllers/Booking/BookingsController.php:311` — `'Cannot book a past slot'`
+   - `Foreground/Controllers/Booking/BookingsController.php:327,348` — `'Slot is full'`
+   - `Foreground/Controllers/Booking/BookingsController.php:335` — `'Cannot book your own slot'`
+   - `Foreground/Controllers/Booking/BookingsController.php:363` — `'Already booked'`
+   - `Foreground/Controllers/Booking/BookingsController.php:386` — `'Insufficient balance'`
    - `Foreground/Controllers/SlotsController.php:290` — `'Slot has been rescheduled. Please refresh the page.'`
    - `Foreground/Controllers/SlotsController.php:304` — `"Slot #{$slotId} already booked"`
-   - `Foreground/Controllers/ExpertPanel/ExpertBookingsService.php:119` — `'Booking is no longer pending (cancelled or already confirmed)'`
+   - `Foreground/Controllers/Expert/ExpertPanel/ExpertBookingsService.php:119` — `'Booking is no longer pending (cancelled or already confirmed)'`
    
    а также аналогичный паттерн в `CommentsController.php`, `Dashboard/Controllers/*.php`, `BalanceAdjustModal`-related контроллерах.
 
@@ -70,8 +70,8 @@
    Практическое следствие: поскольку UI сейчас всегда на русском (находка 1), реальный пользователь при неудачном бронировании, недостаточном балансе, попытке забронировать прошедший слот и т.д. **прямо сейчас** видит фрагмент английского текста посреди русского интерфейса. Это не теоретическая проблема EN-локали — это баг единственной работающей сегодня локали.
 
 3. **Захардкоженные русские строки в примечаниях баланса — видны как есть при английской локали (если её когда-либо включат).**
-   `Foreground/Controllers/BookingsController.php:397` — `'note' => 'Счёт #' . $bookingId`
-   `Foreground/Controllers/BookingsController.php:415` — `'note' => 'Оплата #' . $bookingId`
+   `Foreground/Controllers/Booking/BookingsController.php:397` — `'note' => 'Счёт #' . $bookingId`
+   `Foreground/Controllers/Booking/BookingsController.php:415` — `'note' => 'Оплата #' . $bookingId`
    Значения сохраняются в `BalanceLedger` как есть (не через i18n-ключ) и рендерятся дословно в `Front/Islands/AdminPanel/LedgerSection.tsx:171` (`{entry.note ?? '—'}`) и в `Front/Islands/Bookings/BalanceIsland.tsx`. При гипотетическом включении EN-локали пользователь увидит русский текст "Счёт #123"/"Оплата #123" в истории транзакций.
 
 4. **Письма всегда отправляются на русском независимо от намерения получателя — поля языка/локали в схеме аккаунта не существует.**

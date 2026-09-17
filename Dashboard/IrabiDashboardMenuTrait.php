@@ -1,15 +1,15 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Dashboard {
-    use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardBookingsController;
-    use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardEmailQueueController;
-    use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardFinanceController;
-    use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardLogsController;
-    use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardMainController;
-    use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardStaticPagesController;
-    use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardSupportController;
-    use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardSystemController;
-    use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardUsersController;
+    use PHPCraftdream\IRabi\Dashboard\Controllers\Comms\DashboardEmailQueueController;
+    use PHPCraftdream\IRabi\Dashboard\Controllers\Comms\DashboardSupportController;
+    use PHPCraftdream\IRabi\Dashboard\Controllers\Content\DashboardStaticPagesController;
+    use PHPCraftdream\IRabi\Dashboard\Controllers\Money\DashboardBookingsController;
+    use PHPCraftdream\IRabi\Dashboard\Controllers\Money\DashboardFinanceController;
+    use PHPCraftdream\IRabi\Dashboard\Controllers\Ops\DashboardLogsController;
+    use PHPCraftdream\IRabi\Dashboard\Controllers\Ops\DashboardSystemController;
+    use PHPCraftdream\IRabi\Dashboard\Controllers\People\DashboardUsersController;
+    use PHPCraftdream\IRabi\Dashboard\Controllers\Shell\DashboardMainController;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
     use PHPCraftdream\IRabi\Foreground\Params\Menu;
     use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;

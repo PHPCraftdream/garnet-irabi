@@ -1,8 +1,8 @@
 # Аудит бизнес-логики: жизненный цикл бронирования (IRabi / Slotbook)
 
 Дата: 2026-07-18
-Область: `Foreground/Controllers/BookingsController.php`, `Foreground/Controllers/SlotsController.php`,
-`Foreground/Controllers/ExpertPanelController.php` + `Foreground/Controllers/ExpertPanel/*`,
+Область: `Foreground/Controllers/Booking/BookingsController.php`, `Foreground/Controllers/SlotsController.php`,
+`Foreground/Controllers/Expert/ExpertPanelController.php` + `Foreground/Controllers/Expert/ExpertPanel/*`,
 `Common/Tables/TimeSlots.php`, `Common/Tables/Bookings.php`, `Common/Tables/ExpertCancellations.php`,
 `Common/Tables/UserCancellations.php`, а также сопутствующие сервисы (`CronCompletionService`,
 `EmailNotifications`, `DashboardUsersController::post__setUserFlag`, `CommentsController`).
@@ -97,16 +97,16 @@ ledger-записях) спроектирована аккуратно: день
 построчным чтением кода перед внесением в отчёт.*
 
 **Файлы/строки:**
-- `Foreground/Controllers/ExpertPanel/ExpertSlotsService.php:469-571` (`editSlot`) — единственный гейт
+- `Foreground/Controllers/Expert/ExpertPanel/ExpertSlotsService.php:469-571` (`editSlot`) — единственный гейт
   редактируемости: `$slot['status'] !== 'free'` (:477) и CAS `WHERE id = ? AND status = 'free'` (:562).
   Разрешает менять `cost` (:537-539), `cancellation_penalty_percent` (:549-552), `max_users`, даты и
   локацию — без какой-либо проверки наличия активных броней на слоте.
 - `Common/Tables/TimeSlots.php:27-34` (`reserveSeat`) — атомарно инкрементирует только `booked_count`,
   **не трогает `status`**.
-- `Foreground/Controllers/BookingsController.php:432`, `Foreground/Controllers/SlotsController.php:410`
+- `Foreground/Controllers/Booking/BookingsController.php:432`, `Foreground/Controllers/SlotsController.php:410`
   — `status` переводится в `'booked'` только условием `WHERE ... status = 'free' AND booked_count >= max_users`,
   то есть **только когда слот заполнен полностью**.
-- `Foreground/Controllers/BookingsController.php:532-537,646-667` (`computeRefundAmounts`) — при отмене
+- `Foreground/Controllers/Booking/BookingsController.php:532-537,646-667` (`computeRefundAmounts`) — при отмене
   читает `cost`/`cancellation_penalty_percent` из **текущего** состояния строки слота (`$slot2`), а не из
   снапшота на момент создания брони.
 
@@ -152,10 +152,10 @@ ledger-записях) спроектирована аккуратно: день
     брони на том же слоте **пропускаются**;
   - «orphan»-ветка (строки 47-67) для недобранных слотов (`status NOT IN ('completed','cancelled','booked')`)
     тоже фильтрует только `status='confirmed'` (строка 57).
-- `Foreground/Controllers/BookingsController.php:488-502` (`post__cancel`) — для `pending`-статуса нет
+- `Foreground/Controllers/Booking/BookingsController.php:488-502` (`post__cancel`) — для `pending`-статуса нет
   проверки `start_at`, отмена разрешена в любой момент, с полным возвратом
   (`computeRefundAmounts`, строки 646-667: `partialApplies` требует `previousStatus === 'confirmed'`).
-- `Foreground/Controllers/ExpertPanel/ExpertBookingsService.php:157-165` (`cancelBooking`) — то же самое:
+- `Foreground/Controllers/Expert/ExpertPanel/ExpertBookingsService.php:157-165` (`cancelBooking`) — то же самое:
   для `pending` нет ограничения по времени (комментарий в коде прямо признаёт: «Pending bookings stay
   cancellable»).
 
@@ -200,7 +200,7 @@ ledger-записях) спроектирована аккуратно: день
   на `photo`, `specialization`, `bio`, `display_name`.
 - `Dashboard/Controllers/DashboardUsersController.php:109-126` (`post__setUserFlag`, ветка
   `IS_APPROVED`) — переключает `is_approved` без единой проверки заполненности полей профиля.
-- `Foreground/Controllers/ExpertPanel/ExpertSlotsService.php:246-256` — создание слота лениво создаёт
+- `Foreground/Controllers/Expert/ExpertPanel/ExpertSlotsService.php:246-256` — создание слота лениво создаёт
   пустой `ExpertProfiles`-профиль (`display_name` = имя аккаунта, `bio=''`, `specialization=''`) —
   этого достаточно, чтобы у эксперта появились слоты ещё до заполнения профиля.
 
@@ -250,8 +250,8 @@ ledger-записях) спроектирована аккуратно: день
 #### M-3. Гонка на границе `start_at` между пользовательской и экспертной отменой `confirmed`-брони: `<=` против `<`
 
 **Файлы/строки:**
-- `Foreground/Controllers/BookingsController.php:499` — пользователь: `$slotForTimeCheck['start_at'] <= time()` → отмена запрещена.
-- `Foreground/Controllers/ExpertPanel/ExpertBookingsService.php:163` — эксперт: `$slot['start_at'] < time()` → отмена запрещена.
+- `Foreground/Controllers/Booking/BookingsController.php:499` — пользователь: `$slotForTimeCheck['start_at'] <= time()` → отмена запрещена.
+- `Foreground/Controllers/Expert/ExpertPanel/ExpertBookingsService.php:163` — эксперт: `$slot['start_at'] < time()` → отмена запрещена.
 - Аналогично `cancelBookedSlot` (:253) и `cancelSlot` (:321) у эксперта — везде строгое `<`.
 
 **Сценарий:** в момент времени `t = start_at` (ровно начало занятия) пользователь уже не может отменить
@@ -274,7 +274,7 @@ ledger-записях) спроектирована аккуратно: день
 #### L-1. При освобождении места в мульти-слоте (`max_users > 1`) нет повторного broadcast/waitlist-уведомления другим пользователям
 
 **Файлы/строки:**
-- `Foreground/Controllers/BookingsController.php:572-616` (`post__cancel`, ветка возврата слота в `free`)
+- `Foreground/Controllers/Booking/BookingsController.php:572-616` (`post__cancel`, ветка возврата слота в `free`)
   и `ExpertPanel/ExpertBookingsService.php:200-210` — при `booked → free` вызывается только
   `NewsService::deleteByTargetKey(..., TYPE_SLOT_BOOKED)`, но не создаётся новый
   `TYPE_NEW_SLOT`-broadcast, который бы уведомил всех потенциальных пользователей, что место

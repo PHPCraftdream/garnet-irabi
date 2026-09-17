@@ -6,7 +6,7 @@ namespace PHPCraftdream\IRabi\Common\Services\Booking {
     use PHPCraftdream\IRabi\Common\System\LessonPhase;
     use PHPCraftdream\IRabi\Common\Tables\Booking\Bookings;
     use PHPCraftdream\IRabi\Common\Tables\Booking\TimeSlots;
-    use PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel\ExpertHelpers;
+    use PHPCraftdream\IRabi\Foreground\Controllers\Expert\ExpertPanel\ExpertHelpers;
     use RuntimeException;
 
     /**
