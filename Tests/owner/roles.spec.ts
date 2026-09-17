@@ -15,6 +15,7 @@
  */
 
 import { test, expect, tn } from '../helpers/scoped-test';
+import { registerAccount } from '../helpers/auth/auth';
 import mysql from 'mysql2/promise';
 import { DB } from '../helpers/db/db';
 test.describe.configure({ mode: 'serial' });
@@ -27,7 +28,22 @@ test.beforeEach(async ({ page }) => {
 	});
 });
 
-const TARGET_LOGIN = 'testuser_setup_moderator@irabi.test';
+/**
+ * Своя цель, а не общий фикстурный модератор.
+ *
+ * Раньше здесь стоял `testuser_setup_moderator@irabi.test` — тот самый
+ * аккаунт, под которым в прогоне работает роль `moderator`. Первым делом
+ * эта проверка снимает у него IS_MODERATOR («для чистого старта»), и на
+ * всё время цепочки любой ПАРАЛЛЕЛЬНЫЙ спек, открывающий модераторскую
+ * страницу, получает «Нет доступа». В прод-прогоне база одна на все
+ * воркеры, так что окно общее; так падали D-188 и D-167 — и падали
+ * по-разному от прогона к прогону, в зависимости от того, кто с кем
+ * совпал по времени.
+ *
+ * Предмет проверки от личности цели не зависит — её собственный докблок
+ * так и говорит: «a target regular user exists (created in test)».
+ */
+const TARGET_LOGIN = 'testuser_owner_roles_target@irabi.test';
 
 async function getAccountId(login: string): Promise<number> {
 	const conn = await mysql.createConnection(DB);
@@ -69,14 +85,28 @@ test.describe('OwnerSM: grant/revoke IS_MODERATOR role', () => {
 	let logCountBefore = 0;
 
 	// beforeAll (not a plain test) so this setup always runs first. The
-	// real safety net is the afterAll below: the "revoke" step is a
-	// regular test in the middle of the chain (not the last one), so
-	// if a later test fails, serial mode never reaches it — leaving
-	// the shared testuser_setup_moderator fixture's IS_MODERATOR flag
-	// stuck at 1 for the rest of this worker's run. afterAll runs
-	// regardless of test outcome.
-	test.beforeAll(async () => {
+	// afterAll below is still the safety net: the "revoke" step is a
+	// regular test in the middle of the chain, so a failure earlier in
+	// serial mode would leave IS_MODERATOR stuck at 1. Теперь это флаг
+	// СВОЕЙ цели, и застрявшее значение никому кроме этой проверки не
+	// мешает — но убирать его всё равно надо, иначе следующий прогон
+	// начнётся не с чистого состояния.
+	test.beforeAll(async ({ browser }) => {
 		targetId = await getAccountId(TARGET_LOGIN);
+
+		// Аккаунта ещё нет — создаём свой, а не занимаем чужой. Регистрация
+		// идёт в отдельном контексте: сессия этой проверки принадлежит
+		// владельцу, и подменять её нельзя.
+		if (!targetId) {
+			const ctx = await browser.newContext();
+			const page = await ctx.newPage();
+			try {
+				await registerAccount(page, TARGET_LOGIN);
+			} finally {
+				await ctx.close();
+			}
+			targetId = await getAccountId(TARGET_LOGIN);
+		}
 		expect(targetId).toBeGreaterThan(0);
 
 		// Reset to not-moderator for clean start

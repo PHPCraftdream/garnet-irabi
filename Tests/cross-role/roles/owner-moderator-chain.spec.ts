@@ -13,7 +13,10 @@
  *
  * Entry: owner authenticated, moderator user exists (but IS_MODERATOR may be 0),
  *        expert profile exists (is_approved may be any state).
- * Exit: moderator's IS_MODERATOR = 0 (revoked); expert restored to initial state.
+ * Exit: обе фикстуры возвращены в исходное состояние — и одобрение
+ *       эксперта, и флаг IS_MODERATOR у модератора. Цепочка отзывает
+ *       флаг как ШАГ проверки, но не оставляет его отозванным: под этим
+ *       аккаунтом работает роль `moderator` во всём наборе тестов.
  */
 
 import { test, expect, tn } from '../../helpers/scoped-test';
@@ -92,6 +95,7 @@ test.describe('OwnerSM × ModerationSM: 3-level capability chain', () => {
 	let moderatorId = 0;
 	let expertId = 0;
 	let initialExpertApproval = 0;
+	let initialModeratorFlag = 1;
 	let ownerCtx: BrowserContext | null = null;
 
 	// beforeAll/afterAll (not plain tests) — serial mode skips every
@@ -106,7 +110,15 @@ test.describe('OwnerSM × ModerationSM: 3-level capability chain', () => {
 		expect(moderatorId).toBeGreaterThan(0);
 		expect(expertId).toBeGreaterThan(0);
 
-		// Remove IS_MODERATOR from moderator user for clean start
+		// Запоминаем исходное значение флага — и только потом снимаем.
+		// Без этого файл заканчивается тем, что общий фикстурный модератор
+		// больше не модератор (последний шаг цепочки именно отзывает флаг),
+		// и каждая последующая проверка, открывающая модераторскую
+		// страницу, видит «Нет доступа». В прод-прогоне воркер один, так
+		// что это не гонка, а порядок: страдают те файлы, что идут дальше.
+		// Так падали D-188 и D-167 — и падали по-разному, потому что
+		// порядок файлов менялся вместе с раскладкой каталогов.
+		initialModeratorFlag = await getFlagValue(moderatorId, 'IS_MODERATOR');
 		await setFlag(moderatorId, 'IS_MODERATOR', 0);
 
 		// Record expert's initial approval state; reset to unapproved
@@ -248,6 +260,13 @@ test.describe('OwnerSM × ModerationSM: 3-level capability chain', () => {
 		if (ownerCtx) { await ownerCtx.close(); ownerCtx = null; }
 		if (expertId) {
 			await setExpertApproval(expertId, initialExpertApproval);
+		}
+
+		// Симметрично эксперту: роль возвращается тому, у кого её взяли.
+		// Права этого аккаунта — контракт всего набора тестов, а не
+		// внутреннее дело этой цепочки.
+		if (moderatorId) {
+			await setFlag(moderatorId, 'IS_MODERATOR', initialModeratorFlag);
 		}
 	});
 });
