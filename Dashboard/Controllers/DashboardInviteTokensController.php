@@ -12,9 +12,9 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use PHPCraftdream\Garnet\Kernel\Io\Services\IniConfig\AppConfig;
     use PHPCraftdream\Garnet\Kernel\Io\Services\IniConfig\IniConfig;
     use PHPCraftdream\IRabi\Common\System\DateUtils;
-    use PHPCraftdream\IRabi\Common\Tables\EntityHistory;
-    use PHPCraftdream\IRabi\Common\Tables\InviteRegistrations;
-    use PHPCraftdream\IRabi\Common\Tables\InviteTokens;
+    use PHPCraftdream\IRabi\Common\Tables\Accounts\InviteRegistrations;
+    use PHPCraftdream\IRabi\Common\Tables\Accounts\InviteTokens;
+    use PHPCraftdream\IRabi\Common\Tables\Ops\EntityHistory;
     use PHPCraftdream\IRabi\IRabi;
 
     class DashboardInviteTokensController extends DashboardController {

@@ -4,9 +4,9 @@ namespace PHPCraftdream\IRabi\Migrations\Items {
     use Aura\Cli\Stdio;
     use PHPCraftdream\Garnet\Kernel\Db\Link\DbPool;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Migration\IMigrationItem;
-    use PHPCraftdream\IRabi\Common\Tables\StaticPageBlocks;
-    use PHPCraftdream\IRabi\Common\Tables\StaticPages;
-    use PHPCraftdream\IRabi\Common\Tables\StaticSnippets;
+    use PHPCraftdream\IRabi\Common\Tables\Content\StaticPageBlocks;
+    use PHPCraftdream\IRabi\Common\Tables\Content\StaticPages;
+    use PHPCraftdream\IRabi\Common\Tables\Content\StaticSnippets;
 
     /**
      * Переименовать пункт меню «Войти» в «Личный кабинет» в шапке и подвале.

@@ -8,10 +8,10 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\ExpertPanel {
     use Aura\SqlQuery\Common\SelectInterface;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
     use PHPCraftdream\IRabi\Common\System\DateUtils;
-    use PHPCraftdream\IRabi\Common\Tables\BalanceLedger;
-    use PHPCraftdream\IRabi\Common\Tables\Bookings;
-    use PHPCraftdream\IRabi\Common\Tables\ExpertCancellations;
-    use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
+    use PHPCraftdream\IRabi\Common\Tables\Accounts\BalanceLedger;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\Bookings;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\ExpertCancellations;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\TimeSlots;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
     use PHPCraftdream\IRabi\Foreground\Params\Menu;
 

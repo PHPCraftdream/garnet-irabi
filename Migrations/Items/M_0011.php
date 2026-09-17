@@ -4,7 +4,7 @@ namespace PHPCraftdream\IRabi\Migrations\Items {
     use Aura\Cli\Stdio;
     use PHPCraftdream\Garnet\Kernel\Db\Link\DbPool;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Migration\IMigrationItem;
-    use PHPCraftdream\IRabi\Common\Tables\SysLogThrottle;
+    use PHPCraftdream\IRabi\Common\Tables\Ops\SysLogThrottle;
 
     /**
      * Create the sys_log_throttle table backing the per-IP rate limit on the

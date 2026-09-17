@@ -3,11 +3,11 @@
 namespace PHPCraftdream\IRabi\Common\Services\DevSeed {
     use Aura\SqlQuery\Common\SelectInterface;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
-    use PHPCraftdream\IRabi\Common\Services\NewsService;
-    use PHPCraftdream\IRabi\Common\Tables\NewsArchived;
-    use PHPCraftdream\IRabi\Common\Tables\NewsEvents;
-    use PHPCraftdream\IRabi\Common\Tables\NewsReads;
-    use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
+    use PHPCraftdream\IRabi\Common\Services\Content\NewsService;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\TimeSlots;
+    use PHPCraftdream\IRabi\Common\Tables\Content\NewsArchived;
+    use PHPCraftdream\IRabi\Common\Tables\Content\NewsEvents;
+    use PHPCraftdream\IRabi\Common\Tables\Content\NewsReads;
     use Throwable;
 
     /**

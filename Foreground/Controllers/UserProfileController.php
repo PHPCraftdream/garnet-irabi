@@ -8,7 +8,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
     use PHPCraftdream\Garnet\Kernel\Io\Render\Twig\TwigParams;
-    use PHPCraftdream\IRabi\Common\Services\UserProfilePresenter;
+    use PHPCraftdream\IRabi\Common\Services\Accounts\UserProfilePresenter;
     use PHPCraftdream\IRabi\Foreground\Params\Menu;
     use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;
     use PHPCraftdream\IRabi\IRabi;

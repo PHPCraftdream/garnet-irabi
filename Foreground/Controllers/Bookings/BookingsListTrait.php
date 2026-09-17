@@ -9,12 +9,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\Bookings {
     use PHPCraftdream\Garnet\Kernel\Interfaces\Core\IGlobalReqParams;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
-    use PHPCraftdream\IRabi\Common\PaginationHelper;
-    use PHPCraftdream\IRabi\Common\Services\AccountDisplay;
-    use PHPCraftdream\IRabi\Common\Services\ExpertDirectory;
-    use PHPCraftdream\IRabi\Common\Services\MeetingPlatform;
-    use PHPCraftdream\IRabi\Common\Tables\Bookings;
-    use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
+    use PHPCraftdream\IRabi\Common\Services\Accounts\AccountDisplay;
+    use PHPCraftdream\IRabi\Common\Services\Accounts\ExpertDirectory;
+    use PHPCraftdream\IRabi\Common\Services\Booking\MeetingPlatform;
+    use PHPCraftdream\IRabi\Common\Support\PaginationHelper;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\Bookings;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\TimeSlots;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
     use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;
     use PHPCraftdream\IRabi\IRabi;

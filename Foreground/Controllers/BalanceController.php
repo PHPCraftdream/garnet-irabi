@@ -12,9 +12,9 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Kernel\Interfaces\Core\IGlobalReqParams;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
-    use PHPCraftdream\IRabi\Common\Services\LedgerContextService;
-    use PHPCraftdream\IRabi\Common\Tables\AccountBalance;
-    use PHPCraftdream\IRabi\Common\Tables\BalanceLedger;
+    use PHPCraftdream\IRabi\Common\Services\Booking\LedgerContextService;
+    use PHPCraftdream\IRabi\Common\Tables\Accounts\AccountBalance;
+    use PHPCraftdream\IRabi\Common\Tables\Accounts\BalanceLedger;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
     use PHPCraftdream\IRabi\Foreground\Params\Menu;
 

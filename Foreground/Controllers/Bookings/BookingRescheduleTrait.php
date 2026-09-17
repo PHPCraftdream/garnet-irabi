@@ -7,12 +7,12 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\Bookings {
     use PHPCraftdream\Garnet\Kernel\Interfaces\Core\IGlobalReqParams;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
-    use PHPCraftdream\IRabi\Common\Services\BookingChatNotifier;
-    use PHPCraftdream\IRabi\Common\Services\BookingRescheduleService;
-    use PHPCraftdream\IRabi\Common\Services\EmailNotifications;
-    use PHPCraftdream\IRabi\Common\Services\NewsService;
-    use PHPCraftdream\IRabi\Common\Tables\Bookings;
-    use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
+    use PHPCraftdream\IRabi\Common\Services\Booking\BookingRescheduleService;
+    use PHPCraftdream\IRabi\Common\Services\Comms\BookingChatNotifier;
+    use PHPCraftdream\IRabi\Common\Services\Comms\EmailNotifications;
+    use PHPCraftdream\IRabi\Common\Services\Content\NewsService;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\Bookings;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\TimeSlots;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
     use Throwable;
 

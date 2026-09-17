@@ -5,8 +5,8 @@ namespace PHPCraftdream\IRabi\Foreground\Params {
     use PHPCraftdream\Garnet\Bundle\Support\I18n\FwI18n;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
     use PHPCraftdream\Garnet\Kernel\Io\Http\Router\RouterUriParams;
-    use PHPCraftdream\IRabi\Common\Tables\Bookings;
-    use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\Bookings;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\TimeSlots;
     use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardMainController;
     use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardUsersController;
     use PHPCraftdream\IRabi\Foreground\Controllers\BookingsController;

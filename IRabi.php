@@ -31,38 +31,38 @@ namespace PHPCraftdream\IRabi {
     use PHPCraftdream\Garnet\Kernel\Io\Services\IniConfig\IniConfig;
     use PHPCraftdream\Garnet\Kernel\Io\Services\Logs\Logger;
     use PHPCraftdream\Garnet\Kernel\Io\Services\Mailer\Mailer;
-    use PHPCraftdream\IRabi\Common\Commands\CMDClearLogs;
-    use PHPCraftdream\IRabi\Common\Commands\CMDClearUser;
-    use PHPCraftdream\IRabi\Common\Commands\CMDFinanceAudit;
-    use PHPCraftdream\IRabi\Common\Commands\CMDLogTail;
-    use PHPCraftdream\IRabi\Common\Commands\CMDRemoteCache;
-    use PHPCraftdream\IRabi\Common\Commands\CMDRemoteClearLogs;
-    use PHPCraftdream\IRabi\Common\Commands\CMDRemoteClearUser;
-    use PHPCraftdream\IRabi\Common\Commands\CMDRemoteLogTail;
-    use PHPCraftdream\IRabi\Common\Commands\CMDRemoteMigrateStatus;
-    use PHPCraftdream\IRabi\Common\Commands\CMDRemoteMigration;
-    use PHPCraftdream\IRabi\Common\Commands\CMDRemoteSql;
-    use PHPCraftdream\IRabi\Common\Commands\CMDRemoteTestMode;
-    use PHPCraftdream\IRabi\Common\Commands\CMDSeed;
-    use PHPCraftdream\IRabi\Common\Commands\CMDTestHoldLock;
-    use PHPCraftdream\IRabi\Common\Commands\CMDTestMode;
-    use PHPCraftdream\IRabi\Common\Commands\CMDTestProvision;
-    use PHPCraftdream\IRabi\Common\Commands\CMDTestPruneSessions;
-    use PHPCraftdream\IRabi\Common\Commands\CMDTestRemoteGated;
-    use PHPCraftdream\IRabi\Common\Commands\CMDTestTeardown;
-    use PHPCraftdream\IRabi\Common\Commands\CMDTimeShift;
-    use PHPCraftdream\IRabi\Common\Mail\AppMailer;
-    use PHPCraftdream\IRabi\Common\Services\AppCronService;
-    use PHPCraftdream\IRabi\Common\Services\StaticPagesService;
-    use PHPCraftdream\IRabi\Common\Tables\AccountBalance;
-    use PHPCraftdream\IRabi\Common\Tables\EmailAttempts;
-    use PHPCraftdream\IRabi\Common\Tables\EmailQueue;
-    use PHPCraftdream\IRabi\Common\Tables\IdempotencyKeys;
-    use PHPCraftdream\IRabi\Common\Tables\InviteRegistrations;
-    use PHPCraftdream\IRabi\Common\Tables\InviteTokens;
-    use PHPCraftdream\IRabi\Common\Tables\JsErrors;
-    use PHPCraftdream\IRabi\Common\Tables\MagicLoginTokens;
-    use PHPCraftdream\IRabi\Common\Tables\SupportTickets;
+    use PHPCraftdream\IRabi\Common\Commands\Ops\CMDClearLogs;
+    use PHPCraftdream\IRabi\Common\Commands\Ops\CMDClearUser;
+    use PHPCraftdream\IRabi\Common\Commands\Ops\CMDFinanceAudit;
+    use PHPCraftdream\IRabi\Common\Commands\Ops\CMDLogTail;
+    use PHPCraftdream\IRabi\Common\Commands\Ops\CMDSeed;
+    use PHPCraftdream\IRabi\Common\Commands\Ops\CMDTimeShift;
+    use PHPCraftdream\IRabi\Common\Commands\Remote\CMDRemoteCache;
+    use PHPCraftdream\IRabi\Common\Commands\Remote\CMDRemoteClearLogs;
+    use PHPCraftdream\IRabi\Common\Commands\Remote\CMDRemoteClearUser;
+    use PHPCraftdream\IRabi\Common\Commands\Remote\CMDRemoteLogTail;
+    use PHPCraftdream\IRabi\Common\Commands\Remote\Db\CMDRemoteMigrateStatus;
+    use PHPCraftdream\IRabi\Common\Commands\Remote\Db\CMDRemoteMigration;
+    use PHPCraftdream\IRabi\Common\Commands\Remote\Db\CMDRemoteSql;
+    use PHPCraftdream\IRabi\Common\Commands\Test\CMDRemoteTestMode;
+    use PHPCraftdream\IRabi\Common\Commands\Test\CMDTestHoldLock;
+    use PHPCraftdream\IRabi\Common\Commands\Test\CMDTestMode;
+    use PHPCraftdream\IRabi\Common\Commands\Test\CMDTestProvision;
+    use PHPCraftdream\IRabi\Common\Commands\Test\CMDTestPruneSessions;
+    use PHPCraftdream\IRabi\Common\Commands\Test\CMDTestRemoteGated;
+    use PHPCraftdream\IRabi\Common\Commands\Test\CMDTestTeardown;
+    use PHPCraftdream\IRabi\Common\Services\Content\StaticPagesService;
+    use PHPCraftdream\IRabi\Common\Services\Ops\Cron\AppCronService;
+    use PHPCraftdream\IRabi\Common\Support\Mail\AppMailer;
+    use PHPCraftdream\IRabi\Common\Tables\Accounts\AccountBalance;
+    use PHPCraftdream\IRabi\Common\Tables\Accounts\InviteRegistrations;
+    use PHPCraftdream\IRabi\Common\Tables\Accounts\InviteTokens;
+    use PHPCraftdream\IRabi\Common\Tables\Accounts\MagicLoginTokens;
+    use PHPCraftdream\IRabi\Common\Tables\Mail\EmailAttempts;
+    use PHPCraftdream\IRabi\Common\Tables\Mail\EmailQueue;
+    use PHPCraftdream\IRabi\Common\Tables\Ops\IdempotencyKeys;
+    use PHPCraftdream\IRabi\Common\Tables\Ops\JsErrors;
+    use PHPCraftdream\IRabi\Common\Tables\Support\SupportTickets;
     use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardBalancesController;
     use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardBookingsController;
     use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardCancellationsController;
@@ -470,7 +470,7 @@ namespace PHPCraftdream\IRabi {
                 $tf = FwI18n::getInstance();
 
                 return [
-                    'unreadMessages' => Common\Tables\ImReadStatus::getUnreadCountForUser($account->id()),
+                    'unreadMessages' => Common\Tables\Messaging\ImReadStatus::getUnreadCountForUser($account->id()),
                     'unreadSupport' => SupportTickets::getUnreadCountForUser($account->id()),
                     'balance' => AccountBalance::getBalance($account->id()),
                     'messagesUrl' => self::url(ImController::URL),
@@ -495,7 +495,7 @@ namespace PHPCraftdream\IRabi {
                 }
 
                 $unreadSupport = SupportTickets::getUnreadCountForUser($account->id());
-                $unreadIm = Common\Tables\ImReadStatus::getUnreadCountForUser($account->id());
+                $unreadIm = Common\Tables\Messaging\ImReadStatus::getUnreadCountForUser($account->id());
 
                 return RenderIsland::render('support-widget', [
                     // D-210: the floating button is labelled and shaped like a

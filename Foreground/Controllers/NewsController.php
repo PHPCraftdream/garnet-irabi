@@ -2,7 +2,7 @@
 
 namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Bundle\Modules\Content\News\Controllers\FwNewsController;
-    use PHPCraftdream\IRabi\Common\Services\NewsService;
+    use PHPCraftdream\IRabi\Common\Services\Content\NewsService;
 
     class NewsController extends FwNewsController {
         public const URL = '/news';

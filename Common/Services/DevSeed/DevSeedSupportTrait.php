@@ -2,15 +2,15 @@
 
 namespace PHPCraftdream\IRabi\Common\Services\DevSeed {
     use Aura\SqlQuery\Common\SelectInterface;
-    use PHPCraftdream\IRabi\Common\Tables\Comments;
-    use PHPCraftdream\IRabi\Common\Tables\ImAttachments;
-    use PHPCraftdream\IRabi\Common\Tables\ImConversations;
-    use PHPCraftdream\IRabi\Common\Tables\ImMessages;
-    use PHPCraftdream\IRabi\Common\Tables\ImReadStatus;
-    use PHPCraftdream\IRabi\Common\Tables\SupportAssignmentLog;
-    use PHPCraftdream\IRabi\Common\Tables\SupportAttachments;
-    use PHPCraftdream\IRabi\Common\Tables\SupportMessages;
-    use PHPCraftdream\IRabi\Common\Tables\SupportTickets;
+    use PHPCraftdream\IRabi\Common\Tables\Messaging\Comments;
+    use PHPCraftdream\IRabi\Common\Tables\Messaging\ImAttachments;
+    use PHPCraftdream\IRabi\Common\Tables\Messaging\ImConversations;
+    use PHPCraftdream\IRabi\Common\Tables\Messaging\ImMessages;
+    use PHPCraftdream\IRabi\Common\Tables\Messaging\ImReadStatus;
+    use PHPCraftdream\IRabi\Common\Tables\Support\SupportAssignmentLog;
+    use PHPCraftdream\IRabi\Common\Tables\Support\SupportAttachments;
+    use PHPCraftdream\IRabi\Common\Tables\Support\SupportMessages;
+    use PHPCraftdream\IRabi\Common\Tables\Support\SupportTickets;
 
     /**
      * Обращения в поддержку, сообщения и комментарии.

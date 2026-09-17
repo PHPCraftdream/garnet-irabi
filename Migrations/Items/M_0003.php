@@ -4,7 +4,7 @@ namespace PHPCraftdream\IRabi\Migrations\Items {
     use Aura\Cli\Stdio;
     use PHPCraftdream\Garnet\Kernel\Db\Link\DbPool;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Migration\IMigrationItem;
-    use PHPCraftdream\IRabi\Common\Tables\InviteTokens;
+    use PHPCraftdream\IRabi\Common\Tables\Accounts\InviteTokens;
 
     /**
      * Invite tokens carry the account_type to mint on registration —

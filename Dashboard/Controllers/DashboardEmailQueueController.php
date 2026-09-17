@@ -9,7 +9,7 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
     use PHPCraftdream\Garnet\Kernel\Io\Render\Twig\TwigParams;
-    use PHPCraftdream\IRabi\Common\Tables\EmailQueue;
+    use PHPCraftdream\IRabi\Common\Tables\Mail\EmailQueue;
     use PHPCraftdream\IRabi\Dashboard\GridConfig;
     use PHPCraftdream\IRabi\Dashboard\IrabiDashboardMenuTrait;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;

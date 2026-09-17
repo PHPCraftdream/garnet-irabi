@@ -10,8 +10,8 @@ namespace PHPCraftdream\IRabi\Foreground\Middlewares {
     use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
     use PHPCraftdream\Garnet\Kernel\Io\Services\IniConfig\IniConfig;
     use PHPCraftdream\Garnet\Kernel\Io\Services\Logs\Logger;
-    use PHPCraftdream\IRabi\Common\Services\ConsentJournalService;
-    use PHPCraftdream\IRabi\Common\Services\StaticPagesService;
+    use PHPCraftdream\IRabi\Common\Services\Accounts\ConsentJournalService;
+    use PHPCraftdream\IRabi\Common\Services\Content\StaticPagesService;
     use PHPCraftdream\IRabi\Common\System\AppSettings;
     use Psr\Http\Message\ResponseInterface;
     use Throwable;

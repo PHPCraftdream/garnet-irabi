@@ -4,7 +4,7 @@ namespace PHPCraftdream\IRabi\Migrations\Items {
     use Aura\Cli\Stdio;
     use PHPCraftdream\Garnet\Kernel\Db\Link\DbPool;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Migration\IMigrationItem;
-    use PHPCraftdream\IRabi\Common\Tables\StaticSnippets;
+    use PHPCraftdream\IRabi\Common\Tables\Content\StaticSnippets;
 
     /**
      * Развести пункт «вход» на два: «Войти» для гостя и «Личный кабинет» для

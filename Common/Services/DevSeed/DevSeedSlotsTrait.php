@@ -2,7 +2,7 @@
 
 namespace PHPCraftdream\IRabi\Common\Services\DevSeed {
     use Aura\SqlQuery\Common\SelectInterface;
-    use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\TimeSlots;
 
     /**
      * Слоты: расписание эксперта, время, длительность, цена, формат.

@@ -98,7 +98,7 @@ test.describe('iRabi Batch Slot Creation — мастер', () => {
 		// framework's real Hebrew-calendar SlotDateFilter (shabbat, erev_shabbat,
 		// yom_tov/holidays like Shavuot, fasts, rosh_chodesh — see
 		// Kernel/Core/HCalendar/SlotDateFilter.php and
-		// Common/Calendar/SlotDateFilterLocalized.php), so a holiday-dense month
+		// Common/Support/Calendar/SlotDateFilterLocalized.php), so a holiday-dense month
 		// can legitimately push a 5-slot proposal window past the month
 		// boundary into a second calendar month even though start_date is
 		// the 1st. The assertions below therefore verify totals across

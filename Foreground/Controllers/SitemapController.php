@@ -7,7 +7,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
     use PHPCraftdream\Garnet\Kernel\Io\Services\IniConfig\AppConfig;
     use PHPCraftdream\Garnet\Kernel\Io\Services\IniConfig\IniConfig;
-    use PHPCraftdream\IRabi\Common\Services\StaticPagesService;
+    use PHPCraftdream\IRabi\Common\Services\Content\StaticPagesService;
 
     /**
      * Serves /sitemap.xml at the domain root (no /system prefix).

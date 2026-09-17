@@ -12,14 +12,14 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
     use PHPCraftdream\Garnet\Kernel\Io\Render\Twig\TwigParams;
-    use PHPCraftdream\IRabi\Common\Services\AccountDisplay;
-    use PHPCraftdream\IRabi\Common\Services\EmailNotifications;
-    use PHPCraftdream\IRabi\Common\Services\ExpertDirectory;
-    use PHPCraftdream\IRabi\Common\Services\NewsService;
-    use PHPCraftdream\IRabi\Common\Services\SlotCardPayload;
-    use PHPCraftdream\IRabi\Common\Tables\Bookings;
-    use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
-    use PHPCraftdream\IRabi\Common\Tables\UserCancellations;
+    use PHPCraftdream\IRabi\Common\Services\Accounts\AccountDisplay;
+    use PHPCraftdream\IRabi\Common\Services\Accounts\ExpertDirectory;
+    use PHPCraftdream\IRabi\Common\Services\Booking\SlotCardPayload;
+    use PHPCraftdream\IRabi\Common\Services\Comms\EmailNotifications;
+    use PHPCraftdream\IRabi\Common\Services\Content\NewsService;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\Bookings;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\TimeSlots;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\UserCancellations;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
     use PHPCraftdream\IRabi\Foreground\Params\Menu;
     use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;
@@ -144,7 +144,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             // (D-052), а сама ссылка наружу не идёт.
             $slots = SlotCardPayload::forViewerList($slots);
 
-            $balance = \PHPCraftdream\IRabi\Common\Tables\AccountBalance::getBalance($accountId);
+            $balance = \PHPCraftdream\IRabi\Common\Tables\Accounts\AccountBalance::getBalance($accountId);
 
             $content = RenderIsland::render('slots-calendar', [
                 'slots' => $slots,
@@ -251,7 +251,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             $expertId = (int)$slot['expert_id'];
             $expertDisplayName = ExpertDirectory::one($expertId)['display_name'] ?? '';
 
-            $balance = \PHPCraftdream\IRabi\Common\Tables\AccountBalance::getBalance($account->id());
+            $balance = \PHPCraftdream\IRabi\Common\Tables\Accounts\AccountBalance::getBalance($account->id());
 
             return ControllerTools::JSON([
                 // Форма ответа общая со страницей преподавателя: пока каждая
@@ -359,13 +359,13 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
             // from a ledger that still misses this transient debit. Released
             // in the outer finally at the end of the section.
             try {
-                \PHPCraftdream\IRabi\Common\Tables\AccountBalance::acquireAccountLock($accountId);
-            } catch (\PHPCraftdream\IRabi\Common\Exceptions\AccountLockAcquireException) {
+                \PHPCraftdream\IRabi\Common\Tables\Accounts\AccountBalance::acquireAccountLock($accountId);
+            } catch (\PHPCraftdream\IRabi\Common\Support\Exceptions\AccountLockAcquireException) {
                 return ControllerTools::JSON(['error' => 'account_busy'], status: 503);
             }
 
             try {
-                $balanceTbl = \PHPCraftdream\IRabi\Common\Tables\AccountBalance::get()->getTableName();
+                $balanceTbl = \PHPCraftdream\IRabi\Common\Tables\Accounts\AccountBalance::get()->getTableName();
                 if ($totalCost > 0) {
                     $affected = CasUpdate::exec(
                         "UPDATE {$balanceTbl} SET balance = balance - ?, updated_at = ? WHERE account_id = ? AND balance >= ?",
@@ -422,7 +422,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
 
                         if ($slotCost > 0) {
                             try {
-                                \PHPCraftdream\IRabi\Common\Tables\BalanceLedger::get()->insert([
+                                \PHPCraftdream\IRabi\Common\Tables\Accounts\BalanceLedger::get()->insert([
                                     'account_id' => $accountId,
                                     'is_credit' => 0,
                                     'amount' => $slotCost,
@@ -440,7 +440,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
 
                             if ($expertId > 0) {
                                 try {
-                                    \PHPCraftdream\IRabi\Common\Tables\BalanceLedger::get()->insert([
+                                    \PHPCraftdream\IRabi\Common\Tables\Accounts\BalanceLedger::get()->insert([
                                         'account_id' => $expertId,
                                         'is_credit' => 1,
                                         'amount' => $slotCost,
@@ -485,17 +485,17 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                     // so this is the authoritative final balance for both user and experts.
                     foreach ($touchedExpertIds as $expertId => $_) {
                         try {
-                            \PHPCraftdream\IRabi\Common\Tables\AccountBalance::recalculate($expertId);
+                            \PHPCraftdream\IRabi\Common\Tables\Accounts\AccountBalance::recalculate($expertId);
                         } catch (Throwable) {
                         }
                     }
                     try {
-                        \PHPCraftdream\IRabi\Common\Tables\AccountBalance::recalculate($accountId);
+                        \PHPCraftdream\IRabi\Common\Tables\Accounts\AccountBalance::recalculate($accountId);
                     } catch (Throwable) {
                     }
                 }
             } finally {
-                \PHPCraftdream\IRabi\Common\Tables\AccountBalance::releaseAccountLock($accountId);
+                \PHPCraftdream\IRabi\Common\Tables\Accounts\AccountBalance::releaseAccountLock($accountId);
             }
 
             $userName = $account->readParam('name') ?: ('#' . $account->id());
@@ -549,7 +549,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                 'success' => true,
                 'booked_count' => count($createdBookingIds),
                 'total_cost' => $totalCost,
-                'new_balance' => \PHPCraftdream\IRabi\Common\Tables\AccountBalance::getBalance($accountId),
+                'new_balance' => \PHPCraftdream\IRabi\Common\Tables\Accounts\AccountBalance::getBalance($accountId),
             ]);
         }
     }

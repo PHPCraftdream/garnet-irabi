@@ -4,7 +4,7 @@ namespace PHPCraftdream\IRabi\Migrations\Items {
     use Aura\Cli\Stdio;
     use PHPCraftdream\Garnet\Kernel\Db\Link\DbPool;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Migration\IMigrationItem;
-    use PHPCraftdream\IRabi\Common\Tables\EmailThrottle;
+    use PHPCraftdream\IRabi\Common\Tables\Mail\EmailThrottle;
 
     /**
      * Create the email_throttle table for per-account, per-category

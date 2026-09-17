@@ -11,10 +11,10 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
     use PHPCraftdream\Garnet\Kernel\Io\Render\Twig\TwigParams;
     use PHPCraftdream\IRabi\Common\System\DateUtils;
-    use PHPCraftdream\IRabi\Common\Tables\AdminActionLog;
-    use PHPCraftdream\IRabi\Common\Tables\BalanceLedger;
-    use PHPCraftdream\IRabi\Common\Tables\Bookings;
-    use PHPCraftdream\IRabi\Common\Tables\SupportTickets;
+    use PHPCraftdream\IRabi\Common\Tables\Accounts\BalanceLedger;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\Bookings;
+    use PHPCraftdream\IRabi\Common\Tables\Ops\AdminActionLog;
+    use PHPCraftdream\IRabi\Common\Tables\Support\SupportTickets;
     use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;
     use PHPCraftdream\IRabi\IRabi;
 

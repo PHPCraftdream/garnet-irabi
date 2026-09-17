@@ -1,9 +1,9 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Migrations\Helpers {
-    use PHPCraftdream\IRabi\Common\Tables\StaticPageBlocks;
-    use PHPCraftdream\IRabi\Common\Tables\StaticPages;
-    use PHPCraftdream\IRabi\Common\Tables\StaticSnippets;
+    use PHPCraftdream\IRabi\Common\Tables\Content\StaticPageBlocks;
+    use PHPCraftdream\IRabi\Common\Tables\Content\StaticPages;
+    use PHPCraftdream\IRabi\Common\Tables\Content\StaticSnippets;
 
     /**
      * Canonical production seed for static pages, blocks and snippets.

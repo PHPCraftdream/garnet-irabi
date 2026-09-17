@@ -5,7 +5,7 @@ namespace PHPCraftdream\IRabi\Common\Services\DevSeed {
     use PHPCraftdream\Garnet\Kernel\Core\Support\Tools\StrTools;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\DbAccount;
-    use PHPCraftdream\IRabi\Common\Tables\BalanceLedger;
+    use PHPCraftdream\IRabi\Common\Tables\Accounts\BalanceLedger;
 
     /**
      * Аккаунты: описания персон, создание, роли и флаги, баланс.

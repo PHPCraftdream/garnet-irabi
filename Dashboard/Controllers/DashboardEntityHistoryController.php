@@ -2,7 +2,7 @@
 
 namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use PHPCraftdream\Garnet\Bundle\Modules\Ops\EntityHistory\Controllers\FwEntityHistoryController;
-    use PHPCraftdream\IRabi\Common\Tables\EntityHistory;
+    use PHPCraftdream\IRabi\Common\Tables\Ops\EntityHistory;
     use PHPCraftdream\IRabi\Dashboard\IrabiDashboardMenuTrait;
 
     /**

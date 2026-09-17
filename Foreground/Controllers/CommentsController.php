@@ -8,10 +8,10 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Kernel\Interfaces\Core\IGlobalReqParams;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
-    use PHPCraftdream\IRabi\Common\PaginationHelper;
-    use PHPCraftdream\IRabi\Common\Services\ExpertDirectory;
-    use PHPCraftdream\IRabi\Common\Tables\Bookings;
-    use PHPCraftdream\IRabi\Common\Tables\Comments;
+    use PHPCraftdream\IRabi\Common\Services\Accounts\ExpertDirectory;
+    use PHPCraftdream\IRabi\Common\Support\PaginationHelper;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\Bookings;
+    use PHPCraftdream\IRabi\Common\Tables\Messaging\Comments;
     use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;
 
     class CommentsController extends FrameworkController {

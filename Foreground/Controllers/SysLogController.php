@@ -7,7 +7,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
     use PHPCraftdream\Garnet\Kernel\Io\Services\Logs\Logger;
-    use PHPCraftdream\IRabi\Common\Tables\SysLogThrottle;
+    use PHPCraftdream\IRabi\Common\Tables\Ops\SysLogThrottle;
     use Throwable;
 
     /**

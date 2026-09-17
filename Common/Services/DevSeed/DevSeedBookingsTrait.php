@@ -2,13 +2,13 @@
 
 namespace PHPCraftdream\IRabi\Common\Services\DevSeed {
     use Aura\SqlQuery\Common\SelectInterface;
-    use PHPCraftdream\IRabi\Common\Tables\BalanceLedger;
-    use PHPCraftdream\IRabi\Common\Tables\Bookings;
-    use PHPCraftdream\IRabi\Common\Tables\ExpertCancellations;
-    use PHPCraftdream\IRabi\Common\Tables\Payments;
-    use PHPCraftdream\IRabi\Common\Tables\PaymentsLog;
-    use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
-    use PHPCraftdream\IRabi\Common\Tables\UserCancellations;
+    use PHPCraftdream\IRabi\Common\Tables\Accounts\BalanceLedger;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\Bookings;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\ExpertCancellations;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\Payments;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\PaymentsLog;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\TimeSlots;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\UserCancellations;
     use Throwable;
 
     /**

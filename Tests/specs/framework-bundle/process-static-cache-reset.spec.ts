@@ -51,8 +51,8 @@ require __DIR__ . '/autoload.php';
 
 use PHPCraftdream\\Garnet\\Kernel\\Db\\Entity\\Session\\Session;
 use PHPCraftdream\\Garnet\\Kernel\\Db\\Entity\\Account\\Account;
-use PHPCraftdream\\IRabi\\Common\\Services\\SessionStaticCacheResetter;
-use PHPCraftdream\\IRabi\\Common\\Services\\AccountStaticCacheResetter;
+use PHPCraftdream\\IRabi\\Common\\Services\\Accounts\\SessionStaticCacheResetter;
+use PHPCraftdream\\IRabi\\Common\\Services\\Accounts\\AccountStaticCacheResetter;
 
 // Session is typed '?ISession' and its ctor is protected, so use
 // newInstanceWithoutConstructor to mint a real ISession without going

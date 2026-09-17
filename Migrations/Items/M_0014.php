@@ -4,7 +4,7 @@ namespace PHPCraftdream\IRabi\Migrations\Items {
     use Aura\Cli\Stdio;
     use PHPCraftdream\Garnet\Kernel\Db\Link\DbPool;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Migration\IMigrationItem;
-    use PHPCraftdream\IRabi\Common\Tables\Consents;
+    use PHPCraftdream\IRabi\Common\Tables\Accounts\Consents;
 
     /**
      * Create the consents consent-audit-trail table (legal finding F-04:

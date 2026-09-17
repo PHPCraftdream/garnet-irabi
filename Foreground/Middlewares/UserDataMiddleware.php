@@ -10,7 +10,7 @@ namespace PHPCraftdream\IRabi\Foreground\Middlewares {
     use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Render\Twig\Twig;
     use PHPCraftdream\Garnet\Kernel\Io\Render\Twig\TwigParams;
-    use PHPCraftdream\IRabi\Common\Services\StaticPagesService;
+    use PHPCraftdream\IRabi\Common\Services\Content\StaticPagesService;
     use PHPCraftdream\IRabi\Foreground\Params\Menu;
     use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;
     use PHPCraftdream\IRabi\IRabi;

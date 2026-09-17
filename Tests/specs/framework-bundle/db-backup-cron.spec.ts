@@ -47,7 +47,7 @@ function pruneViaPhp(dir: string): string[] {
     // JS template strings pass them through verbatim to PHP -r.
     const code = `
 require ${JSON.stringify(path.join(APP_DIR, 'autoload.php'))};
-$deleted = \\PHPCraftdream\\IRabi\\Common\\Services\\DbBackupRetentionService::prune($argv[1]);
+$deleted = \\PHPCraftdream\\IRabi\\Common\\Services\\Ops\\Retention\\DbBackupRetentionService::prune($argv[1]);
 foreach ($deleted as $p) { echo basename($p) . PHP_EOL; }
 `;
     const res = spawnSync('php', ['-r', code, '--', dir], {

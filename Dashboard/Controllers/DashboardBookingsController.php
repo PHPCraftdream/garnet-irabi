@@ -12,11 +12,11 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
     use PHPCraftdream\Garnet\Kernel\Io\Render\Twig\TwigParams;
-    use PHPCraftdream\IRabi\Common\PaginationHelper;
-    use PHPCraftdream\IRabi\Common\Tables\Bookings;
-    use PHPCraftdream\IRabi\Common\Tables\ExpertCancellations;
-    use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
-    use PHPCraftdream\IRabi\Common\Tables\UserCancellations;
+    use PHPCraftdream\IRabi\Common\Support\PaginationHelper;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\Bookings;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\ExpertCancellations;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\TimeSlots;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\UserCancellations;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
     use PHPCraftdream\IRabi\IRabi;
 

@@ -4,7 +4,7 @@ namespace PHPCraftdream\IRabi\Migrations\Items {
     use Aura\Cli\Stdio;
     use PHPCraftdream\Garnet\Kernel\Db\Link\DbPool;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Migration\IMigrationItem;
-    use PHPCraftdream\IRabi\Common\Tables\MagicLoginTokens;
+    use PHPCraftdream\IRabi\Common\Tables\Accounts\MagicLoginTokens;
 
     /**
      * Create the magic_login_tokens table for the new one-click

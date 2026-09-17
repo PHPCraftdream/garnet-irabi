@@ -4,8 +4,8 @@ namespace PHPCraftdream\IRabi\Migrations\Items {
     use Aura\Cli\Stdio;
     use PHPCraftdream\Garnet\Kernel\Db\Link\DbPool;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Migration\IMigrationItem;
-    use PHPCraftdream\IRabi\Common\Tables\StaticPageBlocks;
-    use PHPCraftdream\IRabi\Common\Tables\StaticPages;
+    use PHPCraftdream\IRabi\Common\Tables\Content\StaticPageBlocks;
+    use PHPCraftdream\IRabi\Common\Tables\Content\StaticPages;
 
     /**
      * Terms of use: re-sync the /terms block with the canonical seed, which now

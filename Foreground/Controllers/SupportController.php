@@ -7,11 +7,11 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Kernel\Interfaces\Core\IGlobalReqParams;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
-    use PHPCraftdream\IRabi\Common\Services\EmailNotifications;
-    use PHPCraftdream\IRabi\Common\Services\SupportResponseEta;
-    use PHPCraftdream\IRabi\Common\Tables\SupportAttachments;
-    use PHPCraftdream\IRabi\Common\Tables\SupportMessages;
-    use PHPCraftdream\IRabi\Common\Tables\SupportTickets;
+    use PHPCraftdream\IRabi\Common\Services\Comms\EmailNotifications;
+    use PHPCraftdream\IRabi\Common\Services\Comms\SupportResponseEta;
+    use PHPCraftdream\IRabi\Common\Tables\Support\SupportAttachments;
+    use PHPCraftdream\IRabi\Common\Tables\Support\SupportMessages;
+    use PHPCraftdream\IRabi\Common\Tables\Support\SupportTickets;
     use PHPCraftdream\IRabi\Foreground\Params\Menu;
     use PHPCraftdream\IRabi\IRabi;
 

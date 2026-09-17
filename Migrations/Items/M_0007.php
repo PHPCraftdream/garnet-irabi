@@ -4,8 +4,8 @@ namespace PHPCraftdream\IRabi\Migrations\Items {
     use Aura\Cli\Stdio;
     use PHPCraftdream\Garnet\Kernel\Db\Link\DbPool;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Migration\IMigrationItem;
-    use PHPCraftdream\IRabi\Common\Tables\ExpertCancellations;
-    use PHPCraftdream\IRabi\Common\Tables\UserCancellations;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\ExpertCancellations;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\UserCancellations;
 
     /**
      * Split cancellation statistics into "declines" (отклонение до подтверждения)

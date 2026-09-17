@@ -9,11 +9,11 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use PHPCraftdream\Garnet\Kernel\Interfaces\Core\IGlobalReqParams;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
-    use PHPCraftdream\IRabi\Common\PaginationHelper;
-    use PHPCraftdream\IRabi\Common\Tables\AdminActionLog;
-    use PHPCraftdream\IRabi\Common\Tables\CronLog;
-    use PHPCraftdream\IRabi\Common\Tables\JsErrors;
-    use PHPCraftdream\IRabi\Common\Tables\MailLog;
+    use PHPCraftdream\IRabi\Common\Support\PaginationHelper;
+    use PHPCraftdream\IRabi\Common\Tables\Mail\MailLog;
+    use PHPCraftdream\IRabi\Common\Tables\Ops\AdminActionLog;
+    use PHPCraftdream\IRabi\Common\Tables\Ops\CronLog;
+    use PHPCraftdream\IRabi\Common\Tables\Ops\JsErrors;
     use PHPCraftdream\IRabi\Dashboard\GridConfig;
     use PHPCraftdream\IRabi\Dashboard\IrabiDashboardMenuTrait;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;

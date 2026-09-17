@@ -4,7 +4,7 @@ namespace PHPCraftdream\IRabi\Migrations\Items {
     use Aura\Cli\Stdio;
     use PHPCraftdream\Garnet\Kernel\Db\Link\DbPool;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Migration\IMigrationItem;
-    use PHPCraftdream\IRabi\Common\Tables\StaticPages;
+    use PHPCraftdream\IRabi\Common\Tables\Content\StaticPages;
 
     /**
      * Per-page SEO columns on static_pages: seo_title (overrides the <title> /

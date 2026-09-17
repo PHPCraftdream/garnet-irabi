@@ -12,7 +12,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
     use PHPCraftdream\Garnet\Kernel\Io\Services\IniConfig\IniConfig;
-    use PHPCraftdream\IRabi\Common\Services\DevSeedService;
+    use PHPCraftdream\IRabi\Common\Services\DevSeed\DevSeedService;
     use PHPCraftdream\IRabi\Foreground\Middlewares\IrabiAuthMiddleware;
     use PHPCraftdream\IRabi\IRabi;
 

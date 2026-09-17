@@ -13,9 +13,9 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
     use PHPCraftdream\Garnet\Kernel\Io\Render\Twig\TwigParams;
     use PHPCraftdream\Garnet\Kernel\Io\Services\Mailer\Mailer;
-    use PHPCraftdream\IRabi\Common\Services\EmailNotifications;
+    use PHPCraftdream\IRabi\Common\Services\Comms\EmailNotifications;
     use PHPCraftdream\IRabi\Common\System\AppSettings;
-    use PHPCraftdream\IRabi\Common\Tables\EntityHistory;
+    use PHPCraftdream\IRabi\Common\Tables\Ops\EntityHistory;
     use PHPCraftdream\IRabi\Dashboard\IrabiDashboardMenuTrait;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
     use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;

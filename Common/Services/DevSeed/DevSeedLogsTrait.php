@@ -2,11 +2,11 @@
 
 namespace PHPCraftdream\IRabi\Common\Services\DevSeed {
     use Aura\SqlQuery\Common\SelectInterface;
-    use PHPCraftdream\IRabi\Common\Tables\AdminActionLog;
-    use PHPCraftdream\IRabi\Common\Tables\Bookings;
-    use PHPCraftdream\IRabi\Common\Tables\MailLog;
-    use PHPCraftdream\IRabi\Common\Tables\MailLogRecipients;
-    use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\Bookings;
+    use PHPCraftdream\IRabi\Common\Tables\Booking\TimeSlots;
+    use PHPCraftdream\IRabi\Common\Tables\Mail\MailLog;
+    use PHPCraftdream\IRabi\Common\Tables\Mail\MailLogRecipients;
+    use PHPCraftdream\IRabi\Common\Tables\Ops\AdminActionLog;
 
     /**
      * Служебные журналы: действия администраторов и отправленная почта.

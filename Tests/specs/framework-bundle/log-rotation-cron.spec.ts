@@ -61,7 +61,7 @@ function pruneFilesViaPhp(dir: string, nowTs: number): Record<string, number> {
     const code = `
 date_default_timezone_set('UTC');
 require ${JSON.stringify(path.join(APP_DIR, 'autoload.php'))};
-$counts = \\PHPCraftdream\\IRabi\\Common\\Services\\LogRotationService::pruneFiles($argv[1], (int)$argv[2]);
+$counts = \\PHPCraftdream\\IRabi\\Common\\Services\\Ops\\Retention\\LogRotationService::pruneFiles($argv[1], (int)$argv[2]);
 foreach ($counts as $cat => $n) { echo $cat . '=' . $n . PHP_EOL; }
 `;
     const res = spawnSync('php', ['-r', code, '--', dir, String(nowTs)], {
@@ -212,7 +212,7 @@ test.describe('LogRotationService — file pruning (isolated, fixed clock)', () 
         const code = `
 date_default_timezone_set('UTC');
 require ${JSON.stringify(path.join(APP_DIR, 'autoload.php'))};
-$c = \\PHPCraftdream\\IRabi\\Common\\Services\\LogRotationService::pruneFiles($argv[1], (int)$argv[2], (int)$argv[3]);
+$c = \\PHPCraftdream\\IRabi\\Common\\Services\\Ops\\Retention\\LogRotationService::pruneFiles($argv[1], (int)$argv[2], (int)$argv[3]);
 echo $c['System'];
 `;
         const res = spawnSync('php', ['-r', code, '--', tmpRoot, String(FIXED_NOW), '10'], {
