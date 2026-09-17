@@ -28,11 +28,13 @@
             "@cs:check"
         ],
         "size:check": "@php garnet size:check .",
+        "check:imports": "@php garnet check:imports .",
         "ci": [
             "@cs:check",
             "@build",
             "@phpstan",
             "@size:check",
+            "@check:imports",
             "@build:check"
         ]
     },
