@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {Settings} from 'lucide-react';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
-import {UserDetailContext} from '../../Islands/AdminPanel/UserDetailContext';
+import {UserDetailContext} from '../../Islands/AdminPanel/Users/UserDetailContext';
 import {usePreview} from '@common/Components/UserPreviewModal/PreviewContext';
 import {appUrl} from '@common/Utils/Url/appUrl';
 

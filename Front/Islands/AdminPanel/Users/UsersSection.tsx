@@ -1,0 +1,287 @@
+import * as React from 'react';
+import {useState, useMemo} from 'react';
+import {AdminUser, GridConfig, UserTab} from '../Shell/types';
+import {AdminGrid} from '../Grid/AdminGrid';
+import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
+import {sendPost} from '@common/Api/Send/sendPost';
+import {formatTs} from '@common/Utils/Time/DateUtils';
+import {useOpenUser} from './UserDetailContext';
+
+interface Props {
+    users: AdminUser[];
+    setFlagUrl?: string;
+    setUserTypeUrl?: string;
+    config: GridConfig;
+}
+
+type TabDef = {key: UserTab; labelFn: () => string};
+
+const tabs: TabDef[] = [
+    {key: 'all',        labelFn: () => t.Admin_Tab_All()},
+    {key: 'experts',   labelFn: () => t.Admin_Tab_Experts()},
+    {key: 'users',   labelFn: () => t.Admin_Tab_Users()},
+    {key: 'moderators', labelFn: () => t.Admin_Tab_Moderators()},
+    {key: 'owners',     labelFn: () => t.Admin_Tab_Owners()},
+    {key: 'admins',     labelFn: () => t.Admin_Tab_Admins()},
+];
+
+export function flag(val: string | number | null | undefined): boolean {
+    return val !== null && val !== undefined && Number(val) > 0;
+}
+
+function filterByTab(users: AdminUser[], tab: UserTab): AdminUser[] {
+    switch (tab) {
+        case 'experts':   return users.filter(u => u.type === 'expert');
+        case 'users':   return users.filter(u => u.type === 'user');
+        case 'moderators': return users.filter(u => flag(u.IS_MODERATOR) && !flag(u.IS_OWNER) && !flag(u.IS_ADMIN));
+        case 'owners':     return users.filter(u => flag(u.IS_OWNER) && !flag(u.IS_ADMIN));
+        case 'admins':     return users.filter(u => flag(u.IS_ADMIN));
+        default:           return users;
+    }
+}
+
+/**
+ * Подпись кнопки роли: «+ Модератор» / «− Модератор».
+ *
+ * Раньше во всех колонках-флагах стояло одинаковое «Назначить», и в тесной
+ * строке владелец, целясь в «Модератор», попадал в соседнюю колонку —
+ * ровно так один из наших владельцев случайно сделал человека
+ * преподавателем. Название роли прямо на кнопке снимает вопрос, а знак
+ * говорит, что произойдёт. Полная фраза остаётся в `title`.
+ *
+ * Собирается из существующих строк, а не из новых: знак и название роли
+ * читаются одинаково и по-русски, и по-английски.
+ */
+export function roleFlagLabel(role: string, granted: boolean): string {
+    return `${granted ? '−' : '+'} ${role}`;
+}
+
+export function FlagBtn({label, active, cls, disabled, onClick, testId, title}: {
+    label: string;
+    active: boolean;
+    cls: [string, string]; // [active class, inactive class]
+    disabled: boolean;
+    onClick: () => void;
+    testId?: string;
+    title?: string;
+}) {
+    return (
+        <button
+            type="button"
+            data-test-id={testId}
+            title={title}
+            className={`btn btn-sm ${active ? cls[0] : cls[1]}`}
+            disabled={disabled}
+            onClick={onClick}
+        >
+            {label}
+        </button>
+    );
+}
+
+const TabButton: React.FC<{
+    tabKey: string;
+    label: string;
+    count: number;
+    active: boolean;
+    onSelect: (key: any) => void;
+}> = ({tabKey, label, count, active, onSelect}) => (
+    <li className="admin-tabnav-item">
+        <button
+            type="button"
+            data-test-id={`filter-tab-${tabKey}`}
+            aria-selected={active}
+            className={`admin-tabnav-btn ${active ? 'admin-tabnav-btn-active' : ''}`}
+            onClick={() => onSelect(tabKey)}
+        >
+            {label} <span className="admin-tabnav-count">({count})</span>
+        </button>
+    </li>
+);
+
+/** Тип аккаунта и переключатель «сделать преподавателем». */
+const UserTypeCell: React.FC<{
+    row: {id: number; type: string};
+    canChange: boolean;
+    pending: boolean;
+    onToggle: () => void;
+}> = ({row, canChange, pending, onToggle}) => {
+    const isExpert = row.type === 'expert';
+
+    return (
+        <div className="flex items-center gap-2">
+            <span className={`badge ${isExpert ? 'status-info' : 'status-muted'}`}>
+                {isExpert ? t.Reg_AccountTypeExpert() : t.Reg_AccountTypeUser()}
+            </span>
+            {canChange && (
+                <FlagBtn
+                    testId={`set-type-${row.id}`}
+                    label={isExpert ? t.Admin_Flag_RevokeExpert() : t.Admin_Flag_GrantExpert()}
+                    active={isExpert}
+                    cls={['btn-outline-danger', 'btn-outline-primary']}
+                    disabled={pending}
+                    onClick={onToggle}
+                />
+            )}
+        </div>
+    );
+};
+
+export const UsersSection: React.FC<Props> = ({
+    users: initialUsers, setFlagUrl, setUserTypeUrl, config,
+}) => {
+    const [activeTab, setActiveTab] = useState<UserTab>('all');
+    const [users, setUsers]         = useState<AdminUser[]>(initialUsers);
+    const [pending, setPending]     = useState<Record<number, boolean>>({});
+    const openUser = useOpenUser();
+
+    const tabCounts = useMemo(() => ({
+        all:        users.length,
+        experts:   users.filter(u => u.type === 'expert').length,
+        users:   users.filter(u => u.type === 'user').length,
+        moderators: users.filter(u => flag(u.IS_MODERATOR) && !flag(u.IS_OWNER) && !flag(u.IS_ADMIN)).length,
+        owners:     users.filter(u => flag(u.IS_OWNER) && !flag(u.IS_ADMIN)).length,
+        admins:     users.filter(u => flag(u.IS_ADMIN)).length,
+    }), [users]);
+
+    const tabFiltered = useMemo(() => filterByTab(users, activeTab), [users, activeTab]);
+
+    const gridConfig = useMemo(() => {
+        if (activeTab === 'experts' || activeTab === 'all') return config;
+        return {
+            ...config,
+            columns: config.columns.filter(c => c.key !== 'IS_APPROVED'),
+        };
+    }, [config, activeTab]);
+
+    const setFlag = async (userId: number, flagName: string, value: 0 | 1) => {
+        if (!setFlagUrl || pending[userId]) return;
+        setPending(p => ({...p, [userId]: true}));
+        try {
+            const csrf = (window as any).__GARNET_CSRF__ ?? '';
+            await sendPost(setFlagUrl, {CSRF_TOKEN: csrf, user_id: userId, flag: flagName, value});
+            setUsers(prev => prev.map(u => u.id === userId ? {...u, [flagName]: value || null} : u));
+        } finally {
+            setPending(p => ({...p, [userId]: false}));
+        }
+    };
+
+    const setUserType = async (userId: number, nextType: 'user' | 'expert') => {
+        if (!setUserTypeUrl || pending[userId]) return;
+        setPending(p => ({...p, [userId]: true}));
+        try {
+            const csrf = (window as any).__GARNET_CSRF__ ?? '';
+            await sendPost(setUserTypeUrl, {CSRF_TOKEN: csrf, user_id: userId, type: nextType});
+            setUsers(prev => prev.map(u => u.id === userId ? {...u, type: nextType} : u));
+        } finally {
+            setPending(p => ({...p, [userId]: false}));
+        }
+    };
+
+    return (
+        <div>
+            <ul className="admin-tabnav">
+                {tabs.map(tab => (
+                    <TabButton
+                        key={tab.key}
+                        tabKey={tab.key}
+                        label={tab.labelFn()}
+                        count={tabCounts[tab.key]}
+                        active={activeTab === tab.key}
+                        onSelect={setActiveTab}
+                    />
+                ))}
+            </ul>
+
+            <AdminGrid
+                rows={tabFiltered}
+                config={gridConfig}
+                rowKey={r => r.id}
+                emptyMessage={t.Admin_NoUsers()}
+                renders={{
+                    id:    r => <span className="text-muted">{r.id}</span>,
+                    login: r => (
+                        <button
+                            type="button"
+                            data-test-id={`user-login-${r.id}`}
+                            className="admin-link-btn-md font-mono"
+                            onClick={() => openUser(r.id, r.name || r.login)}
+                        >
+                            {r.login}
+                        </button>
+                    ),
+                    type: r => (
+                        <UserTypeCell
+                            row={r}
+                            canChange={!!setUserTypeUrl}
+                            pending={!!pending[r.id]}
+                            onToggle={() => setUserType(r.id, r.type === 'expert' ? 'user' : 'expert')}
+                        />
+                    ),
+                    last_online_time: r => <span className="text-muted text-xs">{formatTs(r.last_online_time)}</span>,
+
+                    IS_APPROVED: r => r.type !== 'expert' ? null : (
+                        <FlagBtn
+                            testId={`flag-IS_APPROVED-${r.id}`}
+                            label={flag(r.IS_APPROVED) ? t.Admin_Revoke() : t.Admin_Approve()}
+                            active={flag(r.IS_APPROVED)}
+                            cls={['btn-outline-danger', 'btn-success']}
+                            disabled={pending[r.id]}
+                            onClick={() => setFlag(r.id, 'IS_APPROVED', flag(r.IS_APPROVED) ? 0 : 1)}
+                        />
+                    ),
+                    IS_DISABLED: r => (
+                        <FlagBtn
+                            testId={`flag-IS_DISABLED-${r.id}`}
+                            label={flag(r.IS_DISABLED) ? t.Admin_Enable() : t.Admin_Disable()}
+                            active={flag(r.IS_DISABLED)}
+                            cls={['btn-secondary', 'btn-outline-danger']}
+                            disabled={pending[r.id]}
+                            onClick={() => setFlag(r.id, 'IS_DISABLED', flag(r.IS_DISABLED) ? 0 : 1)}
+                        />
+                    ),
+                    IS_MODERATOR: r => (
+                        <FlagBtn
+                            testId={`flag-IS_MODERATOR-${r.id}`}
+                            label={roleFlagLabel(t.Admin_Role_Moderator(), flag(r.IS_MODERATOR))}
+                            title={
+                                flag(r.IS_ADMIN) ? t.Admin_Flag_RemoveAdminFirst()
+                                    : flag(r.IS_OWNER) ? t.Admin_Flag_OwnerHasModeratorRights()
+                                        : flag(r.IS_MODERATOR) ? t.Admin_Flag_RevokeModerator() : t.Admin_Flag_GrantModerator()
+                            }
+                            active={flag(r.IS_MODERATOR)}
+                            cls={['btn-outline-danger', 'btn-outline-primary']}
+                            disabled={pending[r.id] || flag(r.IS_ADMIN) || flag(r.IS_OWNER)}
+                            onClick={() => setFlag(r.id, 'IS_MODERATOR', flag(r.IS_MODERATOR) ? 0 : 1)}
+                        />
+                    ),
+                    IS_OWNER: r => (
+                        <FlagBtn
+                            testId={`flag-IS_OWNER-${r.id}`}
+                            label={roleFlagLabel(t.Admin_Role_Owner(), flag(r.IS_OWNER))}
+                            title={
+                                flag(r.IS_ADMIN) ? t.Admin_Flag_RemoveAdminFirst()
+                                    : flag(r.IS_OWNER) ? t.Admin_Flag_RevokeOwner() : t.Admin_Flag_GrantOwner()
+                            }
+                            active={flag(r.IS_OWNER)}
+                            cls={['btn-outline-danger', 'btn-outline-primary']}
+                            disabled={pending[r.id] || flag(r.IS_ADMIN)}
+                            onClick={() => setFlag(r.id, 'IS_OWNER', flag(r.IS_OWNER) ? 0 : 1)}
+                        />
+                    ),
+                    IS_ADMIN: r => (
+                        <FlagBtn
+                            testId={`flag-IS_ADMIN-${r.id}`}
+                            label={roleFlagLabel(t.Admin_Role_Admin(), flag(r.IS_ADMIN))}
+                            title={flag(r.IS_ADMIN) ? t.Admin_Flag_RevokeAdmin() : t.Admin_Flag_GrantAdmin()}
+                            active={flag(r.IS_ADMIN)}
+                            cls={['btn-outline-danger', 'btn-outline-primary']}
+                            disabled={pending[r.id]}
+                            onClick={() => setFlag(r.id, 'IS_ADMIN', flag(r.IS_ADMIN) ? 0 : 1)}
+                        />
+                    ),
+                }}
+            />
+        </div>
+    );
+};

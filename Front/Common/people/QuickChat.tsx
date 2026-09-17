@@ -7,7 +7,7 @@ import SendButton from '@common/Components/Controls/SendButton';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import AttachmentDisplay from '../attachments/AttachmentDisplay';
-import type {SupportAttachment} from '../../Islands/Support/supportTypes';
+import type {SupportAttachment} from '../../Islands/Comms/Support/supportTypes';
 
 interface QuickMessage {
     id: number;
