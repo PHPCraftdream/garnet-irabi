@@ -11,8 +11,8 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
 
         public function initData(): II18n {
             return $this
-                ->addLangData(ForegroundI18nDataRu::LANG, ForegroundI18nDataRu::$data)
-                ->addLangData(ForegroundI18nDataEn::LANG, ForegroundI18nDataEn::$data);
+                ->addLangData(ForegroundI18nDataRu::LANG, ForegroundI18nDataRu::data())
+                ->addLangData(ForegroundI18nDataEn::LANG, ForegroundI18nDataEn::data());
         }
 
         /**
