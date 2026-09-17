@@ -27,10 +27,12 @@
             "@phpstan",
             "@cs:check"
         ],
+        "size:check": "@php garnet size:check .",
         "ci": [
             "@cs:check",
             "@build",
             "@phpstan",
+            "@size:check",
             "@build:check"
         ]
     },

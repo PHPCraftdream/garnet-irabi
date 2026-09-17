@@ -167,8 +167,26 @@ php garnet config:init   # seed WorkDir/Config/*.ini from WorkDir/ConfigExample/
 for the two MCP servers below (see "MCP servers").
 
 Quality gates (mirrors CI): `composer ci` runs `cs:check` → `build` →
-`phpstan` → `build:check`. E2E: `composer test:e2e` (or `cd Tests && npm test`,
-Playwright — see [`Tests/TESTING.md`](Tests/TESTING.md)).
+`phpstan` → `size:check` → `build:check`. E2E: `composer test:e2e` (or
+`cd Tests && npm test`, Playwright — see [`Tests/TESTING.md`](Tests/TESTING.md)).
+
+### Size and layout rule
+
+- A file over **500 lines** (frontend) or **1000 lines** (backend) becomes
+  a directory of several files; a directory holds at most **seven
+  entries** and is otherwise grouped by theme. `composer size:check`
+  measures it and runs inside `composer ci`.
+- Exceptions live in `.size-check.json` **with a reason** — `Tests/` is
+  one (playwright/npm/tsconfig configs must sit together by fixed name,
+  and the role directories are addressed by project globs), so is
+  `docs/checkpoints/` (the `/resume` skill reads that directory without
+  recursing).
+- Moving a test file has a failure mode worth knowing: four playwright
+  projects address paths exactly (`main-tests` and `user-flow` list
+  their directories, `cross-role-query-count` carves out one file). A
+  spec that falls out of a glob does not fail — it just stops running,
+  and the run stays green. Compare `npx playwright test --list` per
+  project against the numbers before the move.
 
 ## Dev mode / dev-only UI
 
