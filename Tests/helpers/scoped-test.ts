@@ -285,6 +285,47 @@ async function resetContextToStorageState(ctx: BrowserContext, stateFile: string
             try { sessionStorage.clear(); } catch {}
         }).catch(() => { /* page may have navigated mid-clear */ });
     }
+
+    await warmAntiBotCookie(ctx);
+}
+
+/**
+ * Re-acquire the host's anti-bot cookie after a cookie wipe.
+ *
+ * The production host sits behind a challenge that answers a cookie-less
+ * POST with `Set-Cookie: RCPC=…` and an HTML meta-refresh retry page — HTTP
+ * 200, but the app never sees the request. `clearCookies()` above drops that
+ * cookie with everything else, so the FIRST POST of every test used to be
+ * spent on the challenge.
+ *
+ * For `page.goto` this is invisible: the browser follows the refresh. For
+ * `page.request.post(...)` it is not — the assertion sees the challenge page's
+ * 200 and the POST body is gone. That is exactly how the H-1/H-2 privilege
+ * guards came to "fail": `expect(403)` received `200`, which read as a
+ * moderator being allowed to move money. Measured directly, the guards are
+ * intact — a POST carrying the cookie reaches the app and is refused (403,
+ * CSRF), and no ledger row is ever written. The damage was to the signal, not
+ * the product: the file runs serially, so that one failure skipped every
+ * remaining authorization check and left us with NO data where we thought we
+ * had a green light.
+ *
+ * The warm-up has to be a POST — a GET is not challenged and comes back
+ * without the cookie. `/admin/` is chosen deliberately: it answers the
+ * challenge (so the cookie is issued) and performs nothing.
+ *
+ * Best-effort by design: local runs have no such challenge, and a failure
+ * here must never fail a test.
+ */
+async function warmAntiBotCookie(ctx: BrowserContext): Promise<void> {
+    if (!isProd()) {
+        return;
+    }
+
+    try {
+        await ctx.request.post('/admin/', { data: '', timeout: 10000, failOnStatusCode: false });
+    } catch {
+        // Offline / slow host — the test itself will report the real problem.
+    }
 }
 
 type SharedFixtures = {
