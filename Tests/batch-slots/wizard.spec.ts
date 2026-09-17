@@ -9,9 +9,9 @@
 import { test, expect, tn } from '../helpers/scoped-test';
 import { newScopedPage } from '../helpers/scoped-test';
 import type { Page } from '@playwright/test';
-import { clearTestData, registerAccount, fillProfileForm } from '../helpers/auth';
+import { clearTestData, registerAccount, fillProfileForm } from '../helpers/auth/auth';
 import mysql from 'mysql2/promise';
-import { DB } from '../helpers/db';
+import { DB } from '../helpers/db/db';
 import { EXPERT_LOGIN, dateOffsetDays, firstOfMonthAhead, setupBatchExpert } from './helpers';
 
 test.describe.configure({ mode: 'serial' });

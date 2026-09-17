@@ -8,8 +8,8 @@
 
 import { test, expect, tn } from '../../helpers/scoped-test';
 import { newScopedContext } from '../../helpers/scoped-test';
-import { resolveStorageStatePath } from '../../helpers/state';
-import { DB } from '../../helpers/db';
+import { resolveStorageStatePath } from '../../helpers/auth/state';
+import { DB } from '../../helpers/db/db';
 import mysql from 'mysql2/promise';
 import type { BrowserContext, Page } from '@playwright/test';
 import {

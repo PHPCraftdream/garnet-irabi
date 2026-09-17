@@ -6,7 +6,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { Browser, BrowserContext, BrowserContextOptions, Page } from '@playwright/test';
-import { attachConsoleGuards } from '../console-guards';
+import { attachConsoleGuards } from '../guards/console-guards';
 import { scopeHeaders } from './scope-headers';
 import { recordCtxEvent } from './telemetry';
 import { resetContextToStorageState } from './storage-state';

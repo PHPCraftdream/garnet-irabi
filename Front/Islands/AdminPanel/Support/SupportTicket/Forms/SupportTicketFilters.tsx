@@ -2,7 +2,7 @@ import * as React from 'react';
 import {Combobox} from '@common/Components/ui/Combobox';
 import {DateInput} from '@common/Components/ui/DateInput';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import type {SupportStatus} from '../../../../Comms/Support/supportTypes';
+import type {SupportStatus} from '../../../../Comms/Support/parts/supportTypes';
 
 export type DateField = 'updated_at' | 'created_at';
 

@@ -4,8 +4,8 @@
  */
 
 import { test as base, expect, Browser, BrowserContext, BrowserContextOptions, Page } from '@playwright/test';
-import { isProd } from '../ssh-bridge';
-import { attachConsoleGuards, collectAndResetIssues, formatIssues } from '../console-guards';
+import { isProd } from '../db/ssh-bridge';
+import { attachConsoleGuards, collectAndResetIssues, formatIssues } from '../guards/console-guards';
 import { getDbPrefix } from './db-prefix';
 import { scopeHeaders } from './scope-headers';
 import { recordCtxEvent } from './telemetry';

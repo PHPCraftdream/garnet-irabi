@@ -8,7 +8,7 @@
 
 import { test, expect } from '../../helpers/scoped-test';
 import type { Locator } from '@playwright/test';
-import { HDate, HebrewCalendar, flags } from '../../helpers/hebcal';
+import { HDate, HebrewCalendar, flags } from '../../helpers/data/hebcal';
 
 
 export const EXPERT_LOGIN = `testuser_cal_${process.env.TEST_PARALLEL_INDEX ?? '0'}@irabi.test`;

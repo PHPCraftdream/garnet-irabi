@@ -7,7 +7,7 @@ import {EntityLink, userLinks} from '../../../../Common/people/EntityLinks';
 import {PenaltyTerms, outcomeLabel} from '../../../../Common/booking/bookingAction';
 import {Booking, BookingsViewAs, ExpertInfo, SlotInfo, UserInfo} from './bookingCardTypes';
 import {BookingPlaceLine} from './BookingPlaceLine';
-import {BookingCancelCause} from './BookingCancelCause';
+import {BookingCancelCause} from './cancel/BookingCancelCause';
 import {BookingCardActions} from './BookingCardActions';
 
 interface PartyProps {

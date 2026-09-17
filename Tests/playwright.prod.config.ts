@@ -1,6 +1,6 @@
 import { defineConfig } from '@playwright/test';
 import base from './playwright.config';
-import { installProdDbBridge } from './helpers/ssh-bridge';
+import { installProdDbBridge } from './helpers/db/ssh-bridge';
 
 // Install the SSH DB bridge at CONFIG load — Playwright evaluates the config
 // in every worker process BEFORE any spec module, so by the time a spec runs

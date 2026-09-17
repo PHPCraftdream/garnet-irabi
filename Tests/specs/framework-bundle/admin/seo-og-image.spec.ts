@@ -13,7 +13,7 @@
 
 import { test, expect, tn } from '../../../helpers/scoped-test';
 import mysql from 'mysql2/promise';
-import { DB } from '../../../helpers/db';
+import { DB } from '../../../helpers/db/db';
 
 test.describe.configure({ mode: 'serial' });
 

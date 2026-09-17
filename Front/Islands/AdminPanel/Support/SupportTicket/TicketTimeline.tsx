@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {useEffect, useRef} from 'react';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {SupportMessage, AssignmentLogEntry} from '../../../Comms/Support/supportTypes';
+import {SupportMessage, AssignmentLogEntry} from '../../../Comms/Support/parts/supportTypes';
 import {SupportMessageBubble} from './timeline/SupportMessageBubble';
 import {AssignmentHistory} from './timeline/AssignmentHistory';
 

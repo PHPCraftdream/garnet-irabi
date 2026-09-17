@@ -3,8 +3,8 @@
  */
 
 import { Browser, BrowserContext, BrowserContextOptions, Page } from '@playwright/test';
-import { attachConsoleGuards } from '../console-guards';
-import { warmAntiBotCookie } from '../anti-bot';
+import { attachConsoleGuards } from '../guards/console-guards';
+import { warmAntiBotCookie } from '../guards/anti-bot';
 import { scopeHeaders } from './scope-headers';
 import { recordCtxEvent } from './telemetry';
 

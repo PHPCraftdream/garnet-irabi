@@ -13,7 +13,7 @@
  */
 
 import { test, expect } from '../../helpers/scoped-test';
-import { EXPERT_LOGIN } from '../../helpers/logins';
+import { EXPERT_LOGIN } from '../../helpers/auth/logins';
 
 // Read-only smoke (zero `conn.execute`/INSERT/DELETE/UPDATE, no
 // `beforeAll`). Safe to fan out across Playwright workers now that

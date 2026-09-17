@@ -16,7 +16,7 @@
 
 import { test, expect, tn } from '../helpers/scoped-test';
 import mysql from 'mysql2/promise';
-import { DB } from '../helpers/db';
+import { DB } from '../helpers/db/db';
 test.describe.configure({ mode: 'serial' });
 
 // Force max page-size so seed accounts (testuser_setup_*) stay on the first

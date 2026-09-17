@@ -4,7 +4,7 @@
  */
 
 import { test, expect, tn } from '../../helpers/scoped-test';
-import { DB } from '../../helpers/db';
+import { DB } from '../../helpers/db/db';
 import mysql from 'mysql2/promise';
 
 export const SLOT_COST = 1000;

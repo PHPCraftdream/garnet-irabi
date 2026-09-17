@@ -1,12 +1,12 @@
 import { FullConfig } from '@playwright/test';
 import mysql from 'mysql2/promise';
 import * as fs from 'node:fs';
-import { clearTestData } from './helpers/auth';
-import { ADMIN_LOGIN, EXPERT_LOGIN, USER_LOGIN, MODERATOR_LOGIN, OWNER_LOGIN } from './helpers/logins';
-import { isolationSetup } from './helpers/isolation-setup';
+import { clearTestData } from './helpers/auth/auth';
+import { ADMIN_LOGIN, EXPERT_LOGIN, USER_LOGIN, MODERATOR_LOGIN, OWNER_LOGIN } from './helpers/auth/logins';
+import { isolationSetup } from './helpers/auth/isolation-setup';
 import { CTX_STATS_DIR } from './helpers/scoped-test';
-import { DB as DB_CONFIG } from './helpers/db';
-import { clearServerErrorLogs } from './helpers/server-error-logs';
+import { DB as DB_CONFIG } from './helpers/db/db';
+import { clearServerErrorLogs } from './helpers/guards/server-error-logs';
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:8001';
 

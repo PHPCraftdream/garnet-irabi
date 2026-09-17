@@ -219,7 +219,7 @@ export default defineConfig({
 			// im-search-recipients-query-count.spec.ts is carved out into its
 			// own single-worker project below — see that project's comment
 			// for why. Keep this testIgnore in sync if that file is renamed.
-			testIgnore: `**/Tests/cross-role/im-search-recipients-query-count.spec.ts`,
+			testIgnore: `**/Tests/cross-role/im/im-search-recipients-query-count.spec.ts`,
 			dependencies: setupDeps('setup:admin', 'setup:expert', 'setup:user', 'setup:moderator', 'setup:owner'),
 			use: { ...devices['Desktop Chrome'] },
 		},
@@ -236,7 +236,7 @@ export default defineConfig({
 		// одновременно с остальными cross-role проверками незачем.
 		{
 			name: 'cross-role-query-count',
-			testMatch: `**/Tests/cross-role/im-search-recipients-query-count.spec.ts`,
+			testMatch: `**/Tests/cross-role/im/im-search-recipients-query-count.spec.ts`,
 			workers: 1,
 			dependencies: setupDeps('setup:admin', 'setup:expert', 'setup:user', 'setup:moderator', 'setup:owner'),
 			use: { ...devices['Desktop Chrome'] },
@@ -287,17 +287,23 @@ export default defineConfig({
 		// ── IRabi top-level self-contained tests ──────────────────────────────
 		{
 			name: 'main-tests',
-			// Второй шаблон — для спеков, разложенных по подпапкам прямо в
-			// корне Tests/. Сюда нельзя поставить `**`: он утащил бы все
-			// спеки ролей, у которых свои проекты и своя авторизация.
-			// Поэтому подпапки перечисляются явно.
-			testMatch: [`**/Tests/*.spec.ts`, `**/Tests/batch-slots/*.spec.ts`],
-			testIgnore: `**/Tests/user-flow.spec.ts`,
+			// Подпапки перечисляются явно, и `**` здесь поставить нельзя: он
+			// утащил бы спеки ролей, у которых свои проекты и своя
+			// авторизация. Обратная сторона — спек в НОВОЙ подпапке в этот
+			// список не попадёт сам: он просто не запустится, а прогон
+			// останется зелёным. Поэтому раскладка тестов сверяется числом
+			// найденных тестов (`playwright test --list`), а не цветом.
+			testMatch: [
+				`**/Tests/main/*.spec.ts`,
+				`**/Tests/edge/*.spec.ts`,
+				`**/Tests/batch-slots/*.spec.ts`,
+			],
+			testIgnore: `**/Tests/edge/user-flow.spec.ts`,
 			use: { ...devices['Desktop Chrome'] },
 		},
 		{
 			name: 'user-flow',
-			testMatch: `**/Tests/user-flow.spec.ts`,
+			testMatch: `**/Tests/edge/user-flow.spec.ts`,
 			dependencies: ['main-tests'],
 			use: { ...devices['Desktop Chrome'] },
 		},

@@ -1,8 +1,8 @@
 import { test as setup } from '@playwright/test';
 import mysql from 'mysql2/promise';
-import { registerAccount, fillProfileForm } from '../helpers/auth';
-import { saveUserMeta, resolveStorageStatePath } from '../helpers/state';
-import { OWNER_LOGIN } from '../helpers/logins';
+import { registerAccount, fillProfileForm } from '../helpers/auth/auth';
+import { saveUserMeta, resolveStorageStatePath } from '../helpers/auth/state';
+import { OWNER_LOGIN } from '../helpers/auth/logins';
 
 import { tn } from '../helpers/scoped-test';
 export { OWNER_LOGIN };

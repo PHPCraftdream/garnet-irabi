@@ -1,0 +1,91 @@
+/**
+ * User — Personal profile-edit page: hidden ID, "My profile" link, and the
+ * email-notification preferences panel (3 categories × frequency).
+ */
+
+import { test, expect, tn } from '../../../helpers/scoped-test';
+import mysql from 'mysql2/promise';
+import { DB } from '../../../helpers/db/db';
+
+test.describe.configure({ mode: 'serial' });
+
+const USER_LOGIN = 'testuser_setup_user@irabi.test';
+let userId = 0;
+
+test.describe('Profile-edit — hidden ID, My-profile link, notification prefs', () => {
+
+    test.beforeAll(async () => {
+        const conn = await mysql.createConnection(DB);
+        try {
+            const [rows] = await conn.execute<any[]>(
+                `SELECT id FROM ${tn('accounts')} WHERE login = ?`, [USER_LOGIN],
+            );
+            if (rows.length > 0) userId = Number(rows[0].id);
+        } finally { await conn.end(); }
+    });
+
+    test('ID is hidden and the My-profile link + notif panel are present', async ({ page }) => {
+        test.skip(userId === 0, 'setup user not found');
+        await page.goto('/system/~profile_edit', { waitUntil: 'domcontentloaded' });
+        await page.waitForSelector('[data-test-id="registration-form"]', { timeout: 15_000 });
+
+        // The numeric account ID must never be rendered as an editable field.
+        await expect(page.locator('[data-test-id="form-field-id"]')).toHaveCount(0);
+
+        await expect(page.locator('[data-test-id="profile-my-profile-link"]')).toBeVisible();
+        await expect(page.locator('[data-test-id="notif-prefs"]')).toBeVisible();
+        await expect(page.locator('[data-test-id="notif-row-messages"]')).toBeVisible();
+        await expect(page.locator('[data-test-id="notif-row-support"]')).toBeVisible();
+        await expect(page.locator('[data-test-id="notif-row-bookings"]')).toBeVisible();
+    });
+
+    test('changing preferences persists to accounts_data', async ({ page }) => {
+        test.skip(userId === 0, 'setup user not found');
+        await page.goto('/system/~profile_edit', { waitUntil: 'domcontentloaded' });
+        await page.waitForSelector('[data-test-id="notif-prefs"]', { timeout: 15_000 });
+
+        // messages → hourly (triggers a save). Explicit generous timeout —
+        // the default actionTimeout (10s) wasn't always enough under
+        // full-suite 6-worker load, where the XHR can queue behind other
+        // workers' php-cgi requests.
+        await Promise.all([
+            page.waitForResponse(r => r.url().includes('/~saveNotifPrefs') && r.request().method() === 'POST' && r.status() === 200, { timeout: 20_000 }),
+            page.locator('[data-test-id="notif-freq-messages"]').selectOption('hourly'),
+        ]);
+
+        // bookings → off (uncheck the enable checkbox, triggers another save)
+        await Promise.all([
+            page.waitForResponse(r => r.url().includes('/~saveNotifPrefs') && r.request().method() === 'POST' && r.status() === 200, { timeout: 20_000 }),
+            page.locator('[data-test-id="notif-enable-bookings"]').uncheck(),
+        ]);
+
+        const conn = await mysql.createConnection(DB);
+        try {
+            const [rows] = await conn.execute<any[]>(
+                `SELECT value FROM ${tn('accounts_data')} WHERE account_id = ? AND param = 'email_notif_prefs'`,
+                [userId],
+            );
+            expect(rows.length).toBe(1);
+            const prefs = JSON.parse(rows[0].value);
+            expect(prefs.messages).toBe('hourly');
+            expect(prefs.bookings).toBe('off');
+            expect(prefs.support).toBe('each');
+        } finally { await conn.end(); }
+    });
+
+    // afterAll (not a plain test) — serial mode skips every subsequent
+    // test once one fails, so a cleanup step written as a regular test
+    // never runs after a mid-flow assertion fails, leaving the shared
+    // testuser_setup_user fixture's email_notif_prefs mutated for the
+    // rest of this worker's run. Hooks run regardless of test outcome.
+    test.afterAll(async () => {
+        if (userId === 0) return;
+        const conn = await mysql.createConnection(DB);
+        try {
+            await conn.execute(
+                `DELETE FROM ${tn('accounts_data')} WHERE account_id = ? AND param = 'email_notif_prefs'`,
+                [userId],
+            );
+        } finally { await conn.end(); }
+    });
+});

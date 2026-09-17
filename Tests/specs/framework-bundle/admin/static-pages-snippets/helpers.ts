@@ -4,7 +4,7 @@
  */
 
 import { test, expect } from '../../../../helpers/scoped-test';
-import { DB } from '../../../../helpers/db';
+import { DB } from '../../../../helpers/db/db';
 import type { Page } from '@playwright/test';
 
 export const TS = `w${process.env.TEST_PARALLEL_INDEX ?? '0'}`;

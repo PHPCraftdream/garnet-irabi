@@ -12,15 +12,15 @@ import {showToast} from '@common/Components/Feedback/GlobalToast';
 import SendButton from '@common/Components/Controls/SendButton';
 import {useCtrlEnter, CTRL_ENTER_HINT} from '@common/hooks/ui/useCtrlEnter';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {SupportTicket, SupportMessage} from './supportTypes';
-import {StatusBadge} from './supportRenders';
-import {SupportTicketRow} from './SupportTicketRow';
-import {SupportBubble} from './SupportBubble';
+import {SupportTicket, SupportMessage} from './parts/supportTypes';
+import {StatusBadge} from './parts/supportRenders';
+import {SupportTicketRow} from './parts/SupportTicketRow';
+import {SupportBubble} from './parts/SupportBubble';
 import AttachmentDisplay from '../../../Common/attachments/AttachmentDisplay';
 import AttachmentPicker, {PendingFile} from '../../../Common/attachments/AttachmentPicker';
 import ScreenshotButton from '../../../Common/media/ScreenshotButton';
-import {initAutoContext} from './autoContext';
-import {useSupportThread} from './useSupportThread';
+import {initAutoContext} from './parts/autoContext';
+import {useSupportThread} from './parts/useSupportThread';
 
 type WidgetView = 'list' | 'conversation' | 'new';
 

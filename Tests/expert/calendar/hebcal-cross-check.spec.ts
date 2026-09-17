@@ -8,11 +8,11 @@
 
 import { test, expect, tn } from '../../helpers/scoped-test';
 import { newScopedPage } from '../../helpers/scoped-test';
-import { DB } from '../../helpers/db';
+import { DB } from '../../helpers/db/db';
 import mysql from 'mysql2/promise';
-import { registerAccount, fillProfileForm, clearTestData } from '../../helpers/auth';
+import { registerAccount, fillProfileForm, clearTestData } from '../../helpers/auth/auth';
 import type { Page } from '@playwright/test';
-import { HDate, HebrewCalendar, flags } from '../../helpers/hebcal';
+import { HDate, HebrewCalendar, flags } from '../../helpers/data/hebcal';
 import {
     EXPERT_LOGIN,
     getHebcalRestrictedDates,

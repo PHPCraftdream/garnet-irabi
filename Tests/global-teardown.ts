@@ -1,12 +1,12 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import mysql from 'mysql2/promise';
-import { clearTestData } from './helpers/auth';
-import { ADMIN_LOGIN, EXPERT_LOGIN, USER_LOGIN, MODERATOR_LOGIN, OWNER_LOGIN } from './helpers/logins';
-import { isolationTeardown } from './helpers/isolation-setup';
+import { clearTestData } from './helpers/auth/auth';
+import { ADMIN_LOGIN, EXPERT_LOGIN, USER_LOGIN, MODERATOR_LOGIN, OWNER_LOGIN } from './helpers/auth/logins';
+import { isolationTeardown } from './helpers/auth/isolation-setup';
 import { CTX_STATS_DIR } from './helpers/scoped-test';
-import { DB as DB_CONFIG } from './helpers/db';
-import { collectServerErrors, formatServerErrors } from './helpers/server-error-logs';
+import { DB as DB_CONFIG } from './helpers/db/db';
+import { collectServerErrors, formatServerErrors } from './helpers/guards/server-error-logs';
 
 /**
  * Read every worker's `.ctx-stats/worker-*.jsonl` file and print a

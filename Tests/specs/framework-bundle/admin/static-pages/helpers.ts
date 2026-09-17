@@ -7,7 +7,7 @@
  */
 
 import { test, expect, tn } from '../../../../helpers/scoped-test';
-import { withConnection, DB } from '../../../../helpers/db';
+import { withConnection, DB } from '../../../../helpers/db/db';
 import mysql from 'mysql2/promise';
 
 export const WORKER_TAG = process.env.TEST_PARALLEL_INDEX ?? '0';

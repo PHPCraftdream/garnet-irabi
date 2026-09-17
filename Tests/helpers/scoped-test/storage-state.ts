@@ -7,7 +7,7 @@
 
 import * as fs from 'node:fs';
 import { BrowserContext } from '@playwright/test';
-import { warmAntiBotCookie } from '../anti-bot';
+import { warmAntiBotCookie } from '../guards/anti-bot';
 
 type WorkerScope = {
     /**

@@ -10,9 +10,9 @@
 import { test, expect, tn } from '../helpers/scoped-test';
 import { newScopedPage } from '../helpers/scoped-test';
 import type { Page } from '@playwright/test';
-import { registerAccount, fillProfileForm, clearTestData } from '../helpers/auth';
+import { registerAccount, fillProfileForm, clearTestData } from '../helpers/auth/auth';
 import mysql from 'mysql2/promise';
-import { DB } from '../helpers/db';
+import { DB } from '../helpers/db/db';
 
 export const EXPERT_LOGIN = `testuser_batch_${process.env.TEST_PARALLEL_INDEX ?? "0"}@irabi.test`;
 

@@ -1,7 +1,7 @@
 import { test as setup } from '@playwright/test';
-import { registerAccount, fillProfileForm } from '../helpers/auth';
-import { saveUserMeta, resolveStorageStatePath } from '../helpers/state';
-import { USER_LOGIN } from '../helpers/logins';
+import { registerAccount, fillProfileForm } from '../helpers/auth/auth';
+import { saveUserMeta, resolveStorageStatePath } from '../helpers/auth/state';
+import { USER_LOGIN } from '../helpers/auth/logins';
 
 export { USER_LOGIN };
 

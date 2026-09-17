@@ -19,7 +19,7 @@ import {
 } from '../../../Common/booking/bookingAction';
 import {ReasonModal} from '../../../Common/Components/ReasonModal';
 import {RescheduleModal} from './RescheduleModal';
-import {CancelRefundDetails} from './card/CancelRefundDetails';
+import {CancelRefundDetails} from './card/cancel/CancelRefundDetails';
 import {
     Booking,
     BookingCounts,

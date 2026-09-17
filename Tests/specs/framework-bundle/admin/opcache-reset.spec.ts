@@ -11,7 +11,7 @@
 
 import { test, expect } from '../../../helpers/scoped-test';
 import { newScopedContext } from '../../../helpers/scoped-test';
-import { roleLogin } from '../../../helpers/role-login';
+import { roleLogin } from '../../../helpers/auth/role-login';
 
 const RESET_PATH = '/admin/system/~opcacheReset';
 

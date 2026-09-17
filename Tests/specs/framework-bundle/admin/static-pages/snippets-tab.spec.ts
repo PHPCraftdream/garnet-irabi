@@ -3,7 +3,7 @@
  */
 
 import { test, expect, tn } from '../../../../helpers/scoped-test';
-import { withConnection, DB } from '../../../../helpers/db';
+import { withConnection, DB } from '../../../../helpers/db/db';
 import {
     TEST_SNIPPET_SLUG,
     TEST_SNIPPET_NAME,

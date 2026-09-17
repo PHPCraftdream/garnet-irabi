@@ -2,7 +2,7 @@
  * Заголовки, которыми запрос попадает в изолированный тестовый контур.
  */
 
-import { isProd } from '../ssh-bridge';
+import { isProd } from '../db/ssh-bridge';
 
 /**
  * Per-request headers that route a browser context to the isolated test

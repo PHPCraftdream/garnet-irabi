@@ -3,8 +3,8 @@ import type { BrowserContext, Page } from '@playwright/test';
 import mysql from 'mysql2/promise';
 
 import { newScopedContext } from '../../../helpers/scoped-test';
-import { DB } from '../../../helpers/db';
-import { roleLogin } from '../../../helpers/role-login';
+import { DB } from '../../../helpers/db/db';
+import { roleLogin } from '../../../helpers/auth/role-login';
 test.describe.configure({ mode: 'serial' });
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:8001';

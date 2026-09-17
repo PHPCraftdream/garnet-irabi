@@ -22,8 +22,8 @@
  */
 import { test, expect, tn } from '../helpers/scoped-test';
 import { newScopedContext } from '../helpers/scoped-test';
-import { withConnection } from '../helpers/db';
-import { roleLogin } from '../helpers/role-login';
+import { withConnection } from '../helpers/db/db';
+import { roleLogin } from '../helpers/auth/role-login';
 import type { BrowserContext, Page } from '@playwright/test';
 
 async function devLogin(browser: any, role: string): Promise<{ context: BrowserContext; page: Page }> {

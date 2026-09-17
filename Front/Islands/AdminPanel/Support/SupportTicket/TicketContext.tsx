@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {useState} from 'react';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {AutoContext} from '../../../Comms/Support/supportTypes';
+import {AutoContext} from '../../../Comms/Support/parts/supportTypes';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 
 interface Props {

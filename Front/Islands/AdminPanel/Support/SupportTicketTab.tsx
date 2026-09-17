@@ -7,7 +7,7 @@ import {useSending} from '@common/hooks/data/useSending';
 
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {SupportTicket, SupportMessage, SupportStatus, AssignmentLogEntry, AutoContext} from '../../Comms/Support/supportTypes';
+import {SupportTicket, SupportMessage, SupportStatus, AssignmentLogEntry, AutoContext} from '../../Comms/Support/parts/supportTypes';
 import {PendingFile} from '../../../Common/attachments/AttachmentPicker';
 import {reportAttachmentErrors} from '../../../Common/attachments/attachmentErrors';
 import TicketHeader from './SupportTicket/TicketHeader';

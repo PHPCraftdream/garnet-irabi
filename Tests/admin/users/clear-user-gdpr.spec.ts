@@ -26,8 +26,8 @@
 
 import { test, expect, tn } from '../../helpers/scoped-test';
 import mysql from 'mysql2/promise';
-import { DB } from '../../helpers/db';
-import { OWNER_LOGIN, ADMIN_LOGIN } from '../../helpers/logins';
+import { DB } from '../../helpers/db/db';
+import { OWNER_LOGIN, ADMIN_LOGIN } from '../../helpers/auth/logins';
 
 test.describe.configure({ mode: 'serial' });
 

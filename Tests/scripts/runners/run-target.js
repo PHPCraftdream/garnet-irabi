@@ -4,7 +4,7 @@
 // See helpers/target-config.js for how the target is resolved (#395).
 const { spawnSync } = require('node:child_process');
 const path = require('node:path');
-const { resolveTarget } = require('../../helpers/target-config');
+const { resolveTarget } = require('../../helpers/data/target-config');
 
 const APP_ROOT = path.resolve(__dirname, '..', '..', '..');
 const passthrough = process.argv.slice(2);
