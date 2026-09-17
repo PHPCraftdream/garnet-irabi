@@ -1,22 +1,22 @@
 import * as React from 'react';
 import {useState, useMemo, useEffect} from 'react';
-import {sendPost} from '@common/Api/sendPost';
-import {refreshLiveCounts} from '@common/Utils/liveCounts';
+import {sendPost} from '@common/Api/Send/sendPost';
+import {refreshLiveCounts} from '@common/Utils/Data/liveCounts';
 import {GridConfig} from './types';
-import {TabNav, TabDef} from '@common/Components/Navigation/TabNav';
+import {TabNav, TabDef} from '@common/Components/Layout/Navigation/TabNav';
 import {AdminGrid} from './AdminGrid';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {SupportTicket, SupportStatus} from '../Support/supportTypes';
 import {StatusBadge, statusLabel, ALL_STATUSES} from '../Support/supportRenders';
 import SupportTicketTab from './SupportTicketTab';
-import {formatTs} from '@common/Utils/DateUtils';
+import {formatTs} from '@common/Utils/Time/DateUtils';
 import {AdminUserLink} from '../../Common/people/EntityLinks';
 import {UserDetailContext} from './UserDetailContext';
 import {UserDetailTab} from './UserDetailTab';
 import {useUserTabs} from './useUserTabs';
 import {ADMIN_URLS} from './AdminPageWrapper';
 import {SupportStatusBar, SupportTicketFilters} from './SupportTicket/SupportTicketFilters';
-import {PageHeader} from '@common/Components/PageHeader';
+import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {LifeBuoy, Paperclip} from 'lucide-react';
 import {DateInput} from '@common/Components/ui/DateInput';
 

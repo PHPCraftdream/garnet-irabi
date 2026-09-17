@@ -3,9 +3,9 @@
 namespace PHPCraftdream\IRabi\Common\Commands {
     use Aura\Cli\Context;
     use Aura\Cli\Stdio;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\ICommand;
-    use PHPCraftdream\Garnet\Kernel\Io\IniConfig\IniConfig;
-    use PHPCraftdream\Garnet\Kernel\Io\Ssh\SshClient;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Io\ICommand;
+    use PHPCraftdream\Garnet\Kernel\Io\Services\IniConfig\IniConfig;
+    use PHPCraftdream\Garnet\Kernel\Io\Services\Ssh\SshClient;
     use Throwable;
 
     /**

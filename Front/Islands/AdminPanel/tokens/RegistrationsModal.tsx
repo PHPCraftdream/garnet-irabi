@@ -1,8 +1,8 @@
 import * as React from 'react';
-import {sendPost} from '@common/Api/sendPost';
-import {showToast} from '@common/Components/GlobalToast';
-import {LogDetailModal} from '@common/Components/AdminLog/LogDetailModal';
-import {formatTs} from '@common/Utils/DateUtils';
+import {sendPost} from '@common/Api/Send/sendPost';
+import {showToast} from '@common/Components/Feedback/GlobalToast';
+import {LogDetailModal} from '@common/Components/Admin/AdminLog/LogDetailModal';
+import {formatTs} from '@common/Utils/Time/DateUtils';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {AdminUserLink} from '../../../Common/people/EntityLinks';
 import {Registration, TokenRow} from './tokenTypes';

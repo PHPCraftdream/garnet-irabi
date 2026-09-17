@@ -1,6 +1,6 @@
 import * as React from 'react';
-import {formatTs} from '@common/Utils/DateUtils';
-import {appUrl} from '@common/Utils/appUrl';
+import {formatTs} from '@common/Utils/Time/DateUtils';
+import {appUrl} from '@common/Utils/Url/appUrl';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {TicketRow, TICKET_STATUS_CLS, ticketStatusLabel} from '../userDetailTypes';
 import {DetailTable} from '../DetailTable';

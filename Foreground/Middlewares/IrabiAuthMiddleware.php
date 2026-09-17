@@ -1,15 +1,15 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Foreground\Middlewares {
-    use PHPCraftdream\Garnet\Bundle\Modules\Auth\Middlewares\EmailAuthMiddleware;
+    use PHPCraftdream\Garnet\Bundle\Modules\Accounts\Auth\Middlewares\EmailAuthMiddleware;
     use PHPCraftdream\Garnet\Kernel\Core\Env\TestScope;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Session\Session;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
-    use PHPCraftdream\Garnet\Kernel\Io\IniConfig\IniConfig;
-    use PHPCraftdream\Garnet\Kernel\Io\Logs\Logger;
-    use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Core\IGlobalReqParams;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
+    use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
+    use PHPCraftdream\Garnet\Kernel\Io\Services\IniConfig\IniConfig;
+    use PHPCraftdream\Garnet\Kernel\Io\Services\Logs\Logger;
     use PHPCraftdream\IRabi\Common\Services\ConsentJournalService;
     use PHPCraftdream\IRabi\Common\Services\StaticPagesService;
     use PHPCraftdream\IRabi\Common\System\AppSettings;

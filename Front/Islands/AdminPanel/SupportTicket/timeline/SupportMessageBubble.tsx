@@ -3,7 +3,7 @@ import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {SupportMessage} from '../../../Support/supportTypes';
 import AttachmentDisplay from '../../../../Common/attachments/AttachmentDisplay';
 import {AdminUserLink} from '../../../../Common/people/EntityLinks';
-import {formatTs} from '@common/Utils/DateUtils';
+import {formatTs} from '@common/Utils/Time/DateUtils';
 
 /**
  * Одно сообщение в переписке по обращению.

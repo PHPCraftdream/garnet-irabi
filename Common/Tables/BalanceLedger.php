@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Common\Tables {
-    use PHPCraftdream\Garnet\Bundle\Modules\Balance\Tables\FwAccountBalance;
-    use PHPCraftdream\Garnet\Bundle\Modules\Balance\Tables\FwBalanceLedger;
+    use PHPCraftdream\Garnet\Bundle\Modules\Accounts\Balance\Tables\FwAccountBalance;
+    use PHPCraftdream\Garnet\Bundle\Modules\Accounts\Balance\Tables\FwBalanceLedger;
     use PHPCraftdream\Garnet\Kernel\Db\Link\CasUpdate;
-    use PHPCraftdream\Garnet\Kernel\Exceptions\DbException;
+    use PHPCraftdream\Garnet\Kernel\Exceptions\Db\DbException;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Db\ITableBuilderDriver;
 
     class BalanceLedger extends FwBalanceLedger {

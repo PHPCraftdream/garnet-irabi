@@ -238,9 +238,9 @@ runtime override OR resolve table names lazily.
 
 ### Tooling
 
-- `Framework/Bundle/Middlewares/WorkerScopeMiddleware.php`
+- `Framework/Bundle/Support/Middlewares/WorkerScopeMiddleware.php`
   — server-side prefix swap (header → `IniConfig::db()->setRuntimeOverride`).
-- `Framework/Kernel/Io/IniConfig/IniConfig.php`
+- `Framework/Kernel/Io/Services/IniConfig/IniConfig.php`
   — `setRuntimeOverride` / `clearRuntimeOverride` /
   `clearAllRuntimeOverrides`.
 - `Apps/IRabi/run_web.php`

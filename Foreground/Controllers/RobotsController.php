@@ -1,12 +1,12 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Foreground\Controllers {
-    use PHPCraftdream\Garnet\Kernel\Core\FrameworkController;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
-    use PHPCraftdream\Garnet\Kernel\Io\IniConfig\AppConfig;
-    use PHPCraftdream\Garnet\Kernel\Io\IniConfig\IniConfig;
-    use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
+    use PHPCraftdream\Garnet\Kernel\Core\Runtime\FrameworkController;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Core\IGlobalReqParams;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
+    use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
+    use PHPCraftdream\Garnet\Kernel\Io\Services\IniConfig\AppConfig;
+    use PHPCraftdream\Garnet\Kernel\Io\Services\IniConfig\IniConfig;
 
     /**
      * Serves /robots.txt at the domain root (no /system prefix).
@@ -14,7 +14,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
      * Public, no-auth GET endpoint registered with the $maintenanceOnly
      * middleware chain (same as SysLogController / FwJsErrorLogController)
      * and declared as a no-prefix path via
-     * {@see \PHPCraftdream\Garnet\Kernel\Io\Router\RouterUriParams::registerNoPrefixPath()}
+     * {@see \PHPCraftdream\Garnet\Kernel\Io\Http\Router\RouterUriParams::registerNoPrefixPath()}
      * so crawlers find it at the absolute /robots.txt path the robots
      * protocol mandates.
      *

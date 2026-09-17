@@ -2,8 +2,8 @@ import {useEffect} from 'react';
 import * as React from 'react';
 import {UserDetailTab} from './UserDetailTab';
 import {useUserTabs} from './useUserTabs';
-import {TabNav} from '@common/Components/Navigation/TabNav';
-import {appUrl} from '@common/Utils/appUrl';
+import {TabNav} from '@common/Components/Layout/Navigation/TabNav';
+import {appUrl} from '@common/Utils/Url/appUrl';
 
 // ── Hardcoded admin API URLs (consistent across all admin pages) ──
 

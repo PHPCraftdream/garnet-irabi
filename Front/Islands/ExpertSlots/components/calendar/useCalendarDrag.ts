@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {useState, useCallback, useRef} from 'react';
-import {tsToInputDate} from '@common/Utils/DateUtils';
+import {tsToInputDate} from '@common/Utils/Time/DateUtils';
 import {Slot} from '../../types';
 
 /**

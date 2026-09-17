@@ -36,7 +36,7 @@ Route chains:
 - `/dev-login`: `WorkerScope` only at route level, but controller now requires `$globals->isDev()` and `Env::isDevDir()`, `DevLoginController.php:35-43`, `:155-159`.
 - Admin: most `/admin/*` are `$common + moderatorOnly`, `IRabi.php:248-264`; system/static pages are `$common + ownerOnly`, `IRabi.php:265-272`.
 
-Global POST protection remains present for authenticated routes: `EmailAuthMiddleware::authOnly()` runs Origin/Referer and CSRF before controller for all POSTs except `action=start-session` in `vendor/phpcraftdream/garnet-framework/Bundle/Modules/Auth/Middlewares/EmailAuthMiddleware.php:127-144`, CSRF compare uses `hash_equals()` at `:192-205`.
+Global POST protection remains present for authenticated routes: `EmailAuthMiddleware::authOnly()` runs Origin/Referer and CSRF before controller for all POSTs except `action=start-session` in `vendor/phpcraftdream/garnet-framework/Bundle/Modules/Accounts/Auth/Middlewares/EmailAuthMiddleware.php:127-144`, CSRF compare uses `hash_equals()` at `:192-205`.
 
 ## 3. State-changing endpoint inventory
 

@@ -2,7 +2,7 @@
 
 namespace PHPCraftdream\IRabi\Common\Tables {
     use Aura\SqlQuery\Common\SelectInterface;
-    use PHPCraftdream\Garnet\Bundle\Modules\Support\Tables\FwSupportTickets;
+    use PHPCraftdream\Garnet\Bundle\Modules\Comms\Support\Tables\FwSupportTickets;
     use PHPCraftdream\Garnet\Kernel\Db\Tables\DbTableBuilderFactory;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Db\ITableBuilderDriver;
 

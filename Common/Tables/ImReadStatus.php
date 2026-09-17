@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Common\Tables {
-    use PHPCraftdream\Garnet\Bundle\Modules\Messaging\Tables\FwImReadStatus;
+    use PHPCraftdream\Garnet\Bundle\Modules\Comms\Messaging\Tables\FwImReadStatus;
 
     class ImReadStatus extends FwImReadStatus {
         protected string $tableName = 'im_read_status';

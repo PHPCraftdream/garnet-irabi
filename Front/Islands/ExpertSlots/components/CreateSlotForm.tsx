@@ -1,9 +1,9 @@
 import * as React from 'react';
 import {useForm} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
-import {D} from '@common/Debug/D';
+import {D} from '@common/Support/Debug/D';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {zodFromFieldsInfo, getFieldRegisterOptions} from '@common/Utils/zodFromFieldsInfo';
+import {zodFromFieldsInfo, getFieldRegisterOptions} from '@common/Utils/Data/zodFromFieldsInfo';
 import {IFromFieldsInfo} from '@common/Dom/GridTable/Models';
 import {createSlot} from '../api';
 import {DateInput} from '@common/Components/ui/DateInput';

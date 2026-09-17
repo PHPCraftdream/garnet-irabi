@@ -17,11 +17,11 @@ sit outside the normal role model.
   - `garnet-framework/Kernel/Core/Env/TestScope.php`
   - `garnet-framework/Kernel/Core/Env/Env.php`
   - `garnet-framework/Kernel/Db/Entity/Session/Session.php`
-  - `garnet-framework/Bundle/Modules/Auth/Middlewares/EmailAuthMiddleware.php`
-  - `garnet-framework/Bundle/Modules/Auth/Middlewares/RegMiddleware.php`
-  - `garnet-framework/Bundle/Middlewares/WorkerScopeMiddleware.php`
-  - `garnet-framework/Kernel/Io/IniConfig/IniConfig.php`
-  - `garnet-framework/Kernel/Core/GlobalReqParams/GlobalReqParams.php`
+  - `garnet-framework/Bundle/Modules/Accounts/Auth/Middlewares/EmailAuthMiddleware.php`
+  - `garnet-framework/Bundle/Modules/Accounts/Auth/Middlewares/RegMiddleware.php`
+  - `garnet-framework/Bundle/Support/Middlewares/WorkerScopeMiddleware.php`
+  - `garnet-framework/Kernel/Io/Services/IniConfig/IniConfig.php`
+  - `garnet-framework/Kernel/Core/Runtime/GlobalReqParams/GlobalReqParams.php`
   - `garnet-framework/Kernel/Db/Entity/Account/Account.php`
   - `IRabi.php` (routing / middleware wiring)
 

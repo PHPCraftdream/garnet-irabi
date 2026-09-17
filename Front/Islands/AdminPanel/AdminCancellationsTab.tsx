@@ -1,8 +1,8 @@
 import * as React from 'react';
-import Pagination from '@common/Components/Pagination';
-import {PageResponse} from '@common/hooks/usePagination';
-import {formatTs} from '@common/Utils/DateUtils';
-import {DEFAULT_PAGE_SIZE} from '@common/Utils/pagination';
+import Pagination from '@common/Components/Layout/Paging/Pagination';
+import {PageResponse} from '@common/hooks/data/usePagination';
+import {formatTs} from '@common/Utils/Time/DateUtils';
+import {DEFAULT_PAGE_SIZE} from '@common/Utils/Data/pagination';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {EntityLink, userLinks} from '../../Common/people/EntityLinks';
 import {AccountOption, adminPaginationLabels, buildAccountOptions} from './adminShared';

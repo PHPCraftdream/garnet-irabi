@@ -4,9 +4,9 @@
 // - All islands are lazy-loaded (code splitting)
 // - ErrorBoundary wraps every island
 
-import {sendPostFormData} from '@common/Api/sendPostFormData';
+import {sendPostFormData} from '@common/Api/Send/sendPostFormData';
 import {createIsland} from '@common/Islands/createIsland';
-import {installJsErrorReporter} from '@common/Errors/JsErrorReporter';
+import {installJsErrorReporter} from '@common/Support/Errors/JsErrorReporter';
 import {initAutoLightbox} from '@framework/lightbox/autoLightbox';
 
 // Install global JS error reporter FIRST — before any island registration —
@@ -22,10 +22,10 @@ initAutoLightbox();
 // ── ALL islands are lazy-loaded (JS chunk only when element appears on page) ──
 
 // Navigation + widget (present on every page — loaded immediately since elements exist in DOM)
-createIsland({className: 'tz-banner-init', lazy: () => import('@common/Components/TimezoneNoticeWarnIsland'), exportName: 'default'});
-createIsland({className: 'top-menu-init', lazy: () => import('@common/Components/Navigation/TopMenu'), exportName: 'TopMenu'});
-createIsland({className: 'sidebar-menu-init', lazy: () => import('@common/Components/Navigation/SidebarMenu'), exportName: 'SidebarMenu'});
-createIsland({className: 'mobile-menu-init', lazy: () => import('@common/Components/Navigation/MobileMenu'), exportName: 'MobileMenu'});
+createIsland({className: 'tz-banner-init', lazy: () => import('@common/Components/Feedback/TimezoneNoticeWarnIsland'), exportName: 'default'});
+createIsland({className: 'top-menu-init', lazy: () => import('@common/Components/Layout/Navigation/TopMenu'), exportName: 'TopMenu'});
+createIsland({className: 'sidebar-menu-init', lazy: () => import('@common/Components/Layout/Navigation/SidebarMenu'), exportName: 'SidebarMenu'});
+createIsland({className: 'mobile-menu-init', lazy: () => import('@common/Components/Layout/Navigation/MobileMenu'), exportName: 'MobileMenu'});
 createIsland({className: 'support-widget-init', lazy: () => import('../Islands/Support/SupportWidgetIsland'), exportName: 'SupportWidgetIsland'});
 
 // User pages

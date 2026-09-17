@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Common\Tables {
-    use PHPCraftdream\Garnet\Bundle\Modules\Invite\Tables\FwInviteTokens;
+    use PHPCraftdream\Garnet\Bundle\Modules\Accounts\Invite\Tables\FwInviteTokens;
 
     /**
      * IRabi-prefixed table. Schema + queries live in the abstract

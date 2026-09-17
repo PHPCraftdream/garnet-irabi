@@ -2,7 +2,7 @@ import * as React from 'react';
 import {Paperclip} from 'lucide-react';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {ImConversation} from '../imTypes';
-import {formatTs} from '@common/Utils/DateUtils';
+import {formatTs} from '@common/Utils/Time/DateUtils';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {UserAvatar} from '../../../Common/media/UserAvatar';
 

@@ -115,7 +115,7 @@ No other real risks were identified in the audited files.
 - **Files / lines:**
   - In-scope: `Common/Tables/BalanceLedger.php` and `Common/Tables/AccountBalance.php`
     (thin subclasses that inherit the behaviour).
-  - Primitive: `garnet-framework/Bundle/Modules/Balance/Tables/FwBalanceLedger.php:42-63`
+  - Primitive: `garnet-framework/Bundle/Modules/Accounts/Balance/Tables/FwBalanceLedger.php:42-63`
     (`addEntry`), `FwAccountBalance.php:26-49` (`recalculate`), `:51-55` (`getBalance`).
   - Representative callers within scope: `DevSeedService.php:378-384`,
     `TestScopeSeedService.php:105` (both trusted/seed-only).

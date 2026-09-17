@@ -22,7 +22,7 @@
 
 Ключевые «false positive» выводы этого отчёта дополнительно верифицированы построчно по актуальному коду (не доверяя отчёту вслепую) — все подтвердились:
 
-- **IM attachment IDOR — подтверждён как НЕ баг.** `FwImController::get__download()` (вендоренная копия, `Bundle/Modules/Messaging/Controllers/FwImController.php:350-390`): `attachmentId` (GET) → `attachment` → `message` по `attachment.message_id` → `conversationId = message.conversation_id`, затем `accessCheck: fn () => isParticipant($conversationId, $accountId)` (`:383-388`). `conversationId` НЕ приходит из запроса — выводится из самого вложения; enumeration `id` не даёт доступа к чужой беседе. IDOR отсутствует.
+- **IM attachment IDOR — подтверждён как НЕ баг.** `FwImController::get__download()` (вендоренная копия, `Bundle/Modules/Comms/Messaging/Controllers/FwImController.php:350-390`): `attachmentId` (GET) → `attachment` → `message` по `attachment.message_id` → `conversationId = message.conversation_id`, затем `accessCheck: fn () => isParticipant($conversationId, $accountId)` (`:383-388`). `conversationId` НЕ приходит из запроса — выводится из самого вложения; enumeration `id` не даёт доступа к чужой беседе. IDOR отсутствует.
 - **BookingsController::post__cancel — путь корректен.** `BookingsController.php:470-521`: CSRF (`:470`), ownership-или-moderator (`:480-486`), валидный статус-переход `pending|confirmed` (`:489`), past-confirmed-session guard (`:497-502`), CAS-отмена с идемпотентным no-op на повторе (`:513-521`). Обхода авторизации/состояния нет.
 
 Вывод перепроверки совпадает с выводом отчёта: **GO, изменений в коде не требуется.**

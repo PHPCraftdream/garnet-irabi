@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Common\Tables {
-    use PHPCraftdream\Garnet\Bundle\Modules\Auth\Tables\FwMagicLoginTokens;
+    use PHPCraftdream\Garnet\Bundle\Modules\Accounts\Auth\Tables\FwMagicLoginTokens;
 
     /**
      * IRabi-prefixed table. Schema + queries live in the abstract

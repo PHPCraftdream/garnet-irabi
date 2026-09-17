@@ -4,7 +4,7 @@ import {SupportTicket, SupportStatus, UserRole} from '../../Support/supportTypes
 import {StatusBadge, ALL_STATUSES, statusLabel} from '../../Support/supportRenders';
 import {AdminUserLink} from '../../../Common/people/EntityLinks';
 import {UserAvatar} from '../../../Common/media/UserAvatar';
-import {formatTs} from '@common/Utils/DateUtils';
+import {formatTs} from '@common/Utils/Time/DateUtils';
 
 interface Moderator {
     id: number;

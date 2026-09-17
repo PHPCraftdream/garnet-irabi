@@ -2,15 +2,15 @@
 
 namespace PHPCraftdream\IRabi\Common\Services {
     use Aura\SqlQuery\Common\SelectInterface;
-    use PHPCraftdream\Garnet\Bundle\Modules\Email\FwEmailQueueService;
-    use PHPCraftdream\Garnet\Bundle\Modules\SystemSettings\FwAppSettings;
+    use PHPCraftdream\Garnet\Bundle\Modules\Comms\Email\FwEmailQueueService;
+    use PHPCraftdream\Garnet\Bundle\Modules\Ops\SystemSettings\FwAppSettings;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\DbAccount;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\DbAccountData;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\IAppConfig;
-    use PHPCraftdream\Garnet\Kernel\Io\HtmlMinify\HtmlMinify;
-    use PHPCraftdream\Garnet\Kernel\Io\IniConfig\IniConfig;
-    use PHPCraftdream\Garnet\Kernel\Io\Twig\Twig;
-    use PHPCraftdream\Garnet\Kernel\Io\Twig\TwigParams;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Core\IAppConfig;
+    use PHPCraftdream\Garnet\Kernel\Io\Render\HtmlMinify\HtmlMinify;
+    use PHPCraftdream\Garnet\Kernel\Io\Render\Twig\Twig;
+    use PHPCraftdream\Garnet\Kernel\Io\Render\Twig\TwigParams;
+    use PHPCraftdream\Garnet\Kernel\Io\Services\IniConfig\IniConfig;
     use PHPCraftdream\IRabi\Common\System\DateUtils;
     use PHPCraftdream\IRabi\Common\Tables\EmailThrottle;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;

@@ -51,7 +51,7 @@
 - **Рекомендация:** Применять `AccountDisplay::isDisabled()` / `disabledName()` во всех трёх эндпоинтах перед возвратом `name`, как это уже сделано в остальных контроллерах. В `ExpertSlotsService::userPreview` убрать fallback на `login` (никогда не отдавать email наружу — это прямо противоречит комментарию-инварианте в `UsersController` «Email/login никогда не отдаётся»).
 
 ### 4. Рассылка сообщений любому аккаунту в обход бизнес-границы получателей
-- **Файл:** `Foreground/Controllers/ImController.php:97–120` (`post__send`, IRabi-обёртка) и базовый `Bundle/Modules/Messaging/Controllers/FwImController.php:276–346`
+- **Файл:** `Foreground/Controllers/ImController.php:97–120` (`post__send`, IRabi-обёртка) и базовый `Bundle/Modules/Comms/Messaging/Controllers/FwImController.php:276–346`
 - **Строка:** `FwImController.php:290` (чтение `recipient_id` без проверки допустимости)
 - **Severity:** Low
 - **Описание:** `ImController::searchRecipients` реализует «бизнес-границу» (обычный пользователь видит только экспертов/модераторов/владельцев; эксперт — своих учеников + модераторов). Однако `post__send` (базовый `FwImController`) принимает произвольный `recipient_id` и проверяет лишь, что получатель существует и это не сам отправитель (`FwImController.php:293–312`), но **не проверяет, что получатель входит в множество разрешённых для отправителя**. Таким образом ограничение из `searchRecipients` — только UI-фильтр, не enforced на отправке. (CSRF/Origin здесь защищены глобальным middleware.)

@@ -3,7 +3,7 @@
 namespace PHPCraftdream\IRabi\Common\Commands {
     use Aura\Cli\Context;
     use Aura\Cli\Stdio;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\ICommand;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Io\ICommand;
     use PHPCraftdream\IRabi\Common\Services\CronCompletionService;
     use PHPCraftdream\IRabi\Common\Services\CronReminderService;
     use PHPCraftdream\IRabi\Common\Services\TimeShiftService;

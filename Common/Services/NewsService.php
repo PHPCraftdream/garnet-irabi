@@ -3,10 +3,10 @@
 namespace PHPCraftdream\IRabi\Common\Services {
     use Aura\SqlQuery\Common\SelectInterface;
     use Closure;
-    use PHPCraftdream\Garnet\Bundle\Modules\News\FwNewsService;
-    use PHPCraftdream\Garnet\Bundle\Modules\News\Tables\FwNewsArchived;
-    use PHPCraftdream\Garnet\Bundle\Modules\News\Tables\FwNewsEvents;
-    use PHPCraftdream\Garnet\Bundle\Modules\News\Tables\FwNewsReads;
+    use PHPCraftdream\Garnet\Bundle\Modules\Content\News\FwNewsService;
+    use PHPCraftdream\Garnet\Bundle\Modules\Content\News\Tables\FwNewsArchived;
+    use PHPCraftdream\Garnet\Bundle\Modules\Content\News\Tables\FwNewsEvents;
+    use PHPCraftdream\Garnet\Bundle\Modules\Content\News\Tables\FwNewsReads;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\DbAccount;
     use PHPCraftdream\IRabi\Common\Tables\NewsArchived;
     use PHPCraftdream\IRabi\Common\Tables\NewsEvents;

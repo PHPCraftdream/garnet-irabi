@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {useState, useEffect} from 'react';
-import SendButton from '@common/Components/SendButton';
-import {useBodyScrollLock} from '@common/hooks/useBodyScrollLock';
+import SendButton from '@common/Components/Controls/SendButton';
+import {useBodyScrollLock} from '@common/hooks/ui/useBodyScrollLock';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {ModalShell} from './ModalShell';
 

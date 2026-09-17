@@ -1,5 +1,5 @@
 import type {AutoContext} from './supportTypes';
-import {D} from '@common/Debug/D';
+import {D} from '@common/Support/Debug/D';
 
 /**
  * Auto-context collector for support tickets.

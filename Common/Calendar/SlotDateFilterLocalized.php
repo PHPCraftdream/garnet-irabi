@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Common\Calendar {
-    use PHPCraftdream\Garnet\Kernel\Core\HCalendar\SlotDateFilter as FrameworkSlotDateFilter;
+    use PHPCraftdream\Garnet\Kernel\Core\HCalendar\Slots\SlotDateFilter as FrameworkSlotDateFilter;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
 
     /**

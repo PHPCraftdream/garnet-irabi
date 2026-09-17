@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Dashboard\Controllers {
-    use PHPCraftdream\Garnet\Kernel\Core\FrameworkController;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
-    use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
+    use PHPCraftdream\Garnet\Kernel\Core\Runtime\FrameworkController;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Core\IGlobalReqParams;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
+    use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
     use PHPCraftdream\IRabi\IRabi;
 
     /**

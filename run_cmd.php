@@ -5,8 +5,8 @@ namespace PHPCraftdream\IRabi {
 
     use PHPCraftdream\Garnet\Kernel\Core\Env\Env;
     use PHPCraftdream\Garnet\Kernel\Core\Env\TestScope;
-    use PHPCraftdream\Garnet\Kernel\Io\IniConfig\IniConfig;
-    use PHPCraftdream\Garnet\Kernel\Io\IoRun\IoRunConsole;
+    use PHPCraftdream\Garnet\Kernel\Io\Http\IoRun\IoRunConsole;
+    use PHPCraftdream\Garnet\Kernel\Io\Services\IniConfig\IniConfig;
 
     gc_disable();
 

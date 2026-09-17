@@ -1,8 +1,8 @@
 import * as React from 'react';
 import {useState} from 'react';
-import {sendPost} from '@common/Api/sendPost';
-import {formatTs} from '@common/Utils/DateUtils';
-import {PageHeader} from '@common/Components/PageHeader';
+import {sendPost} from '@common/Api/Send/sendPost';
+import {formatTs} from '@common/Utils/Time/DateUtils';
+import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {Mailbox} from 'lucide-react';
 
 interface EmailQueueRow {

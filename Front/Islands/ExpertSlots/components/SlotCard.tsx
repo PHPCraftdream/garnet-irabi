@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {Slot} from '../types';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {formatTs, formatTime} from '@common/Utils/DateUtils';
+import {formatTs, formatTime} from '@common/Utils/Time/DateUtils';
 
 interface Props {
     slot: Slot;

@@ -1,16 +1,16 @@
 import * as React from 'react';
 import {useState, useEffect, useRef} from 'react';
-import {sendPost} from '@common/Api/sendPost';
-import {useLiveCounts} from '@common/hooks/useLiveCounts';
-import {refreshLiveCounts} from '@common/Utils/liveCounts';
-import {sendPostFormData} from '@common/Api/sendPostFormData';
-import {D} from '@common/Debug/D';
-import {formatTs} from '@common/Utils/DateUtils';
-import {useSending} from '@common/hooks/useSending';
+import {sendPost} from '@common/Api/Send/sendPost';
+import {useLiveCounts} from '@common/hooks/data/useLiveCounts';
+import {refreshLiveCounts} from '@common/Utils/Data/liveCounts';
+import {sendPostFormData} from '@common/Api/Send/sendPostFormData';
+import {D} from '@common/Support/Debug/D';
+import {formatTs} from '@common/Utils/Time/DateUtils';
+import {useSending} from '@common/hooks/data/useSending';
 
-import {showToast} from '@common/Components/GlobalToast';
-import SendButton from '@common/Components/SendButton';
-import {useCtrlEnter, CTRL_ENTER_HINT} from '@common/hooks/useCtrlEnter';
+import {showToast} from '@common/Components/Feedback/GlobalToast';
+import SendButton from '@common/Components/Controls/SendButton';
+import {useCtrlEnter, CTRL_ENTER_HINT} from '@common/hooks/ui/useCtrlEnter';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {SupportTicket, SupportMessage} from './supportTypes';
 import {StatusBadge} from './supportRenders';

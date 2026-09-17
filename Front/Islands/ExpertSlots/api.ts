@@ -1,6 +1,6 @@
-import {sendPostFormData} from '@common/Api/sendPostFormData';
-import {D} from '@common/Debug/D';
-import {appUrl} from '@common/Utils/appUrl';
+import {sendPostFormData} from '@common/Api/Send/sendPostFormData';
+import {D} from '@common/Support/Debug/D';
+import {appUrl} from '@common/Utils/Url/appUrl';
 import {BatchPreviewResponse} from './types';
 
 export function createSlot(data: {

@@ -2,13 +2,13 @@
 
 namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use Aura\SqlQuery\Common\SelectInterface;
-    use PHPCraftdream\Garnet\Bundle\Modules\Logging\Admin\Tables\FwAdminActionLog;
-    use PHPCraftdream\Garnet\Bundle\Modules\Logging\Mail\Tables\FwMailLog;
-    use PHPCraftdream\Garnet\Bundle\Modules\Logging\Viewer\Controllers\FwDashboardLogsViewerController;
+    use PHPCraftdream\Garnet\Bundle\Modules\Ops\Logging\Admin\Tables\FwAdminActionLog;
+    use PHPCraftdream\Garnet\Bundle\Modules\Ops\Logging\Mail\Tables\FwMailLog;
+    use PHPCraftdream\Garnet\Bundle\Modules\Ops\Logging\Viewer\Controllers\FwDashboardLogsViewerController;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
-    use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Core\IGlobalReqParams;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
+    use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
     use PHPCraftdream\IRabi\Common\PaginationHelper;
     use PHPCraftdream\IRabi\Common\Tables\AdminActionLog;
     use PHPCraftdream\IRabi\Common\Tables\CronLog;

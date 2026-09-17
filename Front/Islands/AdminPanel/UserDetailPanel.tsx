@@ -1,8 +1,8 @@
 import * as React from 'react';
 import {useState, useEffect} from 'react';
-import {sendPost} from '@common/Api/sendPost';
-import {showToast} from '@common/Components/GlobalToast';
-import {appUrl} from '@common/Utils/appUrl';
+import {sendPost} from '@common/Api/Send/sendPost';
+import {showToast} from '@common/Components/Feedback/GlobalToast';
+import {appUrl} from '@common/Utils/Url/appUrl';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {useOpenUser} from './UserDetailContext';
 import {UserDetailData} from './userDetail/userDetailTypes';

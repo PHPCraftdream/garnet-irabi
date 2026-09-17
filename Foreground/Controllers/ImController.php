@@ -2,12 +2,12 @@
 
 namespace PHPCraftdream\IRabi\Foreground\Controllers {
     use Aura\SqlQuery\Common\SelectInterface;
-    use PHPCraftdream\Garnet\Bundle\Modules\Messaging\Controllers\FwImController;
+    use PHPCraftdream\Garnet\Bundle\Modules\Comms\Messaging\Controllers\FwImController;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\DbAccount;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
-    use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Core\IGlobalReqParams;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
+    use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
     use PHPCraftdream\IRabi\Common\Services\AccountDisplay;
     use PHPCraftdream\IRabi\Common\Services\EmailNotifications;
     use PHPCraftdream\IRabi\Common\Services\NewsService;

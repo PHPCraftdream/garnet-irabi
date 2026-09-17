@@ -9,7 +9,7 @@ namespace PHPCraftdream\IRabi\Migrations\Items {
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Settings\SettingsTable;
     use PHPCraftdream\Garnet\Kernel\Db\Link\DbPool;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Migration\IMigrationItem;
-    use PHPCraftdream\Garnet\Kernel\Io\FileUpload\PendingUploadsTable;
+    use PHPCraftdream\Garnet\Kernel\Io\Http\FileUpload\Pending\PendingUploadsTable;
 
     /**
      * Framework-level schema.

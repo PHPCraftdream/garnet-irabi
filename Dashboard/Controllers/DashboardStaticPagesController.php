@@ -1,14 +1,14 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Dashboard\Controllers {
-    use PHPCraftdream\Garnet\Bundle\Modules\StaticPages\Controllers\FwStaticPagesAdminController;
-    use PHPCraftdream\Garnet\Bundle\Modules\StaticPages\FwStaticPagesService;
-    use PHPCraftdream\Garnet\Bundle\Utils\HtmlLayout;
-    use PHPCraftdream\Garnet\Bundle\Utils\RenderIsland;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
-    use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
-    use PHPCraftdream\Garnet\Kernel\Io\Twig\TwigParams;
+    use PHPCraftdream\Garnet\Bundle\Modules\Content\StaticPages\Controllers\FwStaticPagesAdminController;
+    use PHPCraftdream\Garnet\Bundle\Modules\Content\StaticPages\FwStaticPagesService;
+    use PHPCraftdream\Garnet\Bundle\Support\Utils\HtmlLayout;
+    use PHPCraftdream\Garnet\Bundle\Support\Utils\RenderIsland;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Core\IGlobalReqParams;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
+    use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
+    use PHPCraftdream\Garnet\Kernel\Io\Render\Twig\TwigParams;
     use PHPCraftdream\IRabi\Common\Services\StaticPagesService;
     use PHPCraftdream\IRabi\Dashboard\IrabiDashboardMenuTrait;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;

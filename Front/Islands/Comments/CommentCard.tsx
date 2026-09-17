@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {formatTs} from '@common/Utils/DateUtils';
+import {formatTs} from '@common/Utils/Time/DateUtils';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {Comment} from './commentTypes';

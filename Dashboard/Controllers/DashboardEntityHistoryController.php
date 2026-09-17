@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Dashboard\Controllers {
-    use PHPCraftdream\Garnet\Bundle\Modules\EntityHistory\Controllers\FwEntityHistoryController;
+    use PHPCraftdream\Garnet\Bundle\Modules\Ops\EntityHistory\Controllers\FwEntityHistoryController;
     use PHPCraftdream\IRabi\Common\Tables\EntityHistory;
     use PHPCraftdream\IRabi\Dashboard\IrabiDashboardMenuTrait;
 

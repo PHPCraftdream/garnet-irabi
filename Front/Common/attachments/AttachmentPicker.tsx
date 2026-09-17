@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {useRef, useState} from 'react';
-import {useBodyScrollLock} from '@common/hooks/useBodyScrollLock';
-import {showToast} from '@common/Components/GlobalToast';
+import {useBodyScrollLock} from '@common/hooks/ui/useBodyScrollLock';
+import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {AttachmentTile} from './AttachmentTile';
 import {AttachmentLightbox} from './AttachmentLightbox';

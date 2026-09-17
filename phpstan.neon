@@ -31,7 +31,7 @@ parameters:
         - '#Access to an undefined static property#'
 
         # I18n magic methods — dispatched dynamically via II18n::__call()
-        - '#Call to an undefined method PHPCraftdream\\Garnet\\Kernel\\Interfaces\\II18n::#'
+        - '#Call to an undefined method PHPCraftdream\\Garnet\\Kernel\\Interfaces\\Core\\II18n::#'
 
         # PHPStan type resolution limitations
         - '#contains unresolvable type#'

@@ -1,17 +1,17 @@
 import * as React from 'react';
 import {useState, useEffect, useRef} from 'react';
-import {sendPost} from '@common/Api/sendPost';
-import {sendPostFormData} from '@common/Api/sendPostFormData';
-import {D} from '@common/Debug/D';
-import {formatTs} from '@common/Utils/DateUtils';
-import {useSending} from '@common/hooks/useSending';
+import {sendPost} from '@common/Api/Send/sendPost';
+import {sendPostFormData} from '@common/Api/Send/sendPostFormData';
+import {D} from '@common/Support/Debug/D';
+import {formatTs} from '@common/Utils/Time/DateUtils';
+import {useSending} from '@common/hooks/data/useSending';
 
-import {showToast} from '@common/Components/GlobalToast';
-import SendButton from '@common/Components/SendButton';
-import {useCtrlEnter, CTRL_ENTER_HINT} from '@common/hooks/useCtrlEnter';
-import {usePagination, PageResponse} from '@common/hooks/usePagination';
-import {refreshLiveCounts} from '@common/Utils/liveCounts';
-import Pagination, {PaginationLabels} from '@common/Components/Pagination';
+import {showToast} from '@common/Components/Feedback/GlobalToast';
+import SendButton from '@common/Components/Controls/SendButton';
+import {useCtrlEnter, CTRL_ENTER_HINT} from '@common/hooks/ui/useCtrlEnter';
+import {usePagination, PageResponse} from '@common/hooks/data/usePagination';
+import {refreshLiveCounts} from '@common/Utils/Data/liveCounts';
+import Pagination, {PaginationLabels} from '@common/Components/Layout/Paging/Pagination';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {SupportTicket, SupportMessage} from './supportTypes';
 import {StatusBadge} from './supportRenders';
@@ -21,7 +21,7 @@ import AttachmentPicker, {PendingFile} from '../../Common/attachments/Attachment
 import AttachmentDisplay from '../../Common/attachments/AttachmentDisplay';
 import {initAutoContext} from './autoContext';
 import {useSupportThread} from './useSupportThread';
-import {PageHeader} from '@common/Components/PageHeader';
+import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {LifeBuoy, ChevronLeft} from 'lucide-react';
 
 interface Props {

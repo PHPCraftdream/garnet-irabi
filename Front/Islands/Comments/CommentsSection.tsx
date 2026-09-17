@@ -1,16 +1,16 @@
 import * as React from 'react';
 import {useState, useMemo} from 'react';
-import {sendPost} from '@common/Api/sendPost';
-import {D} from '@common/Debug/D';
-import {useSending} from '@common/hooks/useSending';
-import {useCtrlEnter, CTRL_ENTER_HINT} from '@common/hooks/useCtrlEnter';
-import {useConfirm} from '@common/hooks/useConfirm';
-import SendButton from '@common/Components/SendButton';
-import {ConfirmModal} from '@common/Components/ConfirmModal';
-import {usePagination} from '@common/hooks/usePagination';
-import Pagination, {PaginationLabels} from '@common/Components/Pagination';
+import {sendPost} from '@common/Api/Send/sendPost';
+import {D} from '@common/Support/Debug/D';
+import {useSending} from '@common/hooks/data/useSending';
+import {useCtrlEnter, CTRL_ENTER_HINT} from '@common/hooks/ui/useCtrlEnter';
+import {useConfirm} from '@common/hooks/ui/useConfirm';
+import SendButton from '@common/Components/Controls/SendButton';
+import {ConfirmModal} from '@common/Components/Feedback/ConfirmModal';
+import {usePagination} from '@common/hooks/data/usePagination';
+import Pagination, {PaginationLabels} from '@common/Components/Layout/Paging/Pagination';
 
-import {showToast} from '@common/Components/GlobalToast';
+import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {Comment} from './commentTypes';
 import {CommentCard} from './CommentCard';

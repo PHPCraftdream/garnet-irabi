@@ -1,9 +1,9 @@
 import * as React from 'react';
 import {useState, useMemo} from 'react';
-import {D} from '@common/Debug/D';
-import {DurationSelect} from '@common/Components/DurationSelect';
+import {D} from '@common/Support/Debug/D';
+import {DurationSelect} from '@common/Components/Controls/DurationSelect';
 import {DateInput} from '@common/Components/ui/DateInput';
-import {Calendar} from '@common/Components/Calendar';
+import {Calendar} from '@common/Components/Controls/Calendar';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {batchPreview, batchCreate} from '../api';
 import {useBatchSlots} from '../hooks/useBatchSlots';

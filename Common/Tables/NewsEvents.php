@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Common\Tables {
-    use PHPCraftdream\Garnet\Bundle\Modules\News\Tables\FwNewsEvents;
+    use PHPCraftdream\Garnet\Bundle\Modules\Content\News\Tables\FwNewsEvents;
     use PHPCraftdream\Garnet\Kernel\Db\Tables\DbTableBuilderFactory;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Db\ITableBuilderDriver;
 

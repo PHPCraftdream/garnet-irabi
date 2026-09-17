@@ -5,7 +5,7 @@ import {AdminGrid} from './AdminGrid';
 import {Combobox} from '@common/Components/ui/Combobox';
 import {DateInput} from '@common/Components/ui/DateInput';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
-import {formatTs} from '@common/Utils/DateUtils';
+import {formatTs} from '@common/Utils/Time/DateUtils';
 import {AdminUserLink} from '../../Common/people/EntityLinks';
 import {BalanceAdjustModal} from './BalanceAdjustModal';
 

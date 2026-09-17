@@ -3,7 +3,7 @@
 namespace PHPCraftdream\IRabi\Foreground {
     use PHPCraftdream\Garnet\Kernel\Core\AppInit\BaseAppInit;
     use PHPCraftdream\Garnet\Kernel\Core\AppInit\BaseBundleInit;
-    use PHPCraftdream\Garnet\Kernel\Exceptions\I18nException;
+    use PHPCraftdream\Garnet\Kernel\Exceptions\Core\I18nException;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
 
     class Foreground extends BaseBundleInit {

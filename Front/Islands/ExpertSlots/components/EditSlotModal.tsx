@@ -1,11 +1,11 @@
 import * as React from 'react';
-import {sendPost} from '@common/Api/sendPost';
-import {D} from '@common/Debug/D';
-import {useSending} from '@common/hooks/useSending';
-import SendButton from '@common/Components/SendButton';
+import {sendPost} from '@common/Api/Send/sendPost';
+import {D} from '@common/Support/Debug/D';
+import {useSending} from '@common/hooks/data/useSending';
+import SendButton from '@common/Components/Controls/SendButton';
 import {DateInput} from '@common/Components/ui/DateInput';
-import {appUrl} from '@common/Utils/appUrl';
-import {tsToInputDate, tsToInputTime} from '@common/Utils/DateUtils';
+import {appUrl} from '@common/Utils/Url/appUrl';
+import {tsToInputDate, tsToInputTime} from '@common/Utils/Time/DateUtils';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {ModalShell} from '../../../Common/Components/ModalShell';
 import {Slot} from '../types';

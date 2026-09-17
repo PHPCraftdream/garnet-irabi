@@ -1,15 +1,15 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Foreground\Middlewares {
-    use PHPCraftdream\Garnet\Bundle\I18n\FwI18n;
-    use PHPCraftdream\Garnet\Bundle\Modules\Auth\Middlewares\RegMiddleware;
-    use PHPCraftdream\Garnet\Bundle\Utils\HtmlLayout;
+    use PHPCraftdream\Garnet\Bundle\Modules\Accounts\Auth\Middlewares\RegMiddleware;
+    use PHPCraftdream\Garnet\Bundle\Support\I18n\FwI18n;
+    use PHPCraftdream\Garnet\Bundle\Support\Utils\HtmlLayout;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Core\IGlobalReqParams;
     use PHPCraftdream\Garnet\Kernel\Interfaces\Db\IEntityConfig;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
-    use PHPCraftdream\Garnet\Kernel\Io\Twig\Twig;
-    use PHPCraftdream\Garnet\Kernel\Io\Twig\TwigParams;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
+    use PHPCraftdream\Garnet\Kernel\Io\Render\Twig\Twig;
+    use PHPCraftdream\Garnet\Kernel\Io\Render\Twig\TwigParams;
     use PHPCraftdream\IRabi\Common\Services\StaticPagesService;
     use PHPCraftdream\IRabi\Foreground\Params\Menu;
     use PHPCraftdream\IRabi\Foreground\Params\UserEntityConfig;

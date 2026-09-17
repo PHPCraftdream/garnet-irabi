@@ -1,16 +1,16 @@
 import * as React from 'react';
-import {D} from '@common/Debug/D';
+import {D} from '@common/Support/Debug/D';
 
-import {useConfirm} from '@common/hooks/useConfirm';
-import {useSending} from '@common/hooks/useSending';
-import {useBodyScrollLock} from '@common/hooks/useBodyScrollLock';
-import {showToast} from '@common/Components/GlobalToast';
-import {ConfirmModal} from '@common/Components/ConfirmModal';
-import {Portal} from '@common/Components/Portal';
-import {sendPost} from '@common/Api/sendPost';
-import {appUrl} from '@common/Utils/appUrl';
-import {tsToInputTime} from '@common/Utils/DateUtils';
-import {TimezoneNotice} from '@common/Components/TimezoneNotice';
+import {useConfirm} from '@common/hooks/ui/useConfirm';
+import {useSending} from '@common/hooks/data/useSending';
+import {useBodyScrollLock} from '@common/hooks/ui/useBodyScrollLock';
+import {showToast} from '@common/Components/Feedback/GlobalToast';
+import {ConfirmModal} from '@common/Components/Feedback/ConfirmModal';
+import {Portal} from '@common/Components/Layout/Portal';
+import {sendPost} from '@common/Api/Send/sendPost';
+import {appUrl} from '@common/Utils/Url/appUrl';
+import {tsToInputTime} from '@common/Utils/Time/DateUtils';
+import {TimezoneNotice} from '@common/Components/Feedback/TimezoneNotice';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {
     actionImpact,
@@ -27,7 +27,7 @@ import {BatchSlotWizard} from './components/BatchSlotWizard';
 import {ExpertCalendar} from './components/ExpertCalendar';
 import {IrabiPreviewProvider} from '../../Common/people/IrabiPreviewProvider';
 import {usePreview} from '@common/Components/UserPreviewModal/PreviewContext';
-import {PageHeader} from '@common/Components/PageHeader';
+import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {CalendarClock} from 'lucide-react';
 
 const ExpertSlotsIslandInner: React.FC<ExpertSlotsProps> = (props) => {

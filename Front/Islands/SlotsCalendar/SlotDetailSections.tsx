@@ -1,8 +1,8 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
-import {appUrl} from '@common/Utils/appUrl';
-import {formatTime, formatDateLong} from '@common/Utils/DateUtils';
+import {appUrl} from '@common/Utils/Url/appUrl';
+import {formatTime, formatDateLong} from '@common/Utils/Time/DateUtils';
 import {slotPlaceLabel, slotPlaceValue} from '../../Common/booking/slotFormat';
 import {SlotItem, ExpertInfo} from './types';
 

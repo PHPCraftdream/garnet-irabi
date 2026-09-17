@@ -1,8 +1,8 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
-import {sendPost} from '@common/Api/sendPost';
-import {D} from '@common/Debug/D';
-import {formatTs} from '@common/Utils/DateUtils';
+import {sendPost} from '@common/Api/Send/sendPost';
+import {D} from '@common/Support/Debug/D';
+import {formatTs} from '@common/Utils/Time/DateUtils';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {translateStatus} from '../../../Common/booking/statusHelpers';
 

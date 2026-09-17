@@ -1,6 +1,6 @@
 import * as React from 'react';
-import {PageResponse} from '@common/hooks/usePagination';
-import {PageHeader} from '@common/Components/PageHeader';
+import {PageResponse} from '@common/hooks/data/usePagination';
+import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {CalendarRange} from 'lucide-react';
 import AdminCancellationsTab, {CancellationRow} from './AdminCancellationsTab';
 import {AccountOption} from './adminShared';

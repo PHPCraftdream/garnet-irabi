@@ -1,8 +1,8 @@
 import * as React from 'react';
 import {useState, useMemo, useCallback} from 'react';
-import {D} from '@common/Debug/D';
+import {D} from '@common/Support/Debug/D';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
-import {pluralize} from '@common/Utils/pluralize';
+import {pluralize} from '@common/Utils/Ui/pluralize';
 import {SlotsCalendarProps, SlotItem, FiltersState, DayInfo, SlotStatusFilter} from './types';
 import {SlotsFilters} from './SlotsFilters';
 import {SlotsStatusFilter} from './SlotsStatusFilter';
@@ -11,13 +11,13 @@ import {WeekNavigation} from './WeekNavigation';
 import BookingModal from './BookingModal';
 import SlotDetailModal from './SlotDetailModal';
 import {IrabiPreviewProvider} from '../../Common/people/IrabiPreviewProvider';
-import {TimezoneNotice} from '@common/Components/TimezoneNotice';
-import {PageHeader} from '@common/Components/PageHeader';
+import {TimezoneNotice} from '@common/Components/Feedback/TimezoneNotice';
+import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {CalendarDays} from 'lucide-react';
-import {weekStartTs, addDaysTs, tsToInputDate, tsToHour} from '@common/Utils/DateUtils';
-import {refreshLiveCounts} from '@common/Utils/liveCounts';
-import {sendPost} from '@common/Api/sendPost';
-import {appUrl} from '@common/Utils/appUrl';
+import {weekStartTs, addDaysTs, tsToInputDate, tsToHour} from '@common/Utils/Time/DateUtils';
+import {refreshLiveCounts} from '@common/Utils/Data/liveCounts';
+import {sendPost} from '@common/Api/Send/sendPost';
+import {appUrl} from '@common/Utils/Url/appUrl';
 
 function buildWeekDays(weekStartUnix: number, nowSec: number): DayInfo[] {
     const todayStr = tsToInputDate(nowSec);

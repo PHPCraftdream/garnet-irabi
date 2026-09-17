@@ -25,8 +25,8 @@
 
 - Файлы:
   - `Common/Tables/SupportTickets.php:19` — ENUM в БД: `'open','investigation','in_progress','waiting_user','waiting_support','escalated','on_hold','deferred','low_priority','resolved','rejected'`
-  - `vendor/phpcraftdream/garnet-framework/Bundle/Modules/Support/Controllers/FwSupportAdminController.php:18-21` — `VALID_STATUSES` содержит только 9 из 11 значений (нет `deferred`, `low_priority`)
-  - `vendor/phpcraftdream/garnet-framework/Bundle/Modules/Support/Controllers/FwSupportAdminController.php:421` — гейт `if (!$ticketId || !in_array($newStatus, static::VALID_STATUSES, true)) { ... }` реально отклоняет запрос
+  - `vendor/phpcraftdream/garnet-framework/Bundle/Modules/Comms/Support/Controllers/FwSupportAdminController.php:18-21` — `VALID_STATUSES` содержит только 9 из 11 значений (нет `deferred`, `low_priority`)
+  - `vendor/phpcraftdream/garnet-framework/Bundle/Modules/Comms/Support/Controllers/FwSupportAdminController.php:421` — гейт `if (!$ticketId || !in_array($newStatus, static::VALID_STATUSES, true)) { ... }` реально отклоняет запрос
   - `Dashboard/Controllers/DashboardSupportController.php:100-113` — `getStatusLabels()` тоже не содержит маппинг для этих двух статусов
   - `Front/Islands/Support/supportRenders.tsx:14-15,30-31,45-48`, `Front/Islands/Support/supportTypes.ts:1`, `Front/Islands/AdminPanel/UserDetailPanel.tsx:145-146,160-161` — фронтенд полностью поддерживает оба статуса: TypeScript-тип, CSS-класс, i18n-рендер, и, что важно, список статусов, предлагаемых модератору в выпадающем меню смены статуса тикета (`supportRenders.tsx:45-48`)
 - Сценарий воспроизведения: модератор открывает тикет поддержки в админ-панели, в выпадающем списке смены статуса выбирает "Отложено" (`deferred`) или "Низкий приоритет" (`low_priority`) — оба варианта присутствуют в UI и снабжены переводом. Запрос на смену статуса уходит на backend и отклоняется гейтом `VALID_STATUSES` (framework-уровень), так как приложение (IRabi) расширило ENUM в своей миграции, но не синхронизировало framework-константу. Даже если бы гейт этого не делал, `getStatusLabels()` в `DashboardSupportController` не знает про эти статусы и показал бы сырой slug вместо перевода в истории смены статуса.
@@ -46,7 +46,7 @@
 
 **L2. Отсутствие нормализации email (trim / невидимые unicode-символы) перед регистрацией**
 
-- Файл: `vendor/phpcraftdream/garnet-framework/Bundle/Modules/Auth/Middlewares/EmailAuthMiddleware.php:327-330` (используется из `Foreground/Middlewares/IrabiAuthMiddleware.php` и косвенно `Foreground/Controllers/RegisterController.php`)
+- Файл: `vendor/phpcraftdream/garnet-framework/Bundle/Modules/Accounts/Auth/Middlewares/EmailAuthMiddleware.php:327-330` (используется из `Foreground/Middlewares/IrabiAuthMiddleware.php` и косвенно `Foreground/Controllers/RegisterController.php`)
 - Сценарий: `$authEmailStr = $authEmail . ''` не делает `trim()` и не фильтрует zero-width/invisible unicode-символы. `' test@mail.com'` (с ведущим пробелом) или `'te​st@mail.com'` (с zero-width space внутри) создаёт отдельный, отличный от `test@mail.com`, аккаунт, поскольку `UNIQUE`-индекс с collation `utf8mb4_unicode_ci` нормализует только регистр букв, но не пробелы и не невидимые символы.
 - Важно: сам механизм защиты от race condition при параллельной регистрации и от простого case-insensitive дубля (`Test@mail.com` vs `test@mail.com`) — работает корректно за счёт `UNIQUE`-индекса и `INSERT IGNORE` в БД. Проблема касается только "визуально идентичных, но байтово разных" email.
 - Severity: low — редкий и скорее теоретический вектор (обычно требует умышленных действий пользователя), но может привести к недоставке писем на "заляпанный" адрес и путанице в поддержке ("у меня два аккаунта с одинаковым email").
@@ -72,7 +72,7 @@
 
 **L6. Пагинация: нет server-side clamp запрошенной страницы к фактическому количеству страниц**
 
-- Файл: `vendor/phpcraftdream/garnet-framework/Bundle/Utils/PaginationHelper.php:64-80`, `Kernel/Db/Tables/PageData.php:26`
+- Файл: `vendor/phpcraftdream/garnet-framework/Bundle/Support/Utils/PaginationHelper.php:64-80`, `Kernel/Db/Tables/PageData.php:26`
 - Сценарий: если между запросом списка и повторным открытием той же страницы данные изменились (удаление строк, смена фильтра), а клиент всё ещё передаёт устаревший `page=5` — offset считается от исходного номера страницы без клэмпа к последней валидной странице; в ответ приходит пустой список при формально валидном (уже меньшем) `totalPages`. UI обычно сам корректируется, но гарантии на сервере нет.
 - Severity: low — не приводит к падению, только к пустому экрану до ручной/клиентской коррекции номера страницы.
 

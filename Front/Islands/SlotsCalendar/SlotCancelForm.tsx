@@ -1,5 +1,5 @@
 import * as React from 'react';
-import SendButton from '@common/Components/SendButton';
+import SendButton from '@common/Components/Controls/SendButton';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {
     actionReasonLabel,

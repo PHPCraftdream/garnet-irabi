@@ -1,10 +1,10 @@
 import * as React from 'react';
-import {sendPost} from '@common/Api/sendPost';
-import {showToast} from '@common/Components/GlobalToast';
-import {useSending} from '@common/hooks/useSending';
-import SendButton from '@common/Components/SendButton';
-import {LogDetailModal} from '@common/Components/AdminLog/LogDetailModal';
-import {tsToInputDateTime} from '@common/Utils/DateUtils';
+import {sendPost} from '@common/Api/Send/sendPost';
+import {showToast} from '@common/Components/Feedback/GlobalToast';
+import {useSending} from '@common/hooks/data/useSending';
+import SendButton from '@common/Components/Controls/SendButton';
+import {LogDetailModal} from '@common/Components/Admin/AdminLog/LogDetailModal';
+import {tsToInputDateTime} from '@common/Utils/Time/DateUtils';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {TokenRow} from './tokenTypes';
 import {TokenField} from './TokenField';

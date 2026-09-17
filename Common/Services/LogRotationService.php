@@ -29,7 +29,7 @@ use Throwable;
  *
  *   1. pruneFiles($logJournalDir, $now, $retentionDays): walks each of
  *      the Errors/System/Routes category dirs. The framework Logger
- *      (Kernel/Io/Logs/Logger::write/append) creates one DIRECTORY per
+ *      (Kernel/Io/Services/Logs/Logger::write/append) creates one DIRECTORY per
  *      day named YYYY-MM-DD with .log files inside, so the dated dir is
  *      the unit of deletion — we remove the whole tree when its date is
  *      strictly older than the cutoff date. Pure filesystem, no boot —

@@ -48,7 +48,7 @@ test.describe('deploy:diff --file (files mode)', () => {
     test('dry-run lists a single Framework PHP file without rspack rebuild', async () => {
         const result = await runGarnet([
             'deploy:diff',
-            '--file=vendor/phpcraftdream/garnet-framework/Bundle/Modules/Auth/Middlewares/RegMiddleware.php',
+            '--file=vendor/phpcraftdream/garnet-framework/Bundle/Modules/Accounts/Auth/Middlewares/RegMiddleware.php',
             '--dry-run',
         ]);
 

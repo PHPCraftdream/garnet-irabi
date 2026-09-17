@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Foreground\Controllers {
-    use PHPCraftdream\Garnet\Bundle\Modules\News\Controllers\FwNewsController;
+    use PHPCraftdream\Garnet\Bundle\Modules\Content\News\Controllers\FwNewsController;
     use PHPCraftdream\IRabi\Common\Services\NewsService;
 
     class NewsController extends FwNewsController {

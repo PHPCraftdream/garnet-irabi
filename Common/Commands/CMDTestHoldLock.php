@@ -4,7 +4,7 @@ namespace PHPCraftdream\IRabi\Common\Commands {
     use Aura\Cli\Context;
     use Aura\Cli\Stdio;
     use PHPCraftdream\Garnet\Kernel\Db\Link\DbPool;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\ICommand;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Io\ICommand;
     use PHPCraftdream\IRabi\Common\System\TestMode;
 
     /**

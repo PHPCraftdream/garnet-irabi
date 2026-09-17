@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {DateInput} from '@common/Components/ui/DateInput';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {DurationSelect} from '@common/Components/DurationSelect';
+import {DurationSelect} from '@common/Components/Controls/DurationSelect';
 import {ExistingItem, ProposedSlot} from '../types';
 
 export interface RowWarnings {

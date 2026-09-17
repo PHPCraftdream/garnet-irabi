@@ -24,9 +24,9 @@
 
 use PHPCraftdream\Garnet\Kernel\Db\Link\DbPool;
 use PHPCraftdream\Garnet\Kernel\Db\Link\NamedLock;
-use PHPCraftdream\Garnet\Kernel\Exceptions\DbException;
-use PHPCraftdream\Garnet\Kernel\Io\IniConfig\IniConfig;
-use PHPCraftdream\Garnet\Kernel\Io\Logs\Logger;
+use PHPCraftdream\Garnet\Kernel\Exceptions\Db\DbException;
+use PHPCraftdream\Garnet\Kernel\Io\Services\IniConfig\IniConfig;
+use PHPCraftdream\Garnet\Kernel\Io\Services\Logs\Logger;
 use PHPCraftdream\IRabi\Common\Tables\AccountBalance;
 
 require __DIR__ . '/../../vendor/autoload.php';

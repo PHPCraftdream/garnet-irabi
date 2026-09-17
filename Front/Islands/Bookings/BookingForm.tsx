@@ -1,16 +1,16 @@
 import * as React from 'react';
 import {useState} from 'react';
-import {D} from '@common/Debug/D';
-import {useSending} from '@common/hooks/useSending';
-import SendButton from '@common/Components/SendButton';
-import {sendPost} from '@common/Api/sendPost';
+import {D} from '@common/Support/Debug/D';
+import {useSending} from '@common/hooks/data/useSending';
+import SendButton from '@common/Components/Controls/SendButton';
+import {sendPost} from '@common/Api/Send/sendPost';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
-import {formatTs} from '@common/Utils/DateUtils';
+import {formatTs} from '@common/Utils/Time/DateUtils';
 import {EntityLink, userLinks} from '../../Common/people/EntityLinks';
 import {IrabiPreviewProvider} from '../../Common/people/IrabiPreviewProvider';
 import {slotPlaceLabel, slotPlaceValue} from '../../Common/booking/slotFormat';
 import {goTo} from '@common/Dom/Nav/GoTo';
-import {appUrl} from '@common/Utils/appUrl';
+import {appUrl} from '@common/Utils/Url/appUrl';
 
 interface SlotInfo {
     id: number;

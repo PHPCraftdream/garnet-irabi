@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {useState} from 'react';
-import {D} from '@common/Debug/D';
+import {D} from '@common/Support/Debug/D';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 
 interface Props {

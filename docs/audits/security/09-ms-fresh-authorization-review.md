@@ -76,7 +76,7 @@ Code:
 
 - token валидируется до регистрации (`Apps/IRabi/Foreground/Controllers/RegisterController.php:67`-`:78`);
 - профиль сохраняется до consume (`Apps/IRabi/Foreground/Controllers/RegisterController.php:106`-`:108`);
-- `FwInviteTokenService::consume()` атомарно возвращает `false`, если `uses_left` уже исчерпан (`garnet-framework/Bundle/Modules/Invite/FwInviteTokenService.php:94`-`:105`);
+- `FwInviteTokenService::consume()` атомарно возвращает `false`, если `uses_left` уже исчерпан (`garnet-framework/Bundle/Modules/Accounts/Invite/FwInviteTokenService.php:94`-`:105`);
 - результат `consume()` игнорируется, регистрация все равно возвращает `$result` (`Apps/IRabi/Foreground/Controllers/RegisterController.php:113`-`:135`).
 
 Exploit scenario:
@@ -104,7 +104,7 @@ Preconditions: session moderator+ и прямой POST `/admin/support/~assign`.
 
 Code:
 
-- `assignee_id` читается из POST без проверки роли/существования (`garnet-framework/Bundle/Modules/Support/Controllers/FwSupportAdminController.php:458`-`:465`);
+- `assignee_id` читается из POST без проверки роли/существования (`garnet-framework/Bundle/Modules/Comms/Support/Controllers/FwSupportAdminController.php:458`-`:465`);
 - ticket обновляется напрямую (`:482`-`:486`);
 - lookup имени не отказывает при отсутствии/не-staff аккаунте (`:500`-`:508`).
 
@@ -140,13 +140,13 @@ Regression tests: имитировать exception в throttle table и ожид
 
 ## Подтвержденные защиты
 
-- Глобальная auth/CSRF/Origin проверка применяется ко всем authenticated POST через `IrabiAuthMiddleware::authOnly()` до controller dispatch (`Apps/IRabi/IRabi.php:192`-`:205`, `garnet-framework/Bundle/Modules/Auth/Middlewares/EmailAuthMiddleware.php:127`-`:145`, `:192`-`:225`).
+- Глобальная auth/CSRF/Origin проверка применяется ко всем authenticated POST через `IrabiAuthMiddleware::authOnly()` до controller dispatch (`Apps/IRabi/IRabi.php:192`-`:205`, `garnet-framework/Bundle/Modules/Accounts/Auth/Middlewares/EmailAuthMiddleware.php:127`-`:145`, `:192`-`:225`).
 - Session и CSRF cookies выставляются `HttpOnly`, `SameSite=Lax`, `Secure` для HTTPS (`garnet-framework/Kernel/Db/Entity/Session/Session.php:105`-`:121`, `:218`-`:233`).
-- Idempotency middleware привязан после auth и replay scope включает `(account_id, key, route_path)` (`garnet-framework/Bundle/Modules/Idempotency/IdempotencyMiddleware.php:62`-`:128`, `:179`-`:183`).
+- Idempotency middleware привязан после auth и replay scope включает `(account_id, key, route_path)` (`garnet-framework/Bundle/Modules/Ops/Idempotency/IdempotencyMiddleware.php:62`-`:128`, `:179`-`:183`).
 - Admin rank guard для user flags/type/photo/balance блокирует self-target и upward rank operations (`Apps/IRabi/Foreground/Params/UserEntityConfig.php:273`-`:282`; uses in `DashboardUsersController.php:82`-`:87`, `:173`-`:177`, `:231`-`:235`; `DashboardFinanceController.php:340`-`:366`).
 - Expert actions проверяют ownership слота/booking перед confirm/cancel/edit/delete (`Apps/IRabi/Foreground/Controllers/ExpertPanel/ExpertBookingsService.php:95`-`:98`, `:152`-`:155`, `:240`-`:243`; `ExpertSlotsService.php:472`-`:473`, `:579`-`:580`).
 - Direct booking проверяет own-slot запрет, future slot, free status, approved/non-disabled expert (`Apps/IRabi/Foreground/Controllers/BookingsController.php:298`-`:339`; `SlotsController.php:270`-`:284`).
-- User support and IM downloads enforce ownership/participant checks (`garnet-framework/Bundle/Modules/Support/Controllers/FwSupportController.php:420`-`:433`; `garnet-framework/Bundle/Modules/Messaging/Controllers/FwImController.php:380`-`:389`).
+- User support and IM downloads enforce ownership/participant checks (`garnet-framework/Bundle/Modules/Comms/Support/Controllers/FwSupportController.php:420`-`:433`; `garnet-framework/Bundle/Modules/Comms/Messaging/Controllers/FwImController.php:380`-`:389`).
 - `/sys/opcache-reset` публичен, но требует configured shared secret header and denies empty token (`Apps/IRabi/Foreground/Controllers/SysOpcacheResetController.php:31`-`:47`).
 - `/dev-login` и `/dev-login~resetDb` требуют одновременно `isDev()` и dev directory marker (`Apps/IRabi/Foreground/Controllers/DevLoginController.php:35`-`:43`, `:155`-`:159`).
 

@@ -1,4 +1,4 @@
-import {showToast} from '@common/Components/GlobalToast';
+import {showToast} from '@common/Components/Feedback/GlobalToast';
 
 /**
  * The server can accept a message and refuse a file attached to it — too

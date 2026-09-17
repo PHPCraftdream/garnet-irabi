@@ -1,8 +1,8 @@
 import * as React from 'react';
 import {useState} from 'react';
 import * as Popover from '@radix-ui/react-popover';
-import {cn} from '@common/Utils/cn';
-import {D} from '@common/Debug/D';
+import {cn} from '@common/Utils/Ui/cn';
+import {D} from '@common/Support/Debug/D';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 
 export interface Recipient {

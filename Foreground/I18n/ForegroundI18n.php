@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Foreground\I18n {
-    use PHPCraftdream\Garnet\Kernel\Interfaces\II18n;
-    use PHPCraftdream\Garnet\Kernel\Io\I18n\GarnetI18n;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Core\II18n;
+    use PHPCraftdream\Garnet\Kernel\Io\Render\I18n\GarnetI18n;
 
     class ForegroundI18n extends GarnetI18n {
         protected static ?II18n $instance = null;

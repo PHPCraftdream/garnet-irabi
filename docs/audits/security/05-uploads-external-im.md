@@ -19,13 +19,13 @@ defended**. The thin IRabi controllers (`SupportController`, `ImController`,
 work to reusable Garnet-Framework primitives that were audited as the true HTTP-reachable code
 paths:
 
-- `Kernel/Io/FileUpload/FileUploadManager.php` — attachment storage (support / IM)
-- `Kernel/Io/FileUpload/UploadRules.php` — extension + MIME whitelists
-- `Kernel/Io/FileUpload/SecureFileServing.php` — protected file delivery
-- `Kernel/Io/Forms/ImageUpload.php` + `Updater.php` — avatar processing (GD re-encode)
-- `Bundle/Utils/Upload/PublicImageUploadTrait.php` — admin OG/CMS image upload
-- `Bundle/Modules/Messaging/Controllers/FwImController.php` — IM logic
-- `Bundle/Modules/Support/Controllers/FwSupportController.php` — support logic
+- `Kernel/Io/Http/FileUpload/FileUploadManager.php` — attachment storage (support / IM)
+- `Kernel/Io/Http/FileUpload/UploadRules.php` — extension + MIME whitelists
+- `Kernel/Io/Http/FileUpload/SecureFileServing.php` — protected file delivery
+- `Kernel/Io/Http/Forms/ImageUpload.php` + `Updater.php` — avatar processing (GD re-encode)
+- `Bundle/Support/Utils/Upload/PublicImageUploadTrait.php` — admin OG/CMS image upload
+- `Bundle/Modules/Comms/Messaging/Controllers/FwImController.php` — IM logic
+- `Bundle/Modules/Comms/Support/Controllers/FwSupportController.php` — support logic
 
 Key protective controls verified as effective:
 
@@ -55,7 +55,7 @@ vulnerability" list documenting each attack the design already blocks.
 
 ### F-05-01 — Inline serving of `text/plain` / `text/log` attachments without `X-Content-Type-Options: nosniff` (defense-in-depth)
 
-- **File / Line:** `garnet-framework/Kernel/Io/FileUpload/SecureFileServing.php:80-104`
+- **File / Line:** `garnet-framework/Kernel/Io/Http/FileUpload/SecureFileServing.php:80-104`
   (`isInlineSafe()` allows any `text/*`; response omits `X-Content-Type-Options`).
   Reached from `FwSupportController::get__download` (`.../Support/Controllers/FwSupportController.php:427`)
   and `FwImController::get__download` (`.../Messaging/Controllers/FwImController.php:383`).
@@ -83,7 +83,7 @@ vulnerability" list documenting each attack the design already blocks.
 
 ### F-05-02 — `PublicImageUploadTrait` uses weaker validation than the avatar path (hardening; admin-gated)
 
-- **File / Line:** `garnet-framework/Bundle/Utils/Upload/PublicImageUploadTrait.php:42-67`.
+- **File / Line:** `garnet-framework/Bundle/Support/Utils/Upload/PublicImageUploadTrait.php:42-67`.
   Used by `Dashboard/Controllers/DashboardSystemController.php:28` and referenced by
   `Dashboard/Controllers/DashboardStaticPagesController.php:155-156`.
 - **Severity:** Low (mitigated by admin-only access control).

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {formatTs} from '@common/Utils/DateUtils';
+import {formatTs} from '@common/Utils/Time/DateUtils';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {DetailTable} from '../DetailTable';
 import {PersonCell} from '../PersonCell';

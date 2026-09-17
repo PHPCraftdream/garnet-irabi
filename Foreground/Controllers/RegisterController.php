@@ -1,16 +1,16 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Foreground\Controllers {
-    use PHPCraftdream\Garnet\Bundle\Modules\Invite\FwInviteTokenService;
-    use PHPCraftdream\Garnet\Bundle\Modules\SystemSettings\FwAppSettings;
-    use PHPCraftdream\Garnet\Bundle\Utils\HtmlLayout;
-    use PHPCraftdream\Garnet\Bundle\Utils\RenderIsland;
-    use PHPCraftdream\Garnet\Kernel\Core\FrameworkController;
+    use PHPCraftdream\Garnet\Bundle\Modules\Accounts\Invite\FwInviteTokenService;
+    use PHPCraftdream\Garnet\Bundle\Modules\Ops\SystemSettings\FwAppSettings;
+    use PHPCraftdream\Garnet\Bundle\Support\Utils\HtmlLayout;
+    use PHPCraftdream\Garnet\Bundle\Support\Utils\RenderIsland;
+    use PHPCraftdream\Garnet\Kernel\Core\Runtime\FrameworkController;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
-    use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
-    use PHPCraftdream\Garnet\Kernel\Io\Twig\TwigParams;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Core\IGlobalReqParams;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
+    use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
+    use PHPCraftdream\Garnet\Kernel\Io\Render\Twig\TwigParams;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;
     use PHPCraftdream\IRabi\Foreground\Middlewares\IrabiAuthMiddleware;
     use PHPCraftdream\IRabi\Foreground\Middlewares\UserDataMiddleware;

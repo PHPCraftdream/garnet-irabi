@@ -3,8 +3,8 @@
 Дата: 2026-07-17. Аудитор: независимая проверка перед поставкой «под ключ».
 Область: `Common/Services/EmailNotifications.php`, `Common/Services/NewsService.php`,
 `Common/Tables/{EmailQueue,EmailAttempts,EmailThrottle,MailLog}.php`,
-framework `Bundle/Modules/Email/*`, `Bundle/Modules/Logging/Mail/*`, `Kernel/Io/Mailer/*`,
-`Bundle/Modules/Auth/Middlewares/EmailAuthMiddleware.php`, все `Email/*.twig`, конфиги `WorkDir/Config*`, `docs/`.
+framework `Bundle/Modules/Comms/Email/*`, `Bundle/Modules/Ops/Logging/Mail/*`, `Kernel/Io/Services/Mailer/*`,
+`Bundle/Modules/Accounts/Auth/Middlewares/EmailAuthMiddleware.php`, все `Email/*.twig`, конфиги `WorkDir/Config*`, `docs/`.
 Изменения в код не вносились — только исследование.
 
 ---
@@ -36,7 +36,7 @@ List-Unsubscribe) не описана и не реализована (M-5).
 
 #### H-1. processQueue не имеет ни claim'а строк, ни защиты от параллельного запуска → двойная отправка писем
 
-- `vendor/phpcraftdream/garnet-framework/Bundle/Modules/Email/FwEmailQueueService.php:95-158` — выборка
+- `vendor/phpcraftdream/garnet-framework/Bundle/Modules/Comms/Email/FwEmailQueueService.php:95-158` — выборка
   `SELECT ... WHERE status IN ('queued','error') ...` (строки 99–105) и последующий
   `updateById(['status' => 'sending'], ...)` (122–124) **не атомарны**: между SELECT и UPDATE
   второй воркер успевает выбрать те же строки. UPDATE не содержит условия
@@ -44,7 +44,7 @@ List-Unsubscribe) не описана и не реализована (M-5).
   вызовут `Mailer::sendHtmlMail()`.
 - Защиты от перекрывающихся запусков нет нигде выше по стеку:
   `Common/Services/AppCronService.php:17-19` (регистрация задачи `email-queue`),
-  `vendor/.../Kernel/Io/Cron/FwCronService.php` и `CMDCron.php` — ни lock-файла, ни `flock`,
+  `vendor/.../Kernel/Io/Services/Cron/FwCronService.php` и `CMDCron.php` — ни lock-файла, ни `flock`,
   ни advisory-lock в БД. В `docs/guides/operations/deploy.md`/`docs/guides/operations/development.md` требование
   «не запускать cron внахлёст» (например, `flock -n`) не сформулировано.
 - Сценарий: минутный cron `php garnet cron`; тик N подвис на медленном SMTP (50 писем ×
@@ -143,7 +143,7 @@ List-Unsubscribe) не описана и не реализована (M-5).
 
 #### M-4. Auth-письма идут мимо очереди; сбой SMTP на success-login роняет логин 500-кой
 
-- `vendor/.../Bundle/Modules/Auth/Middlewares/EmailAuthMiddleware.php:610-627` (`sendCode`) и
+- `vendor/.../Bundle/Modules/Accounts/Auth/Middlewares/EmailAuthMiddleware.php:610-627` (`sendCode`) и
   `638-662` (`sendSuccessLogin`) вызывают `Mailer::get()->sendHtmlMail()` синхронно, без
   очереди/ретраев. Для кода авторизации это осознанный компромисс (код должен прийти сейчас),
   но:
@@ -156,7 +156,7 @@ List-Unsubscribe) не описана и не реализована (M-5).
 
 #### M-5. Доставляемость: нет plain-text части, нет List-Unsubscribe, SPF/DKIM/DMARC нигде не описаны, From-домен ≠ домен площадки
 
-- `vendor/.../Kernel/Io/Mailer/Mailer.php:58-72`: письмо строится только `->html($htmlMessage)`
+- `vendor/.../Kernel/Io/Services/Mailer/Mailer.php:58-72`: письмо строится только `->html($htmlMessage)`
   — **нет `->text()` альтернативы**. Клиенты без HTML-рендера покажут пустоту/сырой HTML,
   спам-фильтры повышают скор за html-only multipart.
 - Заголовок `List-Unsubscribe` не выставляется нигде (grep «unsubscribe/отписаться» по
@@ -175,7 +175,7 @@ List-Unsubscribe) не описана и не реализована (M-5).
 
 #### M-6. `mail_log` хранит полные тела писем и одноразовые auth-коды в открытом виде, без ротации
 
-- `vendor/.../Bundle/Modules/Logging/Mail/FwAppMailer.php:27-78`: каждое письмо целиком
+- `vendor/.../Bundle/Modules/Ops/Logging/Mail/FwAppMailer.php:27-78`: каждое письмо целиком
   (`body_html`) пишется в `mail_log`; для писем авторизации дополнительно
   `meta = {"auth_code": "..."}` (`setNextMeta`, EmailAuthMiddleware:619). Тело письма
   авторизации само содержит код и magic-link `#token=<код>` (authEmailParams:689-697).

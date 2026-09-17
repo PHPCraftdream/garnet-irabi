@@ -25,7 +25,7 @@
 **Файлы:**
 - `garnet-framework/Kernel/Db/Entity/Session/Session.php` (свойства `protected static ?ISession $instance = null` (строка 29), `protected bool $read = false` (33), `protected bool $readDataAsync = false` (248))
 - `garnet-framework/Kernel/Db/Entity/Account/Account.php` (`protected static IAccount|null $sessionAccount = null` (55), `protected static array $items = []` (27))
-- `garnet-framework/Kernel/Io/IoRun/IoRunWeb.php` (строки 170-179 — точка входа, где решается, читать ли сессию заново)
+- `garnet-framework/Kernel/Io/Http/IoRun/IoRunWeb.php` (строки 170-179 — точка входа, где решается, читать ли сессию заново)
 - `Apps/IRabi/run_web.php` — нет вызова, который бы сбрасывал эти статики в начале запроса.
 
 **Механизм (буквально по коду):**
@@ -87,7 +87,7 @@
 
 #### H-1. `FwEmailQueueService::processQueue()` — TOCTOU без блокировки, возможен двойной отправка одного письма при пересекающихся cron-запусках
 
-**Файл:** `garnet-framework/Bundle/Modules/Email/FwEmailQueueService.php`, метод `processQueue()` (строки 95-158).
+**Файл:** `garnet-framework/Bundle/Modules/Comms/Email/FwEmailQueueService.php`, метод `processQueue()` (строки 95-158).
 
 ```php
 $items = $queue->selectAll(function (SelectInterface $query) use ($limit): void {
@@ -120,7 +120,7 @@ foreach ($items as $item) {
 
 #### M-1. Отсутствие мьютекса/advisory lock на уровне cron-раннера в целом (пункт 5 задания)
 
-**Файлы:** `Apps/IRabi/Common/Services/AppCronService.php`, `garnet-framework/Kernel/Io/Cron/{CMDCron.php, FwCronService.php}`.
+**Файлы:** `Apps/IRabi/Common/Services/AppCronService.php`, `garnet-framework/Kernel/Io/Services/Cron/{CMDCron.php, FwCronService.php}`.
 
 `CMDCron::run()` → `AppCronService::runAll()`/`runTask()` → просто перебирает зарегистрированные задачи (`email-queue`, `complete-expired`, `disable-stale-tokens`) и выполняет их callback'и последовательно, без:
 - PID-файла/lock-файла,

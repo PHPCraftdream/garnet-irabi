@@ -1,11 +1,11 @@
 import * as React from 'react';
 import {useState, useEffect, useRef} from 'react';
-import {sendPost} from '@common/Api/sendPost';
-import {sendPostFormData, ApiError} from '@common/Api/sendPostFormData';
-import {D} from '@common/Debug/D';
-import {useSending} from '@common/hooks/useSending';
+import {sendPost} from '@common/Api/Send/sendPost';
+import {sendPostFormData, ApiError} from '@common/Api/Send/sendPostFormData';
+import {D} from '@common/Support/Debug/D';
+import {useSending} from '@common/hooks/data/useSending';
 
-import {showToast} from '@common/Components/GlobalToast';
+import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {ImConversation, ImMessage} from './imTypes';
 import {PendingFile} from '../../Common/attachments/AttachmentPicker';
@@ -26,7 +26,7 @@ import ConversationList from './Components/ConversationList';
 import MessageThread from './Components/MessageThread';
 import NewMessageForm from './Components/NewMessageForm';
 import {IrabiPreviewProvider} from '../../Common/people/IrabiPreviewProvider';
-import {PageHeader} from '@common/Components/PageHeader';
+import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {MessagesSquare, ChevronLeft} from 'lucide-react';
 
 interface Props {

@@ -1,12 +1,12 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Common\Tables {
-    use PHPCraftdream\Garnet\Bundle\Modules\Balance\Tables\FwAccountBalance;
-    use PHPCraftdream\Garnet\Bundle\Modules\Balance\Tables\FwBalanceLedger;
+    use PHPCraftdream\Garnet\Bundle\Modules\Accounts\Balance\Tables\FwAccountBalance;
+    use PHPCraftdream\Garnet\Bundle\Modules\Accounts\Balance\Tables\FwBalanceLedger;
     use PHPCraftdream\Garnet\Kernel\Db\Link\NamedLock;
-    use PHPCraftdream\Garnet\Kernel\Exceptions\DbException;
-    use PHPCraftdream\Garnet\Kernel\Io\ErrorCatcher\ErrorCatcher;
-    use PHPCraftdream\Garnet\Kernel\Io\Logs\Logger;
+    use PHPCraftdream\Garnet\Kernel\Exceptions\Db\DbException;
+    use PHPCraftdream\Garnet\Kernel\Io\Bootstrap\ErrorCatcher\ErrorCatcher;
+    use PHPCraftdream\Garnet\Kernel\Io\Services\Logs\Logger;
     use PHPCraftdream\IRabi\Common\Exceptions\AccountLockAcquireException;
     use Throwable;
 

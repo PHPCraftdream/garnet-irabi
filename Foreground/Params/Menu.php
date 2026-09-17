@@ -2,9 +2,9 @@
 
 namespace PHPCraftdream\IRabi\Foreground\Params {
     use Aura\SqlQuery\Common\SelectInterface;
-    use PHPCraftdream\Garnet\Bundle\I18n\FwI18n;
+    use PHPCraftdream\Garnet\Bundle\Support\I18n\FwI18n;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
-    use PHPCraftdream\Garnet\Kernel\Io\Router\RouterUriParams;
+    use PHPCraftdream\Garnet\Kernel\Io\Http\Router\RouterUriParams;
     use PHPCraftdream\IRabi\Common\Tables\Bookings;
     use PHPCraftdream\IRabi\Common\Tables\TimeSlots;
     use PHPCraftdream\IRabi\Dashboard\Controllers\DashboardMainController;

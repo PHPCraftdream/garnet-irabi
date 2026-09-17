@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Common\Services {
-    use PHPCraftdream\Garnet\Bundle\Modules\Email\FwEmailQueueService;
+    use PHPCraftdream\Garnet\Bundle\Modules\Comms\Email\FwEmailQueueService;
 
     /**
      * App-level exposer for the framework's protected static

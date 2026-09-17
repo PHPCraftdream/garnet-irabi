@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {AdminGrid as BaseAdminGrid, AdminGridProps} from '@common/Components/AdminGrid/AdminGrid';
+import {AdminGrid as BaseAdminGrid, AdminGridProps} from '@common/Components/Admin/AdminGrid/AdminGrid';
 import {globalRenders} from './gridRenders';
 
 /**

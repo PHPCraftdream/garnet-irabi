@@ -13,7 +13,7 @@
 ## Проверенная карта authorization gates
 
 - Общие защищённые foreground routes подключены через `IrabiAuthMiddleware::authOnly`, `UserDataMiddleware::notDisabled`, `UserDataMiddleware::process`, `IdempotencyMiddleware::before`: `IRabi.php:196-209`.
-- `authOnly` на каждый POST защищённого route проверяет Origin/Referer и CSRF до контроллера: `vendor/phpcraftdream/garnet-framework/Bundle/Modules/Auth/Middlewares/EmailAuthMiddleware.php:123-143`, `:213-223`.
+- `authOnly` на каждый POST защищённого route проверяет Origin/Referer и CSRF до контроллера: `vendor/phpcraftdream/garnet-framework/Bundle/Modules/Accounts/Auth/Middlewares/EmailAuthMiddleware.php:123-143`, `:213-223`.
 - Disabled-session deny стоит сразу после auth и до бизнес/ staff gates: `Foreground/Middlewares/UserDataMiddleware.php:78-86`.
 - Expert panel дополнительно gated по business role `expertOnly`: `IRabi.php:214-218`; state-changing expert actions требуют `isApproved()` или moderator+: `Foreground/Controllers/ExpertPanelController.php:62-77`, `:108-207`.
 - Admin dashboard gated по moderator+: `IRabi.php:248-264`; system/pages gated по owner+: `IRabi.php:265-272`.
@@ -34,7 +34,7 @@ Impact: BOLA/privilege boundary bypass внутри staff plane. Moderator по�
 Preconditions: атакующий уже authenticated moderator, owner/admin имеет support ticket или attachment id известен/перебирается.
 
 Файл/строка:
-- `vendor/phpcraftdream/garnet-framework/Bundle/Modules/Support/Controllers/FwSupportAdminController.php:214-226` (`post__ticketDetail`) читает ticket по id и не проверяет rank владельца.
+- `vendor/phpcraftdream/garnet-framework/Bundle/Modules/Comms/Support/Controllers/FwSupportAdminController.php:214-226` (`post__ticketDetail`) читает ticket по id и не проверяет rank владельца.
 - `.../FwSupportAdminController.php:318-331` (`post__reply`) отвечает в ticket по id без rank check.
 - `.../FwSupportAdminController.php:373-386` (`post__internalComment`) пишет internal comment без rank check.
 - `.../FwSupportAdminController.php:413-426` (`post__changeStatus`) меняет status без rank check.

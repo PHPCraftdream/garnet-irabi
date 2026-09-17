@@ -2,7 +2,7 @@
 
 namespace PHPCraftdream\IRabi\Common\Services\DevSeed {
     use Aura\SqlQuery\Common\SelectInterface;
-    use PHPCraftdream\Garnet\Kernel\Core\Tools\StrTools;
+    use PHPCraftdream\Garnet\Kernel\Core\Support\Tools\StrTools;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\DbAccount;
     use PHPCraftdream\IRabi\Common\Tables\BalanceLedger;

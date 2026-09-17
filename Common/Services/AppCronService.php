@@ -4,12 +4,12 @@ namespace PHPCraftdream\IRabi\Common\Services {
     use Aura\Cli\Stdio;
     use Aura\Cli\Stdio\Formatter;
     use Aura\SqlQuery\Common\SelectInterface;
-    use PHPCraftdream\Garnet\Bundle\Modules\Email\FwEmailQueueService;
-    use PHPCraftdream\Garnet\Bundle\Modules\Invite\FwInviteTokenService;
+    use PHPCraftdream\Garnet\Bundle\Modules\Accounts\Invite\FwInviteTokenService;
+    use PHPCraftdream\Garnet\Bundle\Modules\Comms\Email\FwEmailQueueService;
     use PHPCraftdream\Garnet\Kernel\Db\Link\NamedLock;
-    use PHPCraftdream\Garnet\Kernel\Io\Cron\FwCronService;
-    use PHPCraftdream\Garnet\Kernel\Io\ErrorCatcher\ErrorCatcher;
-    use PHPCraftdream\Garnet\Kernel\Io\Logs\Logger;
+    use PHPCraftdream\Garnet\Kernel\Io\Bootstrap\ErrorCatcher\ErrorCatcher;
+    use PHPCraftdream\Garnet\Kernel\Io\Services\Cron\FwCronService;
+    use PHPCraftdream\Garnet\Kernel\Io\Services\Logs\Logger;
     use PHPCraftdream\IRabi\Common\Tables\CronLog;
     use ReflectionClass;
     use RuntimeException;

@@ -1,20 +1,20 @@
 import * as React from 'react';
 import {useState, useMemo} from 'react';
-import {sendPost} from '@common/Api/sendPost';
-import {D} from '@common/Debug/D';
-import {useSending} from '@common/hooks/useSending';
-import {useBodyScrollLock} from '@common/hooks/useBodyScrollLock';
-import {useShake} from '@common/hooks/useShake';
+import {sendPost} from '@common/Api/Send/sendPost';
+import {D} from '@common/Support/Debug/D';
+import {useSending} from '@common/hooks/data/useSending';
+import {useBodyScrollLock} from '@common/hooks/ui/useBodyScrollLock';
+import {useShake} from '@common/hooks/ui/useShake';
 import {bookErrorCode, bookErrorMessage} from './bookingErrors';
-import SendButton from '@common/Components/SendButton';
-import {Portal} from '@common/Components/Portal';
+import SendButton from '@common/Components/Controls/SendButton';
+import {Portal} from '@common/Components/Layout/Portal';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {ExtraSlotPicker} from './ExtraSlotPicker';
 import {SlotItem, ExpertMap} from './types';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
-import {formatTime as fmtTime, formatDateShort as fmtDate} from '@common/Utils/DateUtils';
+import {formatTime as fmtTime, formatDateShort as fmtDate} from '@common/Utils/Time/DateUtils';
 import {slotFormatLine} from '../../Common/booking/slotFormat';
-import {appUrl} from '@common/Utils/appUrl';
+import {appUrl} from '@common/Utils/Url/appUrl';
 
 interface Props {
     slot: SlotItem;

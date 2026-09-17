@@ -7,9 +7,9 @@ import {UserDetailContext} from './UserDetailContext';
 import {UserDetailTab} from './UserDetailTab';
 import {useUserTabs} from './useUserTabs';
 import {ADMIN_URLS} from './AdminPageWrapper';
-import {TabNav, TabDef} from '@common/Components/Navigation/TabNav';
+import {TabNav, TabDef} from '@common/Components/Layout/Navigation/TabNav';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
-import {PageHeader} from '@common/Components/PageHeader';
+import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {Banknote} from 'lucide-react';
 
 interface Props {

@@ -1,19 +1,19 @@
 import * as React from 'react';
-import {D} from '@common/Debug/D';
-import {useConfirm} from '@common/hooks/useConfirm';
+import {D} from '@common/Support/Debug/D';
+import {useConfirm} from '@common/hooks/ui/useConfirm';
 
-import {ConfirmModal} from '@common/Components/ConfirmModal';
-import {showToast} from '@common/Components/GlobalToast';
+import {ConfirmModal} from '@common/Components/Feedback/ConfirmModal';
+import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
-import {formatTs} from '@common/Utils/DateUtils';
-import {sendPost} from '@common/Api/sendPost';
-import {appUrl} from '@common/Utils/appUrl';
+import {formatTs} from '@common/Utils/Time/DateUtils';
+import {sendPost} from '@common/Api/Send/sendPost';
+import {appUrl} from '@common/Utils/Url/appUrl';
 import {UniversalBadge} from '../../Common/booking/StatusBadge';
 import {translateStatus} from '../../Common/booking/statusHelpers';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {actionCostHint, actionImpact, actionLabel, isActionable, outcomeLabel} from '../../Common/booking/bookingAction';
 import {IrabiPreviewProvider} from '../../Common/people/IrabiPreviewProvider';
-import {PageHeader} from '@common/Components/PageHeader';
+import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {CalendarCheck} from 'lucide-react';
 
 interface Booking {

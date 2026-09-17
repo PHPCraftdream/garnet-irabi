@@ -1,5 +1,5 @@
 // Generic grid types — re-exported from Common for convenience
-export type {GridColumnConfig, GridConfig, SubGridConfig, DetailViewConfig, DetailSection} from '@common/Components/AdminGrid/types';
+export type {GridColumnConfig, GridConfig, SubGridConfig, DetailViewConfig, DetailSection} from '@common/Components/Admin/AdminGrid/types';
 
 // ── IRabi domain types ────────────────────────────────────────────────────────
 

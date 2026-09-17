@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
-import {formatDateShort, formatTime} from '@common/Utils/DateUtils';
+import {formatDateShort, formatTime} from '@common/Utils/Time/DateUtils';
 import {SlotItem} from './types';
 
 const slotEnd = (s: SlotItem): number => s.end_at || (s.start_at + (s.duration_min || 60) * 60);

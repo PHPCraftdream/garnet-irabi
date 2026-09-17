@@ -1,11 +1,11 @@
 import * as React from 'react';
 import {useState, useEffect} from 'react';
-import {sendPost} from '@common/Api/sendPost';
-import {sendPostFormData} from '@common/Api/sendPostFormData';
-import {D} from '@common/Debug/D';
-import {useSending} from '@common/hooks/useSending';
+import {sendPost} from '@common/Api/Send/sendPost';
+import {sendPostFormData} from '@common/Api/Send/sendPostFormData';
+import {D} from '@common/Support/Debug/D';
+import {useSending} from '@common/hooks/data/useSending';
 
-import {showToast} from '@common/Components/GlobalToast';
+import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {SupportTicket, SupportMessage, SupportStatus, AssignmentLogEntry, AutoContext} from '../Support/supportTypes';
 import {PendingFile} from '../../Common/attachments/AttachmentPicker';

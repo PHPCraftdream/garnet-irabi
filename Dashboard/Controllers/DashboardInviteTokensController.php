@@ -2,15 +2,15 @@
 
 namespace PHPCraftdream\IRabi\Dashboard\Controllers {
     use Aura\SqlQuery\Common\SelectInterface;
-    use PHPCraftdream\Garnet\Bundle\Modules\EntityHistory\EntityHistoryService;
-    use PHPCraftdream\Garnet\Bundle\Modules\Invite\FwInviteTokenService;
+    use PHPCraftdream\Garnet\Bundle\Modules\Accounts\Invite\FwInviteTokenService;
+    use PHPCraftdream\Garnet\Bundle\Modules\Ops\EntityHistory\EntityHistoryService;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\DbAccount;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
-    use PHPCraftdream\Garnet\Kernel\Io\IniConfig\AppConfig;
-    use PHPCraftdream\Garnet\Kernel\Io\IniConfig\IniConfig;
-    use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Core\IGlobalReqParams;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
+    use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
+    use PHPCraftdream\Garnet\Kernel\Io\Services\IniConfig\AppConfig;
+    use PHPCraftdream\Garnet\Kernel\Io\Services\IniConfig\IniConfig;
     use PHPCraftdream\IRabi\Common\System\DateUtils;
     use PHPCraftdream\IRabi\Common\Tables\EntityHistory;
     use PHPCraftdream\IRabi\Common\Tables\InviteRegistrations;

@@ -1,11 +1,11 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Common\Services {
-    use PHPCraftdream\Garnet\Bundle\Modules\EntityHistory\EntityHistoryService;
-    use PHPCraftdream\Garnet\Bundle\Modules\StaticPages\FwStaticPagesService;
-    use PHPCraftdream\Garnet\Bundle\Modules\StaticPages\Tables\FwStaticPageBlocks;
-    use PHPCraftdream\Garnet\Bundle\Modules\StaticPages\Tables\FwStaticPages;
-    use PHPCraftdream\Garnet\Bundle\Modules\StaticPages\Tables\FwStaticSnippets;
+    use PHPCraftdream\Garnet\Bundle\Modules\Content\StaticPages\FwStaticPagesService;
+    use PHPCraftdream\Garnet\Bundle\Modules\Content\StaticPages\Tables\FwStaticPageBlocks;
+    use PHPCraftdream\Garnet\Bundle\Modules\Content\StaticPages\Tables\FwStaticPages;
+    use PHPCraftdream\Garnet\Bundle\Modules\Content\StaticPages\Tables\FwStaticSnippets;
+    use PHPCraftdream\Garnet\Bundle\Modules\Ops\EntityHistory\EntityHistoryService;
     use PHPCraftdream\IRabi\Common\Tables\EntityHistory;
     use PHPCraftdream\IRabi\Common\Tables\StaticPageBlocks;
     use PHPCraftdream\IRabi\Common\Tables\StaticPages;

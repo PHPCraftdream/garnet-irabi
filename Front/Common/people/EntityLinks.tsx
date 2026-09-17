@@ -3,7 +3,7 @@ import {Settings} from 'lucide-react';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {UserDetailContext} from '../../Islands/AdminPanel/UserDetailContext';
 import {usePreview} from '@common/Components/UserPreviewModal/PreviewContext';
-import {appUrl} from '@common/Utils/appUrl';
+import {appUrl} from '@common/Utils/Url/appUrl';
 
 /**
  * Dual links for moderators: public view + admin view.

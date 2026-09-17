@@ -5,7 +5,7 @@ import {UniversalBadge, statusClass} from '../../../../Common/booking/StatusBadg
 import {translateStatus} from '../../../../Common/booking/statusHelpers';
 import {actionCostHint, actionLabel} from '../../../../Common/booking/bookingAction';
 import {Slot} from '../../types';
-import {formatTime} from '@common/Utils/DateUtils';
+import {formatTime} from '@common/Utils/Time/DateUtils';
 
 interface Props {
     slot: Slot;

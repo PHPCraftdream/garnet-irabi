@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {Portal} from '@common/Components/Portal';
+import {Portal} from '@common/Components/Layout/Portal';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 
 /**

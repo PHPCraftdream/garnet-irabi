@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {PageResponse} from '@common/hooks/usePagination';
+import {PageResponse} from '@common/hooks/data/usePagination';
 import {IrabiPreviewProvider} from '../../Common/people/IrabiPreviewProvider';
 import BookingsTab, {
     BookingCounts, BookingsViewAs, ExpertInfo, SlotInfo, UserInfo,

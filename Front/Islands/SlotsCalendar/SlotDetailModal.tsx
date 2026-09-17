@@ -1,10 +1,10 @@
 import * as React from 'react';
 import {useState, useEffect, useCallback} from 'react';
-import {useSending} from '@common/hooks/useSending';
-import {useBodyScrollLock} from '@common/hooks/useBodyScrollLock';
-import SendButton from '@common/Components/SendButton';
-import {sendPost} from '@common/Api/sendPost';
-import {Portal} from '@common/Components/Portal';
+import {useSending} from '@common/hooks/data/useSending';
+import {useBodyScrollLock} from '@common/hooks/ui/useBodyScrollLock';
+import SendButton from '@common/Components/Controls/SendButton';
+import {sendPost} from '@common/Api/Send/sendPost';
+import {Portal} from '@common/Components/Layout/Portal';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {canActNow, isActionable} from '../../Common/booking/bookingAction';
 import {SlotCancelForm} from './SlotCancelForm';
@@ -12,8 +12,8 @@ import {SlotItem, ExpertMap} from './types';
 import QuickChat from '../../Common/people/QuickChat';
 import {SlotDateTimeBlock, SlotExpertBlock, SlotFormatBlock, SlotPriceBlock} from './SlotDetailSections';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
-import {formatTime as fmtTime, formatDateLong as fmtFullDate} from '@common/Utils/DateUtils';
-import {appUrl} from '@common/Utils/appUrl';
+import {formatTime as fmtTime, formatDateLong as fmtFullDate} from '@common/Utils/Time/DateUtils';
+import {appUrl} from '@common/Utils/Url/appUrl';
 
 interface Props {
     slot: SlotItem;

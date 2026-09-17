@@ -1,7 +1,7 @@
 // Single source of truth for "does `npm test` (no explicit --config) target
 // the local dev server or the remote (prod) box". Plain CommonJS so both
 // scripts/run-target.js (executed via bare `node`) and any TS helper
-// (`require('../helpers/target-config')` under ts-node) share one resolver
+// (`require('./target-config')` under ts-node) share one resolver
 // instead of each re-implementing the same env-var read.
 //
 // #395: the choice of default is itself configurable (not hardcoded either

@@ -1,18 +1,18 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Dashboard\Controllers {
-    use PHPCraftdream\Garnet\Bundle\Modules\EntityHistory\SystemSettingsHistory;
-    use PHPCraftdream\Garnet\Bundle\Modules\SystemSettings\Controllers\FwSystemSettingsController;
-    use PHPCraftdream\Garnet\Bundle\Modules\SystemSettings\FwAppSettings;
-    use PHPCraftdream\Garnet\Bundle\Utils\HtmlLayout;
-    use PHPCraftdream\Garnet\Bundle\Utils\RenderIsland;
-    use PHPCraftdream\Garnet\Bundle\Utils\Upload\PublicImageUploadTrait;
+    use PHPCraftdream\Garnet\Bundle\Modules\Ops\EntityHistory\SystemSettingsHistory;
+    use PHPCraftdream\Garnet\Bundle\Modules\Ops\SystemSettings\Controllers\FwSystemSettingsController;
+    use PHPCraftdream\Garnet\Bundle\Modules\Ops\SystemSettings\FwAppSettings;
+    use PHPCraftdream\Garnet\Bundle\Support\Utils\HtmlLayout;
+    use PHPCraftdream\Garnet\Bundle\Support\Utils\RenderIsland;
+    use PHPCraftdream\Garnet\Bundle\Support\Utils\Upload\PublicImageUploadTrait;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\IGlobalReqParams;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\Router\IRouterUriParams;
-    use PHPCraftdream\Garnet\Kernel\Io\Mailer\Mailer;
-    use PHPCraftdream\Garnet\Kernel\Io\Router\ControllerTools;
-    use PHPCraftdream\Garnet\Kernel\Io\Twig\TwigParams;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Core\IGlobalReqParams;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
+    use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
+    use PHPCraftdream\Garnet\Kernel\Io\Render\Twig\TwigParams;
+    use PHPCraftdream\Garnet\Kernel\Io\Services\Mailer\Mailer;
     use PHPCraftdream\IRabi\Common\Services\EmailNotifications;
     use PHPCraftdream\IRabi\Common\System\AppSettings;
     use PHPCraftdream\IRabi\Common\Tables\EntityHistory;

@@ -1,1 +1,1 @@
-export {SubGridModal} from '@common/Components/AdminGrid/SubGridModal';
+export {SubGridModal} from '@common/Components/Admin/AdminGrid/SubGridModal';

@@ -2,8 +2,8 @@
 
 namespace PHPCraftdream\IRabi\Foreground\Params {
     use Aura\SqlQuery\Common\SelectInterface;
-    use PHPCraftdream\Garnet\Bundle\I18n\FwI18n;
-    use PHPCraftdream\Garnet\Kernel\Core\Tools\StrTools;
+    use PHPCraftdream\Garnet\Bundle\Support\I18n\FwI18n;
+    use PHPCraftdream\Garnet\Kernel\Core\Support\Tools\StrTools;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\Account;
     use PHPCraftdream\Garnet\Kernel\Db\Entity\Account\AccountEntity;
     use PHPCraftdream\IRabi\Foreground\I18n\ForegroundI18n;

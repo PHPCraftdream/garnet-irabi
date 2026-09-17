@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {formatTs} from '@common/Utils/DateUtils';
+import {formatTs} from '@common/Utils/Time/DateUtils';
 import {SupportMessage} from './supportTypes';
 import AttachmentDisplay from '../../Common/attachments/AttachmentDisplay';
 

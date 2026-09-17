@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {Archive, ArchiveRestore} from 'lucide-react';
-import {formatTs} from '@common/Utils/DateUtils';
-import {AsyncIconButton} from '@common/Components/AsyncIconButton';
+import {formatTs} from '@common/Utils/Time/DateUtils';
+import {AsyncIconButton} from '@common/Components/Controls/AsyncIconButton';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {NewsEvent} from './newsTypes';
 

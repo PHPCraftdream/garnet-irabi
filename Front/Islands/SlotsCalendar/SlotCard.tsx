@@ -5,7 +5,7 @@ import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {SlotItem, ExpertMap} from './types';
 import {EntityLink, userLinks} from '../../Common/people/EntityLinks';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
-import {formatTime} from '@common/Utils/DateUtils';
+import {formatTime} from '@common/Utils/Time/DateUtils';
 import {slotFormatLine, slotPlaceLabel, slotPlaceValue, slotSeatsLeftLine} from '../../Common/booking/slotFormat';
 import {translateStatus} from '../../Common/booking/statusHelpers';
 import {statusClass} from '../../Common/booking/StatusBadge';

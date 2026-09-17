@@ -1,12 +1,12 @@
 import * as React from 'react';
 import {useState, useEffect, useCallback} from 'react';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
-import {sendPostFormData} from '@common/Api/sendPostFormData';
-import {showToast} from '@common/Components/GlobalToast';
-import {formatTs} from '@common/Utils/DateUtils';
-import Pagination from '@common/Components/Pagination';
+import {sendPostFormData} from '@common/Api/Send/sendPostFormData';
+import {showToast} from '@common/Components/Feedback/GlobalToast';
+import {formatTs} from '@common/Utils/Time/DateUtils';
+import Pagination from '@common/Components/Layout/Paging/Pagination';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
-import {appUrl} from '@common/Utils/appUrl';
+import {appUrl} from '@common/Utils/Url/appUrl';
 import {useSlotBooking} from '../SlotsCalendar/useSlotBooking';
 import {NewsEvent} from './newsTypes';
 import {NewsGroup, NewsGroupRow} from './NewsGroupRow';

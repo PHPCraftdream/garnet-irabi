@@ -1,10 +1,10 @@
 import * as React from 'react';
 import {useState} from 'react';
-import {sendPost} from '@common/Api/sendPost';
-import {useSending} from '@common/hooks/useSending';
-import {useBodyScrollLock} from '@common/hooks/useBodyScrollLock';
-import {showToast} from '@common/Components/GlobalToast';
-import {Portal} from '@common/Components/Portal';
+import {sendPost} from '@common/Api/Send/sendPost';
+import {useSending} from '@common/hooks/data/useSending';
+import {useBodyScrollLock} from '@common/hooks/ui/useBodyScrollLock';
+import {showToast} from '@common/Components/Feedback/GlobalToast';
+import {Portal} from '@common/Components/Layout/Portal';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {AccountBalanceRow} from './types';
 

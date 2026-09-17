@@ -1,6 +1,6 @@
 import * as React from 'react';
-import {formatTs} from '@common/Utils/DateUtils';
-import {ExternalLink} from '@common/Components/ExternalLink';
+import {formatTs} from '@common/Utils/Time/DateUtils';
+import {ExternalLink} from '@common/Components/Layout/ExternalLink';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 
 // UserCell removed — use AdminUserLink from EntityLinks instead

@@ -1,1 +1,1 @@
-export {StaticPagesAdminIsland as AdminStaticPagesIsland} from '@common/Components/StaticPages/StaticPagesAdminIsland';
+export {StaticPagesAdminIsland as AdminStaticPagesIsland} from '@common/Components/Admin/StaticPages/StaticPagesAdminIsland';

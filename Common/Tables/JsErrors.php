@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Common\Tables {
-    use PHPCraftdream\Garnet\Bundle\Modules\JsErrors\Tables\FwJsErrors;
+    use PHPCraftdream\Garnet\Bundle\Modules\Ops\JsErrors\Tables\FwJsErrors;
 
     /**
      * IRabi-prefixed JS-error table. Schema + indexes live in the

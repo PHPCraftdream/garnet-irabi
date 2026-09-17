@@ -2,7 +2,7 @@ import * as React from 'react';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {AssignmentLogEntry} from '../../../Support/supportTypes';
 import {AdminUserLink} from '../../../../Common/people/EntityLinks';
-import {formatTs} from '@common/Utils/DateUtils';
+import {formatTs} from '@common/Utils/Time/DateUtils';
 
 /** Человек или прочерк — кто передал, кому передали. */
 const Party: React.FC<{id?: number | null; name?: string | null}> = ({id, name}) => {

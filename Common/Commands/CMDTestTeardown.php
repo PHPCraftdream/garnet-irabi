@@ -5,8 +5,8 @@ namespace PHPCraftdream\IRabi\Common\Commands {
     use Aura\Cli\Stdio;
     use PHPCraftdream\Garnet\Kernel\Core\AppInit\BaseAppInit;
     use PHPCraftdream\Garnet\Kernel\Core\Env\TestScope;
-    use PHPCraftdream\Garnet\Kernel\Interfaces\ICommand;
-    use PHPCraftdream\Garnet\Kernel\Io\IniConfig\IniConfig;
+    use PHPCraftdream\Garnet\Kernel\Interfaces\Io\ICommand;
+    use PHPCraftdream\Garnet\Kernel\Io\Services\IniConfig\IniConfig;
     use PHPCraftdream\IRabi\Common\Services\TestScopeDbService;
 
     /**

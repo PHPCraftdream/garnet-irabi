@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Dashboard\Controllers {
-    use PHPCraftdream\Garnet\Bundle\Modules\Dashboard\Controllers\FwDashboardController;
+    use PHPCraftdream\Garnet\Bundle\Modules\Content\Dashboard\Controllers\FwDashboardController;
     use PHPCraftdream\IRabi\Dashboard\IrabiDashboardMenuTrait;
 
     /**

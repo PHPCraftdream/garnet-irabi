@@ -5,9 +5,9 @@ import {IDetailsInfo} from '@common/Dom/GridTable/Models';
 import {goTo} from '@common/Dom/Nav/GoTo';
 import {I18nFramework as I18n} from '@framework/I18nGen/I18nFramework';
 import {I18nForeground as tf} from '../../I18nGen/I18nForeground';
-import {sendPost} from '@common/Api/sendPost';
-import {showToast} from '@common/Components/GlobalToast';
-import {renderMarkdownLinks} from '@common/Utils/staticPageUrl';
+import {sendPost} from '@common/Api/Send/sendPost';
+import {showToast} from '@common/Components/Feedback/GlobalToast';
+import {renderMarkdownLinks} from '@common/Utils/Url/staticPageUrl';
 
 interface NotifPrefsState {
 	messages: string;

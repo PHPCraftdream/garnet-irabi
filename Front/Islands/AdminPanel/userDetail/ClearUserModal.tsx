@@ -1,8 +1,8 @@
 import * as React from 'react';
 import {useState} from 'react';
-import {sendPost} from '@common/Api/sendPost';
-import SendButton from '@common/Components/SendButton';
-import {appUrl} from '@common/Utils/appUrl';
+import {sendPost} from '@common/Api/Send/sendPost';
+import SendButton from '@common/Components/Controls/SendButton';
+import {appUrl} from '@common/Utils/Url/appUrl';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {ModalShell} from '../../../Common/Components/ModalShell';
 

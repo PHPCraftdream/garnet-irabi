@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {useState, useEffect} from 'react';
-import {D} from '@common/Debug/D';
+import {D} from '@common/Support/Debug/D';
 
 interface Props {
     unreadCount: number;

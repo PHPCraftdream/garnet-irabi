@@ -5,7 +5,7 @@ namespace PHPCraftdream\IRabi\Common\Services;
 use Aura\Cli\Stdio;
 use PHPCraftdream\Garnet\Kernel\Core\AppInit\BaseAppInit;
 use PHPCraftdream\Garnet\Kernel\Db\Link\DbPool;
-use PHPCraftdream\Garnet\Kernel\Io\GarnetCli\GarnetDbBackupCommand;
+use PHPCraftdream\Garnet\Kernel\Io\GarnetCli\Commands\Db\GarnetDbBackupCommand;
 use PHPCraftdream\Garnet\Kernel\Io\GarnetCli\GarnetEnv;
 use Throwable;
 

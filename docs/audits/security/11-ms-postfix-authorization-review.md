@@ -98,7 +98,7 @@ Remediation:
 
 ## Подтверждённые защиты
 
-- CSRF и Origin/Referer проверяются для всех protected POST в `authOnly()`: `garnet-framework/Bundle/Modules/Auth/Middlewares/AuthMiddleware.php:119-134`, `:184-210`; allowed origins берутся из `allowed_origins` или `base_url`: `garnet-framework/Bundle/Modules/Auth/AuthStrategy/AuthConfig.php:62-82`.
+- CSRF и Origin/Referer проверяются для всех protected POST в `authOnly()`: `garnet-framework/Bundle/Modules/Accounts/Auth/Middlewares/AuthMiddleware.php:119-134`, `:184-210`; allowed origins берутся из `allowed_origins` или `base_url`: `garnet-framework/Bundle/Modules/Accounts/Auth/AuthStrategy/AuthConfig.php:62-82`.
 - Disabled-account deny стоит до role gates и idempotency: `Apps/IRabi/IRabi.php:198-210`, `Apps/IRabi/Foreground/Middlewares/UserDataMiddleware.php:78-85`.
 - Booking direct-ID guards: self-booking, past slot, unapproved/disabled expert, duplicate active booking и CAS seat reservation: `Apps/IRabi/Foreground/Controllers/SlotsController.php:242-325`, `:341-412`.
 - Capacity race guard: `TimeSlots::reserveSeat()` атомарно инкрементирует `booked_count` только при `booked_count < max_users`: `Apps/IRabi/Common/Tables/TimeSlots.php:27-31`.
@@ -106,15 +106,15 @@ Remediation:
 - Expert booking actions проверяют ownership слота перед confirm/cancel: `Apps/IRabi/Foreground/Controllers/ExpertPanel/ExpertBookingsService.php:95-98`, `:152-155`, `:244-247`, `:316-319`.
 - Balance manual adjustment owner/admin-only, с target-rank guard и self-adjust deny: `Apps/IRabi/Dashboard/Controllers/DashboardFinanceController.php:340-366`.
 - Manual debit не уводит баланс ниже нуля: `Apps/IRabi/Dashboard/Controllers/DashboardFinanceController.php:382-399`.
-- Support user endpoints фильтруют tickets/messages по `account_id`; internal comments не отдаются user; attachment download дополнительно проверяет ticket ownership: `Apps/IRabi/vendor/phpcraftdream/garnet-framework/Bundle/Modules/Support/Controllers/FwSupportController.php:203-265`, `:335-383`, `:388-433`.
-- Support admin endpoints требуют moderator+: `Apps/IRabi/vendor/phpcraftdream/garnet-framework/Bundle/Modules/Support/Controllers/FwSupportAdminController.php:214-217`, `:318-321`, `:413-416`, `:458-460`.
-- IM message read/download проверяют participant membership; send проверяет CSRF: `Apps/IRabi/vendor/phpcraftdream/garnet-framework/Bundle/Modules/Messaging/Controllers/FwImController.php:206-227`, `:276-287`.
+- Support user endpoints фильтруют tickets/messages по `account_id`; internal comments не отдаются user; attachment download дополнительно проверяет ticket ownership: `Apps/IRabi/vendor/phpcraftdream/garnet-framework/Bundle/Modules/Comms/Support/Controllers/FwSupportController.php:203-265`, `:335-383`, `:388-433`.
+- Support admin endpoints требуют moderator+: `Apps/IRabi/vendor/phpcraftdream/garnet-framework/Bundle/Modules/Comms/Support/Controllers/FwSupportAdminController.php:214-217`, `:318-321`, `:413-416`, `:458-460`.
+- IM message read/download проверяют participant membership; send проверяет CSRF: `Apps/IRabi/vendor/phpcraftdream/garnet-framework/Bundle/Modules/Comms/Messaging/Controllers/FwImController.php:206-227`, `:276-287`.
 - IRabi IM send добавляет recipient allow-list до framework send: `Apps/IRabi/Foreground/Controllers/ImController.php:192-202`.
 - Public opcache reset требует shared secret и отказывает при пустом token config: `Apps/IRabi/Foreground/Controllers/SysOpcacheResetController.php:31-47`.
 - Public sys log endpoint ограничивает category/msg/meta и rate-limits per IP fail-closed on DB error: `Apps/IRabi/Foreground/Controllers/SysLogController.php:45-65`, `:109-135`.
 - Dev login/reset gated двумя условиями dev context + dev dir: `Apps/IRabi/Foreground/Controllers/DevLoginController.php:35-43`, `:155-159`.
 - Destructive CLI `clear-user` и `clear-logs` gated test-mode marker: `Apps/IRabi/Common/Commands/CMDClearUser.php:30-35`, `Apps/IRabi/Common/Commands/CMDClearLogs.php:31-36`.
-- HTTP idempotency middleware существует для POST с `X-Idempotency-Key` и replay scoped by `(account_id, key, route_path)`: `garnet-framework/Bundle/Modules/Idempotency/IdempotencyMiddleware.php:62-128`.
+- HTTP idempotency middleware существует для POST с `X-Idempotency-Key` и replay scoped by `(account_id, key, route_path)`: `garnet-framework/Bundle/Modules/Ops/Idempotency/IdempotencyMiddleware.php:62-128`.
 
 ## State-changing endpoints/actions reviewed
 

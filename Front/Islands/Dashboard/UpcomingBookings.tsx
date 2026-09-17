@@ -1,12 +1,12 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {isConfirmed} from '../../Common/booking/bookingAction';
-import {formatTs} from '@common/Utils/DateUtils';
+import {formatTs} from '@common/Utils/Time/DateUtils';
 import {translateStatus} from '../../Common/booking/statusHelpers';
 import {UniversalBadge} from '../../Common/booking/StatusBadge';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
-import {ExternalLink} from '@common/Components/ExternalLink';
-import {appUrl} from '@common/Utils/appUrl';
+import {ExternalLink} from '@common/Components/Layout/ExternalLink';
+import {appUrl} from '@common/Utils/Url/appUrl';
 
 interface BookingItem {
     id: number;

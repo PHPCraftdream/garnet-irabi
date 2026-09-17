@@ -1,9 +1,9 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Foreground\Controllers {
-    use PHPCraftdream\Garnet\Bundle\Utils\HtmlLayout;
-    use PHPCraftdream\Garnet\Kernel\Core\FrameworkController;
-    use PHPCraftdream\Garnet\Kernel\Io\Twig\TwigParams;
+    use PHPCraftdream\Garnet\Bundle\Support\Utils\HtmlLayout;
+    use PHPCraftdream\Garnet\Kernel\Core\Runtime\FrameworkController;
+    use PHPCraftdream\Garnet\Kernel\Io\Render\Twig\TwigParams;
     use PHPCraftdream\IRabi\Foreground\Controllers\Bookings\BookingCancelTrait;
     use PHPCraftdream\IRabi\Foreground\Controllers\Bookings\BookingCreateTrait;
     use PHPCraftdream\IRabi\Foreground\Controllers\Bookings\BookingRescheduleTrait;

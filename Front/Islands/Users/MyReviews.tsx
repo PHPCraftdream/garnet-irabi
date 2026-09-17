@@ -1,9 +1,9 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
-import {appUrl} from '@common/Utils/appUrl';
-import {formatTs} from '@common/Utils/DateUtils';
-import {usePagination, PageResponse} from '@common/hooks/usePagination';
-import Pagination, {PaginationLabels} from '@common/Components/Pagination';
+import {appUrl} from '@common/Utils/Url/appUrl';
+import {formatTs} from '@common/Utils/Time/DateUtils';
+import {usePagination, PageResponse} from '@common/hooks/data/usePagination';
+import Pagination, {PaginationLabels} from '@common/Components/Layout/Paging/Pagination';
 
 interface MyReview {
     id: number;

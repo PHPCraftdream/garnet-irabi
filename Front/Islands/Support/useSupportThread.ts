@@ -1,9 +1,9 @@
 import * as React from 'react';
 import {useState, useRef, useEffect} from 'react';
-import {sendPost} from '@common/Api/sendPost';
-import {sendPostFormData} from '@common/Api/sendPostFormData';
-import {showToast} from '@common/Components/GlobalToast';
-import {D} from '@common/Debug/D';
+import {sendPost} from '@common/Api/Send/sendPost';
+import {sendPostFormData} from '@common/Api/Send/sendPostFormData';
+import {showToast} from '@common/Components/Feedback/GlobalToast';
+import {D} from '@common/Support/Debug/D';
 import {PendingFile} from '../../Common/attachments/AttachmentPicker';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {SupportMessage} from './supportTypes';

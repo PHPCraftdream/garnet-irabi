@@ -4,7 +4,7 @@ import {AdminSupportWidget} from './AdminSupportWidget';
 import {AdminApprovalsWidget} from './AdminApprovalsWidget';
 import {AdminPlatformStats} from './AdminPlatformStats';
 import {AdminRecentActivity} from './AdminRecentActivity';
-import {PageHeader} from '@common/Components/PageHeader';
+import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {LayoutDashboard} from 'lucide-react';
 
 interface TicketItem {

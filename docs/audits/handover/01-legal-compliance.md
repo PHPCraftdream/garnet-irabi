@@ -191,17 +191,17 @@
 | Тема | Файл |
 |---|---|
 | Согласия: чекбоксы UI | `garnet-framework/Bundle/Front/auth/Auth2.tsx` |
-| Согласия: серверная валидация и персист | `garnet-framework/Bundle/Modules/Auth/Middlewares/EmailAuthMiddleware.php` (строки 227–252, 549–577) |
+| Согласия: серверная валидация и персист | `garnet-framework/Bundle/Modules/Accounts/Auth/Middlewares/EmailAuthMiddleware.php` (строки 227–252, 549–577) |
 | Колонки согласий | `Apps/IRabi/Migrations/Items/M_0005.php`; `garnet-framework/Kernel/Db/Entity/Account/Account.php` (307–340) |
 | Маркетинг-логика при регистрации | `Apps/IRabi/Foreground/Controllers/RegisterController.php` (134–147) |
 | Транзакционные письма и гейт | `Apps/IRabi/Common/Services/EmailNotifications.php` (`gate()`, `brandFooter()`) |
-| Cookie-механика | `garnet-framework/Kernel/Db/Entity/Session/Session.php`; `garnet-framework/Kernel/Io/Cookies/Cookie.php` (`rememberForever` = +5 лет) |
+| Cookie-механика | `garnet-framework/Kernel/Db/Entity/Session/Session.php`; `garnet-framework/Kernel/Io/Http/Cookies/Cookie.php` (`rememberForever` = +5 лет) |
 | Тесты «cookie после согласия» | `Apps/IRabi/Tests/specs/framework-bundle/consent-csrf.spec.ts`, `cookies-page.spec.ts` |
 | Публикуемые страницы | `Apps/IRabi/Migrations/Helpers/StaticPagesSeed.php`; `Apps/IRabi/Migrations/SeedData/page-{privacy,cookies,terms}-block-1.md` |
 | Удаление пользователя (test-mode only) | `Apps/IRabi/Common/Services/ClearUserService.php`; `Apps/IRabi/Common/Commands/CMDClearUser.php` |
 | Очистка логов (test-mode only) | `Apps/IRabi/Common/Services/ClearLogsService.php`; `CMDClearLogs.php` |
 | Cron (нет retention) | `Apps/IRabi/Common/Services/AppCronService.php` |
-| Финансы (внутренние единицы) | `Apps/IRabi/Dashboard/Controllers/DashboardFinanceController.php`; `Apps/IRabi/Foreground/Controllers/BalanceController.php`; `garnet-framework/Bundle/Modules/Balance/Controllers/FwBalanceController.php` |
+| Финансы (внутренние единицы) | `Apps/IRabi/Dashboard/Controllers/DashboardFinanceController.php`; `Apps/IRabi/Foreground/Controllers/BalanceController.php`; `garnet-framework/Bundle/Modules/Accounts/Balance/Controllers/FwBalanceController.php` |
 | Production-конфиг (пустые контакты) | `Apps/IRabi/WorkDir/Config/app.ini` |
 | Заявленные политики | `Apps/IRabi/docs/PersonalData/**` |
 

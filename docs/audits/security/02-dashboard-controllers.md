@@ -14,9 +14,9 @@ Route wiring (`IRabi.php`, lines ~243-272):
 
 - Every `/admin/*` controller is registered with the `$common` middleware chain, which includes `IrabiAuthMiddleware::authOnly` and then a role gate.
 - The role gate for most dashboard controllers is `UserDataMiddleware::moderatorOnly`; for `DashboardSystemController` and `DashboardStaticPagesController` it is `UserDataMiddleware::ownerOnly`.
-- The framework `Router` (`garnet-framework/Kernel/Io/Router/Router.php`) matches by base route value and dispatches `~subaction` calls to the **same** route entry, so the route-level middleware applies to every `post__*` / `get__*` sub-action, not just `get__main`.
+- The framework `Router` (`garnet-framework/Kernel/Io/Http/Router/Router.php`) matches by base route value and dispatches `~subaction` calls to the **same** route entry, so the route-level middleware applies to every `post__*` / `get__*` sub-action, not just `get__main`.
 
-**CSRF and Origin are enforced globally** for every POST on these routes: `IrabiAuthMiddleware` extends `EmailAuthMiddleware`, whose `authOnly()` runs `processOrigin()` + `processCSRF()` on every POST before the controller (`garnet-framework/Bundle/Modules/Auth/Middlewares/EmailAuthMiddleware.php:127-144`). A missing/invalid `CSRF_TOKEN` yields HTTP 403. Therefore CSRF (audit item #7) is **not** a finding — it is correctly enforced framework-wide, including for the state-changing finance / role / delete endpoints.
+**CSRF and Origin are enforced globally** for every POST on these routes: `IrabiAuthMiddleware` extends `EmailAuthMiddleware`, whose `authOnly()` runs `processOrigin()` + `processCSRF()` on every POST before the controller (`garnet-framework/Bundle/Modules/Accounts/Auth/Middlewares/EmailAuthMiddleware.php:127-144`). A missing/invalid `CSRF_TOKEN` yields HTTP 403. Therefore CSRF (audit item #7) is **not** a finding — it is correctly enforced framework-wide, including for the state-changing finance / role / delete endpoints.
 
 Because of this, the residual risk surface is **vertical privilege within the staff tier** (moderator doing what should be owner/admin-only) and data-exposure/IDOR *between staff and any account*, not anonymous access.
 

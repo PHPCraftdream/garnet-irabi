@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
 namespace PHPCraftdream\IRabi\Common\Tables {
-    use PHPCraftdream\Garnet\Bundle\Modules\Comments\Tables\FwComments;
+    use PHPCraftdream\Garnet\Bundle\Modules\Comms\Comments\Tables\FwComments;
 
     /**
      * IRabi-prefixed comments table. Schema, query helpers

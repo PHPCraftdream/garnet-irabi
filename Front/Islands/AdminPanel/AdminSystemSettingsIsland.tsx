@@ -1,1 +1,1 @@
-export {SystemSettingsPage as AdminSystemSettingsIsland} from '@common/Components/SystemSettings/SystemSettingsPage';
+export {SystemSettingsPage as AdminSystemSettingsIsland} from '@common/Components/Admin/SystemSettings/SystemSettingsPage';

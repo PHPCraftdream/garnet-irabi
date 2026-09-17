@@ -53,7 +53,7 @@ UNIQUE-индексами на леджере (`uq_ledger_ref` из M_0002 и д
 - `Foreground/Controllers/SlotsController.php:316-325` (CAS-списание totalCost), `:371-404` (вставка invoice/payment), `:428-442` (finally → recalculate)
 - `Foreground/Controllers/BookingsController.php:369-424, 440-442`
 - `Dashboard/Controllers/DashboardFinanceController.php:391-418`
-- `vendor/phpcraftdream/garnet-framework/Bundle/Modules/Balance/Tables/FwAccountBalance.php:42-57` (recalculate), `FwBalanceLedger.php:58-88` (addEntry → recalculate)
+- `vendor/phpcraftdream/garnet-framework/Bundle/Modules/Accounts/Balance/Tables/FwAccountBalance.php:42-57` (recalculate), `FwBalanceLedger.php:58-88` (addEntry → recalculate)
 
 **Суть.** Списание при бронировании — двухфазное: сначала CAS-апдейт кэша
 (`balance = balance - X WHERE balance >= X`), затем вставка ledger-записи `booking_invoice`, затем
