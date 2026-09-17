@@ -104,12 +104,12 @@ namespace PHPCraftdream\IRabi\Common\Services\Comms {
             }
 
             if ($cta !== null && $cta['text'] !== '' && $cta['href'] !== '') {
-                $button = $twig->render('Email/ButtonMain.twig', [
+                $button = $twig->render('Email/controls/ButtonMain.twig', [
                     'text' => $cta['text'],
                     'href' => $cta['href'],
                 ]);
                 $infoRows[] = [
-                    'raw' => $twig->render('Email/Row.twig', [
+                    'raw' => $twig->render('Email/rows/Row.twig', [
                         'row' => $button,
                         'align' => 'center',
                     ]),
@@ -121,12 +121,12 @@ namespace PHPCraftdream\IRabi\Common\Services\Comms {
             ];
             $params['bottom'] = static::brandFooter();
 
-            $html = $twig->render('Email/Email.twig', $params);
+            $html = $twig->render('Email/layout/Email.twig', $params);
             return HtmlMinify::get()->minify($html);
         }
 
         private static function renderLabelValueRow(string $label, string $value): string {
-            return Twig::get()->render('Email/LabelValueRow.twig', [
+            return Twig::get()->render('Email/rows/LabelValueRow.twig', [
                 'label' => $label,
                 'value' => $value,
             ]);
@@ -135,7 +135,7 @@ namespace PHPCraftdream\IRabi\Common\Services\Comms {
         private static function brandFooter(): string {
             $t = ForegroundI18n::getInstance();
             $contacts = FwAppSettings::supportContacts();
-            return Twig::get()->render('Email/BrandFooter.twig', [
+            return Twig::get()->render('Email/layout/BrandFooter.twig', [
                 'year' => (int)date('Y'),
                 'title' => FwAppSettings::brandName(),
                 'note' => $t->Email_Footer_Note(),
@@ -350,7 +350,7 @@ namespace PHPCraftdream\IRabi\Common\Services\Comms {
             $t = ForegroundI18n::getInstance();
 
             $rows = [
-                ['raw' => Twig::get()->render('Email/Row.twig', [
+                ['raw' => Twig::get()->render('Email/rows/Row.twig', [
                     'row' => htmlspecialchars($bodyText, ENT_QUOTES | ENT_SUBSTITUTE),
                     'align' => 'left',
                 ])],
@@ -581,7 +581,7 @@ namespace PHPCraftdream\IRabi\Common\Services\Comms {
                 'body' => static::renderEmail(
                     $t->Email_ExpertApproved_Title(),
                     [
-                        ['raw' => Twig::get()->render('Email/Row.twig', [
+                        ['raw' => Twig::get()->render('Email/rows/Row.twig', [
                             'row' => htmlspecialchars($t->Email_ExpertApproved_Body(), ENT_QUOTES | ENT_SUBSTITUTE),
                             'align' => 'left',
                         ])],
@@ -604,7 +604,7 @@ namespace PHPCraftdream\IRabi\Common\Services\Comms {
                 'body' => static::renderEmail(
                     $t->Email_ExpertRejected_Title(),
                     [
-                        ['raw' => Twig::get()->render('Email/Row.twig', [
+                        ['raw' => Twig::get()->render('Email/rows/Row.twig', [
                             'row' => htmlspecialchars($t->Email_ExpertRejected_Body(), ENT_QUOTES | ENT_SUBSTITUTE),
                             'align' => 'left',
                         ])],
