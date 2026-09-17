@@ -252,7 +252,16 @@ export default defineConfig({
 		// ── FrameworkBundle root tests (middleware integration, no UI auth) ──
 		{
 			name: 'framework-bundle-tests',
-			testMatch: '**/Tests/specs/framework-bundle/*.spec.ts',
+			// `**` — не украшение: спек, уехавший в подпапку (как
+			// finance-reconciliation/), при одиночной звёздочке молча
+			// выпадает из прогона. Прогон остаётся зелёным, проверок
+			// становится меньше — худший из возможных исходов. Территорию
+			// соседних проектов (admin/, cross-role/) исключаем явно.
+			testMatch: '**/Tests/specs/framework-bundle/**/*.spec.ts',
+			testIgnore: [
+				'**/Tests/specs/framework-bundle/admin/**',
+				'**/Tests/specs/framework-bundle/cross-role/**',
+			],
 			use: { ...devices['Desktop Chrome'] },
 		},
 
@@ -278,7 +287,11 @@ export default defineConfig({
 		// ── IRabi top-level self-contained tests ──────────────────────────────
 		{
 			name: 'main-tests',
-			testMatch: `**/Tests/*.spec.ts`,
+			// Второй шаблон — для спеков, разложенных по подпапкам прямо в
+			// корне Tests/. Сюда нельзя поставить `**`: он утащил бы все
+			// спеки ролей, у которых свои проекты и своя авторизация.
+			// Поэтому подпапки перечисляются явно.
+			testMatch: [`**/Tests/*.spec.ts`, `**/Tests/batch-slots/*.spec.ts`],
 			testIgnore: `**/Tests/user-flow.spec.ts`,
 			use: { ...devices['Desktop Chrome'] },
 		},
