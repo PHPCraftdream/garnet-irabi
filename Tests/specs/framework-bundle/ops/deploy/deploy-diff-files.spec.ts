@@ -15,7 +15,7 @@ import * as fs from 'node:fs';
 
 const execAsync = promisify(execFile);
 
-const GARNET_ROOT = path.resolve(__dirname, '../../..');
+const GARNET_ROOT = path.resolve(__dirname, '../../../../..');
 
 async function runGarnet(args: string[]): Promise<{ stdout: string; stderr: string; exitCode: number }> {
     try {

@@ -39,7 +39,7 @@ import mysql from 'mysql2/promise';
 import { DB, withConnection } from '../../../../helpers/db/db';
 import { runServerCommand } from '../../../../helpers/db/server-command';
 
-const APP_DIR = path.resolve(__dirname, '../../..');
+const APP_DIR = path.resolve(__dirname, '../../../../..');
 const LOG_JOURNAL_DIR = path.join(APP_DIR, 'WorkDir', 'LogJournal');
 
 /**

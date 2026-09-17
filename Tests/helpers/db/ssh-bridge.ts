@@ -34,7 +34,7 @@ const mysqlBase = require('mysql2');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const mysqlPromise = require('mysql2/promise');
 
-const REPO_ROOT = path.resolve(__dirname, '..', '..');
+const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 
 export function isProd(): boolean {
     return process.env.PW_PROD === '1';

@@ -23,7 +23,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const root = path.resolve(__dirname, '..', 'specs');
+const root = path.resolve(__dirname, '..', '..', 'specs');
 
 const matchers = [
     'toBeVisible', 'toBeHidden', 'toBeAttached',

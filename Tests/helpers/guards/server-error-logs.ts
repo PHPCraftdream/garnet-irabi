@@ -17,7 +17,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-const ROOT = path.resolve(__dirname, '../..');
+const ROOT = path.resolve(__dirname, '../../..');
 
 // Harness lives at `<app>/Tests/helpers/`, so ROOT is the app dir itself.
 const ERROR_DIRS = [

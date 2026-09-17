@@ -31,7 +31,7 @@ const tnLive = (table: string): string => `${LIVE_PREFIX}_${table}`;
 
 const execFileAsync = promisify(execFile);
 
-const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
+const REPO_ROOT = path.resolve(__dirname, '..', '..', '..', '..', '..');
 
 async function runGarnet(args: string[]): Promise<{ stdout: string; stderr: string; exitCode: number }> {
     try {

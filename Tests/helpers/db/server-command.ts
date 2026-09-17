@@ -23,7 +23,7 @@ import { spawnSync } from 'node:child_process';
 import * as path from 'node:path';
 import { isProd, remoteRuntimeDir } from './ssh-bridge';
 
-const APP_ROOT = path.resolve(__dirname, '..', '..');
+const APP_ROOT = path.resolve(__dirname, '..', '..', '..');
 
 export interface ServerCommandResult {
     stdout: string;

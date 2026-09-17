@@ -12,7 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const root = path.resolve(__dirname, '..');
+const root = path.resolve(__dirname, '..', '..');
 function walk(dir, out = []) {
     for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
         if (ent.name === 'node_modules' || ent.name === 'test-results' || ent.name === 'playwright-report') continue;

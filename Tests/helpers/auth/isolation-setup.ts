@@ -31,7 +31,7 @@ import { DB as DB_CONFIG } from '../db/db';
 // Harness now lives inside the app at `<app>/Tests/helpers/`, so the app
 // root is two levels up. (Was `../../Apps/IRabi` when the harness lived in
 // the monorepo's Framework/tests/.)
-const APP_DIR = path.resolve(__dirname, '../..');
+const APP_DIR = path.resolve(__dirname, '../../..');
 const BASE_URL = process.env.BASE_URL || 'http://localhost:8001';
 
 const TEMPLATE_PREFIX = 'test_worker_template';
@@ -273,7 +273,7 @@ async function loginAndPersistTemplate(browser: Browser, account: SeedAccount): 
 }
 
 function templateStatePath(role: string): string {
-    return path.resolve(__dirname, `../.auth/${role}_template.json`);
+    return path.resolve(__dirname, `../../.auth/${role}_template.json`);
 }
 
 export async function isolationSetup(workers?: number): Promise<void> {

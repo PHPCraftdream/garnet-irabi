@@ -18,7 +18,7 @@ import * as path from 'node:path';
 
 const execAsync = promisify(execFile);
 
-const GARNET_ROOT = path.resolve(__dirname, '../../..');
+const GARNET_ROOT = path.resolve(__dirname, '../../../../..');
 const PHP = process.env.PHP_BINARY ?? 'php';
 
 /** Bootstrap garnet constants then run arbitrary PHP code. */

@@ -63,8 +63,8 @@ export type RolePageFixtures = {
 
 export function roleContextOpts(workerIndex: number, role: string): BrowserContextOptions {
     const stateFile = process.env.PW_WORKER_ISOLATION !== '0'
-        ? path.resolve(__dirname, '..', '.auth', `${role}_w${workerIndex}.json`)
-        : path.resolve(__dirname, '..', '.auth', `${role}.json`);
+        ? path.resolve(__dirname, '..', '..', '.auth', `${role}_w${workerIndex}.json`)
+        : path.resolve(__dirname, '..', '..', '.auth', `${role}.json`);
     const opts: BrowserContextOptions = {};
     if (fs.existsSync(stateFile)) {
         opts.storageState = stateFile;
@@ -77,8 +77,8 @@ export function roleContextOpts(workerIndex: number, role: string): BrowserConte
 
 export function roleStateFile(workerIndex: number, role: string): string {
     return process.env.PW_WORKER_ISOLATION !== '0'
-        ? path.resolve(__dirname, '..', '.auth', `${role}_w${workerIndex}.json`)
-        : path.resolve(__dirname, '..', '.auth', `${role}.json`);
+        ? path.resolve(__dirname, '..', '..', '.auth', `${role}_w${workerIndex}.json`)
+        : path.resolve(__dirname, '..', '..', '.auth', `${role}.json`);
 }
 
 /**

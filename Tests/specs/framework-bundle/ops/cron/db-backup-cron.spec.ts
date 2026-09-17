@@ -34,7 +34,7 @@ import { isProd, remoteRuntimeDir } from '../../../../helpers/db/ssh-bridge';
 
 test.describe.configure({ mode: 'serial' });
 
-const APP_DIR = path.resolve(__dirname, '../../..');
+const APP_DIR = path.resolve(__dirname, '../../../../..');
 const BACKUPS_DIR = path.join(APP_DIR, 'WorkDir', 'Backups');
 
 /**

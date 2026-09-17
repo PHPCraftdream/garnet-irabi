@@ -15,7 +15,7 @@ import * as path from 'node:path';
 //
 // Files land under tests/.ctx-stats/worker-{idx}.jsonl, cleared at the
 // start of every run by global-setup.ts.
-export const CTX_STATS_DIR = path.resolve(__dirname, '..', '.ctx-stats');
+export const CTX_STATS_DIR = path.resolve(__dirname, '..', '..', '.ctx-stats');
 export function recordCtxEvent(kind: string, project?: string): void {
     if (process.env.PW_CTX_TELEMETRY === '0') return;
     try {

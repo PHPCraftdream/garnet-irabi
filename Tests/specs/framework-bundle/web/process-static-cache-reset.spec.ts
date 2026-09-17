@@ -36,7 +36,7 @@ import { spawnSync } from 'child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-const APP_DIR = path.resolve(__dirname, '../../..');
+const APP_DIR = path.resolve(__dirname, '../../../..');
 
 /**
  * One-shot PHP probe. Seals non-default values into the framework

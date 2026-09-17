@@ -24,7 +24,7 @@ test.describe.configure({ mode: 'serial' });
 // so the app root is three levels up. PW_APP_DIR (set by playwright.config.ts)
 // is the authoritative app dir; fall back to the relative walk.
 const APP_INI = path.resolve(
-    process.env.PW_APP_DIR ?? path.resolve(__dirname, '..', '..', '..'),
+    process.env.PW_APP_DIR ?? path.resolve(__dirname, '..', '..', '..', '..', '..'),
     'WorkDir', 'ConfigDev', 'app.ini',
 );
 

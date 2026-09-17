@@ -33,7 +33,7 @@ import * as path from 'node:path';
 import mysql from 'mysql2/promise';
 import { DB } from '../../../../helpers/db/db';
 
-const APP_ROOT = path.resolve(__dirname, '../../..');
+const APP_ROOT = path.resolve(__dirname, '../../../../..');
 
 test.describe.configure({ mode: 'serial' });
 

@@ -19,7 +19,7 @@ import * as path from 'node:path';
 // The framework now ships as a composer dependency, reached through the
 // path-repo junction under vendor/ (was a sibling `Framework/` dir in the
 // monorepo).
-const REPO = process.env.PW_APP_DIR ?? path.resolve(__dirname, '../../..');
+const REPO = process.env.PW_APP_DIR ?? path.resolve(__dirname, '../../../..');
 const FRONT = path.join(REPO, 'vendor', 'phpcraftdream', 'garnet-framework', 'Bundle', 'Front');
 
 function resolveSpec(spec: string, fromFile: string): string | null {
