@@ -70,6 +70,25 @@ async function readQueueRow(id: number): Promise<{ status: string; attempts: num
     }
 }
 
+/**
+ * Сколько писем стоит в очереди ПЕРЕД нашей строкой и ждёт отправки — то
+ * есть сколько ещё тиков по 50 штук нужно, чтобы очередь дошла до неё.
+ * Нужно только для внятного сообщения при падении.
+ */
+async function countPendingAhead(id: number): Promise<number> {
+    const conn = await mysql.createConnection(DB);
+    try {
+        const [rows] = await conn.execute<any[]>(
+            `SELECT COUNT(*) AS cnt FROM ${tn('email_queue')}
+             WHERE id < ? AND status IN ('queued', 'error') AND attempts < max_attempts`,
+            [id],
+        );
+        return Number(rows[0]?.cnt ?? -1);
+    } finally {
+        await conn.end();
+    }
+}
+
 test.describe('email-queue cron: named-lock serialises overlapping ticks', () => {
     // test:hold-lock (remote holder path below) is test-mode gated.
     let markerWasOurs = false;
@@ -174,16 +193,33 @@ test.describe('email-queue cron: named-lock serialises overlapping ticks', () =>
     });
 
     test('once the lock is free, cron acquires it and processes the email exactly once', async () => {
-        const res = runEmailQueueCron(getDbPrefix());
-        const out = res.stdout + res.stderr;
-        // eslint-disable-next-line no-console
-        console.log('[email-queue cron normal-path output]', out.trim());
-        // No skip this time — the task ran processQueue and the dev
-        // `.test` short-circuit marked the row `sent`.
-        expect(out).not.toContain('previous run still active, skipping');
+        // processQueue() берёт не всю очередь, а 50 строк за тик, `ORDER BY
+        // id ASC`. В общей схеме прогона перед нашей строкой законно стоят
+        // десятки писем (каждый вход по коду кладёт своё), и тогда одного
+        // тика до неё не хватает: строка остаётся `queued`. Читалось это как
+        // «замок не отпустили», хотя замок тут не при чём — до строки просто
+        // не дошла очередь. Поэтому крутим тики, пока очередь не дойдёт, и
+        // только потом проверяем то, что утверждаем: обработано РОВНО один
+        // раз (после `sent` строка больше не выбирается, так что лишние тики
+        // ничего не портят).
+        const MAX_TICKS = 10;
+        let row = await readQueueRow(queueId);
+        let ticks = 0;
 
-        const row = await readQueueRow(queueId);
-        expect(row.status).toBe('sent');
+        while (row.status === 'queued' && ticks < MAX_TICKS) {
+            const res = runEmailQueueCron(getDbPrefix());
+            const out = res.stdout + res.stderr;
+            // eslint-disable-next-line no-console
+            console.log('[email-queue cron normal-path output]', out.trim());
+            // No skip this time — the task ran processQueue and the dev
+            // `.test` short-circuit marked the row `sent`.
+            expect(out).not.toContain('previous run still active, skipping');
+            ticks++;
+            row = await readQueueRow(queueId);
+        }
+
+        const ahead = row.status === 'sent' ? 0 : await countPendingAhead(queueId);
+        expect(row.status, `за ${ticks} тиков очередь до строки не дошла; впереди осталось писем: ${ahead}`).toBe('sent');
         expect(row.attempts).toBe(1);
         expect(row.sent_at).not.toBeNull();
     });

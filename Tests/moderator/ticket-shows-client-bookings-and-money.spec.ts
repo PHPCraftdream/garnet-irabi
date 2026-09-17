@@ -19,6 +19,7 @@
 import { test, expect, tn } from '../helpers/scoped-test';
 import { withConnection } from '../helpers/db';
 import { USER_LOGIN } from '../helpers/logins';
+import { warmAntiBotCookie } from '../helpers/anti-bot';
 
 const SLOT_COST = 850;
 
@@ -169,6 +170,14 @@ test.describe('D-209: the ticket card carries the client lessons and money', () 
 		// being visible in the source.
 		const anon = await browser.newContext({ storageState: undefined, baseURL });
 		try {
+			// Контекст создан напрямую, минуя newScopedContext(), — значит
+			// анти-бот куки хоста у него нет, и POST без неё получает 200 от
+			// страницы-барьера вместо ответа приложения. Проверка читала это
+			// как «анонимному отдали чужие деньги», хотя запрос до приложения
+			// не доходил. Прогрев не даёт никаких прав: он лишь пропускает
+			// запрос к приложению, где и работает настоящий гард.
+			await warmAntiBotCookie(anon);
+
 			const res = await anon.request.post('/admin/support/~clientContext', {
 				form: { ticket_id: String(seeded.ticketId) },
 			});

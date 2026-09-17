@@ -18,16 +18,24 @@ Two knobs:
   poking at live data with the test harness). Defaults to ON; only
   safe with `PW_WORKERS=1` when off.
 
-### `cross-role-query-count` — standalone run for a noise-free measurement
+### `cross-role-query-count` — почему у неё свой проект
 
-`cross-role/im-search-recipients-query-count.spec.ts` is a query-volume
-regression guard (IM recipient search) that asserts on MySQL's
-**global** `Questions` counter. Every concurrently running test
-increments that counter — the whole suite shares one MySQL instance —
-so a plain `npm test` leaves residual noise in the measurement. The
-spec survives that by taking the minimum delta across several trials
-(see its docblock), but to re-establish a truly clean baseline, run
-only that project:
+`cross-role/im-search-recipients-query-count.spec.ts` сторожит стоимость
+поиска получателей в запросах к базе. Стоимость называет сам сервер —
+заголовком `X-Garnet-Db-Queries` (фреймворк alpha73: `DbPool` считает
+свои запросы, `IoRunWeb` отдаёт разницу за запрос; заголовок живёт только
+в авторизованном тестовом контуре и в каталоге разработки). Замер поэтому
+не зависит от того, что делают соседние воркеры.
+
+До alpha73 мерили глобальный счётчик MySQL `Questions`, общий на весь
+сервер. На полном прогоне это дало +2483 запроса против эталонных 94 —
+проверка отрапортовала об N+1-регрессии, которой не было. Если увидите
+такую цифру снова, первым делом проверьте, приходит ли заголовок: без
+него замерять нечем, и проверка скажет об этом прямо.
+
+Отдельный проект с `workers: 1` остаётся нужен по другой причине: эта
+проверка сеет 50 аккаунтов в общие таблицы, и делать это одновременно с
+остальными cross-role проверками незачем.
 
 ```bash
 npm test -- --project=cross-role-query-count

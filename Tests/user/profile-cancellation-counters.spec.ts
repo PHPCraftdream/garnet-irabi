@@ -70,11 +70,26 @@ async function cleanup(slotIds: number[], bookingIds: number[]): Promise<void> {
 	});
 }
 
+interface Counters { completed: number; total: number; declines: number; cancellations: number }
+
+async function readCounters(page: Page): Promise<Counters> {
+	const readNum = async (testId: string): Promise<number> =>
+		parseInt((await page.locator(`[data-test-id="${testId}"]`).innerText()).trim(), 10);
+
+	return {
+		completed: await readNum('user-stat-completed'),
+		total: await readNum('user-stat-total'),
+		declines: await readNum('user-stat-declines'),
+		cancellations: await readNum('user-stat-cancellations'),
+	};
+}
+
 test.describe.configure({ mode: 'serial' });
 
 test.describe('D-150: profile counters add up regardless of who cancelled', () => {
 	let expertId = 0;
 	let userId = 0;
+	let before: Counters = { completed: 0, total: 0, declines: 0, cancellations: 0 };
 	const slotIds: number[] = [];
 	const bookingIds: number[] = [];
 	let userCtx: BrowserContext;
@@ -102,6 +117,7 @@ test.describe('D-150: profile counters add up regardless of who cancelled', () =
 	test('baseline: read starting counters', async () => {
 		await userPage.goto(`/user/id~${userId}`, { waitUntil: 'domcontentloaded' });
 		await expect(userPage.locator('[data-test-id="user-stat-total"]')).toBeVisible({ timeout: 10000 });
+		before = await readCounters(userPage);
 	});
 
 	test('student cancels her own confirmed booking (kind=cancel, writes user_cancellations)', async () => {
@@ -141,20 +157,26 @@ test.describe('D-150: profile counters add up regardless of who cancelled', () =
 		expect(result).toBe(200);
 	});
 
-	test('profile counters: Снятий + Отмен + Завершено == Всего бронирований', async () => {
+	test('profile counters: обе отмены посчитаны, и ни одна не потеряна', async () => {
 		await userPage.goto(`/user/id~${userId}`, { waitUntil: 'domcontentloaded' });
 		await userPage.reload({ waitUntil: 'domcontentloaded' });
 
-		const readNum = async (testId: string): Promise<number> =>
-			parseInt((await userPage.locator(`[data-test-id="${testId}"]`).innerText()).trim(), 10);
+		const after = await readCounters(userPage);
 
-		const completed = await readNum('user-stat-completed');
-		const total = await readNum('user-stat-total');
-		const declines = await readNum('user-stat-declines');
-		const cancellations = await readNum('user-stat-cancellations');
+		// Суть D-150: отмена эксперта считается так же, как отмена ученика —
+		// обе должны попасть в «Отмен». Мерим именно прирост от двух наших
+		// действий, а не итоговые числа: аккаунт общий на весь прогон, и
+		// соседние проверки законно добавляют ему брони.
+		expect(after.cancellations - before.cancellations).toBe(2);
+		expect(after.total - before.total).toBe(2);
 
-		expect(cancellations).toBeGreaterThanOrEqual(2); // both bookings above were confirmed -> cancelled
-		expect(completed + declines + cancellations).toBe(total);
+		// Тождество «Завершено + Снятий + Отмен == Всего» неверно как
+		// инвариант: бронь, которая ещё ждёт подтверждения, входит в «Всего»
+		// и не входит ни в одну из трёх категорий. Проверка падала именно на
+		// этом — не на потерянной отмене. Верное утверждение — что сумма
+		// категорий никогда не превышает общего числа и не «съедает» ничего
+		// своего.
+		expect(after.completed + after.declines + after.cancellations).toBeLessThanOrEqual(after.total);
 	});
 
 	// D-150 follow-up: /system/~profile ("Профиль" in the main nav) is a

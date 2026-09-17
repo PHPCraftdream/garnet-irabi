@@ -22,6 +22,7 @@ import mysql from 'mysql2/promise';
 import { newScopedContext } from '../../../helpers/scoped-test';
 import { DB } from '../../../helpers/db';
 import { roleLogin } from '../../../helpers/role-login';
+import { openAdminSupportQueue, openAdminTicket } from '../../../helpers/admin-support';
 test.describe.configure({ mode: 'serial' });
 
 const TICKET_SUBJECT = 'E2E admin-moderates: тест поддержки';
@@ -141,7 +142,7 @@ test.describe('Cross-role: admin moderates user support ticket', () => {
 	test('step 2: admin navigates to /admin/support/ and sees ticket', async () => {
 		if (!ticketId) { test.skip(); return; }
 
-		await adminPage.goto('/admin/support/');
+		await openAdminSupportQueue(adminPage);
 
 		await Promise.all([
 			expect(adminPage.locator('[data-test-id="support-filter-all"]')).toBeVisible({ timeout: 8000 }),
@@ -307,10 +308,11 @@ test.describe('Cross-role: admin moderates user support ticket', () => {
 	test('step 8: admin refreshes and sees user reply', async () => {
 		if (!ticketId) { test.skip(); return; }
 
-		// Reload the admin support page to get fresh data
-		await adminPage.goto('/admin/support/');
-
-		await adminPage.locator(`[data-test-id="support-ticket-${ticketId}"]`).click();
+		// Reload the admin support page to get fresh data. Step 3 left this
+		// ticket open in a tab, and the island restores it as the active tab
+		// after a reload — the queue list would not be on screen, so come
+		// back to it explicitly (см. helpers/admin-support.ts).
+		await openAdminTicket(adminPage, ticketId);
 
 		await expect(adminPage.locator(`text=${USER_REPLY}`)).toBeVisible({ timeout: 5000 });
 	});

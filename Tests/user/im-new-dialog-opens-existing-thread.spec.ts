@@ -57,6 +57,20 @@ async function seedConversation(userId: number, expertId: number): Promise<{ con
 	}
 }
 
+async function countConversations(userId: number, expertId: number): Promise<number> {
+	const conn = await mysql.createConnection(DB);
+	try {
+		const [rows] = await conn.execute<any[]>(
+			`SELECT COUNT(*) AS cnt FROM ${tn('im_conversations')}
+			 WHERE (participant_a = ? AND participant_b = ?) OR (participant_a = ? AND participant_b = ?)`,
+			[userId, expertId, expertId, userId],
+		);
+		return Number(rows[0]?.cnt ?? 0);
+	} finally {
+		await conn.end();
+	}
+}
+
 async function cleanup(convId: number): Promise<void> {
 	if (!convId) return;
 	const conn = await mysql.createConnection(DB);
@@ -94,6 +108,13 @@ test.describe('D-208: picking an existing partner from "+ Новый диало�
 	});
 
 	test('recipient picker routes to the existing thread, not a blank form', async ({ page }) => {
+		// Считать разговоры пары ДО действия. Абсолютная «ровно одна беседа»
+		// здесь не держится: аккаунты общие для всего прогона, и соседние
+		// проверки IM законно заводят между теми же двумя людьми свои
+		// разговоры. Утверждение же у нас про другое — что выбор получателя
+		// не создаёт ещё один разговор; это разница, а не итог.
+		const convsBefore = await countConversations(userId, expertId);
+
 		await page.goto('/system/im/', { waitUntil: 'domcontentloaded' });
 
 		await page.locator('[data-test-id="im-new-message-btn"]').click();
@@ -108,19 +129,6 @@ test.describe('D-208: picking an existing partner from "+ Новый диало�
 		await expect(page.getByText(bodyMarker)).toBeVisible({ timeout: 8000 });
 
 		// No second conversation was created for the same pair.
-		const convCount: number = await (async () => {
-			const conn = await mysql.createConnection(DB);
-			try {
-				const [rows] = await conn.execute<any[]>(
-					`SELECT COUNT(*) AS cnt FROM ${tn('im_conversations')}
-					 WHERE (participant_a = ? AND participant_b = ?) OR (participant_a = ? AND participant_b = ?)`,
-					[userId, expertId, expertId, userId],
-				);
-				return Number(rows[0]?.cnt ?? 0);
-			} finally {
-				await conn.end();
-			}
-		})();
-		expect(convCount).toBe(1);
+		expect(await countConversations(userId, expertId)).toBe(convsBefore);
 	});
 });

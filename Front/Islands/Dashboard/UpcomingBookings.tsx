@@ -41,7 +41,7 @@ const MeetingLine: React.FC<{booking: BookingItem}> = ({booking}) => {
 };
 
 const BookingRow: React.FC<{booking: BookingItem}> = ({booking}) => (
-    <div className="booking-row">
+    <div className="booking-row" data-test-id={`upcoming-booking-${booking.id}`}>
         <div className="min-w-0 flex-1">
             <div className="text-sm font-medium text-on-surface">{booking.label}</div>
             <div className="text-sm text-muted">

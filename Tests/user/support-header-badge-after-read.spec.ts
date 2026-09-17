@@ -110,7 +110,12 @@ test.describe('D-198: the unread badge goes out when the client reads, not 20 se
 		// this test pass no matter what the page does — so wait it out BEFORE
 		// touching anything. Everything after it happens in the 20-second gap,
 		// where the only thing that can refresh the header is the fix itself.
-		const startupPoll = page.waitForResponse(r => r.url().includes('~counts'), { timeout: 15000 });
+		// Ожидание арендовано с запасом и отсчитывается ДО перехода: под
+		// полным прогоном на боевом хосте страница со всеми бандлами может
+		// отвечать секунды, и тогда сам таймер первого опроса стартует
+		// поздно. С прежними 15 с проверка падала на пустом месте —
+		// «опроса не было», хотя он приходил чуть позже.
+		const startupPoll = page.waitForResponse(r => r.url().includes('~counts'), { timeout: 45000 });
 		await page.goto('/support/', { waitUntil: 'domcontentloaded' });
 		await startupPoll;
 

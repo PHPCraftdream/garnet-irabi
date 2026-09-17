@@ -18,72 +18,33 @@
  * and asserting the extra cost of the large batch is small and bounded —
  * not proportional to how many experts were added.
  *
- * Query-count signal: this codebase has no existing per-request query
- * counter (checked: no QueryLog/queryCount in the framework's Db layer, no
- * Kahlan spec or Playwright helper measuring this). MySQL's
- * `performance_schema` is enabled but the app DB user has no grants on it
- * (`SHOW GRANTS` → only `app_db.*`). The available signal without adding
- * new production instrumentation is the server's GLOBAL `Questions` status
- * counter (available to any user, no special grants), diffed tightly
- * around the single HTTP call. `Questions` — not `Com_select` — is used
- * deliberately: the framework's DB layer (Kernel\Db\Query\QueryEx) executes
- * everything through mysqli prepared statements, which increment
- * `Com_stmt_prepare`/`Com_stmt_execute`, NOT `Com_select` (verified
- * empirically). `Questions` is the umbrella counter that covers both plain
- * and prepared-statement execution, so it reliably reflects statement
- * volume regardless of how a given query path talks to MySQL.
+ * ── Чем мерим (переделано после ложной тревоги) ───────────────────────
+ * Стоимость запроса называет сам сервер: заголовок `X-Garnet-Db-Queries`
+ * (фреймворк alpha73 — DbPool считает свои запросы, IoRunWeb отдаёт
+ * разницу за один запрос). Заголовок появляется только в авторизованном
+ * тестовом контуре (`.allow_tests` + `run-test-garnet-team`) или в
+ * каталоге разработки, на боевом трафике его нет.
  *
- * Empirically (measured directly against this dev instance, single
- * isolated worker, no concurrent traffic): the counter is exact and
- * repeatable for this endpoint — two consecutive baseline calls both
- * produced delta=49 with zero variance, and adding 50 synthetic experts to
- * the pre-fix (N+1) code raised the delta to 149 (+100, i.e. exactly the
- * expected 2 queries/expert). Against the fixed code the delta after
- * adding the same 50 experts should stay within single-digit noise of the
- * baseline. The threshold below (extra cost after +LARGE_N experts must be
- * under 20 statements) sits far below the ~100 the old N+1 code would add,
- * while comfortably above the handful of legitimate queries the fixed
- * batched lookup performs once regardless of N.
+ * До этого мерили глобальный счётчик MySQL `Questions` до и после вызова.
+ * Счётчик общий на сервер, а прогон идёт параллельными воркерами по одной
+ * базе — и в замер попадали чужие запросы. Защитой от этого был минимум
+ * из нескольких попыток, и он не выдержал: на полном боевом прогоне вышло
+ * +2483 запроса против эталонных 94, ВСЕ пять попыток оказались
+ * заражены, и проверка отрапортовала об N+1-регрессии, которой не было
+ * (повтор прошёл чисто). Для проверки, чья работа — отличать регрессию от
+ * фона, это худший вид падения: она врёт именно там, где ей верят.
  *
- * ── Concurrency / flakiness note (follow-up review P2 fix) ─────────────
- * `Questions` is a GLOBAL, process-wide MySQL counter. The Playwright
- * suite runs `fullyParallel: true` against ONE SHARED MySQL instance —
- * worker isolation here is per-table-prefix only, not a separate DB
- * server per worker — so during the measurement window this counter also
- * picks up every OTHER concurrently-running test's queries, in this file
- * or anywhere else in the suite. That's a real source of both false
- * failures (unrelated noise inflates a delta) and false passes (noise
- * lands in the "before" sample instead of "after", making the delta look
- * artificially small).
+ * Эмпирика на прежнем способе замера остаётся верной как порядок величин:
+ * один вызов стоил ~49 запросов, а старая схема с проверкой каждого
+ * кандидата по отдельности добавляла ровно 2 запроса на эксперта (+100 на
+ * 50 экспертов). Порог ниже (< 20 лишних запросов на +LARGE_N экспертов)
+ * стоит далеко под этими 100 и заметно выше горстки законных запросов
+ * батчевой проверки, не зависящей от N.
  *
- * Two mitigations, layered:
- *   1. This spec is split into its own Playwright PROJECT
- *      (`cross-role-query-count` in playwright.config.ts) with a
- *      per-project `workers: 1` cap, so it no longer shares a worker pool
- *      with the other ~20 `cross-role` specs (previously the single
- *      biggest noise source). This does NOT fully isolate it from OTHER
- *      projects (admin-tests, user-tests, …) that may still be mid-flight
- *      in sibling workers during a plain `npm test` — Playwright has no
- *      built-in way to pause unrelated projects for one project's
- *      duration within a single invocation (only a separate, standalone
- *      `--project=cross-role-query-count` run gets that guarantee).
- *   2. As defense in depth against whatever residual noise still leaks in
- *      during a full-suite run, the test below samples BOTH the baseline
- *      delta and the large-batch delta `TRIALS` times each and takes the
- *      MINIMUM of each side before diffing them. A genuine N+1 regression
- *      inflates every large-batch trial by roughly the same (large)
- *      amount, so the minimum still clears the threshold; transient
- *      cross-worker/cross-project noise instead only inflates a handful
- *      of individual samples and is unlikely to inflate the minimum of
- *      either side.
- *
- * For a fully noise-free run (e.g. re-establishing the empirical baseline
- * above), run this spec in isolation:
- *   npm test -- --project=cross-role-query-count
- * If the global `workers`/`fullyParallel` defaults in playwright.config.ts
- * ever change, re-validate that TRIALS/MAX_ALLOWED_EXTRA_STATEMENTS still
- * give enough margin — see playwright.config.ts's comment on this project
- * for the scheduling details this relies on.
+ * Отдельный проект `cross-role-query-count` с `workers: 1` в
+ * playwright.config.ts теперь нужен не для чистоты замера (она больше не
+ * зависит от соседей), а лишь чтобы сеяние 50 аккаунтов не шло
+ * одновременно с другими cross-role проверками по тем же таблицам.
  */
 import { test, expect, tn } from '../helpers/scoped-test';
 import { newScopedContext } from '../helpers/scoped-test';
@@ -146,14 +107,17 @@ async function cleanupExperts(prefix: string, ids: number[]): Promise<void> {
     });
 }
 
-async function questionsCounter(): Promise<number> {
-    return withConnection(async (c) => {
-        const [rows] = await c.query<any[]>("SHOW GLOBAL STATUS LIKE 'Questions'");
-        return Number(rows[0]?.Value ?? 0);
-    });
-}
-
-async function searchRecipients(page: Page, query: string): Promise<{ status: number; body: any }> {
+/**
+ * Один вызов `~searchRecipients` вместе с ценой, которую он стоил базе.
+ *
+ * Цену называет сам сервер заголовком `X-Garnet-Db-Queries` (DbPool
+ * считает запросы, IoRunWeb отдаёт разницу за запрос; заголовок живёт
+ * только в тестовом контуре и в каталоге разработки). До этого цену мерили
+ * глобальным счётчиком MySQL `Questions` до и после вызова — см. шапку
+ * файла: счётчик общий на сервер, и параллельные воркеры прогона попадали
+ * в замер вместе с нами.
+ */
+async function searchRecipients(page: Page, query: string): Promise<{ status: number; body: any; queries: number }> {
     return page.evaluate(async (searchQuery) => {
         let csrf = '';
         document.querySelectorAll('[data-props]').forEach((el) => {
@@ -169,7 +133,9 @@ async function searchRecipients(page: Page, query: string): Promise<{ status: nu
         fd.append('CSRF_TOKEN', csrf);
         const res = await fetch('/im/~searchRecipients', { method: 'POST', body: fd });
         const body = await res.json().catch(() => null);
-        return { status: res.status, body };
+        const header = res.headers.get('X-Garnet-Db-Queries');
+
+        return { status: res.status, body, queries: header === null ? -1 : Number(header) };
     }, query);
 }
 
@@ -198,42 +164,36 @@ test.describe('Perf F-03: searchRecipients() query count does not scale with can
         await userCtx?.close().catch(() => {});
     });
 
-    /**
-     * Measure the statement cost of one `~searchRecipients` call, tightly
-     * bracketed by `Questions` samples immediately before/after — kept as a
-     * separate helper (rather than one inline before/after around 2N
-     * calls) to keep each individual measurement window as short as
-     * possible, minimizing exposure to noise from other concurrently
-     * running tests/projects (see file docblock).
-     */
+    /** Стоимость одного вызова в запросах к базе — по слову сервера. */
     async function measureOnce(query: string): Promise<{ delta: number; body: any }> {
-        const before = await questionsCounter();
         const result = await searchRecipients(userPage, query);
-        const after = await questionsCounter();
         expect(result.status).toBe(200);
-        return { delta: after - before, body: result.body };
+        expect(
+            result.queries,
+            'сервер не прислал X-Garnet-Db-Queries: либо тестовый контур не авторизован ' +
+            '(нет .allow_tests или заголовка run-test-garnet-team), либо на хосте фреймворк ' +
+            'старее alpha73 — без этого замерять нечем',
+        ).toBeGreaterThanOrEqual(0);
+
+        return { delta: result.queries, body: result.body };
     }
 
     test('adding many candidate experts does not proportionally increase query volume', async () => {
-        // Baseline: measure the statement cost of one search call against
-        // whatever (small) default seed data this worker's template has.
-        // Repeated TRIALS times; the MINIMUM delta is used as the
-        // reference — see docblock's "defense in depth" note. A stray
-        // concurrent query inflating one baseline sample would otherwise
-        // make deltaBaseline look artificially high and mask a real
-        // regression in the extraStatements computation below.
+        // Эталон: стоимость одного вызова на том, что лежит в схеме
+        // воркера. Берём минимум из TRIALS — не от шума (счётчик теперь
+        // свой, а не общий на сервер), а от законной разницы между первым
+        // и последующими запросами: первый может дописать сессию или
+        // настройки, и это лишние запросы, не относящиеся к поиску.
         const baselineDeltas: number[] = [];
         for (let i = 0; i < TRIALS; i++) {
             baselineDeltas.push((await measureOnce('')).delta);
         }
         const deltaBaseline = Math.min(...baselineDeltas);
 
-        // Now add a large batch of additional approved/active experts and
-        // measure the SAME call again — isolated, not cumulative. Also
-        // repeated TRIALS times, keeping the MINIMUM delta so transient
-        // noise can't inflate it; a real N+1 regression inflates every
-        // trial by roughly the same (large) amount, so the minimum still
-        // clears MAX_ALLOWED_EXTRA_STATEMENTS in that case.
+        // Теперь добавляем большую партию одобренных активных экспертов и
+        // мерим ТОТ ЖЕ вызов. Если бы вернулась старая схема с проверкой
+        // каждого кандидата по отдельности, цена выросла бы примерно на
+        // 2 запроса на эксперта.
         largeIds = await seedExperts('qcount-large', LARGE_N);
         const largeDeltas: number[] = [];
         let largeIdsInResults: number[] = [];

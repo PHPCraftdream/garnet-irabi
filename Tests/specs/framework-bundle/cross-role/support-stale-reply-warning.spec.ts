@@ -18,6 +18,7 @@
  */
 import { test, expect, tn } from '../../../helpers/scoped-test';
 import { withConnection } from '../../../helpers/db';
+import { openAdminTicket } from '../../../helpers/admin-support';
 
 async function getAccountId(login: string): Promise<number> {
     return withConnection(async (c) => {
@@ -71,12 +72,10 @@ test.describe('D-167: stale-draft warning when a colleague replies first', () =>
 
     test('moderator A sees the stale-draft warning after moderator B replies first', async ({ adminPage, moderatorPage }) => {
         // Both open the same ticket in the admin panel.
-        await adminPage.goto('/admin/support/');
-        await adminPage.locator(`[data-test-id="support-ticket-${ticketId}"]`).click();
+        await openAdminTicket(adminPage, ticketId);
         await expect(adminPage.locator('[data-test-id="support-reply-input"]')).toBeVisible({ timeout: 10000 });
 
-        await moderatorPage.goto('/admin/support/');
-        await moderatorPage.locator(`[data-test-id="support-ticket-${ticketId}"]`).click();
+        await openAdminTicket(moderatorPage, ticketId);
         await expect(moderatorPage.locator('[data-test-id="support-reply-input"]')).toBeVisible({ timeout: 10000 });
 
         // A starts drafting a reply but does NOT submit.

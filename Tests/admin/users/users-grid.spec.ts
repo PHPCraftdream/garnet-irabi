@@ -13,6 +13,7 @@
  */
 
 import { test, expect } from '../../helpers/scoped-test';
+import { EXPERT_LOGIN } from '../../helpers/logins';
 
 // Read-only smoke (zero `conn.execute`/INSERT/DELETE/UPDATE, no
 // `beforeAll`). Safe to fan out across Playwright workers now that
@@ -164,11 +165,20 @@ test.describe('Users — search within tab', () => {
 test.describe('Users — IS_APPROVED column', () => {
     test('Approve/Revoke button visible for expert rows in All tab', async ({ page }) => {
         await openUsers(page);
-        const teacherRow = page.locator('tbody tr').filter({ hasText: /Эксперт|Expert/i }).first();
-        const exists = await teacherRow.count();
-        if (!exists) return;
 
-        const approveBtn = teacherRow.locator('[data-test-id^="flag-IS_APPROVED-"]');
+        // Ряд нельзя искать по тексту «Эксперт»: логины сеяных аккаунтов
+        // вида ts_0-..._expert-e@shift-spec.test содержат "expert", и при
+        // регистронезависимом поиске первой совпавшей строкой оказывается
+        // УЧЕНИК — у него кнопки одобрения нет и быть не должно. Именно так
+        // эта проверка падала три полных прогона подряд, выглядя как
+        // «эксперту не дают кнопку». Берём конкретного эксперта по логину:
+        // шапка файла не зря требует data-test-id, а не текст.
+        await page.locator('[data-test-id="admin-grid-search"]').fill(EXPERT_LOGIN);
+
+        const expertRow = page.locator('tbody tr').filter({ hasText: EXPERT_LOGIN }).first();
+        await expect(expertRow).toBeVisible({ timeout: 5000 });
+
+        const approveBtn = expertRow.locator('[data-test-id^="flag-IS_APPROVED-"]');
         await expect(approveBtn).toBeVisible({ timeout: 5000 });
     });
 

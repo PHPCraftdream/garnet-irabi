@@ -21,6 +21,7 @@
  */
 import { test, expect, tn } from '../../../helpers/scoped-test';
 import { withConnection } from '../../../helpers/db';
+import { openAdminTicket } from '../../../helpers/admin-support';
 
 async function getAccountId(login: string): Promise<number> {
     return withConnection(async (c) => {
@@ -74,12 +75,10 @@ test.describe('D-188: concurrent-reply notice fires on send, not on the next pol
 
     test('moderator B sees the notice immediately after sending, before any poll', async ({ adminPage, moderatorPage }) => {
         // Both open the same ticket — both see the same starting message count.
-        await adminPage.goto('/admin/support/');
-        await adminPage.locator(`[data-test-id="support-ticket-${ticketId}"]`).click();
+        await openAdminTicket(adminPage, ticketId);
         await expect(adminPage.locator('[data-test-id="support-reply-input"]')).toBeVisible({ timeout: 10000 });
 
-        await moderatorPage.goto('/admin/support/');
-        await moderatorPage.locator(`[data-test-id="support-ticket-${ticketId}"]`).click();
+        await openAdminTicket(moderatorPage, ticketId);
         await expect(moderatorPage.locator('[data-test-id="support-reply-input"]')).toBeVisible({ timeout: 10000 });
 
         // A replies first — B has NOT polled since, so B doesn't know yet.
@@ -117,8 +116,7 @@ test.describe('D-188: concurrent-reply notice fires on send, not on the next pol
     });
 
     test('a solo reply with no collision does NOT show the notice', async ({ adminPage }) => {
-        await adminPage.goto('/admin/support/');
-        await adminPage.locator(`[data-test-id="support-ticket-${ticketId}"]`).click();
+        await openAdminTicket(adminPage, ticketId);
         await expect(adminPage.locator('[data-test-id="support-reply-input"]')).toBeVisible({ timeout: 10000 });
 
         await adminPage.locator('[data-test-id="support-reply-input"]').fill('C: обычный ответ без коллизии');

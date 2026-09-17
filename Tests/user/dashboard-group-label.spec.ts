@@ -89,7 +89,15 @@ test.describe('D-141: dashboard booking card names the group format', () => {
         await page.goto('/system/', { waitUntil: 'domcontentloaded' });
         const section = page.locator('[data-test-id="upcoming-bookings"]');
         await expect(section).toBeVisible({ timeout: 10000 });
-        await expect(section).toContainText('Групповое занятие');
-        await expect(section).not.toContainText('Индивидуальное занятие');
+
+        // Утверждение — про карточку ИМЕННО этой брони, а не про весь
+        // блок. У того же ученика законно висят и другие занятия, в том
+        // числе индивидуальные: запрет на слово «Индивидуальное» в целом
+        // блоке падал на чужой карточке, хотя групповая была подписана
+        // верно. Проверять надо ярлык брони, а не содержимое экрана.
+        const card = section.locator(`[data-test-id="upcoming-booking-${bookingId}"]`);
+        await expect(card).toBeVisible({ timeout: 10000 });
+        await expect(card).toContainText('Групповое занятие');
+        await expect(card).not.toContainText('Индивидуальное занятие');
     });
 });
