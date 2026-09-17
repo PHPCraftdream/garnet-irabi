@@ -46,14 +46,14 @@ function importSpecs(file: string): string[] {
 
 test('low-level API layer never imports the GlobalToast React component (React #130 regression)', () => {
     const entries = [
-        'Common/Api/asyncJsonThen.ts',
-        'Common/Api/asyncTextThen.ts',
-        'Common/Api/sendPostFormData.ts',
-        'Common/Api/sendPost.ts',
+        'Common/Api/Get/asyncJsonThen.ts',
+        'Common/Api/Get/asyncTextThen.ts',
+        'Common/Api/Send/sendPostFormData.ts',
+        'Common/Api/Send/sendPost.ts',
         'Common/Api/maintenance503.ts',
     ].map((p) => path.join(FRONT, p));
 
-    const banned = path.join(FRONT, 'Common', 'Components', 'GlobalToast.tsx');
+    const banned = path.join(FRONT, 'Common', 'Components', 'Feedback', 'GlobalToast.tsx');
     expect(fs.existsSync(banned), 'GlobalToast.tsx should exist').toBe(true);
 
     const seen = new Set<string>();

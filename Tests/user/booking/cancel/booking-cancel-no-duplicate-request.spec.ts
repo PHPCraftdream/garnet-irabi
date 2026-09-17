@@ -1,7 +1,7 @@
 /**
  * D-171 [MAJOR/P0]: clicking "Отменить бронь" fired 5 identical
  * `/bookings/id~{id}/~cancel` requests instead of 1. Root cause was in
- * `useSending` (garnet-framework Bundle/Front/Common/hooks/useSending.ts):
+ * `useSending` (garnet-framework Bundle/Front/Common/hooks/data/useSending.ts):
  * the `sending` guard was React state, which lags behind rapid repeated
  * invocations of the same handler within one browser tick — several
  * clicks landed before the first `setSending(true)` had actually
