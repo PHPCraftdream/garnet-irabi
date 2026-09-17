@@ -278,7 +278,7 @@ export class I18nDataEN {
     static Ledger_Type_Refund = 'Refund';
     static Ledger_Note_AutoCancel = 'Auto-cancelled: the session started without confirmation';
     static Ledger_Note_Penalty = '%s withheld — %s%% penalty';
-    static Ledger_Note_ExpertKeepsPenalty = 'this amount went back to the student; you keep the %s (%s%%) penalty as compensation for the cancelled lesson';
+    static Ledger_Note_ExpertKeepsPenalty = 'these %s ₽ went back to the student out of the %s ₽ paid; the %s ₽ (%s%%) penalty stays with you as compensation for the cancelled lesson';
     static Ledger_Type_Manual = 'Manual';
     static User_Status_Disabled = 'Disabled';
     static User_Status_Approved = 'Approved';

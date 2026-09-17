@@ -277,7 +277,7 @@ export class I18nDataRU {
     static Ledger_Type_Refund = 'Возврат';
     static Ledger_Note_AutoCancel = 'Автоотмена: занятие началось без подтверждения';
     static Ledger_Note_Penalty = 'удержано %s ₽ — неустойка %s%%';
-    static Ledger_Note_ExpertKeepsPenalty = 'эта сумма возвращена ученику; неустойку %s ₽ (%s%%) вы сохраняете как компенсацию за отменённое занятие';
+    static Ledger_Note_ExpertKeepsPenalty = 'эти %s ₽ вернулись ученику из оплаты %s ₽; неустойка %s ₽ (%s%%) остаётся вам как компенсация за отменённое занятие';
     static Ledger_Type_Manual = 'Вручную';
     static User_Status_Disabled = 'Отключён';
     static User_Status_Approved = 'Одобрен';

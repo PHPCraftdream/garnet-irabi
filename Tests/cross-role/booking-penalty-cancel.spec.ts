@@ -344,7 +344,15 @@ test.describe('Cross-role: cancellation penalty on user-initiated cancel', () =>
 		// (SLOT_COST - EXPECTED_REFUND) stays with them — the note must
 		// say so explicitly, not read like a plain "Возврат" that leaves
 		// the reader to guess whether they came out ahead or behind.
-		expect(String(expertRefund.note)).toMatch(/сохраня/i);
+		//
+		// D-181: и называть все три числа, каждое со своей ролью. Владелец
+		// читал строку как самопротиворечивую: колонка «Сумма» показывала
+		// движение, а текст выделял удержанную неустойку — другое число без
+		// связки с первым. Поэтому проверяем не формулировку, а то, что в
+		// примечании есть и сумма самой строки, и исходная оплата, и
+		// остаток; сложить их в противоречие тогда нельзя.
+		expect(String(expertRefund.note)).toContain(`${EXPECTED_REFUND}`);
+		expect(String(expertRefund.note)).toContain(`${SLOT_COST}`);
 		expect(String(expertRefund.note)).toContain(`${SLOT_COST - EXPECTED_REFUND}`);
 		expect(String(expertRefund.note)).not.toBe(String(userRefund.note));
 

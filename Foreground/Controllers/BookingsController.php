@@ -899,9 +899,18 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
                             // expertDebit) is compensation they kept, not a
                             // loss on top of it.
                             $penaltyKept = $cost - $expertDebit;
+                            // D-181: пояснение идёт после тире, а не в
+                            // скобках — внутри самого пояснения уже есть
+                            // скобка с процентом, и вложенные скобки в
+                            // денежной строке читаются хуже всего.
                             $expertNote = $penaltyKept > 0
-                                ? $t->Ledger_Type_Refund() . ' #' . $bookingId
-                                    . ' (' . $t->Ledger_Note_ExpertKeepsPenalty((string)$penaltyKept, (string)$penaltyPct) . ')'
+                                ? $t->Ledger_Type_Refund() . ' #' . $bookingId . ' — '
+                                    . $t->Ledger_Note_ExpertKeepsPenalty(
+                                        (string)$expertDebit,
+                                        (string)$cost,
+                                        (string)$penaltyKept,
+                                        (string)$penaltyPct,
+                                    )
                                 : $note;
                             BalanceLedger::tryAddRefund($expertId, false, $expertDebit, $bookingId, $expertNote);
                         }

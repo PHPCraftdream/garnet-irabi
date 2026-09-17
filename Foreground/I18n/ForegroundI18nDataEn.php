@@ -309,7 +309,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n {
             'Ledger_Type_Refund' => 'Refund',
             'Ledger_Note_AutoCancel' => 'Auto-cancelled: the session started without confirmation',
             'Ledger_Note_Penalty' => '%s withheld — %s%% penalty',
-            'Ledger_Note_ExpertKeepsPenalty' => 'this amount went back to the student; you keep the %s (%s%%) penalty as compensation for the cancelled lesson',
+            'Ledger_Note_ExpertKeepsPenalty' => 'these %s ₽ went back to the student out of the %s ₽ paid; the %s ₽ (%s%%) penalty stays with you as compensation for the cancelled lesson',
             'Ledger_Type_Manual' => 'Manual',
 
             'User_Status_Disabled' => 'Disabled',
