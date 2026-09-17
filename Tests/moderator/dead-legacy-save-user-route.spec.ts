@@ -1,5 +1,5 @@
 /**
- * H-01 regression (docs/security-audit/10-ms-postfix-authorization-review.md):
+ * H-01 regression (docs/audits/security/10-ms-postfix-authorization-review.md):
  * the legacy FwAccountsController route registered at DashboardAccountsController
  * ::URL ('/dashboard/') was reachable under only `moderatorOnly`, with zero
  * rank/self checks and manageFormFields() exposing IS_ADMIN/IS_MODERATOR/

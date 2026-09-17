@@ -9,7 +9,7 @@ use PHPCraftdream\Garnet\Kernel\Db\Entity\Session\SessionTable;
  * Age-based session retention — prunes abandoned `session` rows and their
  * `session_data` children past a fixed inactivity window.
  *
- * The privacy-policy audit (docs/handover-audit/01-legal-compliance.md
+ * The privacy-policy audit (docs/audits/handover/01-legal-compliance.md
  * F-05) calls out that nothing in the app ever purges the framework
  * session tables: the `session` cookie lives up to 5 years
  * (Cookie::rememberForever → +5 years), and a session row whose owner

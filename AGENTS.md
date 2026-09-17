@@ -7,10 +7,10 @@ conventions, and tooling. For business logic, roles, and the data
 model, read [`docs/README.md`](docs/README.md) first.
 
 For a customer handover or release-readiness task, read
-[`docs/customer-handover.md`](docs/customer-handover.md),
-[`docs/framework-selection.md`](docs/framework-selection.md),
-[`docs/i18n.md`](docs/i18n.md), and
-[`docs/security-audit/00-SUMMARY.md`](docs/security-audit/00-SUMMARY.md)
+[`docs/guides/product/customer-handover.md`](docs/guides/product/customer-handover.md),
+[`docs/guides/architecture/framework-selection.md`](docs/guides/architecture/framework-selection.md),
+[`docs/guides/architecture/i18n.md`](docs/guides/architecture/i18n.md), and
+[`docs/audits/security/00-SUMMARY.md`](docs/audits/security/00-SUMMARY.md)
 before making a production-readiness claim. Treat unchecked acceptance
 items and security blockers there as release blockers.
 
@@ -218,7 +218,7 @@ php garnet bundle                        # build a production deploy bundle
 ```
 
 Full walkthrough (3-folder → 4-folder runtime layout migration, `.env`
-rewriting, etc.): [`docs/deploy.md`](docs/deploy.md).
+rewriting, etc.): [`docs/guides/operations/deploy.md`](docs/guides/operations/deploy.md).
 
 `deploy:diff` works correctly against this app's vendor-install layout
 as of `garnet-framework` v0.1.0-alpha8 — earlier versions assumed a

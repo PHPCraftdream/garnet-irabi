@@ -2,7 +2,7 @@ import * as React from 'react';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/DateUtils';
 import {actionLabel} from '@common/Components/AdminLog/actionLabel';
-import {AdminUserDualLink} from '../../../Common/EntityLinks';
+import {AdminUserDualLink} from '../../../Common/people/EntityLinks';
 
 interface LogEntry {
     id: number;

@@ -26,7 +26,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
      * денег, которого обещано не будет. Лучше внятный отказ, чем тихий
      * пересчёт.
      *
-     * Контракт целиком: docs/design/2026-09-15-booking-reschedule.md
+     * Контракт целиком: docs/guides/design/2026-09-15-booking-reschedule.md
      */
     class BookingRescheduleService {
         public const ERR_NOT_FOUND = 'not_found';

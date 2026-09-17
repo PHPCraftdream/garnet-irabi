@@ -1,10 +1,10 @@
 import * as React from 'react';
 import {formatTs} from '@common/Utils/DateUtils';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {UniversalBadge} from '../../../Common/StatusBadge';
-import {translateStatus} from '../../../Common/statusHelpers';
-import {EntityLink, userLinks} from '../../../Common/EntityLinks';
-import {PenaltyTerms, outcomeLabel} from '../../../Common/bookingAction';
+import {UniversalBadge} from '../../../Common/booking/StatusBadge';
+import {translateStatus} from '../../../Common/booking/statusHelpers';
+import {EntityLink, userLinks} from '../../../Common/people/EntityLinks';
+import {PenaltyTerms, outcomeLabel} from '../../../Common/booking/bookingAction';
 import {Booking, BookingsViewAs, ExpertInfo, SlotInfo, UserInfo} from './bookingCardTypes';
 import {BookingPlaceLine} from './BookingPlaceLine';
 import {BookingCancelCause} from './BookingCancelCause';

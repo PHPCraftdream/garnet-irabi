@@ -4,11 +4,11 @@ import {sendPost} from '@common/Api/sendPost';
 import {sendPostFormData} from '@common/Api/sendPostFormData';
 import {showToast} from '@common/Components/GlobalToast';
 import {D} from '@common/Debug/D';
-import {PendingFile} from '../../Common/AttachmentPicker';
+import {PendingFile} from '../../Common/attachments/AttachmentPicker';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {SupportMessage} from './supportTypes';
 import {collectContext} from './autoContext';
-import {reportAttachmentErrors} from '../../Common/attachmentErrors';
+import {reportAttachmentErrors} from '../../Common/attachments/attachmentErrors';
 
 interface Options {
     messagesUrl: string;

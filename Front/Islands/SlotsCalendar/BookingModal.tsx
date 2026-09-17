@@ -13,7 +13,7 @@ import {ExtraSlotPicker} from './ExtraSlotPicker';
 import {SlotItem, ExpertMap} from './types';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {formatTime as fmtTime, formatDateShort as fmtDate} from '@common/Utils/DateUtils';
-import {slotFormatLine} from '../../Common/slotFormat';
+import {slotFormatLine} from '../../Common/booking/slotFormat';
 import {appUrl} from '@common/Utils/appUrl';
 
 interface Props {

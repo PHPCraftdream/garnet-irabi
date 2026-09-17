@@ -8,8 +8,8 @@ import {useSending} from '@common/hooks/useSending';
 import {showToast} from '@common/Components/GlobalToast';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {ImConversation, ImMessage} from './imTypes';
-import {PendingFile} from '../../Common/AttachmentPicker';
-import {reportAttachmentErrors} from '../../Common/attachmentErrors';
+import {PendingFile} from '../../Common/attachments/AttachmentPicker';
+import {reportAttachmentErrors} from '../../Common/attachments/attachmentErrors';
 
 const getSendErrorMessage = (err: unknown): string => {
     if (err instanceof ApiError) {
@@ -25,7 +25,7 @@ const getSendErrorMessage = (err: unknown): string => {
 import ConversationList from './Components/ConversationList';
 import MessageThread from './Components/MessageThread';
 import NewMessageForm from './Components/NewMessageForm';
-import {IrabiPreviewProvider} from '../../Common/IrabiPreviewProvider';
+import {IrabiPreviewProvider} from '../../Common/people/IrabiPreviewProvider';
 import {PageHeader} from '@common/Components/PageHeader';
 import {MessagesSquare, ChevronLeft} from 'lucide-react';
 

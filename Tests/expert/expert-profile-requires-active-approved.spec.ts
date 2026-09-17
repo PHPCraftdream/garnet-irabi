@@ -1,5 +1,5 @@
 /**
- * M-01 regression (docs/security-audit/12-ms-postfix-authorization-review.md):
+ * M-01 regression (docs/audits/security/12-ms-postfix-authorization-review.md):
  * ExpertController::get__main() ('/expert/id~N') checked only
  * expert_profiles.is_approved, which does NOT get cascade-cleared when a
  * moderator disables the account or demotes it away from type=expert. A

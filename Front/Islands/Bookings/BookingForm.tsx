@@ -6,9 +6,9 @@ import SendButton from '@common/Components/SendButton';
 import {sendPost} from '@common/Api/sendPost';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/DateUtils';
-import {EntityLink, userLinks} from '../../Common/EntityLinks';
-import {IrabiPreviewProvider} from '../../Common/IrabiPreviewProvider';
-import {slotPlaceLabel, slotPlaceValue} from '../../Common/slotFormat';
+import {EntityLink, userLinks} from '../../Common/people/EntityLinks';
+import {IrabiPreviewProvider} from '../../Common/people/IrabiPreviewProvider';
+import {slotPlaceLabel, slotPlaceValue} from '../../Common/booking/slotFormat';
 import {goTo} from '@common/Dom/Nav/GoTo';
 import {appUrl} from '@common/Utils/appUrl';
 

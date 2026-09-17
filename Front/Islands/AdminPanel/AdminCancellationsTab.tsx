@@ -4,7 +4,7 @@ import {PageResponse} from '@common/hooks/usePagination';
 import {formatTs} from '@common/Utils/DateUtils';
 import {DEFAULT_PAGE_SIZE} from '@common/Utils/pagination';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
-import {EntityLink, userLinks} from '../../Common/EntityLinks';
+import {EntityLink, userLinks} from '../../Common/people/EntityLinks';
 import {AccountOption, adminPaginationLabels, buildAccountOptions} from './adminShared';
 import {useAdminPage} from './useAdminPage';
 import {AdminFilterBar, FilterCell} from './bookings/AdminFilterBar';

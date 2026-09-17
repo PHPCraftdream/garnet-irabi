@@ -6,7 +6,7 @@
 // framework_dir) and never install it into vendor/ at all — _shared_index.php
 // exposes that sibling's path via GARNET_FRAMEWORK_DIR so this file can load
 // its autoloader too, without a git-untracked, deploy-clobberable server
-// patch (see docs/deploy.md).
+// patch (see docs/guides/operations/deploy.md).
 $frameworkDir = getenv('GARNET_FRAMEWORK_DIR');
 if ($frameworkDir !== false && is_file($frameworkDir . '/vendor/autoload.php')) {
     require_once $frameworkDir . '/vendor/autoload.php';

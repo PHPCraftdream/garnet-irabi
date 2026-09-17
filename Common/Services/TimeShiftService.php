@@ -19,7 +19,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
      * сдвиг затрагивает ровно то занятие, которое назвали.
      *
      * Границы фаз и якоря живут в {@see LessonPhase}; здесь только запись и
-     * проверки. Что читает время — `docs/booking-time-phases.md`.
+     * проверки. Что читает время — `docs/guides/operations/booking-time-phases.md`.
      */
     class TimeShiftService {
         /**

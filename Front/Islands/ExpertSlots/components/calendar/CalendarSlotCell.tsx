@@ -1,9 +1,9 @@
 import * as React from 'react';
 import {Pencil, Trash2} from 'lucide-react';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {UniversalBadge, statusClass} from '../../../../Common/StatusBadge';
-import {translateStatus} from '../../../../Common/statusHelpers';
-import {actionCostHint, actionLabel} from '../../../../Common/bookingAction';
+import {UniversalBadge, statusClass} from '../../../../Common/booking/StatusBadge';
+import {translateStatus} from '../../../../Common/booking/statusHelpers';
+import {actionCostHint, actionLabel} from '../../../../Common/booking/bookingAction';
 import {Slot} from '../../types';
 import {formatTime} from '@common/Utils/DateUtils';
 

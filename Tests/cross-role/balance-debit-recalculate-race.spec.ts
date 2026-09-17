@@ -1,5 +1,5 @@
 /**
- * H-1 regression (docs/handover-audit/03-financial-integrity-balance-ledger.md):
+ * H-1 regression (docs/audits/handover/03-financial-integrity-balance-ledger.md):
  * a concurrent recalculate() of the same account must not resurrect a
  * transient CAS-debit and let the overdraft guard be bypassed.
  *

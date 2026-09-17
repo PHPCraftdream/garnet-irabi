@@ -2,7 +2,7 @@ import * as React from 'react';
 import {useState} from 'react';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {appUrl} from '@common/Utils/appUrl';
-import ImageLightbox from '../../Common/ImageLightbox';
+import ImageLightbox from '../../Common/media/ImageLightbox';
 
 interface WelcomeCardProps {
     name: string;

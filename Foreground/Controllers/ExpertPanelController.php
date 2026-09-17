@@ -58,7 +58,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers {
         /**
          * Security audit A-02: expertOnly() at the route level only checks
          * business type (type=expert), not approval — matches the documented
-         * invariant (docs/roles.md §3.4: без IS_APPROVED эксперт не виден
+         * invariant (docs/guides/product/roles.md §3.4: без IS_APPROVED эксперт не виден
          * публично и его слот нельзя забронировать). GET pages stay reachable for unapproved
          * experts (the frontend shows a "pending approval" banner there, and
          * slots created while unapproved are simply never surfaced publicly

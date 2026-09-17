@@ -10,7 +10,7 @@ import Pagination from '@common/Components/Pagination';
 import {PageHeader} from '@common/Components/PageHeader';
 import {Wallet} from 'lucide-react';
 import {refreshLiveCounts} from '@common/Utils/liveCounts';
-import {cancelActorLabel} from '../../Common/bookingAction';
+import {cancelActorLabel} from '../../Common/booking/bookingAction';
 
 /** Повод операции — приходит с сервера, см. LedgerContextService. */
 interface LedgerContext {

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {AssignmentLogEntry} from '../../../Support/supportTypes';
-import {AdminUserLink} from '../../../../Common/EntityLinks';
+import {AdminUserLink} from '../../../../Common/people/EntityLinks';
 import {formatTs} from '@common/Utils/DateUtils';
 
 /** Человек или прочерк — кто передал, кому передали. */

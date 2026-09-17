@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {formatTs} from '@common/Utils/DateUtils';
 import {SupportMessage} from './supportTypes';
-import AttachmentDisplay from '../../Common/AttachmentDisplay';
+import AttachmentDisplay from '../../Common/attachments/AttachmentDisplay';
 
 /**
  * Сообщение в переписке глазами клиента.

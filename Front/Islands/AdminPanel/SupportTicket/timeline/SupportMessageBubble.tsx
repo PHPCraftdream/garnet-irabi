@@ -1,8 +1,8 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {SupportMessage} from '../../../Support/supportTypes';
-import AttachmentDisplay from '../../../../Common/AttachmentDisplay';
-import {AdminUserLink} from '../../../../Common/EntityLinks';
+import AttachmentDisplay from '../../../../Common/attachments/AttachmentDisplay';
+import {AdminUserLink} from '../../../../Common/people/EntityLinks';
 import {formatTs} from '@common/Utils/DateUtils';
 
 /**

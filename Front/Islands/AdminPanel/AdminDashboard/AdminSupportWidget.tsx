@@ -3,8 +3,8 @@ import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/DateUtils';
 import {statusLabel} from '../../Support/supportRenders';
 import type {SupportStatus} from '../../Support/supportTypes';
-import {UniversalBadge} from '../../../Common/StatusBadge';
-import {AdminUserDualLink} from '../../../Common/EntityLinks';
+import {UniversalBadge} from '../../../Common/booking/StatusBadge';
+import {AdminUserDualLink} from '../../../Common/people/EntityLinks';
 
 interface TicketItem {
     id: number;

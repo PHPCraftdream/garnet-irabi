@@ -1,5 +1,5 @@
 /**
- * M-01 regression (docs/security-audit/09-ms-fresh-authorization-review.md):
+ * M-01 regression (docs/audits/security/09-ms-fresh-authorization-review.md):
  * RegisterController::post__main() used to ignore FwInviteTokenService::consume()'s
  * return value — a limited-use invite token (max_uses=1) could register more
  * accounts than `uses_left` allowed if two clients raced the reg_user POST.

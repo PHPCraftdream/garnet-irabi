@@ -10,7 +10,7 @@ import {WeekGrid} from './WeekGrid';
 import {WeekNavigation} from './WeekNavigation';
 import BookingModal from './BookingModal';
 import SlotDetailModal from './SlotDetailModal';
-import {IrabiPreviewProvider} from '../../Common/IrabiPreviewProvider';
+import {IrabiPreviewProvider} from '../../Common/people/IrabiPreviewProvider';
 import {TimezoneNotice} from '@common/Components/TimezoneNotice';
 import {PageHeader} from '@common/Components/PageHeader';
 import {CalendarDays} from 'lucide-react';

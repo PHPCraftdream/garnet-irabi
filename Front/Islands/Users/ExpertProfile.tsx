@@ -4,10 +4,10 @@ import {UserX} from 'lucide-react';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/DateUtils';
 import {CommentsSection} from '../Comments/CommentsSection';
-import {IrabiPreviewProvider} from '../../Common/IrabiPreviewProvider';
+import {IrabiPreviewProvider} from '../../Common/people/IrabiPreviewProvider';
 import {appUrl} from '@common/Utils/appUrl';
 import {useSlotBooking} from '../SlotsCalendar/useSlotBooking';
-import ImageLightbox from '../../Common/ImageLightbox';
+import ImageLightbox from '../../Common/media/ImageLightbox';
 import {ExpertSlotCard} from './ExpertSlotCard';
 
 interface Expert {

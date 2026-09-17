@@ -4,7 +4,7 @@ import {showToast} from '@common/Components/GlobalToast';
 import {LogDetailModal} from '@common/Components/AdminLog/LogDetailModal';
 import {formatTs} from '@common/Utils/DateUtils';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {AdminUserLink} from '../../../Common/EntityLinks';
+import {AdminUserLink} from '../../../Common/people/EntityLinks';
 import {Registration, TokenRow} from './tokenTypes';
 
 const RegistrationRow: React.FC<{reg: Registration}> = ({reg}) => (

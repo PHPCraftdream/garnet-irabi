@@ -4,10 +4,10 @@ import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 
 import {ImConversation, ImMessage} from '../imTypes';
 import MessageBubble from './MessageBubble';
-import AttachmentPicker, {PendingFile} from '../../../Common/AttachmentPicker';
+import AttachmentPicker, {PendingFile} from '../../../Common/attachments/AttachmentPicker';
 import SendButton from '@common/Components/SendButton';
-import {EntityLink, userLinks} from '../../../Common/EntityLinks';
-import {UserAvatar} from '../../../Common/UserAvatar';
+import {EntityLink, userLinks} from '../../../Common/people/EntityLinks';
+import {UserAvatar} from '../../../Common/media/UserAvatar';
 
 interface Props {
     conversation: ImConversation;

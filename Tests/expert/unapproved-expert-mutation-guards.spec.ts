@@ -1,5 +1,5 @@
 /**
- * A-02 regression (docs/security-audit/11-ms-postfix-authorization-review.md):
+ * A-02 regression (docs/audits/security/11-ms-postfix-authorization-review.md):
  * ExpertPanelController's expertOnly() route gate only checked business type
  * (type=expert), never IS_APPROVED — an unapproved expert had full server-side
  * access to every slot/booking mutation (create/edit/delete slot, confirm/

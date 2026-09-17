@@ -16,7 +16,7 @@ import {
     actionSubmitLabel,
     actionSuccessToast,
     actionTitle,
-} from '../../Common/bookingAction';
+} from '../../Common/booking/bookingAction';
 import {ReasonModal} from '../../Common/Components/ReasonModal';
 import {RescheduleModal} from './RescheduleModal';
 import {CancelRefundDetails} from './CancelRefundDetails';

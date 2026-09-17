@@ -1,5 +1,5 @@
 /**
- * M-02 regression, search side (docs/security-audit/12-ms-postfix-authorization-review.md
+ * M-02 regression, search side (docs/audits/security/12-ms-postfix-authorization-review.md
  * covers the send-side canMessage() gate; this file covers the companion gap found in a
  * later code-smell audit): ImController::searchRecipients() determined "is this account
  * an expert" purely from expert_profiles row existence, so a disabled, unapproved, or

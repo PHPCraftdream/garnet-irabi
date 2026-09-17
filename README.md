@@ -37,7 +37,7 @@ mkdir .vscode                  # dev-checkout marker — see Env::isDevDir()
 # Unix:    ln -s Public WorkDir/public
 ```
 
-See [`docs/development.md`](docs/development.md) for the full setup guide.
+See [`docs/guides/operations/development.md`](docs/guides/operations/development.md) for the full setup guide.
 
 ## Documentation
 
@@ -46,7 +46,7 @@ under [`docs/`](docs/README.md) (also available [in English](docs/README.en.md))
 
 Testing guide: [`Tests/TESTING.md`](Tests/TESTING.md).
 
-Customer handover and readiness verdict: [`docs/customer-handover.md`](docs/customer-handover.md).
+Customer handover and readiness verdict: [`docs/guides/product/customer-handover.md`](docs/guides/product/customer-handover.md).
 
 ## License
 

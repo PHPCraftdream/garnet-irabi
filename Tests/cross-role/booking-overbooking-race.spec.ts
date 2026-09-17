@@ -1,5 +1,5 @@
 /**
- * H-01 regression (docs/security-audit/09-ms-fresh-authorization-review.md):
+ * H-01 regression (docs/audits/security/09-ms-fresh-authorization-review.md):
  * concurrent bookings on the same slot must never exceed max_users.
  *
  * Before the fix, both BookingsController::post__book() and

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {translateStatus} from '../../../../Common/statusHelpers';
-import {CalendarPagerCounts, PagerCountItem} from '../../../../Common/CalendarPagerCounts';
+import {translateStatus} from '../../../../Common/booking/statusHelpers';
+import {CalendarPagerCounts, PagerCountItem} from '../../../../Common/booking/CalendarPagerCounts';
 import {Slot} from '../../types';
 
 export const PAGER_KINDS = ['free', 'pending', 'booked', 'completed'] as const;

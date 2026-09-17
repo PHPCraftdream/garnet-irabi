@@ -4,7 +4,7 @@ import {sendPost} from '@common/Api/sendPost';
 import {D} from '@common/Debug/D';
 import {useCtrlEnter, CTRL_ENTER_HINT} from '@common/hooks/useCtrlEnter';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import AttachmentPicker, {PendingFile} from '../../../Common/AttachmentPicker';
+import AttachmentPicker, {PendingFile} from '../../../Common/attachments/AttachmentPicker';
 import SendButton from '@common/Components/SendButton';
 import {Recipient, RecipientCombobox} from './RecipientCombobox';
 

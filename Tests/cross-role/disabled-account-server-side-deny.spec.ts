@@ -1,5 +1,5 @@
 /**
- * H-02 regression (docs/security-audit/10-ms-postfix-authorization-review.md):
+ * H-02 regression (docs/audits/security/10-ms-postfix-authorization-review.md):
  * IS_DISABLED was never checked by any role gate (isModerator/isOwner/isAdmin/
  * isExpert/isUser) or by the shared authenticated middleware chain — only
  * UserEntityConfig::isApprovedActiveExpert() checked it, and only for the

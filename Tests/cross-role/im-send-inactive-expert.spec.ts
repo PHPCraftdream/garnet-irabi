@@ -1,5 +1,5 @@
 /**
- * M-02 regression (docs/security-audit/12-ms-postfix-authorization-review.md):
+ * M-02 regression (docs/audits/security/12-ms-postfix-authorization-review.md):
  * ImController::canMessage() allowed a regular user to message ANY account
  * with an expert_profiles row, regardless of the account's current type/
  * IS_APPROVED/IS_DISABLED — a disabled, unapproved, or demoted "expert"

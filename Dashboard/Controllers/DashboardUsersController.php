@@ -70,7 +70,7 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers {
             $value = (int)$globals->readPostValue('value', '0');
 
             // Determine which flags the caller may set based on their role.
-            // Security audit A-01: IS_OWNER must be admin-only (docs/roles.md
+            // Security audit A-01: IS_OWNER must be admin-only (docs/guides/product/roles.md
             // §5 "Назначение владельца — только админ") — an owner who is not
             // also an admin must not be able to mint new owners.
             $callerIsAdmin = UserEntityConfig::isAdmin();

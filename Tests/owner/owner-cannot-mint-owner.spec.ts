@@ -1,6 +1,6 @@
 /**
- * A-01 regression (docs/security-audit/11-ms-postfix-authorization-review.md):
- * docs/roles.md §5 states "Назначение владельца (IS_OWNER) — только админ"
+ * A-01 regression (docs/audits/security/11-ms-postfix-authorization-review.md):
+ * docs/guides/product/roles.md §5 states "Назначение владельца (IS_OWNER) — только админ"
  * (only an Admin may appoint an Owner), but DashboardUsersController::
  * post__setUserFlag() let any owner (isOwner() true, which also covers
  * admin) set IS_OWNER on a target — a plain owner without IS_ADMIN could
@@ -10,7 +10,7 @@
  *
  * The fix moves IS_OWNER out of the owner-allowed flag list into the
  * admin-only list (mirroring how IS_ADMIN is already admin-gated).
- * IS_MODERATOR stays owner-settable, matching docs/roles.md's "Владелец
+ * IS_MODERATOR stays owner-settable, matching docs/guides/product/roles.md's "Владелец
  * или Админ может назначить модератора".
  *
  * Tests run strictly one staff session at a time (login → assert → close)

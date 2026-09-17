@@ -7,7 +7,7 @@ import {
     actionSubmitLabel,
     actionTitle,
     penaltyPreview,
-} from '../../Common/bookingAction';
+} from '../../Common/booking/bookingAction';
 
 interface MoneyProps {
     cost: number;

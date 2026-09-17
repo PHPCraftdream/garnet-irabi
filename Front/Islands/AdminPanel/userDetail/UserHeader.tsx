@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import ImageLightbox from '../../../Common/ImageLightbox';
+import ImageLightbox from '../../../Common/media/ImageLightbox';
 import {AccountData, BalanceRow} from './userDetailTypes';
 import {UserAvatar} from './UserAvatar';
 import {UserHeaderBadges, UserHeaderCounters, UserHeaderMeta} from './UserHeaderBadges';

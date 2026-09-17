@@ -1,5 +1,5 @@
 /**
- * M-02 regression (docs/security-audit/09-ms-fresh-authorization-review.md):
+ * M-02 regression (docs/audits/security/09-ms-fresh-authorization-review.md):
  * FwSupportAdminController::post__assign() used to accept an arbitrary
  * `assignee_id` from POST with no check that it names a moderator/owner/
  * admin — a moderator could assign a support ticket to any regular user

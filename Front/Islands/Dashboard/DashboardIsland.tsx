@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {IrabiPreviewProvider} from '../../Common/IrabiPreviewProvider';
+import {IrabiPreviewProvider} from '../../Common/people/IrabiPreviewProvider';
 import {WelcomeCard} from './WelcomeCard';
 import {NotificationsWidget} from './NotificationsWidget';
 import {UpcomingBookings} from './UpcomingBookings';

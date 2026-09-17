@@ -116,7 +116,7 @@ namespace PHPCraftdream\IRabi\Common\Services {
             static::registerTask('log-rotation', static function (Stdio $stdio): int {
                 // 1-year retention for both the WorkDir/LogJournal file
                 // journals and the operational log tables — mirrors the
-                // privacy-policy promise (docs/handover-audit/01-legal-
+                // privacy-policy promise (docs/audits/handover/01-legal-
                 // compliance.md F-05, required for 152-ФЗ). See
                 // LogRotationCronTask for the full policy; per-category
                 // and per-table failures are soft (logged, not thrown)

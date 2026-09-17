@@ -45,7 +45,7 @@ namespace PHPCraftdream\IRabi\Common\Commands {
             $stdio->outln('  --no-cron     не применять последствия (по умолчанию применяются)');
             $stdio->outln('');
             $stdio->outln('  Требует режима тестирования: php garnet test-mode on');
-            $stdio->outln('  Фазы и то, что читает время: docs/booking-time-phases.md');
+            $stdio->outln('  Фазы и то, что читает время: docs/guides/operations/booking-time-phases.md');
         }
 
         public static function run(array $args, Context $context, Stdio $stdio): void {

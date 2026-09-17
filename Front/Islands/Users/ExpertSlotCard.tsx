@@ -1,8 +1,8 @@
 import * as React from 'react';
 import {formatTs} from '@common/Utils/DateUtils';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
-import {translateStatus} from '../../Common/statusHelpers';
-import {SeatsSource, SlotFormatSource, slotFormatLine, slotSeatsLeftLine} from '../../Common/slotFormat';
+import {translateStatus} from '../../Common/booking/statusHelpers';
+import {SeatsSource, SlotFormatSource, slotFormatLine, slotSeatsLeftLine} from '../../Common/booking/slotFormat';
 
 interface SlotLike extends SlotFormatSource, SeatsSource {
     id: number;

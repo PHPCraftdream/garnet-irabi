@@ -4,7 +4,7 @@ import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {ImConversation} from '../imTypes';
 import {formatTs} from '@common/Utils/DateUtils';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
-import {UserAvatar} from '../../../Common/UserAvatar';
+import {UserAvatar} from '../../../Common/media/UserAvatar';
 
 /**
  * Значок скрепки в строке диалога.

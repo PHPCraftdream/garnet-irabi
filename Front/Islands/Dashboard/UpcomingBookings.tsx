@@ -1,9 +1,9 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
-import {isConfirmed} from '../../Common/bookingAction';
+import {isConfirmed} from '../../Common/booking/bookingAction';
 import {formatTs} from '@common/Utils/DateUtils';
-import {translateStatus} from '../../Common/statusHelpers';
-import {UniversalBadge} from '../../Common/StatusBadge';
+import {translateStatus} from '../../Common/booking/statusHelpers';
+import {UniversalBadge} from '../../Common/booking/StatusBadge';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {ExternalLink} from '@common/Components/ExternalLink';
 import {appUrl} from '@common/Utils/appUrl';

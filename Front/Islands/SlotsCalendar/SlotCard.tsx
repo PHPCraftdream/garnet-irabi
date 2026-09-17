@@ -3,12 +3,12 @@ import {useState, useRef} from 'react';
 import {createPortal} from 'react-dom';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {SlotItem, ExpertMap} from './types';
-import {EntityLink, userLinks} from '../../Common/EntityLinks';
+import {EntityLink, userLinks} from '../../Common/people/EntityLinks';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {formatTime} from '@common/Utils/DateUtils';
-import {slotFormatLine, slotPlaceLabel, slotPlaceValue, slotSeatsLeftLine} from '../../Common/slotFormat';
-import {translateStatus} from '../../Common/statusHelpers';
-import {statusClass} from '../../Common/StatusBadge';
+import {slotFormatLine, slotPlaceLabel, slotPlaceValue, slotSeatsLeftLine} from '../../Common/booking/slotFormat';
+import {translateStatus} from '../../Common/booking/statusHelpers';
+import {statusClass} from '../../Common/booking/StatusBadge';
 
 interface SlotCardProps {
     slot: SlotItem;

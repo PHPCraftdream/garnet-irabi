@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {ImMessage} from '../imTypes';
-import AttachmentDisplay from '../../../Common/AttachmentDisplay';
+import AttachmentDisplay from '../../../Common/attachments/AttachmentDisplay';
 import {formatTs} from '@common/Utils/DateUtils';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 

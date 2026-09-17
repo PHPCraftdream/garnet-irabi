@@ -18,14 +18,14 @@ import {
     actionReasonPlaceholder,
     actionSubmitLabel,
     actionTitle,
-} from '../../Common/bookingAction';
+} from '../../Common/booking/bookingAction';
 import {ReasonModal} from '../../Common/Components/ReasonModal';
 import {EditSlotModal} from './components/EditSlotModal';
 import {Slot, ExpertSlotsProps} from './types';
 import {CreateSlotForm} from './components/CreateSlotForm';
 import {BatchSlotWizard} from './components/BatchSlotWizard';
 import {ExpertCalendar} from './components/ExpertCalendar';
-import {IrabiPreviewProvider} from '../../Common/IrabiPreviewProvider';
+import {IrabiPreviewProvider} from '../../Common/people/IrabiPreviewProvider';
 import {usePreview} from '@common/Components/UserPreviewModal/PreviewContext';
 import {PageHeader} from '@common/Components/PageHeader';
 import {CalendarClock} from 'lucide-react';

@@ -8,11 +8,11 @@ import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/DateUtils';
 import {sendPost} from '@common/Api/sendPost';
 import {appUrl} from '@common/Utils/appUrl';
-import {UniversalBadge} from '../../Common/StatusBadge';
-import {translateStatus} from '../../Common/statusHelpers';
+import {UniversalBadge} from '../../Common/booking/StatusBadge';
+import {translateStatus} from '../../Common/booking/statusHelpers';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
-import {actionCostHint, actionImpact, actionLabel, isActionable, outcomeLabel} from '../../Common/bookingAction';
-import {IrabiPreviewProvider} from '../../Common/IrabiPreviewProvider';
+import {actionCostHint, actionImpact, actionLabel, isActionable, outcomeLabel} from '../../Common/booking/bookingAction';
+import {IrabiPreviewProvider} from '../../Common/people/IrabiPreviewProvider';
 import {PageHeader} from '@common/Components/PageHeader';
 import {CalendarCheck} from 'lucide-react';
 

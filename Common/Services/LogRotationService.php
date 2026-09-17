@@ -14,7 +14,7 @@ use Throwable;
  * Age-based log retention — prunes the WorkDir/LogJournal file tree and
  * the operational log DB tables to a single fixed window.
  *
- * The privacy policy (docs/handover-audit/01-legal-compliance.md F-05)
+ * The privacy policy (docs/audits/handover/01-legal-compliance.md F-05)
  * promises users a 1-year log retention. RETENTION_DAYS is the single
  * source of truth for that promise: both the file journals and every
  * age-prunable log table use it, so the code and the legal text cannot
@@ -53,7 +53,7 @@ use Throwable;
 class LogRotationService {
     /**
      * Log retention window in days. Mirrors the privacy-policy promise
-     * ("logs are kept for 1 year", docs/handover-audit/01-legal-compliance.md
+     * ("logs are kept for 1 year", docs/audits/handover/01-legal-compliance.md
      * F-05). ONE named constant — surfaced as the default of every
      * public method so there is a single place to tune the window.
      */

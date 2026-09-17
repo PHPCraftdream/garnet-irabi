@@ -10,7 +10,7 @@ import {SupportTicket, SupportStatus} from '../Support/supportTypes';
 import {StatusBadge, statusLabel, ALL_STATUSES} from '../Support/supportRenders';
 import SupportTicketTab from './SupportTicketTab';
 import {formatTs} from '@common/Utils/DateUtils';
-import {AdminUserLink} from '../../Common/EntityLinks';
+import {AdminUserLink} from '../../Common/people/EntityLinks';
 import {UserDetailContext} from './UserDetailContext';
 import {UserDetailTab} from './UserDetailTab';
 import {useUserTabs} from './useUserTabs';

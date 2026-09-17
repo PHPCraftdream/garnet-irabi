@@ -16,7 +16,7 @@ import {ModalShell} from './ModalShell';
  *
  * Компонент отвечает только за причину и за кнопки. Что написано в заголовке
  * и в предупреждении, решает вызывающий — обычно через
- * `Front/Common/bookingAction`.
+ * `Front/Common/booking/bookingAction`.
  */
 
 interface FieldProps {

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {UniversalBadge} from '../../../Common/StatusBadge';
+import {UniversalBadge} from '../../../Common/booking/StatusBadge';
 import {AdminCommentRow} from './commentTypes';
 
 /**

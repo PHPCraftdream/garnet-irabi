@@ -16,9 +16,9 @@ import {SupportTicket, SupportMessage} from './supportTypes';
 import {StatusBadge} from './supportRenders';
 import {SupportTicketRow} from './SupportTicketRow';
 import {SupportBubble} from './SupportBubble';
-import AttachmentDisplay from '../../Common/AttachmentDisplay';
-import AttachmentPicker, {PendingFile} from '../../Common/AttachmentPicker';
-import ScreenshotButton from '../../Common/ScreenshotButton';
+import AttachmentDisplay from '../../Common/attachments/AttachmentDisplay';
+import AttachmentPicker, {PendingFile} from '../../Common/attachments/AttachmentPicker';
+import ScreenshotButton from '../../Common/media/ScreenshotButton';
 import {initAutoContext} from './autoContext';
 import {useSupportThread} from './useSupportThread';
 

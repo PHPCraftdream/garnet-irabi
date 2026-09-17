@@ -1,5 +1,5 @@
 /**
- * L-01 regression (docs/security-audit/12-ms-postfix-authorization-review.md):
+ * L-01 regression (docs/audits/security/12-ms-postfix-authorization-review.md):
  * CommentsController::post__create() validated the comment target only by
  * the existence of an expert_profiles row, not whether that account is
  * currently a public (type=expert, approved, not disabled) expert.
