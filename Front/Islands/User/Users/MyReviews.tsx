@@ -21,6 +21,19 @@ const STATUS_LABEL: Record<MyReview['moderation_status'], () => string> = {
     flagged: () => t.Comment_StatusFlagged(),
 };
 
+const MyReviewItem: React.FC<{review: MyReview}> = ({review: r}) => (
+    <div className="p-4" data-test-id={`my-review-${r.id}`}>
+        <div className="flex items-center justify-between gap-2 mb-1">
+            <a href={appUrl(`/expert/id~${r.expert_id}`)} className="text-accent hover:underline font-medium">
+                {r.expert_name || t.Booking_NA()}
+            </a>
+            <span className="text-xs text-muted">{STATUS_LABEL[r.moderation_status]()}</span>
+        </div>
+        <p className="text-sm text-on-surface mb-1">{r.body}</p>
+        <span className="text-xs text-muted">{formatTs(r.created_at)}</span>
+    </div>
+);
+
 /**
  * D-128: до этого отзывы не жили нигде, кроме страницы того эксперта, о
  * котором были написаны — ни числа, ни списка, ни ссылки на свои. Автор с
@@ -68,16 +81,7 @@ export const MyReviews: React.FC<{listUrl: string; initialData?: PageResponse<My
 
             <div className="divide-y divide-default">
                 {items.map(r => (
-                    <div key={r.id} className="p-4" data-test-id={`my-review-${r.id}`}>
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                            <a href={appUrl(`/expert/id~${r.expert_id}`)} className="text-accent hover:underline font-medium">
-                                {r.expert_name || t.Booking_NA()}
-                            </a>
-                            <span className="text-xs text-muted">{STATUS_LABEL[r.moderation_status]()}</span>
-                        </div>
-                        <p className="text-sm text-on-surface mb-1">{r.body}</p>
-                        <span className="text-xs text-muted">{formatTs(r.created_at)}</span>
-                    </div>
+                    <MyReviewItem key={r.id} review={r} />
                 ))}
             </div>
         </div>
