@@ -16,6 +16,25 @@ interface ExpertUpcomingSlotsProps {
     slots: ExpertSlotItem[];
 }
 
+interface ExpertSlotRowProps {
+    slot: ExpertSlotItem;
+}
+
+const ExpertSlotRow: React.FC<ExpertSlotRowProps> = ({slot}) => (
+    <div className="booking-row">
+        <div>
+            <div className="text-sm font-medium text-on-surface">{slot.label}</div>
+            <div className="text-xs text-muted">
+                {formatTs(slot.start_at)}
+                <span className="text-muted"> &middot; {slot.duration_min} {t.Slot_Duration_Min()}</span>
+            </div>
+        </div>
+        <span className="count-badge-accent">
+            {slot.booked_count}/{slot.max_users} {t.Dash_Booked()}
+        </span>
+    </div>
+);
+
 export const ExpertUpcomingSlots: React.FC<ExpertUpcomingSlotsProps> = ({slots}) => {
     if (slots.length === 0) return null;
 
@@ -27,18 +46,7 @@ export const ExpertUpcomingSlots: React.FC<ExpertUpcomingSlotsProps> = ({slots})
             </div>
             <div className="space-y-2">
                 {slots.map(slot => (
-                    <div key={slot.id} className="booking-row">
-                        <div>
-                            <div className="text-sm font-medium text-on-surface">{slot.label}</div>
-                            <div className="text-xs text-muted">
-                                {formatTs(slot.start_at)}
-                                <span className="text-muted"> &middot; {slot.duration_min} {t.Slot_Duration_Min()}</span>
-                            </div>
-                        </div>
-                        <span className="count-badge-accent">
-                            {slot.booked_count}/{slot.max_users} {t.Dash_Booked()}
-                        </span>
-                    </div>
+                    <ExpertSlotRow key={slot.id} slot={slot} />
                 ))}
             </div>
         </div>

@@ -87,60 +87,92 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
             <p className="mb-3 text-sm text-muted" data-test-id="reschedule-modal-free">{t.Reschedule_Free()}</p>
             <p className="mb-3 text-sm text-warning" data-test-id="reschedule-modal-reconfirm">{t.Reschedule_NeedsReconfirm()}</p>
 
-            {shownError && (
-                <div className="mb-3 text-sm text-danger" data-test-id="reschedule-modal-error">{shownError}</div>
-            )}
+            <RescheduleStatus shownError={shownError} loading={loading} optionsCount={options.length} loadError={loadError} />
 
-            {loading && (
-                <p className="text-sm text-muted" data-test-id="reschedule-modal-loading">{t.User_Loading()}</p>
-            )}
+            {!loading && options.length > 0 && <RescheduleSlotPicker options={options} selectedId={selectedId} onSelect={setSelectedId} />}
 
-            {!loading && options.length === 0 && !loadError && (
-                <p className="text-sm text-muted" data-test-id="reschedule-modal-empty">{t.Reschedule_NoSlots()}</p>
-            )}
-
-            {!loading && options.length > 0 && (
-                <fieldset className="mb-4" data-test-id="reschedule-modal-options">
-                    <legend className="text-sm text-secondary mb-1">{t.Reschedule_PickSlot()}</legend>
-                    <div className="flex flex-col gap-2">
-                        {options.map(opt => (
-                            <label
-                                key={opt.id}
-                                className="flex items-center gap-2 cursor-pointer"
-                                data-test-id={`reschedule-option-${opt.id}`}
-                            >
-                                <input
-                                    type="radio"
-                                    name="reschedule-target-slot"
-                                    checked={selectedId === opt.id}
-                                    onChange={() => setSelectedId(opt.id)}
-                                />
-                                <span>{formatTs(opt.start_at)}</span>
-                            </label>
-                        ))}
-                    </div>
-                </fieldset>
-            )}
-
-            <div className="flex gap-2 justify-end">
-                <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={onClose}
-                    disabled={sending}
-                    data-test-id="reschedule-modal-dismiss"
-                >
-                    {t.Batch_Cancel()}
-                </button>
-                <SendButton
-                    onClick={() => selectedId !== null && onSubmit(selectedId)}
-                    sending={sending}
-                    disabled={selectedId === null}
-                    label={t.Reschedule_Submit()}
-                    testId="reschedule-modal-submit"
-                    variant="outline-warning"
-                />
-            </div>
+            <RescheduleActions sending={sending} selectedId={selectedId} onSubmit={onSubmit} onClose={onClose} />
         </ModalShell>
     );
 };
+
+interface RescheduleStatusProps {
+    shownError: string;
+    loading: boolean;
+    optionsCount: number;
+    loadError: string;
+}
+
+const RescheduleStatus: React.FC<RescheduleStatusProps> = ({shownError, loading, optionsCount, loadError}) => (
+    <>
+        {shownError && (
+            <div className="mb-3 text-sm text-danger" data-test-id="reschedule-modal-error">{shownError}</div>
+        )}
+
+        {loading && (
+            <p className="text-sm text-muted" data-test-id="reschedule-modal-loading">{t.User_Loading()}</p>
+        )}
+
+        {!loading && optionsCount === 0 && !loadError && (
+            <p className="text-sm text-muted" data-test-id="reschedule-modal-empty">{t.Reschedule_NoSlots()}</p>
+        )}
+    </>
+);
+
+interface RescheduleSlotPickerProps {
+    options: SlotOption[];
+    selectedId: number | null;
+    onSelect: (id: number) => void;
+}
+
+const RescheduleSlotPicker: React.FC<RescheduleSlotPickerProps> = ({options, selectedId, onSelect}) => (
+    <fieldset className="mb-4" data-test-id="reschedule-modal-options">
+        <legend className="text-sm text-secondary mb-1">{t.Reschedule_PickSlot()}</legend>
+        <div className="flex flex-col gap-2">
+            {options.map(opt => (
+                <label
+                    key={opt.id}
+                    className="flex items-center gap-2 cursor-pointer"
+                    data-test-id={`reschedule-option-${opt.id}`}
+                >
+                    <input
+                        type="radio"
+                        name="reschedule-target-slot"
+                        checked={selectedId === opt.id}
+                        onChange={() => onSelect(opt.id)}
+                    />
+                    <span>{formatTs(opt.start_at)}</span>
+                </label>
+            ))}
+        </div>
+    </fieldset>
+);
+
+interface RescheduleActionsProps {
+    sending: boolean;
+    selectedId: number | null;
+    onSubmit: (slotId: number) => void;
+    onClose: () => void;
+}
+
+const RescheduleActions: React.FC<RescheduleActionsProps> = ({sending, selectedId, onSubmit, onClose}) => (
+    <div className="flex gap-2 justify-end">
+        <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={onClose}
+            disabled={sending}
+            data-test-id="reschedule-modal-dismiss"
+        >
+            {t.Batch_Cancel()}
+        </button>
+        <SendButton
+            onClick={() => selectedId !== null && onSubmit(selectedId)}
+            sending={sending}
+            disabled={selectedId === null}
+            label={t.Reschedule_Submit()}
+            testId="reschedule-modal-submit"
+            variant="outline-warning"
+        />
+    </div>
+);

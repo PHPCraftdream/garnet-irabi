@@ -3,6 +3,7 @@ import {useRef, useState} from 'react';
 import {useBodyScrollLock} from '@common/hooks/ui/useBodyScrollLock';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
+import {AttachmentAddRow} from './AttachmentAddRow';
 import {AttachmentTile} from './AttachmentTile';
 import {AttachmentLightbox} from './AttachmentLightbox';
 
@@ -70,6 +71,20 @@ function refusalFor(file: File): string | null {
     return null;
 }
 
+interface AttachmentThumbsProps {
+    files: PendingFile[];
+    onOpen: (index: number) => void;
+    onRemove: (index: number) => void;
+}
+
+const AttachmentThumbs: React.FC<AttachmentThumbsProps> = ({files, onOpen, onRemove}) => (
+    <div className="common-pick-grid">
+        {files.map((f, i) => (
+            <AttachmentTile key={f.id} file={f} index={i} onOpen={onOpen} onRemove={onRemove} />
+        ))}
+    </div>
+);
+
 export default function AttachmentPicker({files, onChange, maxFiles = MAX_ATTACHMENTS, accept}: Props) {
     const inputRef = useRef<HTMLInputElement>(null);
     const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -132,48 +147,19 @@ export default function AttachmentPicker({files, onChange, maxFiles = MAX_ATTACH
     return (
         <div>
             {/* Thumbnails */}
-            {files.length > 0 && (
-                <div className="common-pick-grid">
-                    {files.map((f, i) => (
-                        <AttachmentTile key={f.id} file={f} index={i} onOpen={setLightboxIndex} onRemove={remove} />
-                    ))}
-                </div>
-            )}
+            {files.length > 0 && <AttachmentThumbs files={files} onOpen={setLightboxIndex} onRemove={remove} />}
 
             {/* Add button */}
             {files.length < maxFiles && (
-                <>
-                    <input
-                        ref={inputRef}
-                        type="file"
-                        multiple
-                        accept={accept || 'image/*,.pdf,.txt,.log'}
-                        className="hidden"
-                        aria-label={t.A11y_AttachFiles()}
-                        onChange={(e) => e.target.files && addFiles(e.target.files)}
-                        data-test-id="attachment-input"
-                    />
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <button
-                            type="button"
-                            className="btn btn-outline-secondary text-sm flex items-center gap-1"
-                            onClick={() => inputRef.current?.click()}
-                            data-test-id="attachment-btn"
-                            title={t.A11y_AttachFiles()}
-                            aria-label={t.A11y_AttachFiles()}
-                        >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                                <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
-                            </svg>
-                            {files.length > 0 ? `(${files.length}/${maxFiles})` : ''}
-                        </button>
-                        {/* The limits belong here, before a file is chosen — a
-                            rejection is a poor way to learn what was allowed. */}
-                        <span className="text-xs text-muted" data-test-id="attachment-hint">
-                            {t.Attach_Hint([maxFiles, MAX_FILE_SIZE_MB])}
-                        </span>
-                    </div>
-                </>
+                <AttachmentAddRow
+                    inputRef={inputRef}
+                    accept={accept}
+                    onFiles={addFiles}
+                    count={files.length}
+                    maxFiles={maxFiles}
+                    onPick={() => inputRef.current?.click()}
+                    hint={t.Attach_Hint([maxFiles, MAX_FILE_SIZE_MB])}
+                />
             )}
 
             {/* Lightbox */}
