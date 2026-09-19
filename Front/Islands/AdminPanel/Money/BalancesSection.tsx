@@ -16,6 +16,47 @@ interface Props {
     canAdjust: boolean;
 }
 
+const FilterCell: React.FC<{
+    label: string;
+    htmlFor?: string;
+    children: React.ReactNode;
+}> = ({label, htmlFor, children}) => (
+    <div className="filter-cell">
+        <label htmlFor={htmlFor}>{label}</label>
+        {children}
+    </div>
+);
+
+const ResetFilterButton: React.FC<{
+    label: string;
+    onReset: () => void;
+}> = ({label, onReset}) => (
+    <button
+        type="button"
+        className="btn btn-sm btn-outline-secondary"
+        onClick={onReset}
+        data-test-id="balances-reset"
+        aria-label={label}
+        title={label}
+    >×</button>
+);
+
+const AdjustBalanceButton: React.FC<{
+    row: AccountBalanceRow;
+    onAdjust: (row: AccountBalanceRow) => void;
+}> = ({row, onAdjust}) => (
+    <button
+        type="button"
+        className="btn btn-sm btn-outline-primary"
+        onClick={() => onAdjust(row)}
+        data-test-id={`balance-adjust-${row.account_id}`}
+        title={t.Admin_Balance_Adjust()}
+        aria-label={t.Admin_Balance_Adjust()}
+    >
+        {t.Admin_Balance_Adjust()}
+    </button>
+);
+
 export const BalancesSection: React.FC<Props> = ({balances: initialBalances, config, adjustUrl, canAdjust}) => {
     const [balances, setBalances] = useState<AccountBalanceRow[]>(initialBalances);
     const [accountId, setAccountId] = useState<string>('');
@@ -76,8 +117,7 @@ export const BalancesSection: React.FC<Props> = ({balances: initialBalances, con
     return (
         <div>
             <div className="admin-bookings-filters">
-                <div className="filter-cell">
-                    <label>{t.Admin_Filter_User()}</label>
+                <FilterCell label={t.Admin_Filter_User()}>
                     <Combobox
                         options={accountOptions}
                         value={accountId}
@@ -86,9 +126,8 @@ export const BalancesSection: React.FC<Props> = ({balances: initialBalances, con
                         searchPlaceholder={t.Admin_Filter_SearchUser()}
                         testId="balances-account-filter"
                     />
-                </div>
-                <div className="filter-cell">
-                    <label htmlFor="balances-date-from">{t.Admin_Filter_DateFrom()}</label>
+                </FilterCell>
+                <FilterCell label={t.Admin_Filter_DateFrom()} htmlFor="balances-date-from">
                     <DateInput
                         id="balances-date-from"
                         className="text-sm"
@@ -96,9 +135,8 @@ export const BalancesSection: React.FC<Props> = ({balances: initialBalances, con
                         onChange={e => setDateFrom(e.target.value)}
                         data-test-id="balances-date-from"
                     />
-                </div>
-                <div className="filter-cell">
-                    <label htmlFor="balances-date-to">{t.Admin_Filter_DateTo()}</label>
+                </FilterCell>
+                <FilterCell label={t.Admin_Filter_DateTo()} htmlFor="balances-date-to">
                     <DateInput
                         id="balances-date-to"
                         className="text-sm"
@@ -106,18 +144,9 @@ export const BalancesSection: React.FC<Props> = ({balances: initialBalances, con
                         onChange={e => setDateTo(e.target.value)}
                         data-test-id="balances-date-to"
                     />
-                </div>
+                </FilterCell>
                 <div className="filter-actions">
-                    {hasActive && (
-                        <button
-                            type="button"
-                            className="btn btn-sm btn-outline-secondary"
-                            onClick={reset}
-                            data-test-id="balances-reset"
-                            aria-label={t.Admin_Filter_ResetAll()}
-                            title={t.Admin_Filter_ResetAll()}
-                        >×</button>
-                    )}
+                    {hasActive && <ResetFilterButton label={t.Admin_Filter_ResetAll()} onReset={reset} />}
                 </div>
             </div>
 
@@ -128,26 +157,9 @@ export const BalancesSection: React.FC<Props> = ({balances: initialBalances, con
                 emptyMessage={t.Admin_NoBalances()}
                 renders={{
                     name:       r => <AdminUserLink id={r.account_id} name={r.name || r.login} role={r.type} />,
-                    balance:    r => (
-                        <span className={`font-medium ${r.balance < 0 ? 'text-danger' : 'text-success'}`}>
-                            {r.balance} &#8381;
-                        </span>
-                    ),
+                    balance:    r => <span className={`font-medium ${r.balance < 0 ? 'text-danger' : 'text-success'}`}>{r.balance} &#8381;</span>,
                     updated_at: r => <span className="text-muted text-xs">{formatTs(r.updated_at)}</span>,
-                    actions:    r => (
-                        canAdjust ? (
-                            <button
-                                type="button"
-                                className="btn btn-sm btn-outline-primary"
-                                onClick={() => setAdjusting(r)}
-                                data-test-id={`balance-adjust-${r.account_id}`}
-                                title={t.Admin_Balance_Adjust()}
-                                aria-label={t.Admin_Balance_Adjust()}
-                            >
-                                {t.Admin_Balance_Adjust()}
-                            </button>
-                        ) : null
-                    ),
+                    actions:    r => canAdjust ? <AdjustBalanceButton row={r} onAdjust={setAdjusting} /> : null,
                 }}
             />
 

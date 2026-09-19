@@ -127,6 +127,91 @@ const UserTypeCell: React.FC<{
     );
 };
 
+type FlagKey = 'IS_APPROVED' | 'IS_DISABLED' | 'IS_MODERATOR' | 'IS_OWNER' | 'IS_ADMIN';
+
+interface FlagDef {
+    key: FlagKey;
+    cls: [string, string];
+    label: (r: AdminUser) => string;
+    title?: (r: AdminUser) => string;
+    expertOnly?: boolean;
+    lockedBy?: (r: AdminUser) => boolean;
+}
+
+const flagDefs: Record<FlagKey, FlagDef> = {
+    IS_APPROVED: {
+        key: 'IS_APPROVED',
+        cls: ['btn-outline-danger', 'btn-success'],
+        label: r => flag(r.IS_APPROVED) ? t.Admin_Revoke() : t.Admin_Approve(),
+        expertOnly: true,
+    },
+    IS_DISABLED: {
+        key: 'IS_DISABLED',
+        cls: ['btn-secondary', 'btn-outline-danger'],
+        label: r => flag(r.IS_DISABLED) ? t.Admin_Enable() : t.Admin_Disable(),
+    },
+    IS_MODERATOR: {
+        key: 'IS_MODERATOR',
+        cls: ['btn-outline-danger', 'btn-outline-primary'],
+        label: r => roleFlagLabel(t.Admin_Role_Moderator(), flag(r.IS_MODERATOR)),
+        title: r => flag(r.IS_ADMIN) ? t.Admin_Flag_RemoveAdminFirst()
+            : flag(r.IS_OWNER) ? t.Admin_Flag_OwnerHasModeratorRights()
+                : flag(r.IS_MODERATOR) ? t.Admin_Flag_RevokeModerator() : t.Admin_Flag_GrantModerator(),
+        lockedBy: r => flag(r.IS_ADMIN) || flag(r.IS_OWNER),
+    },
+    IS_OWNER: {
+        key: 'IS_OWNER',
+        cls: ['btn-outline-danger', 'btn-outline-primary'],
+        label: r => roleFlagLabel(t.Admin_Role_Owner(), flag(r.IS_OWNER)),
+        title: r => flag(r.IS_ADMIN) ? t.Admin_Flag_RemoveAdminFirst()
+            : flag(r.IS_OWNER) ? t.Admin_Flag_RevokeOwner() : t.Admin_Flag_GrantOwner(),
+        lockedBy: r => flag(r.IS_ADMIN),
+    },
+    IS_ADMIN: {
+        key: 'IS_ADMIN',
+        cls: ['btn-outline-danger', 'btn-outline-primary'],
+        label: r => roleFlagLabel(t.Admin_Role_Admin(), flag(r.IS_ADMIN)),
+        title: r => flag(r.IS_ADMIN) ? t.Admin_Flag_RevokeAdmin() : t.Admin_Flag_GrantAdmin(),
+    },
+};
+
+/** Кнопка флага роли/статуса в строке таблицы. */
+const UserFlagCell: React.FC<{
+    row: AdminUser;
+    def: FlagDef;
+    pending: boolean;
+    onSetFlag: (userId: number, name: FlagKey, value: 0 | 1) => void;
+}> = ({row, def, pending, onSetFlag}) => {
+    if (def.expertOnly && row.type !== 'expert') return null;
+    const active = flag(row[def.key]);
+
+    return (
+        <FlagBtn
+            testId={`flag-${def.key}-${row.id}`}
+            label={def.label(row)}
+            title={def.title?.(row)}
+            active={active}
+            cls={def.cls}
+            disabled={pending || (def.lockedBy?.(row) ?? false)}
+            onClick={() => onSetFlag(row.id, def.key, active ? 0 : 1)}
+        />
+    );
+};
+
+const UserLoginCell: React.FC<{
+    row: AdminUser;
+    onOpen: (id: number, label: string) => void;
+}> = ({row, onOpen}) => (
+    <button
+        type="button"
+        data-test-id={`user-login-${row.id}`}
+        className="admin-link-btn-md font-mono"
+        onClick={() => onOpen(row.id, row.name || row.login)}
+    >
+        {row.login}
+    </button>
+);
+
 export const UsersSection: React.FC<Props> = ({
     users: initialUsers, setFlagUrl, setUserTypeUrl, config,
 }) => {
@@ -200,86 +285,14 @@ export const UsersSection: React.FC<Props> = ({
                 emptyMessage={t.Admin_NoUsers()}
                 renders={{
                     id:    r => <span className="text-muted">{r.id}</span>,
-                    login: r => (
-                        <button
-                            type="button"
-                            data-test-id={`user-login-${r.id}`}
-                            className="admin-link-btn-md font-mono"
-                            onClick={() => openUser(r.id, r.name || r.login)}
-                        >
-                            {r.login}
-                        </button>
-                    ),
-                    type: r => (
-                        <UserTypeCell
-                            row={r}
-                            canChange={!!setUserTypeUrl}
-                            pending={!!pending[r.id]}
-                            onToggle={() => setUserType(r.id, r.type === 'expert' ? 'user' : 'expert')}
-                        />
-                    ),
+                    login: r => <UserLoginCell row={r} onOpen={openUser} />,
+                    type: r => <UserTypeCell row={r} canChange={!!setUserTypeUrl} pending={!!pending[r.id]} onToggle={() => setUserType(r.id, r.type === 'expert' ? 'user' : 'expert')} />,
                     last_online_time: r => <span className="text-muted text-xs">{formatTs(r.last_online_time)}</span>,
-
-                    IS_APPROVED: r => r.type !== 'expert' ? null : (
-                        <FlagBtn
-                            testId={`flag-IS_APPROVED-${r.id}`}
-                            label={flag(r.IS_APPROVED) ? t.Admin_Revoke() : t.Admin_Approve()}
-                            active={flag(r.IS_APPROVED)}
-                            cls={['btn-outline-danger', 'btn-success']}
-                            disabled={pending[r.id]}
-                            onClick={() => setFlag(r.id, 'IS_APPROVED', flag(r.IS_APPROVED) ? 0 : 1)}
-                        />
-                    ),
-                    IS_DISABLED: r => (
-                        <FlagBtn
-                            testId={`flag-IS_DISABLED-${r.id}`}
-                            label={flag(r.IS_DISABLED) ? t.Admin_Enable() : t.Admin_Disable()}
-                            active={flag(r.IS_DISABLED)}
-                            cls={['btn-secondary', 'btn-outline-danger']}
-                            disabled={pending[r.id]}
-                            onClick={() => setFlag(r.id, 'IS_DISABLED', flag(r.IS_DISABLED) ? 0 : 1)}
-                        />
-                    ),
-                    IS_MODERATOR: r => (
-                        <FlagBtn
-                            testId={`flag-IS_MODERATOR-${r.id}`}
-                            label={roleFlagLabel(t.Admin_Role_Moderator(), flag(r.IS_MODERATOR))}
-                            title={
-                                flag(r.IS_ADMIN) ? t.Admin_Flag_RemoveAdminFirst()
-                                    : flag(r.IS_OWNER) ? t.Admin_Flag_OwnerHasModeratorRights()
-                                        : flag(r.IS_MODERATOR) ? t.Admin_Flag_RevokeModerator() : t.Admin_Flag_GrantModerator()
-                            }
-                            active={flag(r.IS_MODERATOR)}
-                            cls={['btn-outline-danger', 'btn-outline-primary']}
-                            disabled={pending[r.id] || flag(r.IS_ADMIN) || flag(r.IS_OWNER)}
-                            onClick={() => setFlag(r.id, 'IS_MODERATOR', flag(r.IS_MODERATOR) ? 0 : 1)}
-                        />
-                    ),
-                    IS_OWNER: r => (
-                        <FlagBtn
-                            testId={`flag-IS_OWNER-${r.id}`}
-                            label={roleFlagLabel(t.Admin_Role_Owner(), flag(r.IS_OWNER))}
-                            title={
-                                flag(r.IS_ADMIN) ? t.Admin_Flag_RemoveAdminFirst()
-                                    : flag(r.IS_OWNER) ? t.Admin_Flag_RevokeOwner() : t.Admin_Flag_GrantOwner()
-                            }
-                            active={flag(r.IS_OWNER)}
-                            cls={['btn-outline-danger', 'btn-outline-primary']}
-                            disabled={pending[r.id] || flag(r.IS_ADMIN)}
-                            onClick={() => setFlag(r.id, 'IS_OWNER', flag(r.IS_OWNER) ? 0 : 1)}
-                        />
-                    ),
-                    IS_ADMIN: r => (
-                        <FlagBtn
-                            testId={`flag-IS_ADMIN-${r.id}`}
-                            label={roleFlagLabel(t.Admin_Role_Admin(), flag(r.IS_ADMIN))}
-                            title={flag(r.IS_ADMIN) ? t.Admin_Flag_RevokeAdmin() : t.Admin_Flag_GrantAdmin()}
-                            active={flag(r.IS_ADMIN)}
-                            cls={['btn-outline-danger', 'btn-outline-primary']}
-                            disabled={pending[r.id]}
-                            onClick={() => setFlag(r.id, 'IS_ADMIN', flag(r.IS_ADMIN) ? 0 : 1)}
-                        />
-                    ),
+                    IS_APPROVED: r => <UserFlagCell row={r} def={flagDefs.IS_APPROVED} pending={!!pending[r.id]} onSetFlag={setFlag} />,
+                    IS_DISABLED: r => <UserFlagCell row={r} def={flagDefs.IS_DISABLED} pending={!!pending[r.id]} onSetFlag={setFlag} />,
+                    IS_MODERATOR: r => <UserFlagCell row={r} def={flagDefs.IS_MODERATOR} pending={!!pending[r.id]} onSetFlag={setFlag} />,
+                    IS_OWNER: r => <UserFlagCell row={r} def={flagDefs.IS_OWNER} pending={!!pending[r.id]} onSetFlag={setFlag} />,
+                    IS_ADMIN: r => <UserFlagCell row={r} def={flagDefs.IS_ADMIN} pending={!!pending[r.id]} onSetFlag={setFlag} />,
                 }}
             />
         </div>

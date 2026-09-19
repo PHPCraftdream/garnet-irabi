@@ -23,33 +23,38 @@ interface Props {
     logsUrl: string;
 }
 
+const ActivityPerson: React.FC<{
+    id: number;
+    name: string;
+}> = ({id, name}) => (
+    id > 0
+        ? <AdminUserDualLink id={id} name={name} />
+        : <span className="admin-dash-activity-actor">{name}</span>
+);
+
+const ActivityItem: React.FC<{
+    log: LogEntry;
+}> = ({log}) => (
+    <li className="admin-dash-activity-item" data-test-id={`admin-dash-log-${log.id}`}>
+        <div className="admin-dash-activity-head">
+            <span className="admin-dash-activity-action" title={log.action}>{actionLabel(log.action)}</span>
+            <span className="admin-dash-activity-time">{formatTs(log.created_at)}</span>
+        </div>
+        <div className="admin-dash-activity-users">
+            <ActivityPerson id={log.actor_id} name={log.actor_name || log.actor_login} />
+            <span className="admin-dash-activity-arrow">&rarr;</span>
+            <ActivityPerson id={log.target_id} name={log.target_name || log.target_login} />
+        </div>
+    </li>
+);
+
 export const AdminRecentActivity: React.FC<Props> = ({logs, logsUrl}) => (
     <div className="admin-dash-card" data-test-id="admin-dash-activity">
         <h2 className="admin-dash-card-title-mb">{t.Admin_RecentActivity()}</h2>
 
         {logs.length > 0 ? (
             <ul className="admin-dash-list">
-                {logs.map(log => (
-                    <li key={log.id} className="admin-dash-activity-item" data-test-id={`admin-dash-log-${log.id}`}>
-                        <div className="admin-dash-activity-head">
-                            <span className="admin-dash-activity-action" title={log.action}>{actionLabel(log.action)}</span>
-                            <span className="admin-dash-activity-time">{formatTs(log.created_at)}</span>
-                        </div>
-                        <div className="admin-dash-activity-users">
-                            {log.actor_id > 0 ? (
-                                <AdminUserDualLink id={log.actor_id} name={log.actor_name || log.actor_login} />
-                            ) : (
-                                <span className="admin-dash-activity-actor">{log.actor_name || log.actor_login}</span>
-                            )}
-                            <span className="admin-dash-activity-arrow">&rarr;</span>
-                            {log.target_id > 0 ? (
-                                <AdminUserDualLink id={log.target_id} name={log.target_name || log.target_login} />
-                            ) : (
-                                <span className="admin-dash-activity-actor">{log.target_name || log.target_login}</span>
-                            )}
-                        </div>
-                    </li>
-                ))}
+                {logs.map(log => <ActivityItem key={log.id} log={log} />)}
             </ul>
         ) : (
             <p className="admin-dash-empty">{t.Admin_NoActivity()}</p>
