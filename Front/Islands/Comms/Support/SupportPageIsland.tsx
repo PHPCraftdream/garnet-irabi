@@ -3,26 +3,21 @@ import {useState, useEffect, useRef} from 'react';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {sendPostFormData} from '@common/Api/Send/sendPostFormData';
 import {D} from '@common/Support/Debug/D';
-import {formatTs} from '@common/Utils/Time/DateUtils';
 import {useSending} from '@common/hooks/data/useSending';
 
 import {showToast} from '@common/Components/Feedback/GlobalToast';
-import SendButton from '@common/Components/Controls/SendButton';
-import {useCtrlEnter, CTRL_ENTER_HINT} from '@common/hooks/ui/useCtrlEnter';
 import {usePagination, PageResponse} from '@common/hooks/data/usePagination';
 import {refreshLiveCounts} from '@common/Utils/Data/liveCounts';
-import Pagination, {PaginationLabels} from '@common/Components/Layout/Paging/Pagination';
+import {PaginationLabels} from '@common/Components/Layout/Paging/Pagination';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {SupportTicket, SupportMessage} from './parts/supportTypes';
-import {StatusBadge} from './parts/supportRenders';
-import {SupportTicketRow} from './parts/SupportTicketRow';
-import {SupportMessageList} from './parts/SupportBubble';
-import AttachmentPicker, {PendingFile} from '../../../Common/attachments/AttachmentPicker';
+import {PageTicketListPanel, PageBackButton, PageEmpty, PageNewTicketForm, PageConversation} from './SupportPageParts';
+import {PendingFile} from '../../../Common/attachments/AttachmentPicker';
 import AttachmentDisplay from '../../../Common/attachments/AttachmentDisplay';
 import {initAutoContext} from './parts/autoContext';
 import {useSupportThread} from './parts/useSupportThread';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
-import {LifeBuoy, ChevronLeft} from 'lucide-react';
+import {LifeBuoy} from 'lucide-react';
 
 interface Props {
     ticketsPagination: PageResponse<SupportTicket>;
@@ -155,187 +150,32 @@ export const SupportPageIsland: React.FC<Props> = ({ticketsPagination, ticketPag
 
             <div className={`support-layout ${(selectedTicket || showNewForm) ? 'support-layout-detail' : ''}`}>
                 {/* Left: ticket list */}
-                <div className="support-list-panel">
-                    <div className="support-list-header">
-                        <button
-                            type="button"
-                            data-test-id="support-new-ticket-btn"
-                            className="support-new-btn"
-                            onClick={() => { setShowNewForm(true); setSelectedId(null); setSubject(''); setMessage(''); setCreateFiles([]); }}
-                        >
-                            + {t.Support_NewTicket()}
-                        </button>
-                    </div>
-                    <div className="support-list-pagination">
-                        <Pagination
-                            page={ticketPage}
-                            totalPages={ticketTotalPages}
-                            total={ticketTotal}
-                            loading={ticketsLoading}
-                            compact
-                            onPageChange={ticketGoToPage}
-                            labels={paginationLabels}
-                            pageSize={ticketPerPage}
-                            onPageSizeChange={ticketSetPerPage}
-                        />
-                    </div>
-                    <div className="support-list-scroll">
-                        {sortedTickets.length === 0 && <div className="support-empty">{t.Support_NoTickets()}</div>}
-                        {sortedTickets.map(ticket => (
-                            <SupportTicketRow
-                                key={ticket.id}
-                                ticket={ticket}
-                                active={selectedId === ticket.id}
-                                readLocally={readTicketIds.has(ticket.id)}
-                                onSelect={selectTicket}
-                            />
-                        ))}
-                    </div>
-                    {ticketTotalPages > 1 && (
-                        <div className="support-list-pagination-bottom">
-                            <Pagination
-                                page={ticketPage}
-                                totalPages={ticketTotalPages}
-                                total={ticketTotal}
-                                loading={ticketsLoading}
-                                compact
-                                onPageChange={ticketGoToPage}
-                                labels={paginationLabels}
-                            />
-                        </div>
-                    )}
-                </div>
+                <PageTicketListPanel
+                    tickets={sortedTickets}
+                    selectedId={selectedId}
+                    readTicketIds={readTicketIds}
+                    onSelect={selectTicket}
+                    onNew={() => { setShowNewForm(true); setSelectedId(null); setSubject(''); setMessage(''); setCreateFiles([]); }}
+                    page={ticketPage}
+                    totalPages={ticketTotalPages}
+                    total={ticketTotal}
+                    loading={ticketsLoading}
+                    labels={paginationLabels}
+                    perPage={ticketPerPage}
+                    onPageChange={ticketGoToPage}
+                    onPageSizeChange={ticketSetPerPage}
+                />
 
                 {/* Right: conversation or new form */}
                 <div className="support-thread-panel">
                     {(selectedTicket || showNewForm) && (
-                        <button
-                            type="button"
-                            className="support-back-btn"
-                            onClick={() => { setSelectedId(null); setShowNewForm(false); }}
-                        >
-                            <ChevronLeft size={16} aria-hidden="true" />
-                            {t.Support_BackToList()}
-                        </button>
+                        <PageBackButton onBack={() => { setSelectedId(null); setShowNewForm(false); }} />
                     )}
-                    {showNewForm ? renderNewForm() : selectedTicket ? renderConversation() : renderEmpty()}
+                    {showNewForm ? <PageNewTicketForm subject={subject} onSubjectChange={setSubject} message={message} onMessageChange={setMessage} files={createFiles} onFilesChange={setCreateFiles} onSubmit={handleCreate} onCancel={() => setShowNewForm(false)} sending={sending} /> : selectedTicket ? <PageConversation selectedTicket={selectedTicket} messages={messages} loading={loadingMessages} endRef={messagesEndRef} replyText={replyText} onReplyTextChange={setReplyText} replyFiles={replyFiles} onReplyFilesChange={setReplyFiles} onReply={handleReply} sending={sending} /> : <PageEmpty ticketsCount={tickets.length} />}
                 </div>
             </div>
 
             
         </div>
     );
-
-    function renderEmpty() {
-        // D-165: with tickets in the list but none picked yet, this fell
-        // back to "Сообщений пока нет" — worded for an opened, empty
-        // thread, not for "nothing is open yet". Landing on the page (or
-        // any tickets.length > 0 state before a click) read as "your
-        // ticket has no messages", even with a full conversation one
-        // click away (found by user-4 on a 4-message ticket).
-        return (
-            <div className="flex-1 flex items-center justify-center text-muted text-sm" data-test-id="support-empty-panel">
-                {tickets.length === 0 ? t.Support_NoTickets() : t.Support_SelectTicket()}
-            </div>
-        );
-    }
-
-    function renderNewForm() {
-        return (
-            <div className="p-6 flex flex-col gap-4">
-                <h3 className="text-lg font-semibold text-on-surface">{t.Support_NewTicket()}</h3>
-                <div>
-                    <label className="text-sm text-secondary mb-1 block">{t.Support_Subject()}</label>
-                    <input
-                        type="text"
-                        data-test-id="support-subject-input"
-                        className="form-control"
-                        value={subject}
-                        onChange={e => setSubject(e.target.value)}
-                        placeholder={t.Support_Subject()}
-                    />
-                </div>
-                <div>
-                    <label className="text-sm text-secondary mb-1 block">{t.Support_Message()}</label>
-                    <textarea
-                        data-test-id="support-message-input"
-                        className="form-control"
-                        rows={6}
-                        value={message}
-                        onChange={e => setMessage(e.target.value)}
-                        placeholder={t.Support_Message() + CTRL_ENTER_HINT}
-                        onKeyDown={useCtrlEnter(handleCreate, sending || !subject.trim() || !message.trim())}
-                    />
-                </div>
-                <div className="support-thread-actions">
-                    <AttachmentPicker files={createFiles} onChange={setCreateFiles} />
-                    <SendButton
-                        onClick={handleCreate}
-                        disabled={!subject.trim() || !message.trim()}
-                        sending={sending}
-                        label={t.Support_Send()}
-                        testId="support-send-btn"
-                    />
-                    <button
-                        type="button"
-                        className="btn btn-outline-secondary"
-                        onClick={() => setShowNewForm(false)}
-                    >
-                        {t.Support_BackToList()}
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    function renderConversation() {
-        if (!selectedTicket) return null;
-
-        return (
-            <>
-                {/* Header */}
-                <div className="support-conv-header">
-                    <div className="support-conv-header-row">
-                        <h3 className="support-conv-title">{selectedTicket.subject}</h3>
-                        <StatusBadge status={selectedTicket.status} />
-                    </div>
-                    <div className="support-conv-meta">
-                        {t.Support_Created()}: {formatTs(selectedTicket.created_at)} &middot; {t.Support_Updated()}: {formatTs(selectedTicket.updated_at)}
-                    </div>
-                </div>
-
-                <SupportMessageList
-                    messages={messages}
-                    loading={loadingMessages}
-                    emptyText={t.Support_NoMessages()}
-                    loadingText={t.User_Loading()}
-                    endRef={messagesEndRef}
-                />
-
-                {/* Reply input */}
-                <div className="support-thread-input">
-                    <textarea
-                        data-test-id="support-reply-input"
-                        className="form-control text-sm w-full mb-2"
-                        rows={2}
-                        aria-label={t.Support_Reply()}
-                        placeholder={t.Support_Reply() + '...' + CTRL_ENTER_HINT}
-                        value={replyText}
-                        onChange={e => setReplyText(e.target.value)}
-                        onKeyDown={useCtrlEnter(handleReply, sending || !replyText.trim())}
-                    />
-                    <div className="support-thread-actions">
-                        <AttachmentPicker files={replyFiles} onChange={setReplyFiles} />
-                        <SendButton
-                            onClick={handleReply}
-                            disabled={!replyText.trim()}
-                            sending={sending}
-                            label={t.Support_Send()}
-                            testId="support-reply-btn"
-                        />
-                    </div>
-                </div>
-            </>
-        );
-    }
 };

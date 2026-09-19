@@ -27,6 +27,35 @@ const AttachmentsMark: React.FC<{count: number; convId: number}> = ({count, conv
     );
 };
 
+const ConversationHead: React.FC<{conv: ImConversation; partnerName: string}> = ({conv, partnerName}) => (
+    <div className="support-ticket-row-head">
+        {/* Клик по имени открывает карточку человека, а не диалог —
+            поэтому всплытие останавливается. */}
+        <UserLink
+            id={conv.partner_id}
+            name={partnerName}
+            className="support-ticket-title common-link"
+            onClick={e => e.stopPropagation()}
+        />
+        {conv.unread_count > 0 && (
+            <span data-test-id={`im-unread-badge-${conv.id}`} className="support-unread-badge">
+                {conv.unread_count}
+            </span>
+        )}
+    </div>
+);
+
+const ConversationMeta: React.FC<{conv: ImConversation}> = ({conv}) => (
+    <div className="support-ticket-row-meta">
+        <span className="im-conv-snippet">
+            {conv.last_message_is_mine && <span className="im-conv-you-prefix">{t.IM_YouPrefix()}</span>}
+            {conv.last_message_snippet}
+        </span>
+        <AttachmentsMark count={conv.attachments_count ?? 0} convId={conv.id} />
+        <span className="im-conv-time">{formatTs(conv.last_message_at)}</span>
+    </div>
+);
+
 interface Props {
     conv: ImConversation;
     active: boolean;
@@ -52,29 +81,8 @@ export const ConversationRow: React.FC<Props> = ({conv, active, onSelect}) => {
                     className="mt-0.5"
                 />
                 <div className="min-w-0 flex-1">
-                    <div className="support-ticket-row-head">
-                        {/* Клик по имени открывает карточку человека, а не диалог —
-                            поэтому всплытие останавливается. */}
-                        <UserLink
-                            id={conv.partner_id}
-                            name={partnerName}
-                            className="support-ticket-title common-link"
-                            onClick={e => e.stopPropagation()}
-                        />
-                        {conv.unread_count > 0 && (
-                            <span data-test-id={`im-unread-badge-${conv.id}`} className="support-unread-badge">
-                                {conv.unread_count}
-                            </span>
-                        )}
-                    </div>
-                    <div className="support-ticket-row-meta">
-                        <span className="im-conv-snippet">
-                            {conv.last_message_is_mine && <span className="im-conv-you-prefix">{t.IM_YouPrefix()}</span>}
-                            {conv.last_message_snippet}
-                        </span>
-                        <AttachmentsMark count={conv.attachments_count ?? 0} convId={conv.id} />
-                        <span className="im-conv-time">{formatTs(conv.last_message_at)}</span>
-                    </div>
+                    <ConversationHead conv={conv} partnerName={partnerName} />
+                    <ConversationMeta conv={conv} />
                 </div>
             </div>
         </div>
