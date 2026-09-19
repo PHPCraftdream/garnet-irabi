@@ -2,7 +2,7 @@ import * as React from 'react';
 import {useState, useRef} from 'react';
 import {createPortal} from 'react-dom';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {SlotItem, ExpertMap} from '../types';
+import {SlotItem, ExpertMap, ExpertInfo} from '../types';
 import {EntityLink, userLinks} from '../../../../Common/people/EntityLinks';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {formatTime} from '@common/Utils/Time/DateUtils';
@@ -19,6 +19,72 @@ interface SlotCardProps {
     onBookClick?: (slot: SlotItem) => void;
     isModerator?: boolean;
     canBook?: boolean;
+}
+
+function SlotTooltip({slot, expert, startTime, endTime, style}: {slot: SlotItem; expert?: ExpertInfo; startTime: string; endTime: string; style: React.CSSProperties}) {
+    return (
+        <div className="w-56 p-3 rounded-lg border-2 border-accent bg-surface-alt text-xs pointer-events-none shadow-2xl"
+             style={style}
+             data-test-id={`slot-tooltip-${slot.id}`}>
+            <div className="font-semibold text-sm mb-2">{startTime} — {endTime}</div>
+            {expert && <div className="mb-1"><span className="text-muted">{t.Slot_Expert()}:</span> <UserLink id={slot.expert_id} name={expert.display_name} isExpert className="text-accent hover:underline pointer-events-auto" /></div>}
+            <div className="mb-1"><span className="text-muted">{t.Slot_Duration()}:</span> {slot.duration_min || 60} {t.Slot_Duration_Min()}</div>
+            <div className="mb-1"><span className="text-muted">{t.Slots_PriceRange()}:</span> {slot.cost} &#8381;</div>
+            <div className="mb-1"><span className="text-muted">{t.Slot_Format()}:</span> {slot.is_online ? t.Slots_Online() : t.Slots_Offline()}</div>
+            {slotPlaceValue(slot) && <div className="mb-1"><span className="text-muted">{slotPlaceLabel(slot)}:</span> {slotPlaceValue(slot)}</div>}
+            <div className="mb-1"><span className="text-muted">{t.Slot_Type()}:</span> {slot.max_users > 1 ? t.Slots_Group() : t.Slots_Individual()}</div>
+            {/* D-196: тултип называл вместимость и молчал о занятости,
+                хотя карточка рядом уже показывала остаток. Человек,
+                открывший подробности, узнавал меньше, чем видел до
+                этого. Строка считается тем же помощником. */}
+            <div><span className="text-muted">{t.Slot_Seats()}:</span> {slot.max_users || 1}
+                {slotSeatsLeftLine(slot) && (
+                    <span className="text-muted ml-1" data-test-id={`slot-tooltip-seats-left-${slot.id}`}>({slotSeatsLeftLine(slot)})</span>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function SlotCardMeta({slot}: {slot: SlotItem}) {
+    return (
+        <div className={`flex items-center gap-1.5 text-[11px] text-muted ${slot.max_users > 1 ? 'mb-2' : 'mb-5'}`}>
+            <span className="inline-flex items-center gap-1">
+                {slot.is_online ? (
+                    <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M2 5a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V5z"/><path d="M14 6l-2 2 2 2V6z" fill="currentColor"/></svg>
+                ) : (
+                    <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M2 8L8 2l6 6"/><path d="M3 7v7h10V7"/></svg>
+                )}
+                {slotFormatLine(slot)}
+            </span>
+            {slot.duration_min && (
+                <>
+                    <span className="text-default/30">·</span>
+                    <span className="tabular-nums">{slot.duration_min} {t.Slot_Duration_Min()}</span>
+                </>
+            )}
+        </div>
+    );
+}
+
+function SlotGroupBadge({slot}: {slot: SlotItem}) {
+    return (
+        <div className="mb-5">
+            <span className="badge text-bg-primary" data-test-id={`slot-group-badge-${slot.id}`}>
+                {t.Slot_GroupBadge([slot.max_users])}
+            </span>
+            {/* D-186: бейдж называл только вместимость, и остаток мест
+                был не виден нигде. Ученик не понимал, успевает ли он,
+                а при неудачной брони не мог отличить «место только что
+                заняли» от поломки. Считается общим помощником — рядом
+                в тултипе та же строка, и разойтись им нечем (D-196). */}
+            {slotSeatsLeftLine(slot) && (
+                <span className="text-muted text-[11px] ml-2" data-test-id={`slot-seats-left-${slot.id}`}>
+                    {slotSeatsLeftLine(slot)}
+                </span>
+            )}
+        </div>
+    );
 }
 
 export const SlotCard: React.FC<SlotCardProps> = ({slot, experts, isBooked, bookingStatus, onBookClick, isModerator = false, canBook = false}) => {
@@ -64,42 +130,11 @@ export const SlotCard: React.FC<SlotCardProps> = ({slot, experts, isBooked, book
                 </div>
             )}
 
-            <div className={`flex items-center gap-1.5 text-[11px] text-muted ${slot.max_users > 1 ? 'mb-2' : 'mb-5'}`}>
-                <span className="inline-flex items-center gap-1">
-                    {slot.is_online ? (
-                        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M2 5a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V5z"/><path d="M14 6l-2 2 2 2V6z" fill="currentColor"/></svg>
-                    ) : (
-                        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M2 8L8 2l6 6"/><path d="M3 7v7h10V7"/></svg>
-                    )}
-                    {slotFormatLine(slot)}
-                </span>
-                {slot.duration_min && (
-                    <>
-                        <span className="text-default/30">·</span>
-                        <span className="tabular-nums">{slot.duration_min} {t.Slot_Duration_Min()}</span>
-                    </>
-                )}
-            </div>
+            <SlotCardMeta slot={slot} />
 
             {/* D-149: групповое занятие ничем не выделялось в общем каталоге —
                 видно было только по числу мест в тултипе при наведении. */}
-            {slot.max_users > 1 && (
-                <div className="mb-5">
-                    <span className="badge text-bg-primary" data-test-id={`slot-group-badge-${slot.id}`}>
-                        {t.Slot_GroupBadge([slot.max_users])}
-                    </span>
-                    {/* D-186: бейдж называл только вместимость, и остаток мест
-                        был не виден нигде. Ученик не понимал, успевает ли он,
-                        а при неудачной брони не мог отличить «место только что
-                        заняли» от поломки. Считается общим помощником — рядом
-                        в тултипе та же строка, и разойтись им нечем (D-196). */}
-                    {slotSeatsLeftLine(slot) && (
-                        <span className="text-muted text-[11px] ml-2" data-test-id={`slot-seats-left-${slot.id}`}>
-                            {slotSeatsLeftLine(slot)}
-                        </span>
-                    )}
-                </div>
-            )}
+            {slot.max_users > 1 && (<SlotGroupBadge slot={slot} />)}
 
             {isBooked ? (
                 <button
@@ -133,31 +168,7 @@ export const SlotCard: React.FC<SlotCardProps> = ({slot, experts, isBooked, book
             ) : null}
 
             {/* Tooltip rendered via portal — floats above everything, no scrollbar issues */}
-            {showTooltip && createPortal(
-                <div className="w-56 p-3 rounded-lg border-2 border-accent bg-surface-alt text-xs pointer-events-none shadow-2xl"
-                     style={getTooltipStyle()}
-                     data-test-id={`slot-tooltip-${slot.id}`}>
-                    <div className="font-semibold text-sm mb-2">{startTime} — {endTime}</div>
-                    {expert && <div className="mb-1"><span className="text-muted">{t.Slot_Expert()}:</span> <UserLink id={slot.expert_id} name={expert.display_name} isExpert className="text-accent hover:underline pointer-events-auto" /></div>}
-                    <div className="mb-1"><span className="text-muted">{t.Slot_Duration()}:</span> {slot.duration_min || 60} {t.Slot_Duration_Min()}</div>
-                    <div className="mb-1"><span className="text-muted">{t.Slots_PriceRange()}:</span> {slot.cost} &#8381;</div>
-                    <div className="mb-1"><span className="text-muted">{t.Slot_Format()}:</span> {slot.is_online ? t.Slots_Online() : t.Slots_Offline()}</div>
-                    {slotPlaceValue(slot) && <div className="mb-1"><span className="text-muted">{slotPlaceLabel(slot)}:</span> {slotPlaceValue(slot)}</div>}
-                    <div className="mb-1"><span className="text-muted">{t.Slot_Type()}:</span> {slot.max_users > 1 ? t.Slots_Group() : t.Slots_Individual()}</div>
-                    {/* D-196: тултип называл вместимость и молчал о занятости,
-                        хотя карточка рядом уже показывала остаток. Человек,
-                        открывший подробности, узнавал меньше, чем видел до
-                        этого. Строка считается тем же помощником. */}
-                    <div><span className="text-muted">{t.Slot_Seats()}:</span> {slot.max_users || 1}
-                        {slotSeatsLeftLine(slot) && (
-                            <span className="text-muted ml-1" data-test-id={`slot-tooltip-seats-left-${slot.id}`}>
-                                ({slotSeatsLeftLine(slot)})
-                            </span>
-                        )}
-                    </div>
-                </div>,
-                document.body
-            )}
+            {showTooltip && createPortal(<SlotTooltip slot={slot} expert={expert} startTime={startTime} endTime={endTime} style={getTooltipStyle()} />, document.body)}
         </div>
     );
 };

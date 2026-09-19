@@ -2,12 +2,12 @@ import * as React from 'react';
 import {useState, useMemo, useCallback} from 'react';
 import {D} from '@common/Support/Debug/D';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {pluralize} from '@common/Utils/Ui/pluralize';
 import {SlotsCalendarProps, SlotItem, FiltersState, DayInfo, SlotStatusFilter} from './types';
 import {SlotsFilters} from './Slot/SlotsFilters';
 import {SlotsStatusFilter} from './Slot/SlotsStatusFilter';
 import {WeekGrid} from './Week/WeekGrid';
 import {WeekNavigation} from './Week/WeekNavigation';
+import {WeekSlotCount} from './Week/WeekSlotCount';
 import BookingModal from './Booking/BookingModal';
 import SlotDetailModal from './Slot/SlotDetailModal';
 import {IrabiPreviewProvider} from '../../../Common/people/IrabiPreviewProvider';
@@ -46,6 +46,26 @@ const DEFAULT_FILTERS: FiltersState = {
     slotType: 'all',
     onlineFilter: 'all',
 };
+
+const OwnSlotsHiddenNotice: React.FC = () => (
+    <p className="text-sm text-secondary mb-3" data-test-id="own-slots-hidden-notice">
+        {t.Slots_OwnHiddenNotice()}
+    </p>
+);
+
+const SlotsNoMatch: React.FC<{onReset: () => void}> = ({onReset}) => (
+    <div className="text-center text-muted py-8 mt-4" data-test-id="slots-no-match">
+        <div className="text-lg mb-2">{t.Slots_NoMatch()}</div>
+        <button
+            type="button"
+            className="text-sm text-accent hover:text-accent-hover underline"
+            onClick={onReset}
+            data-test-id="slots-reset-filters"
+        >
+            {t.Slot_Reset()}
+        </button>
+    </div>
+);
 
 const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots: initialSlots, experts, title, bookedSlotIds = [], bookedSlotStatuses = {}, bookedSlotBookingIds = {}, csrf = '', balance = 0, bookUrl = '/slots/~book', isModerator = false, canBook = false, isExpertViewer = false, quickChatUrl, sendUrl, currentAccountId, cancelReasons = {}}) => {
     // D-198: занятия приезжали в пропсах и не менялись уже никогда. Всё
@@ -228,6 +248,49 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots: initialS
         }
     }, [effectiveBookedIds, canBook]);
 
+    const handleBooked = useCallback((justBookedIds: number[]) => {
+        // Модалка может отправить не только основной слот, но
+        // и «ещё слоты» этого же преподавателя, выбранные тут
+        // же (ExtraSlotPicker) — раньше статус/занятость
+        // обновляли только у bookingSlot.id, и дополнительные
+        // выборы застревали в прежнем виде до перезагрузки.
+        setBookedIds(prev => new Set([...prev, ...justBookedIds]));
+        setSlotStatuses(prev => {
+            const next = {...prev};
+            for (const id of justBookedIds) next[String(id)] = 'pending';
+            return next;
+        });
+        // Место занято ИМЕННО этим действием, и это известно
+        // сразу — ждать ответа сервера ради своего же места не
+        // нужно. Экран, который секунду после оплаты
+        // показывает «мест ещё много», читается как «деньги
+        // списались зря» (нашла user-6, D-203). Оптимистичный
+        // +1 закрывает саму вспышку; refreshSlot() ниже всё
+        // равно перечитает слот с сервера и поправит число,
+        // если место успел занять кто-то ещё параллельно.
+        setSlots(prev => prev.map(s => (
+            justBookedIds.includes(s.id)
+                ? {...s, booked_count: Math.min((s.booked_count ?? 0) + 1, s.max_users || 1)}
+                : s
+        )));
+        setBookingSlot(null);
+        // The cost has just left the account; the header still
+        // shows what it held when the page loaded.
+        refreshLiveCounts();
+        // Занятость слота изменило то же самое действие — и
+        // до этой правки она единственная оставалась прежней
+        // до перезагрузки (D-198).
+        for (const id of justBookedIds) void refreshSlot(id);
+    }, [refreshSlot]);
+    const handleCancelled = useCallback((slotId: number) => {
+        setSlotStatuses(prev => ({...prev, [String(slotId)]: 'cancelled'}));
+        setDetailSlot(null);
+        // Отмена освободила место — и деньги вернулись.
+        // Обе половины результата обновляются вместе.
+        refreshLiveCounts();
+        void refreshSlot(slotId);
+    }, [refreshSlot]);
+
     return (
         <div data-test-id="slots-calendar">
             <PageHeader
@@ -257,11 +320,7 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots: initialS
 
                 <div>
                     <TimezoneNotice infoOnly />
-                    {isExpertViewer && (
-                        <p className="text-sm text-secondary mb-3" data-test-id="own-slots-hidden-notice">
-                            {t.Slots_OwnHiddenNotice()}
-                        </p>
-                    )}
+                    {isExpertViewer && <OwnSlotsHiddenNotice />}
                 <WeekNavigation
                     weekStartUnix={weekData.weekStartUnix}
                     weekEndUnix={weekData.weekEndUnix}
@@ -286,26 +345,14 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots: initialS
 
                 {/* Slot count for current week */}
                 {weekData.weekSlotCount > 0 && (
-                    <div className="text-xs text-muted text-right mt-3" data-test-id="week-slot-count">
-                        {pluralize(weekData.weekSlotCount, t.Slot_Plural_1(), t.Slot_Plural_2(), t.Slot_Plural_5())}
-                    </div>
+                    <WeekSlotCount count={weekData.weekSlotCount} />
                 )}
                 </div>
             </div>
 
             {/* No filtered slots at all */}
             {!hasAnyFilteredSlots && (
-                <div className="text-center text-muted py-8 mt-4" data-test-id="slots-no-match">
-                    <div className="text-lg mb-2">{t.Slots_NoMatch()}</div>
-                    <button
-                        type="button"
-                        className="text-sm text-accent hover:text-accent-hover underline"
-                        onClick={() => setFilters(DEFAULT_FILTERS)}
-                        data-test-id="slots-reset-filters"
-                    >
-                        {t.Slot_Reset()}
-                    </button>
-                </div>
+                <SlotsNoMatch onReset={() => setFilters(DEFAULT_FILTERS)} />
             )}
 
             {bookingSlot && (
@@ -318,40 +365,7 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots: initialS
                     bookUrl={bookUrl}
                     csrf={csrf}
                     onClose={() => setBookingSlot(null)}
-                    onBooked={(justBookedIds) => {
-                        // Модалка может отправить не только основной слот, но
-                        // и «ещё слоты» этого же преподавателя, выбранные тут
-                        // же (ExtraSlotPicker) — раньше статус/занятость
-                        // обновляли только у bookingSlot.id, и дополнительные
-                        // выборы застревали в прежнем виде до перезагрузки.
-                        setBookedIds(prev => new Set([...prev, ...justBookedIds]));
-                        setSlotStatuses(prev => {
-                            const next = {...prev};
-                            for (const id of justBookedIds) next[String(id)] = 'pending';
-                            return next;
-                        });
-                        // Место занято ИМЕННО этим действием, и это известно
-                        // сразу — ждать ответа сервера ради своего же места не
-                        // нужно. Экран, который секунду после оплаты
-                        // показывает «мест ещё много», читается как «деньги
-                        // списались зря» (нашла user-6, D-203). Оптимистичный
-                        // +1 закрывает саму вспышку; refreshSlot() ниже всё
-                        // равно перечитает слот с сервера и поправит число,
-                        // если место успел занять кто-то ещё параллельно.
-                        setSlots(prev => prev.map(s => (
-                            justBookedIds.includes(s.id)
-                                ? {...s, booked_count: Math.min((s.booked_count ?? 0) + 1, s.max_users || 1)}
-                                : s
-                        )));
-                        setBookingSlot(null);
-                        // The cost has just left the account; the header still
-                        // shows what it held when the page loaded.
-                        refreshLiveCounts();
-                        // Занятость слота изменило то же самое действие — и
-                        // до этой правки она единственная оставалась прежней
-                        // до перезагрузки (D-198).
-                        for (const id of justBookedIds) void refreshSlot(id);
-                    }}
+                    onBooked={handleBooked}
                 />
             )}
 
@@ -367,14 +381,7 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots: initialS
                     sendUrl={sendUrl}
                     currentAccountId={currentAccountId}
                     onClose={() => setDetailSlot(null)}
-                    onCancelled={(slotId) => {
-                        setSlotStatuses(prev => ({...prev, [String(slotId)]: 'cancelled'}));
-                        setDetailSlot(null);
-                        // Отмена освободила место — и деньги вернулись.
-                        // Обе половины результата обновляются вместе.
-                        refreshLiveCounts();
-                        void refreshSlot(slotId);
-                    }}
+                    onCancelled={handleCancelled}
                 />
             )}
         </div>

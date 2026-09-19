@@ -47,6 +47,104 @@ function statusText(status: string): string {
     }
 }
 
+function ModalHeader({bookingStatus, onClose}: {bookingStatus: string; onClose: () => void}) {
+    return (
+        <div className="flex justify-between items-center p-4 border-b border-default sticky top-0 bg-surface rounded-t-lg z-10">
+            <div className="flex items-center gap-3">
+                <h3 className="text-lg font-semibold">{t.Slot_Details()}</h3>
+                <span className={`inline-block text-xs px-2 py-0.5 rounded font-medium ${statusBadgeClass(bookingStatus)}`}>
+                    {statusText(bookingStatus)}
+                </span>
+            </div>
+            <button
+                type="button"
+                className="fg-modal-close-x"
+                title={t.Action_Close()}
+                aria-label={t.Action_Close()}
+                onClick={onClose}
+                data-test-id="slot-detail-close"
+            >
+                &times;
+            </button>
+        </div>
+    );
+}
+
+function QuickChatSection({slot, quickChatUrl, sendUrl, currentAccountId}: {slot: SlotItem; quickChatUrl: string; sendUrl: string; currentAccountId: number}) {
+    return (
+        <div className="border border-default rounded-lg overflow-hidden" data-test-id="slot-detail-quickchat">
+            <div className="px-3 py-2 border-b border-default bg-surface-alt text-sm font-medium">
+                {t.QuickChat_Title()}
+            </div>
+            <QuickChat
+                partnerId={slot.expert_id}
+                quickChatUrl={quickChatUrl}
+                sendUrl={sendUrl}
+                currentAccountId={currentAccountId}
+                maxMessages={5}
+            />
+        </div>
+    );
+}
+
+function CancelReasonNotice({reason}: {reason: string}) {
+    return (
+        <div className="px-3 py-2 rounded-lg bg-surface-alt border border-default" data-test-id="slot-detail-cancel-reason">
+            <div className="text-sm text-muted mb-1">{t.Slot_CancelReason()}</div>
+            <div className="text-sm">{reason}</div>
+        </div>
+    );
+}
+
+function CancelBookingSection({
+    canCancel, showCancelForm, bookingStatus, slot, reason, reasonError, cancelError, sending,
+    onShow, onReasonChange, onSubmit, onDismiss,
+}: {
+    canCancel: boolean;
+    showCancelForm: boolean;
+    bookingStatus: string;
+    slot: SlotItem;
+    reason: string;
+    reasonError: string;
+    cancelError: string;
+    sending: boolean;
+    onShow: () => void;
+    onReasonChange: (v: string) => void;
+    onSubmit: () => void;
+    onDismiss: () => void;
+}) {
+    return (
+        <>
+            {canCancel && !showCancelForm && (
+                <button
+                    type="button"
+                    className="w-full btn btn-outline-warning"
+                    onClick={onShow}
+                    data-test-id="slot-detail-cancel-btn"
+                >
+                    {t.Slot_CancelBooking()}
+                </button>
+            )}
+
+            {canCancel && showCancelForm && (
+                <SlotCancelForm
+                    bookingStatus={bookingStatus}
+                    cost={slot.cost}
+                    penaltyPercent={slot.cancellation_penalty_percent}
+                    startAt={slot.start_at}
+                    reason={reason}
+                    reasonError={reasonError}
+                    cancelError={cancelError}
+                    sending={sending}
+                    onReasonChange={onReasonChange}
+                    onSubmit={onSubmit}
+                    onDismiss={onDismiss}
+                />
+            )}
+        </>
+    );
+}
+
 export default function SlotDetailModal({
     slot, experts, bookingStatus, bookingId, csrf: _csrf, cancelReason,
     quickChatUrl, sendUrl, currentAccountId,
@@ -114,24 +212,7 @@ export default function SlotDetailModal({
                 data-test-id="slot-detail-modal"
             >
                 {/* Sticky header */}
-                <div className="flex justify-between items-center p-4 border-b border-default sticky top-0 bg-surface rounded-t-lg z-10">
-                    <div className="flex items-center gap-3">
-                        <h3 className="text-lg font-semibold">{t.Slot_Details()}</h3>
-                        <span className={`inline-block text-xs px-2 py-0.5 rounded font-medium ${statusBadgeClass(bookingStatus)}`}>
-                            {statusText(bookingStatus)}
-                        </span>
-                    </div>
-                    <button
-                        type="button"
-                        className="fg-modal-close-x"
-                        title={t.Action_Close()}
-                        aria-label={t.Action_Close()}
-                        onClick={onClose}
-                        data-test-id="slot-detail-close"
-                    >
-                        &times;
-                    </button>
-                </div>
+                <ModalHeader bookingStatus={bookingStatus} onClose={onClose} />
 
                 {/* Scrollable content */}
                 <div className="overflow-y-auto flex-1 p-4 space-y-4">
@@ -141,56 +222,26 @@ export default function SlotDetailModal({
                     {expert && <SlotExpertBlock expertId={slot.expert_id} expert={expert} />}
 
                     {/* Quick Chat section */}
-                    {quickChatUrl && sendUrl && currentAccountId && expert && (
-                        <div className="border border-default rounded-lg overflow-hidden" data-test-id="slot-detail-quickchat">
-                            <div className="px-3 py-2 border-b border-default bg-surface-alt text-sm font-medium">
-                                {t.QuickChat_Title()}
-                            </div>
-                            <QuickChat
-                                partnerId={slot.expert_id}
-                                quickChatUrl={quickChatUrl}
-                                sendUrl={sendUrl}
-                                currentAccountId={currentAccountId}
-                                maxMessages={5}
-                            />
-                        </div>
-                    )}
+                    {quickChatUrl && sendUrl && currentAccountId && expert && (<QuickChatSection slot={slot} quickChatUrl={quickChatUrl} sendUrl={sendUrl} currentAccountId={currentAccountId} />)}
 
                     {/* Cancellation reason (if slot was cancelled) */}
-                    {cancelReason && (
-                        <div className="px-3 py-2 rounded-lg bg-surface-alt border border-default" data-test-id="slot-detail-cancel-reason">
-                            <div className="text-sm text-muted mb-1">{t.Slot_CancelReason()}</div>
-                            <div className="text-sm">{cancelReason}</div>
-                        </div>
-                    )}
+                    {cancelReason && <CancelReasonNotice reason={cancelReason} />}
 
                     {/* Cancel booking form */}
-                    {canCancel && !showCancelForm && (
-                        <button
-                            type="button"
-                            className="w-full btn btn-outline-warning"
-                            onClick={() => setShowCancelForm(true)}
-                            data-test-id="slot-detail-cancel-btn"
-                        >
-                            {t.Slot_CancelBooking()}
-                        </button>
-                    )}
-
-                    {canCancel && showCancelForm && (
-                        <SlotCancelForm
-                            bookingStatus={bookingStatus}
-                            cost={slot.cost}
-                            penaltyPercent={slot.cancellation_penalty_percent}
-                            startAt={slot.start_at}
-                            reason={reason}
-                            reasonError={reasonError}
-                            cancelError={cancelError}
-                            sending={sending}
-                            onReasonChange={v => { setReason(v); setReasonError(''); }}
-                            onSubmit={handleCancelSubmit}
-                            onDismiss={() => { setShowCancelForm(false); setReason(''); setReasonError(''); }}
-                        />
-                    )}
+                    <CancelBookingSection
+                        canCancel={canCancel}
+                        showCancelForm={showCancelForm}
+                        bookingStatus={bookingStatus}
+                        slot={slot}
+                        reason={reason}
+                        reasonError={reasonError}
+                        cancelError={cancelError}
+                        sending={sending}
+                        onShow={() => setShowCancelForm(true)}
+                        onReasonChange={v => { setReason(v); setReasonError(''); }}
+                        onSubmit={handleCancelSubmit}
+                        onDismiss={() => { setShowCancelForm(false); setReason(''); setReasonError(''); }}
+                    />
                 </div>
             </div>
         </div></Portal>
