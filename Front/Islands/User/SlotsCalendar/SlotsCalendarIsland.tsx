@@ -318,10 +318,31 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots: initialS
                     bookUrl={bookUrl}
                     csrf={csrf}
                     onClose={() => setBookingSlot(null)}
-                    onBooked={() => {
-                        // After booking, add slot to booked set with pending status
-                        setBookedIds(prev => new Set([...prev, bookingSlot.id]));
-                        setSlotStatuses(prev => ({...prev, [String(bookingSlot.id)]: 'pending'}));
+                    onBooked={(justBookedIds) => {
+                        // Модалка может отправить не только основной слот, но
+                        // и «ещё слоты» этого же преподавателя, выбранные тут
+                        // же (ExtraSlotPicker) — раньше статус/занятость
+                        // обновляли только у bookingSlot.id, и дополнительные
+                        // выборы застревали в прежнем виде до перезагрузки.
+                        setBookedIds(prev => new Set([...prev, ...justBookedIds]));
+                        setSlotStatuses(prev => {
+                            const next = {...prev};
+                            for (const id of justBookedIds) next[String(id)] = 'pending';
+                            return next;
+                        });
+                        // Место занято ИМЕННО этим действием, и это известно
+                        // сразу — ждать ответа сервера ради своего же места не
+                        // нужно. Экран, который секунду после оплаты
+                        // показывает «мест ещё много», читается как «деньги
+                        // списались зря» (нашла user-6, D-203). Оптимистичный
+                        // +1 закрывает саму вспышку; refreshSlot() ниже всё
+                        // равно перечитает слот с сервера и поправит число,
+                        // если место успел занять кто-то ещё параллельно.
+                        setSlots(prev => prev.map(s => (
+                            justBookedIds.includes(s.id)
+                                ? {...s, booked_count: Math.min((s.booked_count ?? 0) + 1, s.max_users || 1)}
+                                : s
+                        )));
                         setBookingSlot(null);
                         // The cost has just left the account; the header still
                         // shows what it held when the page loaded.
@@ -329,7 +350,7 @@ const SlotsCalendarIslandInner: React.FC<SlotsCalendarProps> = ({slots: initialS
                         // Занятость слота изменило то же самое действие — и
                         // до этой правки она единственная оставалась прежней
                         // до перезагрузки (D-198).
-                        void refreshSlot(bookingSlot.id);
+                        for (const id of justBookedIds) void refreshSlot(id);
                     }}
                 />
             )}

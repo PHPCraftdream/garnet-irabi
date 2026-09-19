@@ -19,7 +19,7 @@ export interface SlotBookingData {
 
 interface UseSlotBookingOptions {
     /** Run after a successful booking (e.g. reload a list). The modal closes regardless. */
-    onBooked?: () => void;
+    onBooked?: (bookedIds: number[]) => void;
 }
 
 
@@ -78,7 +78,7 @@ export function useSlotBooking(options: UseSlotBookingOptions = {}) {
             bookUrl={bookData.bookUrl}
             csrf={bookData.csrf}
             onClose={() => setBookData(null)}
-            onBooked={() => {
+            onBooked={(bookedIds) => {
                 setBookData(null);
                 // Бронирование двигает деньги, а баланс висит в шапке на
                 // каждой странице. Раньше его обновляли только те экраны,
@@ -89,7 +89,7 @@ export function useSlotBooking(options: UseSlotBookingOptions = {}) {
                 // крючке, а не в каждом вызывающем экране: следующий экран,
                 // который научится бронировать, получит его даром.
                 refreshLiveCounts();
-                onBooked?.();
+                onBooked?.(bookedIds);
             }}
         />
     ) : null;

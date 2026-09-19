@@ -25,7 +25,8 @@ interface Props {
     bookUrl: string;
     csrf: string;
     onClose: () => void;
-    onBooked: () => void;
+    /** Called with every slot id actually submitted — not just the one the modal opened for. */
+    onBooked: (bookedIds: number[]) => void;
 }
 
 export default function BookingModal({slot, allSlots, experts, bookedIds, balance, bookUrl, csrf, onClose, onBooked}: Props) {
@@ -97,7 +98,7 @@ export default function BookingModal({slot, allSlots, experts, bookedIds, balanc
                     setError(r.error);
                 } else {
                     D('booking.success', {count: selected.size});
-                    onBooked();
+                    onBooked([...selected]);
                     onClose();
                 }
             } catch (e: any) {
