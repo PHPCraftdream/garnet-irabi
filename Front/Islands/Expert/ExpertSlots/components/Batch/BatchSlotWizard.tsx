@@ -3,15 +3,12 @@ import {useState, useMemo} from 'react';
 import {D} from '@common/Support/Debug/D';
 import {DurationSelect} from '@common/Components/Controls/DurationSelect';
 import {DateInput} from '@common/Components/ui/DateInput';
-import {Calendar} from '@common/Components/Controls/Calendar';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 import {batchPreview, batchCreate} from '../../api';
 import {useBatchSlots} from '../../hooks/useBatchSlots';
-import {BatchPreviewTable} from './BatchPreviewTable';
+import {BatchPreviewSection} from './BatchPreviewSection';
 import {SlotFormatFields} from '../Slot/SlotFormatFields';
 import {Slot} from '../../types';
-
-const DAY_NAMES = () => [t.Cal_Sun(), t.Cal_Mon(), t.Cal_Tue(), t.Cal_Wed(), t.Cal_Thu(), t.Cal_Fri(), t.Cal_Sat()];
 
 interface Props {
     onSuccess: (msg: string, newSlots?: Slot[]) => void;
@@ -19,6 +16,103 @@ interface Props {
     onConfirm: (message: string, items: string[]) => Promise<boolean>;
     onCancel?: () => void;
 }
+
+interface BatchFieldProps {
+    label: string;
+    children: React.ReactNode;
+}
+
+const BatchField: React.FC<BatchFieldProps> = ({label, children}) => (
+    <div>
+        <label className="form-label">{label}</label>
+        {children}
+    </div>
+);
+
+interface BatchDateRangeRowProps {
+    startDate: string;
+    setStartDate: (v: string) => void;
+    endDate: string;
+}
+
+const BatchDateRangeRow: React.FC<BatchDateRangeRowProps> = ({startDate, setStartDate, endDate}) => (
+    <div className="grid grid-cols-2 gap-3">
+        <BatchField label={t.Batch_StartDate()}>
+            <DateInput name="start_date" data-test-id="batch-start-date" value={startDate} onChange={e => setStartDate(e.target.value)} required />
+        </BatchField>
+        <BatchField label={t.Batch_EndDate()}>
+            <input type="text" className="form-control" data-test-id="batch-end-date" value={endDate} readOnly disabled />
+        </BatchField>
+    </div>
+);
+
+interface BatchParamsRowProps {
+    count: number;
+    setCount: (v: number) => void;
+    perWeek: number;
+    setPerWeek: (v: number) => void;
+    batchTime: string;
+    setBatchTime: (v: string) => void;
+    batchDuration: number;
+    setBatchDuration: (v: number) => void;
+    batchCost: number;
+    setBatchCost: (v: number) => void;
+}
+
+const BatchParamsRow: React.FC<BatchParamsRowProps> = ({count, setCount, perWeek, setPerWeek, batchTime, setBatchTime, batchDuration, setBatchDuration, batchCost, setBatchCost}) => (
+    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <BatchField label={t.Batch_Count()}>
+            <input type="number" name="count" data-test-id="batch-count" className="form-control" value={count} onChange={e => setCount(parseInt(e.target.value) || 1)} min={1} required />
+        </BatchField>
+        <BatchField label={t.Batch_PerWeek()}>
+            <input type="number" name="per_week" data-test-id="batch-per-week" className="form-control" value={perWeek} onChange={e => setPerWeek(parseInt(e.target.value) || 1)} min={1} max={7} required />
+        </BatchField>
+        <BatchField label={t.Slot_Time()}>
+            <DateInput type="time" name="batch_time" data-test-id="batch-time" value={batchTime} onChange={e => setBatchTime(e.target.value)} required />
+        </BatchField>
+        <BatchField label={t.Slot_Duration()}>
+            <DurationSelect value={batchDuration} onChange={setBatchDuration} className="form-select" name="batch_duration" data-test-id="batch-duration" />
+        </BatchField>
+        <BatchField label={t.Slot_Cost()}>
+            <input type="number" name="batch_cost" data-test-id="batch-cost" className="form-control" value={batchCost} onChange={e => setBatchCost(parseInt(e.target.value) || 0)} required />
+        </BatchField>
+    </div>
+);
+
+interface BatchFormatRowProps {
+    batchIsOnline: boolean;
+    setBatchIsOnline: (v: boolean) => void;
+    batchLocation: string;
+    setBatchLocation: (v: string) => void;
+}
+
+const BatchFormatRow: React.FC<BatchFormatRowProps> = ({batchIsOnline, setBatchIsOnline, batchLocation, setBatchLocation}) => (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <SlotFormatFields
+            isOnline={batchIsOnline}
+            location={batchLocation}
+            onIsOnlineChange={setBatchIsOnline}
+            onLocationChange={setBatchLocation}
+            idPrefix="batch"
+        />
+    </div>
+);
+
+interface BatchFormFooterProps {
+    onCancel?: () => void;
+    showPreview: boolean;
+}
+
+const BatchFormFooter: React.FC<BatchFormFooterProps> = ({onCancel, showPreview}) => (
+    <div className="flex gap-2 justify-end mb-3">
+        {onCancel && !showPreview && (
+            <button type="button" className="btn btn-secondary" onClick={onCancel}>
+                {t.Batch_Cancel()}
+            </button>
+        )}
+        <button type="submit" className="btn btn-primary" data-test-id="batch-preview-btn">{t.Batch_Preview()}</button>
+    </div>
+);
 
 export const BatchSlotWizard: React.FC<Props> = ({onSuccess, onError, onConfirm, onCancel}) => {
     const [startDate, setStartDate] = useState(() => {
@@ -156,134 +250,45 @@ export const BatchSlotWizard: React.FC<Props> = ({onSuccess, onError, onConfirm,
         <div>
             <form id="batchForm" onSubmit={handlePreview}>
                 <div className="space-y-3 mb-4">
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label className="form-label">{t.Batch_StartDate()}</label>
-                            <DateInput name="start_date" data-test-id="batch-start-date" value={startDate} onChange={e => setStartDate(e.target.value)} required />
-                        </div>
-                        <div>
-                            <label className="form-label">{t.Batch_EndDate()}</label>
-                            <input type="text" className="form-control" data-test-id="batch-end-date" value={endDate} readOnly disabled />
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                        <div>
-                            <label className="form-label">{t.Batch_Count()}</label>
-                            <input type="number" name="count" data-test-id="batch-count" className="form-control" value={count} onChange={e => setCount(parseInt(e.target.value) || 1)} min={1} required />
-                        </div>
-                        <div>
-                            <label className="form-label">{t.Batch_PerWeek()}</label>
-                            <input type="number" name="per_week" data-test-id="batch-per-week" className="form-control" value={perWeek} onChange={e => setPerWeek(parseInt(e.target.value) || 1)} min={1} max={7} required />
-                        </div>
-                        <div>
-                            <label className="form-label">{t.Slot_Time()}</label>
-                            <DateInput type="time" name="batch_time" data-test-id="batch-time" value={batchTime} onChange={e => setBatchTime(e.target.value)} required />
-                        </div>
-                        <div>
-                            <label className="form-label">{t.Slot_Duration()}</label>
-                            <DurationSelect value={batchDuration} onChange={setBatchDuration} className="form-select" name="batch_duration" data-test-id="batch-duration" />
-                        </div>
-                        <div>
-                            <label className="form-label">{t.Slot_Cost()}</label>
-                            <input type="number" name="batch_cost" data-test-id="batch-cost" className="form-control" value={batchCost} onChange={e => setBatchCost(parseInt(e.target.value) || 0)} required />
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <SlotFormatFields
-                            isOnline={batchIsOnline}
-                            location={batchLocation}
-                            onIsOnlineChange={setBatchIsOnline}
-                            onLocationChange={setBatchLocation}
-                            idPrefix="batch"
-                        />
-                    </div>
+                    <BatchDateRangeRow startDate={startDate} setStartDate={setStartDate} endDate={endDate} />
+                    <BatchParamsRow
+                        count={count}
+                        setCount={setCount}
+                        perWeek={perWeek}
+                        setPerWeek={setPerWeek}
+                        batchTime={batchTime}
+                        setBatchTime={setBatchTime}
+                        batchDuration={batchDuration}
+                        setBatchDuration={setBatchDuration}
+                        batchCost={batchCost}
+                        setBatchCost={setBatchCost}
+                    />
+                    <BatchFormatRow
+                        batchIsOnline={batchIsOnline}
+                        setBatchIsOnline={setBatchIsOnline}
+                        batchLocation={batchLocation}
+                        setBatchLocation={setBatchLocation}
+                    />
                 </div>
-                <div className="flex gap-2 justify-end mb-3">
-                    {onCancel && !showPreview && (
-                        <button type="button" className="btn btn-secondary" onClick={onCancel}>
-                            {t.Batch_Cancel()}
-                        </button>
-                    )}
-                    <button type="submit" className="btn btn-primary" data-test-id="batch-preview-btn">{t.Batch_Preview()}</button>
-                </div>
+                <BatchFormFooter onCancel={onCancel} showPreview={showPreview} />
             </form>
 
             {showPreview && (
-                <div id="batchPreview">
-                    <hr className="my-3" />
-                    <div className="mb-3">
-                        <span className="badge bg-success">{t.Batch_Available()}</span>{' '}
-                        <span className="badge bg-danger">{t.Batch_Restricted()}</span>{' '}
-                        <span className="badge bg-primary">{t.Batch_Proposed()}</span>
-                    </div>
-
-                    <div className="mb-3">
-                        <Calendar
-                            startDate={startDate}
-                            endDate={endDate}
-                            dayNames={DAY_NAMES()}
-                            isProposed={batch.isProposed}
-                            restrictedDates={batch.restrictedDates}
-                            availableDates={batch.availableDates}
-                            onDateClick={handleDateClick}
-                            idPrefix="batchCalendar"
-                            hideEmptyWeeks
-                        />
-                    </div>
-
-                    <h6>{t.Batch_ProposedDates()}:</h6>
-                    <BatchPreviewTable
-                        slots={batch.batchSlots}
-                        startDate={startDate}
-                        endDate={endDate}
-                        hasOverlap={batch.hasOverlap}
-                        hasProposedOverlap={batch.hasProposedOverlap}
-                        getDayItems={batch.getDayItems}
-                        onDateChange={batch.updateSlotDate}
-                        onTimeChange={batch.updateSlotTime}
-                        onDurationChange={batch.updateSlotDuration}
-                        onRemove={batch.removeSlot}
-                    />
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3 items-end" id="addSlotRow">
-                        <div>
-                            <label className="form-label">{t.Slot_Date()}</label>
-                            <DateInput id="addSlotDate" value={addSlotDate} onChange={e => setAddSlotDate(e.target.value)} />
-                        </div>
-                        <div>
-                            <label className="form-label">{t.Slot_Time()}</label>
-                            <DateInput type="time" id="addSlotTime" value={addSlotTime} onChange={e => setAddSlotTime(e.target.value)} />
-                        </div>
-                        <div>
-                            <label className="form-label">{t.Slot_Duration()}</label>
-                            <DurationSelect value={addSlotDuration} onChange={setAddSlotDuration} className="form-select" id="addSlotDuration" />
-                        </div>
-                        <div>
-                            <button type="button" id="addSlotBtn" className="btn btn-outline-primary w-full" title={t.Action_Add()} onClick={handleAddSlot}>+</button>
-                        </div>
-                    </div>
-
-                    <p className="text-muted" id="batchStats">
-                        {t.Batch_AvailableDays()}: {Object.keys(batch.availableDates).length} | {t.Batch_RestrictedDays()}: {Object.keys(batch.restrictedDates).length} | {t.Batch_Proposed()}: {batch.batchSlots.length}
-                    </p>
-
-                    <div className="flex gap-2 justify-end">
-                        {onCancel && (
-                            <button type="button" className="btn btn-secondary" onClick={onCancel}>
-                                {t.Batch_Cancel()}
-                            </button>
-                        )}
-                        <button
-                            type="button"
-                            id="batchCreateBtn"
-                            data-test-id="batch-create-btn"
-                            className="btn btn-success"
-                            disabled={batch.hasPastDate()}
-                            title={batch.hasPastDate() ? t.Batch_PastDate() : undefined}
-                            onClick={handleCreate}
-                        >{t.Batch_CreateAll()}</button>
-                    </div>
-                </div>
+                <BatchPreviewSection
+                    startDate={startDate}
+                    endDate={endDate}
+                    batch={batch}
+                    addSlotDate={addSlotDate}
+                    setAddSlotDate={setAddSlotDate}
+                    addSlotTime={addSlotTime}
+                    setAddSlotTime={setAddSlotTime}
+                    addSlotDuration={addSlotDuration}
+                    setAddSlotDuration={setAddSlotDuration}
+                    onAddSlot={handleAddSlot}
+                    onDateClick={handleDateClick}
+                    onCancel={onCancel}
+                    onCreate={handleCreate}
+                />
             )}
         </div>
     );

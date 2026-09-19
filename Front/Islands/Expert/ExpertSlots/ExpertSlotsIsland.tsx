@@ -6,7 +6,6 @@ import {useSending} from '@common/hooks/data/useSending';
 import {useBodyScrollLock} from '@common/hooks/ui/useBodyScrollLock';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {ConfirmModal} from '@common/Components/Feedback/ConfirmModal';
-import {Portal} from '@common/Components/Layout/Portal';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {appUrl} from '@common/Utils/Url/appUrl';
 import {tsToInputTime} from '@common/Utils/Time/DateUtils';
@@ -22,8 +21,8 @@ import {
 import {ReasonModal} from '../../../Common/Components/ReasonModal';
 import {EditSlotModal} from './components/Slot/EditSlotModal';
 import {Slot, ExpertSlotsProps} from './types';
-import {CreateSlotForm} from './components/Slot/CreateSlotForm';
-import {BatchSlotWizard} from './components/Batch/BatchSlotWizard';
+import {CreateSlotModal} from './components/Slot/CreateSlotModal';
+import {BatchSlotModal} from './components/Batch/BatchSlotModal';
 import {ExpertCalendar} from './components/ExpertCalendar';
 import {IrabiPreviewProvider} from '../../../Common/people/IrabiPreviewProvider';
 import {usePreview} from '@common/Components/UserPreviewModal/PreviewContext';
@@ -266,69 +265,23 @@ const ExpertSlotsIslandInner: React.FC<ExpertSlotsProps> = (props) => {
             </div>
 
             {/* Create slot modal */}
-            {showCreateModal && (
-                <Portal><div
-                    className="fg-modal-overlay"
-                    onClick={(e) => { if (e.target === e.currentTarget) setShowCreateModal(false); }}
-                    data-test-id="create-slot-modal"
-                >
-                    <div className="fg-modal-card-flush fg-modal-card-lg">
-                        <div className="fg-modal-flush-header">
-                            <h3 className="fg-modal-title">{t.Slot_Create()}</h3>
-                            <button
-                                type="button"
-                                className="fg-modal-close-x"
-                                onClick={() => setShowCreateModal(false)}
-                                title={t.Action_Close()}
-                                data-test-id="create-slot-modal-close"
-                            >
-                                &times;
-                            </button>
-                        </div>
-                        <div className="fg-modal-flush-body">
-                            <CreateSlotForm
-                                onSuccess={handleSlotCreated}
-                                onError={msg => showToast(msg, 'danger')}
-                                fieldsInfo={props.slotFieldsInfo}
-                                defaultPenaltyPercent={props.defaultPenaltyPercent ?? 0}
-                                onCancel={() => setShowCreateModal(false)}
-                            />
-                        </div>
-                    </div>
-                </div></Portal>
-            )}
+            <CreateSlotModal
+                open={showCreateModal}
+                onClose={() => setShowCreateModal(false)}
+                onSuccess={handleSlotCreated}
+                onError={msg => showToast(msg, 'danger')}
+                fieldsInfo={props.slotFieldsInfo}
+                defaultPenaltyPercent={props.defaultPenaltyPercent ?? 0}
+            />
 
             {/* Batch slot modal */}
-            {showBatchModal && (
-                <Portal><div
-                    className="fg-modal-overlay"
-                    onClick={(e) => { if (e.target === e.currentTarget) setShowBatchModal(false); }}
-                    data-test-id="batch-slot-modal"
-                >
-                    <div className="fg-modal-card-flush fg-modal-card-3xl">
-                        <div className="fg-modal-flush-header">
-                            <h3 className="fg-modal-title">{t.Batch_Title()}</h3>
-                            <button
-                                type="button"
-                                className="fg-modal-close-x"
-                                onClick={() => setShowBatchModal(false)}
-                                title={t.Action_Close()}
-                                data-test-id="batch-slot-modal-close"
-                            >
-                                &times;
-                            </button>
-                        </div>
-                        <div className="fg-modal-flush-body">
-                            <BatchSlotWizard
-                                onSuccess={handleBatchSuccess}
-                                onError={msg => showToast(msg, 'danger')}
-                                onConfirm={confirm}
-                                onCancel={() => setShowBatchModal(false)}
-                            />
-                        </div>
-                    </div>
-                </div></Portal>
-            )}
+            <BatchSlotModal
+                open={showBatchModal}
+                onClose={() => setShowBatchModal(false)}
+                onSuccess={handleBatchSuccess}
+                onError={msg => showToast(msg, 'danger')}
+                onConfirm={confirm}
+            />
 
             {/* Soft panel background — same treatment as the user slots calendar. */}
             <div className="section-soft space-y-5">
