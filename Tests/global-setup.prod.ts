@@ -25,6 +25,17 @@ const AUTH_DIR = path.resolve(__dirname, '.auth');
 // landing page). Override per-app via PW_PROD_AUTH_PATH if needed.
 const AUTH_PATH = process.env.PW_PROD_AUTH_PATH ?? '/system/';
 
+// This is the ONLY map that decides which account a saved-session fixture
+// (expertPage/userPage/…, and roleStateFile(idx, role) in
+// helpers/scoped-test/role-fixtures.ts) is actually logged in as on prod —
+// it writes .auth/{role}_w0.json below. A DIFFERENT map with the same shape,
+// PROD_ROLE_LOGIN in helpers/auth/role-login.ts, exists for a DIFFERENT
+// purpose (roleLogin(page, role) — an ON-DEMAND real-flow login inside a
+// test body) and points at different accounts (expert1@dev.test, not
+// testuser_setup_expert@irabi.test). A spec that creates data for one map's
+// account and then opens the OTHER map's saved session sees an empty list —
+// not an error, just nothing — which is exactly how D-166's fix took three
+// tries to land right (see WorkDir/uat-defects.md).
 const ROLES: Record<string, string> = {
     admin:              'testuser_setup_admin@irabi.test',
     expert:             'testuser_setup_expert@irabi.test',

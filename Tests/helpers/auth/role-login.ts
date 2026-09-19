@@ -19,6 +19,14 @@ import { isProd } from '../db/ssh-bridge';
 import { warmAntiBotCookie } from '../guards/anti-bot';
 
 /** Prod email login per role — mirrors DevLoginController's role→login map. */
+// Separate from — and pointing at DIFFERENT accounts than — the ROLES map
+// in global-setup.prod.ts, which decides who a SAVED-SESSION fixture
+// (expertPage/userPage/…, roleStateFile()) is logged in as. This map is only
+// for roleLogin(page, role) below: an on-demand login inside a test body.
+// A spec that mixes the two (creates data keyed to one map's account, then
+// opens the other map's saved session) gets a silently empty list, not an
+// error — see the note on ROLES in global-setup.prod.ts, and D-166 in
+// WorkDir/uat-defects.md for how that actually played out.
 const PROD_ROLE_LOGIN: Record<string, string> = {
     admin:     'admin@dev.test',
     owner:     'owner@dev.test',
