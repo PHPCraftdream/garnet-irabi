@@ -37,6 +37,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n\En {
             'Admin_Flag_RevokeAdmin' => 'Demote from admin',
             'Admin_Flag_RemoveAdminFirst' => 'Unavailable while the account has the "Admin" role — remove it first',
             'Admin_Flag_OwnerHasModeratorRights' => 'An owner doesn\'t need a separate moderator role — their rights are already higher',
+            'Admin_Flag_TargetOutranksYou' => 'Unavailable: this account outranks you',
             'Admin_Flag_GrantExpert' => 'Promote to expert',
             'Admin_Flag_RevokeExpert' => 'Demote to user',
             'Admin_Role_Owner' => 'Owner',

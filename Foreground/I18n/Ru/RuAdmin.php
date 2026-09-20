@@ -37,6 +37,11 @@ namespace PHPCraftdream\IRabi\Foreground\I18n\Ru {
             'Admin_Flag_RevokeAdmin' => 'Снять роль администратора',
             'Admin_Flag_RemoveAdminFirst' => 'Недоступно, пока у аккаунта роль «Администратор» — сначала снимите её',
             'Admin_Flag_OwnerHasModeratorRights' => 'Владельцу не нужна отдельная роль модератора — права уже выше',
+            // D-237: сервер и раньше отклонял одобрение/блокировку для
+            // аккаунта с более высоким рангом (actorMayActOn) — кнопка
+            // просто не говорила об этом заранее и после клика показывала
+            // нелокализованный "Access denied".
+            'Admin_Flag_TargetOutranksYou' => 'Недоступно: у этого аккаунта более высокая роль, чем у вас',
             'Admin_Flag_GrantExpert' => 'Назначить преподавателем',
             'Admin_Flag_RevokeExpert' => 'Снять роль преподавателя',
             'Admin_Role_Owner' => 'Владелец',

@@ -8,7 +8,7 @@
  */
 
 import { flags } from './cli.mjs';
-import { tn, requireAccountId, findPersona } from './roster.mjs';
+import { tn, requireAccountId, findPersona, saveRoster } from './roster.mjs';
 import { rows, shqSql } from './remote.mjs';
 import { htmlToText, extractLinks, extractCodes, clip, indent } from './text.mjs';
 

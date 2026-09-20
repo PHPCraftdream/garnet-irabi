@@ -133,7 +133,7 @@ interface FlagDef {
     key: FlagKey;
     cls: [string, string];
     label: (r: AdminUser) => string;
-    title?: (r: AdminUser) => string;
+    title?: (r: AdminUser) => string | undefined;
     expertOnly?: boolean;
     lockedBy?: (r: AdminUser) => boolean;
 }
@@ -144,11 +144,18 @@ const flagDefs: Record<FlagKey, FlagDef> = {
         cls: ['btn-outline-danger', 'btn-success'],
         label: r => flag(r.IS_APPROVED) ? t.Admin_Revoke() : t.Admin_Approve(),
         expertOnly: true,
+        // D-237: сервер (actorMayActOn) отклоняет любой флаг для аккаунта
+        // с более высоким рангом — кнопка раньше не намекала на это и
+        // после клика показывала нелокализованный "Access denied".
+        title: r => (flag(r.IS_ADMIN) || flag(r.IS_OWNER)) ? t.Admin_Flag_TargetOutranksYou() : undefined,
+        lockedBy: r => flag(r.IS_ADMIN) || flag(r.IS_OWNER),
     },
     IS_DISABLED: {
         key: 'IS_DISABLED',
         cls: ['btn-secondary', 'btn-outline-danger'],
         label: r => flag(r.IS_DISABLED) ? t.Admin_Enable() : t.Admin_Disable(),
+        title: r => (flag(r.IS_ADMIN) || flag(r.IS_OWNER)) ? t.Admin_Flag_TargetOutranksYou() : undefined,
+        lockedBy: r => flag(r.IS_ADMIN) || flag(r.IS_OWNER),
     },
     IS_MODERATOR: {
         key: 'IS_MODERATOR',

@@ -26,6 +26,7 @@ export class I18nDataRU {
     static Admin_Flag_RevokeAdmin = 'Снять роль администратора';
     static Admin_Flag_RemoveAdminFirst = 'Недоступно, пока у аккаунта роль «Администратор» — сначала снимите её';
     static Admin_Flag_OwnerHasModeratorRights = 'Владельцу не нужна отдельная роль модератора — права уже выше';
+    static Admin_Flag_TargetOutranksYou = 'Недоступно: у этого аккаунта более высокая роль, чем у вас';
     static Admin_Flag_GrantExpert = 'Назначить преподавателем';
     static Admin_Flag_RevokeExpert = 'Снять роль преподавателя';
     static Admin_Role_Owner = 'Владелец';

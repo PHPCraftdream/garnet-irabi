@@ -32,6 +32,7 @@ class I18n extends I18nBase {
     Admin_Flag_RevokeAdmin: t = (a = []) => this.t('Admin_Flag_RevokeAdmin', a);
     Admin_Flag_RemoveAdminFirst: t = (a = []) => this.t('Admin_Flag_RemoveAdminFirst', a);
     Admin_Flag_OwnerHasModeratorRights: t = (a = []) => this.t('Admin_Flag_OwnerHasModeratorRights', a);
+    Admin_Flag_TargetOutranksYou: t = (a = []) => this.t('Admin_Flag_TargetOutranksYou', a);
     Admin_Flag_GrantExpert: t = (a = []) => this.t('Admin_Flag_GrantExpert', a);
     Admin_Flag_RevokeExpert: t = (a = []) => this.t('Admin_Flag_RevokeExpert', a);
     Admin_Role_Owner: t = (a = []) => this.t('Admin_Role_Owner', a);
