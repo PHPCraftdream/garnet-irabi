@@ -50,7 +50,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n\Ru {
             'Support_Unassigned' => 'Не назначен',
             'Support_TicketUpdatedWhileTyping' => 'Пока вы печатали, в тикете появился новый ответ — проверьте переписку выше, прежде чем отправлять свой.',
             'Support_StaleReplySent' => 'Коллега ответил в этом тикете почти в тот же момент — проверьте переписку выше, ваши ответы могли пересечься.',
-            'Support_HasAttachments' => 'Вложений: %s',
+            'Support_HasAttachments' => 'Вложений в переписке: %s',
             'Support_Assign' => 'Назначить',
             'Support_ChangeStatus' => 'Изменить статус',
             'Support_AssignmentHistory' => 'История назначений',

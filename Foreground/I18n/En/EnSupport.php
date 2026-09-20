@@ -44,7 +44,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n\En {
             'Support_Unassigned' => 'Unassigned',
             'Support_TicketUpdatedWhileTyping' => 'While you were typing, a new reply was posted to this ticket — check the conversation above before sending yours.',
             'Support_StaleReplySent' => 'A colleague replied to this ticket at nearly the same moment — check the conversation above, your replies may overlap.',
-            'Support_HasAttachments' => 'Attachments: %s',
+            'Support_HasAttachments' => 'Attachments in this conversation: %s',
             'Support_Assign' => 'Assign',
             'Support_ChangeStatus' => 'Change Status',
             'Support_AssignmentHistory' => 'Assignment History',

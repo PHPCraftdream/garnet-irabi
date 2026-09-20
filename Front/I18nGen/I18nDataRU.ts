@@ -821,7 +821,7 @@ export class I18nDataRU {
     static Support_Unassigned = 'Не назначен';
     static Support_TicketUpdatedWhileTyping = 'Пока вы печатали, в тикете появился новый ответ — проверьте переписку выше, прежде чем отправлять свой.';
     static Support_StaleReplySent = 'Коллега ответил в этом тикете почти в тот же момент — проверьте переписку выше, ваши ответы могли пересечься.';
-    static Support_HasAttachments = 'Вложений: %s';
+    static Support_HasAttachments = 'Вложений в переписке: %s';
     static Support_Assign = 'Назначить';
     static Support_ChangeStatus = 'Изменить статус';
     static Support_AssignmentHistory = 'История назначений';
