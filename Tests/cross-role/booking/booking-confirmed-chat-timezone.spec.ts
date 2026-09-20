@@ -6,12 +6,18 @@
  * un-converted, while every other screen showed the account's local
  * (Europe/Berlin) time.
  *
- * BookingChatNotifier::when() already reads `accounts.time_zone` and calls
- * DateUtils::formatForUser() — reading the code shows no bug. This spec
- * exercises the real confirm flow end-to-end (book → confirm → read the
- * resulting im_messages row) to settle whether the reported mismatch is
- * still live or was a stale message sent before an earlier session's
- * timezone fix to this same file was deployed.
+ * D-247 (UAT 20.09): the fix above formatted every BookingChatNotifier
+ * message in the RECIPIENT of that specific action's timezone — correct
+ * for email (each side gets its own copy), wrong for a shared two-person
+ * chat thread, where the "recipient" of a reschedule alternates depending
+ * on who acted. The same expert reading their own dialog saw their own
+ * zone on some messages and the student's zone on others, unpredictably.
+ * Fixed by anchoring EVERY message in the conversation to the expert's
+ * timezone, regardless of which side triggered it — one dialog, one zone.
+ *
+ * This spec exercises the real confirm flow end-to-end (book → confirm →
+ * read the resulting im_messages row) against the EXPERT's timezone (not
+ * the student's, per the D-247 policy change).
  */
 
 import { test, expect, tn } from '../../helpers/scoped-test';
@@ -20,7 +26,7 @@ import { resolveStorageStatePath } from '../../helpers/auth/state';
 import { withConnection } from '../../helpers/db/db';
 import type { Page } from '@playwright/test';
 
-const STUDENT_TZ = 'America/New_York'; // fixed, large, unambiguous offset from UTC
+const EXPERT_TZ = 'America/New_York'; // fixed, large, unambiguous offset from UTC
 
 function generateUid(): string {
 	return [...Array(16)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
@@ -71,21 +77,21 @@ async function latestChatMessage(expertId: number, studentId: number): Promise<s
 	});
 }
 
-async function cleanup(slotId: number, studentId: number, prevTz: string): Promise<void> {
+async function cleanup(slotId: number, expertId: number, prevTz: string): Promise<void> {
 	await withConnection(async (c) => {
 		await c.execute(`DELETE FROM ${tn('bookings')} WHERE bookable_type = 'time_slot' AND bookable_id = ?`, [slotId]);
 		await c.execute(`DELETE FROM ${tn('time_slots')} WHERE id = ?`, [slotId]);
 	});
-	if (studentId) await setTimezone(studentId, prevTz);
+	if (expertId) await setTimezone(expertId, prevTz);
 }
 
 test.describe.configure({ mode: 'serial' });
 
-test.describe('D-157: booking-confirmed chat message uses the recipient\'s local timezone, not raw UTC', () => {
+test.describe('D-157/D-247: booking-confirmed chat message uses the expert\'s local timezone, not raw UTC and not the student\'s', () => {
 	let expertId = 0;
 	let studentId = 0;
 	let slotId = 0;
-	let prevStudentTz = '';
+	let prevExpertTz = '';
 	let startAt = 0;
 
 	test.beforeAll(async () => {
@@ -94,7 +100,7 @@ test.describe('D-157: booking-confirmed chat message uses the recipient\'s local
 		expect(expertId).toBeGreaterThan(0);
 		expect(studentId).toBeGreaterThan(0);
 
-		prevStudentTz = await setTimezone(studentId, STUDENT_TZ);
+		prevExpertTz = await setTimezone(expertId, EXPERT_TZ);
 
 		// A UTC noon start — unambiguous in every timezone, no date-boundary
 		// or DST edge case to worry about.
@@ -106,7 +112,7 @@ test.describe('D-157: booking-confirmed chat message uses the recipient\'s local
 	});
 
 	test.afterAll(async () => {
-		await cleanup(slotId, studentId, prevStudentTz);
+		await cleanup(slotId, expertId, prevExpertTz);
 	});
 
 	test('confirm a booking, then read the chat message time against the student\'s configured timezone', async ({ browser }) => {
@@ -160,7 +166,7 @@ test.describe('D-157: booking-confirmed chat message uses the recipient\'s local
 		// Expected local time string, e.g. "08.09.2026, 08:00" for a UTC
 		// 12:00 start in America/New_York (UTC-4 in September, DST).
 		const expectedLocal = new Intl.DateTimeFormat('ru-RU', {
-			timeZone: STUDENT_TZ,
+			timeZone: EXPERT_TZ,
 			day: '2-digit', month: '2-digit', year: 'numeric',
 			hour: '2-digit', minute: '2-digit', hour12: false,
 		}).format(new Date(startAt * 1000)).replace(',', ',');
@@ -175,9 +181,9 @@ test.describe('D-157: booking-confirmed chat message uses the recipient\'s local
 		expect(body).toContain(localHour);
 		expect(body).not.toContain(utcHour);
 
-		// D-166: the same message is read by the expert too, in their own
-		// timezone — an unlabeled local time misleads whichever participant
-		// isn't the one it was converted for. The zone must be spelled out.
+		// D-166: the same message is read by the student too, in a DIFFERENT
+		// timezone (D-247 anchors every message on the expert's) — an
+		// unlabeled local time would mislead them. The zone must be spelled out.
 		expect(body).toMatch(/\(America\/New_York, UTC-?\d/);
 	});
 });

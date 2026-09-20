@@ -105,7 +105,7 @@ namespace PHPCraftdream\IRabi\Foreground\Controllers\Booking\Bookings {
             if ($recipientId > 0 && $oldStartAt > 0 && $newStartAt > 0) {
                 $actorName = $account->readParam('name') ?: ('#' . $account->id());
                 try {
-                    BookingChatNotifier::rescheduled($account->id(), $recipientId, $oldStartAt, $newStartAt);
+                    BookingChatNotifier::rescheduled($expertId, $account->id(), $recipientId, $oldStartAt, $newStartAt);
                 } catch (Throwable) {
                 }
                 try {

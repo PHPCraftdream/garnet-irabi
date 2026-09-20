@@ -21,7 +21,7 @@ namespace PHPCraftdream\IRabi\Common\Services\Comms {
         public static function confirmed(int $expertId, int $userId, array $slot): void {
             static::send($expertId, $userId, sprintf(
                 (string)ForegroundI18n::getInstance()->Booking_Chat_Confirmed(),
-                static::when($userId, $slot),
+                static::when($expertId, $slot),
             ));
         }
 
@@ -29,7 +29,7 @@ namespace PHPCraftdream\IRabi\Common\Services\Comms {
         public static function declined(int $expertId, int $userId, array $slot): void {
             static::send($expertId, $userId, sprintf(
                 (string)ForegroundI18n::getInstance()->Booking_Chat_Declined(),
-                static::when($userId, $slot),
+                static::when($expertId, $slot),
             ));
         }
 
@@ -37,7 +37,7 @@ namespace PHPCraftdream\IRabi\Common\Services\Comms {
         public static function cancelled(int $expertId, int $userId, array $slot): void {
             static::send($expertId, $userId, sprintf(
                 (string)ForegroundI18n::getInstance()->Booking_Chat_Cancelled(),
-                static::when($userId, $slot),
+                static::when($expertId, $slot),
             ));
         }
 
@@ -45,7 +45,7 @@ namespace PHPCraftdream\IRabi\Common\Services\Comms {
         public static function locationChanged(int $expertId, int $userId, array $slot): void {
             static::send($expertId, $userId, sprintf(
                 (string)ForegroundI18n::getInstance()->Booking_Chat_LocationChanged(),
-                static::when($userId, $slot),
+                static::when($expertId, $slot),
             ));
         }
 
@@ -56,14 +56,19 @@ namespace PHPCraftdream\IRabi\Common\Services\Comms {
          * подписано тем, кто действительно перенёс, — иначе ученик получает от
          * себя же уведомление о собственном действии.
          *
-         * Оба времени печатаются в поясе получателя и подписываются поясом —
-         * тот же приём, что у соседей (D-157/D-166).
+         * D-247: раньше оба времени печатались в поясе ПОЛУЧАТЕЛЯ конкретного
+         * сообщения — корректно для email (каждая сторона получает свою копию),
+         * но диалог один на двоих, и получатель у разных сообщений в одной и
+         * той же переписке разный (инициатор переноса чередуется). Эксперт,
+         * читающий собственный диалог, видел то свой пояс, то чужой безо
+         * всякой системы. Теперь везде — пояс эксперта: один диалог, один
+         * пояс, независимо от того, кто из двоих его в этот раз перенёс.
          */
-        public static function rescheduled(int $senderId, int $recipientId, int $oldStartAt, int $newStartAt): void {
+        public static function rescheduled(int $expertId, int $senderId, int $recipientId, int $oldStartAt, int $newStartAt): void {
             static::send($senderId, $recipientId, sprintf(
                 (string)ForegroundI18n::getInstance()->Booking_Chat_Rescheduled(),
-                static::whenTime($recipientId, $oldStartAt),
-                static::whenTime($recipientId, $newStartAt),
+                static::whenTime($expertId, $oldStartAt),
+                static::whenTime($expertId, $newStartAt),
             ));
         }
 
@@ -81,8 +86,8 @@ namespace PHPCraftdream\IRabi\Common\Services\Comms {
         }
 
         /**
-         * Часовой пояс ученика живёт КОЛОНКОЙ `accounts.time_zone`, а не
-         * строкой в `accounts_data`.
+         * Часовой пояс живёт КОЛОНКОЙ `accounts.time_zone`, а не строкой в
+         * `accounts_data`.
          *
          * Здесь его искали во втором месте, где ключа `time_zone` нет ни у
          * кого — запрос всегда возвращал пусто, `$tz` всегда был null, и время
@@ -94,17 +99,17 @@ namespace PHPCraftdream\IRabi\Common\Services\Comms {
          * которого ни одно из названных в чате времён ни разу не совпало с
          * настоящим.
          *
-         * D-166: время здесь верно переводится в пояс ученика — но диалог
-         * читают ДВОЕ, и эксперт видит ту же самую строку в СВОЁМ поясе,
-         * который может отличаться. Без подписи пояса время выглядит как
-         * рассинхрон/UTC, даже когда конвертация отработала правильно.
-         * Подписываем пояс так же, как в письмах (`DateUtils::zoneLabel`).
+         * D-166/D-247: диалог читают ДВОЕ, и текст сообщения — общий для
+         * обоих (не как в письмах, где у каждой стороны своя копия). Единый
+         * якорь пояса на весь файл — эксперт (см. вызовы ниже); подпись пояса
+         * (`DateUtils::zoneLabel`) остаётся всегда, чтобы даже чужой пояс не
+         * читался как рассинхрон/UTC.
          */
-        private static function whenTime(int $userId, int $startAt): string {
-            $rows = DbAccount::get()->selectAll(static function (SelectInterface $q) use ($userId): void {
+        private static function whenTime(int $expertId, int $startAt): string {
+            $rows = DbAccount::get()->selectAll(static function (SelectInterface $q) use ($expertId): void {
                 $q->resetCols();
                 $q->cols(['time_zone']);
-                $q->where('id = :aid', ['aid' => $userId]);
+                $q->where('id = :aid', ['aid' => $expertId]);
             });
 
             $tz = (isset($rows[0]['time_zone']) && is_string($rows[0]['time_zone']) && $rows[0]['time_zone'] !== '')
@@ -127,7 +132,7 @@ namespace PHPCraftdream\IRabi\Common\Services\Comms {
          *
          * @param array{start_at?: int, duration_min?: int, cost?: int, is_online?: int, location?: string} $slot
          */
-        private static function when(int $userId, array $slot): string {
+        private static function when(int $expertId, array $slot): string {
             $startAt = (int)($slot['start_at'] ?? 0);
             $durationMin = (int)($slot['duration_min'] ?? 0);
             $cost = (int)($slot['cost'] ?? 0);
@@ -135,7 +140,7 @@ namespace PHPCraftdream\IRabi\Common\Services\Comms {
             $location = (string)($slot['location'] ?? '');
             $format = $isOnline ? MeetingPlatform::publicName($location) : $location;
 
-            $parts = [static::whenTime($userId, $startAt)];
+            $parts = [static::whenTime($expertId, $startAt)];
             if ($durationMin > 0) {
                 $parts[] = $durationMin . ' ' . (string)ForegroundI18n::getInstance()->Slot_Duration_Min();
             }
