@@ -32,7 +32,23 @@ function formatHebrewDate(dateStr: string): string {
             month: 'long',
             year: 'numeric',
         });
-        return fmt.format(d);
+
+        // D-219: for calendars without a "no era" convention (Hebrew among
+        // them), Intl always appends one — "AM" (Anno Mundi) plus its lead-in
+        // separator (e.g. "г. " in ru) — even though `era` was never
+        // requested. Drop the era part and the literal glueing it to the
+        // year rather than trust `.format()`'s string.
+        const parts = fmt.formatToParts(d);
+        let result = '';
+
+        for (let i = 0; i < parts.length; i++) {
+            const part = parts[i];
+            if (part.type === 'era') continue;
+            if (part.type === 'literal' && parts[i + 1]?.type === 'era') continue;
+            result += part.value;
+        }
+
+        return result.trim();
     } catch {
         return '';
     }
