@@ -4,6 +4,7 @@ namespace PHPCraftdream\IRabi\Common\Services\Ops\Cron;
 
 use Aura\SqlQuery\Common\SelectInterface;
 use PHPCraftdream\Garnet\Kernel\Db\Link\CasUpdate;
+use PHPCraftdream\IRabi\Common\Services\Comms\BookingChatNotifier;
 use PHPCraftdream\IRabi\Common\Services\Comms\EmailNotifications;
 use PHPCraftdream\IRabi\Common\Tables\Accounts\BalanceLedger;
 use PHPCraftdream\IRabi\Common\Tables\Booking\Bookings;
@@ -211,6 +212,16 @@ class CronCompletionService {
                 // session time. bookingRejected is the closest existing
                 // template — it addresses the user and fills in the expert name.
                 EmailNotifications::bookingRejected($userId, $startAt, $durationMin, $expertId, '', (int)($slot['max_users'] ?? 1));
+
+                // D-254: every OTHER decline path (expert clicks "decline" in
+                // ExpertBookingsService) posts the same notice into the shared
+                // chat via BookingChatNotifier::declined() — this cron path did
+                // the email and the profile-counter bookkeeping above but left
+                // the chat silent, so a student re-reading that dialog later saw
+                // no record the request was ever answered at all.
+                if ($expertId > 0) {
+                    BookingChatNotifier::declined($expertId, $userId, $slot);
+                }
 
                 $stats['pending_expired']++;
             }

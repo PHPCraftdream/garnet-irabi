@@ -127,6 +127,31 @@ test.describe('D-199: the money follows the words — an unanswered request is d
 		expect(await getUserCancellationKind(runningBookingId)).toBe('decline');
 	});
 
+	test('D-254: the auto-decline posts the same chat notice a manual decline would', async () => {
+		if (!runningBookingId) { test.skip(); return; }
+
+		const conn = await mysql.createConnection(DB);
+		try {
+			const [convRows] = await conn.execute<any[]>(
+				`SELECT id FROM ${tn('im_conversations')}
+				 WHERE (participant_a = ? AND participant_b = ?) OR (participant_a = ? AND participant_b = ?)`,
+				[expertId, userId, userId, expertId],
+			);
+			expect(convRows.length).toBeGreaterThan(0);
+			const convId = convRows[0].id;
+
+			const [msgRows] = await conn.execute<any[]>(
+				`SELECT sender_id, body FROM ${tn('im_messages')}
+				 WHERE conversation_id = ? AND sender_id = ? AND body LIKE ?
+				 ORDER BY id DESC LIMIT 1`,
+				[convId, expertId, '%отклонена%'],
+			);
+			expect(msgRows.length).toBe(1);
+		} finally {
+			await conn.end();
+		}
+	});
+
 	test('control: the lesson in progress itself stays open — only the request died', async () => {
 		if (!runningSlotId) { test.skip(); return; }
 		// The distinction the fix rests on. The request has no future the
