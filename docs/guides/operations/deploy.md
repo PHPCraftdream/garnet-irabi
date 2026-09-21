@@ -307,7 +307,7 @@ starting.
 
 ## Cron
 
-IRabi ships **eight** cron tasks, registered in
+IRabi ships **nine** cron tasks, registered in
 `Common/Services/AppCronService.php`. Two of them are **functional
 blockers** if crontab is not set up on the host: without `email-queue`
 no email is ever sent (the queue just grows), and without
@@ -315,6 +315,16 @@ no email is ever sent (the queue just grows), and without
 A third, `booking-reminders`, is functional in the same sense: without
 it nobody is ever reminded of a lesson, and the platform silently loses
 the attendance the reminders exist to protect.
+`reconcile-slot-seats` is functional too, but its symptom is silent data
+corruption rather than an obviously missing feature (D-258): without it,
+a group slot whose auto-cancelled `pending` booking drops it below
+`max_users` never reverts from `booked` back to `free`, and the very
+next `complete-expired` tick can terminalize it `expired` while a
+`confirmed` booking is still sitting on it — permanently stuck, invisible
+until a student notices their "completed" lesson still says "confirmed".
+This exact gap shipped silently for a while: the task existed in code
+but was never added to any host's crontab, so it only ever ran the
+handful of times someone happened to invoke it by hand.
 The other five (`disable-stale-tokens`, `db-backup`, `log-rotation`,
 `session-retention`, `finance-audit`) are hygiene/retention/audit.
 **Configure crontab on every host you deploy
@@ -346,12 +356,13 @@ most once per UTC day per task as a heartbeat, so a daily row for each
 task is the normal "cron is alive" signal — its absence for >24h means
 cron is broken.
 
-### The eight registered tasks
+### The nine registered tasks
 
 | Task | What it does | Cadence rationale |
 |---|---|---|
 | `email-queue` | Sends pending emails (`FwEmailQueueService::processQueue`, batch of 50/tick). | Needs to be frequent — users wait on these emails. Safe to run every minute (see lock note below). |
 | `complete-expired` | Marks expired slots/bookings as `completed` and auto-cancels stale `pending` bookings (`CronCompletionService::completeExpired`). | Functional; run every ~10 min. |
+| `reconcile-slot-seats` | Resyncs `time_slots.booked_count`/`status` from actual active bookings, healing a crash-mid-booking drift (D-163, support ticket #3) — also the only thing that reverts a slot's `status` from `booked` back to `free` after `complete-expired`'s auto-cancel branch drops a booking below `max_users` (D-258: found missing from crontab entirely, having run twice ever, both before this doc entry existed — a slot could get auto-cancel-drained and then terminalized `expired` by `complete-expired` itself before this ever ran, permanently orphaning a still-`confirmed` booking on it). (`CronCompletionService::reconcileSeats`). | Functional; run right after `complete-expired`, same ~10 min cadence. |
 | `booking-reminders` | Queues lesson reminders a day and two hours before the start (`CronReminderService::sendDue`) — to every confirmed student, and once per slot to the expert. | Functional; run every ~5 min. Later ticks are cheap (marks are stored per booking/slot), but a long gap shifts reminders late: the two-hour one has no value once the lesson began. |
 | `disable-stale-tokens` | Disables expired/exhausted invite tokens (`FwInviteTokenService::disableStale`). | Hygiene; run every ~10–15 min. |
 | `db-backup` | Daily local DB snapshot + 7-day/4-week retention + best-effort off-site WebDAV upload (`DbBackupCronTask`). See `WorkDir/ConfigExample/backup.ini` for the off-site config template. | Once a day, at night. Produces one timestamped dump per run, so running it frequently floods `WorkDir/Backups/`. |
@@ -380,6 +391,15 @@ the correct trade-off here.
 
 # ── complete-expired: every 10 min ───────────────────────────────────
 */10 * * * *  cd /var/www/<host>/data/www/<app-dir> && php run_cmd.php cron complete-expired >> WorkDir/Logs/cron-complete-expired.log 2>&1
+
+# ── reconcile-slot-seats: every 10 min, right after complete-expired ──
+# D-258: without this tick, a slot whose auto-cancelled `pending` booking
+# drops it below `max_users` stays stuck at status `booked` — the very
+# next complete-expired tick can then terminalize it `expired` before
+# this ever gets a chance to revert it to `free`, orphaning a still-
+# `confirmed` booking on it forever. Keep this line adjacent to
+# complete-expired's in the crontab file.
+*/10 * * * *  cd /var/www/<host>/data/www/<app-dir> && php run_cmd.php cron reconcile-slot-seats >> WorkDir/Logs/cron-reconcile-slot-seats.log 2>&1
 
 # ── booking-reminders: every 5 min ───────────────────────────────────
 # The window matters more than the frequency: a reminder that fires late
@@ -426,7 +446,7 @@ log is the primary observability channel.
 ### Alternative: one unified call (NOT recommended here)
 
 ```cron
-# Runs all 7 tasks every 5 minutes. Simplest possible setup, BUT db-backup,
+# Runs all 9 tasks every 5 minutes. Simplest possible setup, BUT db-backup,
 # log-rotation, session-retention and finance-audit fire 288×/day — only
 # acceptable if you remove those four tasks from the unified call and keep
 # them on their own daily lines.
@@ -457,8 +477,8 @@ pattern to copy).
 1. **List tasks** to confirm registration:
    ```bash
    php run_cmd.php cron list
-   # Expect: email-queue, complete-expired, booking-reminders, disable-stale-tokens, db-backup,
-   #         log-rotation, session-retention, finance-audit
+   # Expect: email-queue, complete-expired, reconcile-slot-seats, booking-reminders,
+   #         disable-stale-tokens, db-backup, log-rotation, session-retention, finance-audit
    ```
 2. **Run each task once by hand** and confirm exit 0 + sane output:
    ```bash
