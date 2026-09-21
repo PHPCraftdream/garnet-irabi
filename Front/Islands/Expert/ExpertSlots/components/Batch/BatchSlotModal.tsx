@@ -10,9 +10,10 @@ interface Props {
     onSuccess: (msg: string, newSlots?: Slot[]) => void;
     onError: (msg: string) => void;
     onConfirm: (message: string, items: string[]) => Promise<boolean>;
+    defaultPenaltyPercent: number;
 }
 
-export const BatchSlotModal: React.FC<Props> = ({open, onClose, onSuccess, onError, onConfirm}) => {
+export const BatchSlotModal: React.FC<Props> = ({open, onClose, onSuccess, onError, onConfirm, defaultPenaltyPercent}) => {
     if (!open) return null;
 
     return (
@@ -41,6 +42,7 @@ export const BatchSlotModal: React.FC<Props> = ({open, onClose, onSuccess, onErr
                             onError={onError}
                             onConfirm={onConfirm}
                             onCancel={onClose}
+                            defaultPenaltyPercent={defaultPenaltyPercent}
                         />
                     </div>
                 </div>

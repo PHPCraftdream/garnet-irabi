@@ -281,6 +281,7 @@ const ExpertSlotsIslandInner: React.FC<ExpertSlotsProps> = (props) => {
                 onSuccess={handleBatchSuccess}
                 onError={msg => showToast(msg, 'danger')}
                 onConfirm={confirm}
+                defaultPenaltyPercent={props.defaultPenaltyPercent ?? 0}
             />
 
             {/* Soft panel background — same treatment as the user slots calendar. */}

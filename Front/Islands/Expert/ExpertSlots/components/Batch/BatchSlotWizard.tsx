@@ -15,6 +15,7 @@ interface Props {
     onError: (msg: string) => void;
     onConfirm: (message: string, items: string[]) => Promise<boolean>;
     onCancel?: () => void;
+    defaultPenaltyPercent: number;
 }
 
 interface BatchFieldProps {
@@ -79,6 +80,28 @@ const BatchParamsRow: React.FC<BatchParamsRowProps> = ({count, setCount, perWeek
     </div>
 );
 
+interface BatchPenaltyRowProps {
+    penaltyPercent: number;
+    setPenaltyPercent: (v: number) => void;
+}
+
+const BatchPenaltyRow: React.FC<BatchPenaltyRowProps> = ({penaltyPercent, setPenaltyPercent}) => (
+    <div>
+        <label className="form-label">{t.Slot_PenaltyPercent()}</label>
+        <input
+            type="number"
+            name="batch_penalty_percent"
+            data-test-id="batch-penalty-percent"
+            className="form-control"
+            min={0}
+            max={100}
+            value={penaltyPercent}
+            onChange={e => setPenaltyPercent(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
+        />
+        <div className="text-xs text-muted mt-1">{t.Slot_PenaltyHelp()}</div>
+    </div>
+);
+
 interface BatchFormatRowProps {
     batchIsOnline: boolean;
     setBatchIsOnline: (v: boolean) => void;
@@ -114,7 +137,7 @@ const BatchFormFooter: React.FC<BatchFormFooterProps> = ({onCancel, showPreview}
     </div>
 );
 
-export const BatchSlotWizard: React.FC<Props> = ({onSuccess, onError, onConfirm, onCancel}) => {
+export const BatchSlotWizard: React.FC<Props> = ({onSuccess, onError, onConfirm, onCancel, defaultPenaltyPercent}) => {
     const [startDate, setStartDate] = useState(() => {
         const d = new Date(); d.setDate(d.getDate() + 1);
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -132,6 +155,7 @@ export const BatchSlotWizard: React.FC<Props> = ({onSuccess, onError, onConfirm,
     const [batchTime, setBatchTime] = useState('10:00');
     const [batchDuration, setBatchDuration] = useState(60);
     const [batchCost, setBatchCost] = useState(500);
+    const [batchPenaltyPercent, setBatchPenaltyPercent] = useState(defaultPenaltyPercent);
     const [showPreview, setShowPreview] = useState(false);
 
     // Format + location are batch-wide: every slot in the party shares one
@@ -210,6 +234,7 @@ export const BatchSlotWizard: React.FC<Props> = ({onSuccess, onError, onConfirm,
             const result = await batchCreate({
                 slots: slotsPayload,
                 cost: batchCost,
+                cancellation_penalty_percent: batchPenaltyPercent,
                 is_online: batchIsOnline,
                 location: batchLocation,
             });
@@ -263,6 +288,7 @@ export const BatchSlotWizard: React.FC<Props> = ({onSuccess, onError, onConfirm,
                         batchCost={batchCost}
                         setBatchCost={setBatchCost}
                     />
+                    <BatchPenaltyRow penaltyPercent={batchPenaltyPercent} setPenaltyPercent={setBatchPenaltyPercent} />
                     <BatchFormatRow
                         batchIsOnline={batchIsOnline}
                         setBatchIsOnline={setBatchIsOnline}
