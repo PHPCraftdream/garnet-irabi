@@ -17,11 +17,11 @@
  * sequential awaits) from separate logged-in browser contexts, so it
  * exercises the real race window against a live MySQL57 backend.
  */
-import { test, expect, tn } from '../../helpers/scoped-test';
-import { newScopedContext } from '../../helpers/scoped-test';
-import { DB, withConnection } from '../../helpers/db/db';
-import { emailLogin } from '../../helpers/auth/role-login';
-import { isProd } from '../../helpers/db/ssh-bridge';
+import { test, expect, tn } from '../../../helpers/scoped-test';
+import { newScopedContext } from '../../../helpers/scoped-test';
+import { DB, withConnection } from '../../../helpers/db/db';
+import { emailLogin } from '../../../helpers/auth/role-login';
+import { isProd } from '../../../helpers/db/ssh-bridge';
 import type { BrowserContext, Page } from '@playwright/test';
 import mysql from 'mysql2/promise';
 

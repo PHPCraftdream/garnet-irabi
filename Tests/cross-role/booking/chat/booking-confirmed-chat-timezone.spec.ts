@@ -20,10 +20,10 @@
  * the student's, per the D-247 policy change).
  */
 
-import { test, expect, tn } from '../../helpers/scoped-test';
-import { newScopedContext } from '../../helpers/scoped-test';
-import { resolveStorageStatePath } from '../../helpers/auth/state';
-import { withConnection } from '../../helpers/db/db';
+import { test, expect, tn } from '../../../helpers/scoped-test';
+import { newScopedContext } from '../../../helpers/scoped-test';
+import { resolveStorageStatePath } from '../../../helpers/auth/state';
+import { withConnection } from '../../../helpers/db/db';
 import type { Page } from '@playwright/test';
 
 const EXPERT_TZ = 'America/New_York'; // fixed, large, unambiguous offset from UTC

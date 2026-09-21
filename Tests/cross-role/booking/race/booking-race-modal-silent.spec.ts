@@ -14,10 +14,10 @@
  * If BookingModal's error handling works, an error message must appear and
  * the modal must not silently close as if nothing happened.
  */
-import { test, expect, tn } from '../../helpers/scoped-test';
-import { newScopedContext } from '../../helpers/scoped-test';
-import { DB } from '../../helpers/db/db';
-import { roleLogin } from '../../helpers/auth/role-login';
+import { test, expect, tn } from '../../../helpers/scoped-test';
+import { newScopedContext } from '../../../helpers/scoped-test';
+import { DB } from '../../../helpers/db/db';
+import { roleLogin } from '../../../helpers/auth/role-login';
 import type { BrowserContext, Page } from '@playwright/test';
 import mysql from 'mysql2/promise';
 

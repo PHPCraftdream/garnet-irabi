@@ -13,10 +13,10 @@
  * slot's location resolved to a platform name (not the raw meeting URL,
  * same policy as everywhere else a slot's format is shown).
  */
-import { test, expect, tn } from '../../helpers/scoped-test';
-import { newScopedContext } from '../../helpers/scoped-test';
-import { resolveStorageStatePath } from '../../helpers/auth/state';
-import { withConnection } from '../../helpers/db/db';
+import { test, expect, tn } from '../../../helpers/scoped-test';
+import { newScopedContext } from '../../../helpers/scoped-test';
+import { resolveStorageStatePath } from '../../../helpers/auth/state';
+import { withConnection } from '../../../helpers/db/db';
 import type { Page } from '@playwright/test';
 
 function generateUid(): string {

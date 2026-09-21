@@ -14,11 +14,11 @@
  *   2. Happy path: booking pending -> expert confirms -> 200, status confirmed.
  */
 
-import { test, expect, tn, newScopedContext } from '../../helpers/scoped-test';
+import { test, expect, tn, newScopedContext } from '../../../helpers/scoped-test';
 import type { BrowserContext, Page } from '@playwright/test';
 import mysql from 'mysql2/promise';
-import { DB } from '../../helpers/db/db';
-import { roleLogin } from '../../helpers/auth/role-login';
+import { DB } from '../../../helpers/db/db';
+import { roleLogin } from '../../../helpers/auth/role-login';
 
 test.describe.configure({ mode: 'serial' });
 
