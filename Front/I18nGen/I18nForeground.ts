@@ -426,6 +426,7 @@ class I18n extends I18nBase {
     Booking_Status_Cancelled: t = (a = []) => this.t('Booking_Status_Cancelled', a);
     Booking_Status_Withdrawn: t = (a = []) => this.t('Booking_Status_Withdrawn', a);
     Booking_Status_Declined: t = (a = []) => this.t('Booking_Status_Declined', a);
+    Booking_Status_Missed: t = (a = []) => this.t('Booking_Status_Missed', a);
     Booking_Status_Completed: t = (a = []) => this.t('Booking_Status_Completed', a);
     Booking_Cancel: t = (a = []) => this.t('Booking_Cancel', a);
     Bookings_FilterAll: t = (a = []) => this.t('Bookings_FilterAll', a);

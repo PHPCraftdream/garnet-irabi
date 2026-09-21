@@ -420,6 +420,7 @@ export class I18nDataEN {
     static Booking_Status_Cancelled = 'Cancelled';
     static Booking_Status_Withdrawn = 'Withdrawn';
     static Booking_Status_Declined = 'Declined';
+    static Booking_Status_Missed = 'Response window expired';
     static Booking_Status_Completed = 'Completed';
     static Booking_Cancel = 'Cancel';
     static Bookings_FilterAll = 'All';

@@ -60,6 +60,7 @@ namespace PHPCraftdream\IRabi\Foreground\I18n\En {
             'Booking_Status_Cancelled' => 'Cancelled',
             'Booking_Status_Withdrawn' => 'Withdrawn',
             'Booking_Status_Declined' => 'Declined',
+            'Booking_Status_Missed' => 'Response window expired',
             'Booking_Status_Completed' => 'Completed',
             'Booking_Cancel' => 'Cancel',
 

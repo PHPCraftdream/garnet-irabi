@@ -420,6 +420,7 @@ export class I18nDataRU {
     static Booking_Status_Cancelled = 'Отменён';
     static Booking_Status_Withdrawn = 'Снят';
     static Booking_Status_Declined = 'Отклонён';
+    static Booking_Status_Missed = 'Истёк срок ответа';
     static Booking_Status_Completed = 'Завершён';
     static Booking_Cancel = 'Отменить';
     static Bookings_FilterAll = 'Все';

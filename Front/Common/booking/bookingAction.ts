@@ -101,6 +101,12 @@ export const outcomeLabel = (booking: {
             return t.Booking_Status_Withdrawn();
         case 'expert':
             return t.Booking_Status_Declined();
+        // D-260: fell through to the same generic "Отменён" as every other
+        // cancellation, so an expert scanning their own bookings list for
+        // the one behind the "Не ответил на заявок" stat had no way to
+        // tell it apart from an ordinary cancellation.
+        case 'system':
+            return t.Booking_Status_Missed();
         default:
             return t.Booking_Status_Cancelled();
     }
