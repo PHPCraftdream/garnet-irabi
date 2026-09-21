@@ -49,6 +49,12 @@ namespace PHPCraftdream\IRabi\Common\Services\Accounts {
                 'user' => [
                     'id' => (int)($row['id'] ?? $userId),
                     'name' => $displayName,
+                    // D-259: saved by profile_edit into `accounts.about`, but
+                    // never read back here — the field worked and was simply
+                    // never shown to the student themselves. Mirrors the
+                    // 'bio' key ExpertController already sends for the expert
+                    // side of the same column (see its D-152-era comment).
+                    'bio' => $isDisabled ? '' : (string)($row['about'] ?? ''),
                     'avatar' => $avatar,
                     'avatar_full' => $avatarFull,
                     'is_disabled' => $isDisabled,

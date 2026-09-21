@@ -10,6 +10,7 @@ interface Props {
     user: {
         id: number;
         name: string;
+        bio?: string;
         avatar?: string | null;
         avatar_full?: string | null;
         is_disabled?: boolean;
@@ -130,6 +131,12 @@ export const UserProfileIsland: React.FC<Props> = ({user, isModerator, isOwnProf
                 </div>
                 <ProfileStats user={user} />
             </div>
+            {user.bio && (
+                <div className="section-soft mb-8">
+                    <h4 className="mb-2">{t.Slot_About()}</h4>
+                    <p className="mb-0 whitespace-pre-line">{user.bio}</p>
+                </div>
+            )}
             {isOwnProfile && myReviewsUrl && <MyReviews listUrl={myReviewsUrl} />}
             {lightboxOpen && fullPhoto && (
                 <ImageLightbox src={fullPhoto} alt={user.name} onClose={() => setLightboxOpen(false)} />
