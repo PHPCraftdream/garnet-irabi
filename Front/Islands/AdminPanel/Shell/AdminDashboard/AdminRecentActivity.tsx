@@ -3,6 +3,7 @@ import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {actionLabel} from '@common/Components/Admin/AdminLog/Sections/actionLabel';
 import {AdminUserDualLink} from '../../../../Common/people/EntityLinks';
+import {appUrl} from '@common/Utils/Url/appUrl';
 
 interface LogEntry {
     id: number;
@@ -23,14 +24,32 @@ interface Props {
     logsUrl: string;
 }
 
+// D-263: for actions whose target isn't an account (currently only
+// comment moderation), the log stamps target_id=0 and encodes the real
+// entity as "comment#<id>" in target_login/target_name — this used to
+// fall straight through to the plain-text span below, indistinguishable
+// from a user target and impossible to follow. `?tab=comments` is the
+// SAME query param the Comments tab's own click handler already writes
+// (AdminPanelIsland's writeTabToUrl) — not a new deep-link mechanism.
+const COMMENT_TARGET_RE = /^comment#(\d+)$/;
+
 const ActivityPerson: React.FC<{
     id: number;
     name: string;
-}> = ({id, name}) => (
-    id > 0
-        ? <AdminUserDualLink id={id} name={name} />
-        : <span className="admin-dash-activity-actor">{name}</span>
-);
+}> = ({id, name}) => {
+    if (id > 0) return <AdminUserDualLink id={id} name={name} />;
+
+    const commentMatch = COMMENT_TARGET_RE.exec(name);
+    if (commentMatch) {
+        return (
+            <a href={appUrl('/admin/?tab=comments')} className="admin-dash-activity-actor">
+                {name}
+            </a>
+        );
+    }
+
+    return <span className="admin-dash-activity-actor">{name}</span>;
+};
 
 const ActivityItem: React.FC<{
     log: LogEntry;
