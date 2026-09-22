@@ -1,12 +1,6 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
-
-export function formatSize(bytes: number): string {
-    if (bytes < 1024) return bytes + 'B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + 'KB';
-
-    return (bytes / (1024 * 1024)).toFixed(1) + 'MB';
-}
+import {formatSize} from './formatSize';
 
 interface TileFile {
     id: string;

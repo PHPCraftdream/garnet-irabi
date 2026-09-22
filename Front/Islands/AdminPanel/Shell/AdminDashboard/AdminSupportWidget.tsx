@@ -4,7 +4,7 @@ import {formatTs} from '@common/Utils/Time/DateUtils';
 import {statusLabel} from '../../../Comms/Support/parts/supportRenders';
 import type {SupportStatus} from '../../../Comms/Support/parts/supportTypes';
 import {UniversalBadge} from '../../../../Common/booking/StatusBadge';
-import {AdminUserDualLink} from '../../../../Common/people/EntityLinks';
+import {AdminUserDualLink} from '../../../../Common/people/AdminUserDualLink';
 
 interface TicketItem {
     id: number;

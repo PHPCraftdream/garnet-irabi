@@ -6,7 +6,7 @@ import {DateInput} from '@common/Components/ui/DateInput';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {AdminUserLink} from '../../../Common/people/EntityLinks';
-import {statusLabel, entryTypeLabel} from '../Grid/gridRenders';
+import {statusLabel, entryTypeLabel} from '../Grid/gridLabels';
 
 interface LedgerFilterOptions {
     fromOptions: {value: string; label: string}[];

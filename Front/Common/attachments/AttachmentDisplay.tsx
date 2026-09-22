@@ -2,7 +2,7 @@ import * as React from 'react';
 import {useState} from 'react';
 import type {SupportAttachment} from '../../Islands/Comms/Support/parts/supportTypes';
 import ImageLightbox from '../media/ImageLightbox';
-import {formatSize} from './AttachmentTile';
+import {formatSize} from './formatSize';
 
 interface Props {
     attachments: SupportAttachment[];

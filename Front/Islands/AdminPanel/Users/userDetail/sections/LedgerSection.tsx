@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {entryTypeLabel} from '../../../Grid/gridRenders';
+import {entryTypeLabel} from '../../../Grid/gridLabels';
 import {LedgerRow} from '../userDetailTypes';
 import {DetailTable} from '../DetailTable';
 import {PersonCell} from '../PersonCell';
