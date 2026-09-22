@@ -1115,16 +1115,16 @@
         },
         {
             "name": "phpcraftdream/garnet-framework",
-            "version": "v0.1.0-alpha95",
+            "version": "v0.1.0-alpha96",
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHPCraftdream/garnet-framework.git",
-                "reference": "09c5f4881dc7a6b17603ac7ebad9a5fe24b12aa0"
+                "reference": "7b2a7e9a830ed18227e54479eba6d90f26dbeb31"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHPCraftdream/garnet-framework/zipball/09c5f4881dc7a6b17603ac7ebad9a5fe24b12aa0",
-                "reference": "09c5f4881dc7a6b17603ac7ebad9a5fe24b12aa0",
+                "url": "https://api.github.com/repos/PHPCraftdream/garnet-framework/zipball/7b2a7e9a830ed18227e54479eba6d90f26dbeb31",
+                "reference": "7b2a7e9a830ed18227e54479eba6d90f26dbeb31",
                 "shasum": ""
             },
             "require": {
@@ -1192,7 +1192,7 @@
                 "issues": "https://github.com/PHPCraftdream/garnet-framework/issues",
                 "source": "https://github.com/PHPCraftdream/garnet-framework"
             },
-            "time": "2026-09-22T15:43:57+00:00"
+            "time": "2026-09-22T17:31:05+00:00"
         },
         {
             "name": "psr/clock",

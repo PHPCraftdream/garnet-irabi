@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/Time/DateUtils';
-import {statusLabel} from '../../../Comms/Support/parts/supportStatus';
+import {statusLabel} from '../../../Comms/Support/parts/render/supportStatus';
 import type {SupportStatus} from '../../../Comms/Support/parts/supportTypes';
 import {UniversalBadge} from '../../../../Common/booking/StatusBadge';
 import {AdminUserDualLink} from '../../../../Common/people/AdminUserDualLink';

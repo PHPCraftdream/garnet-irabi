@@ -3,7 +3,7 @@ import {formatDateShort, weekStartTs, addDaysTs, tsToInputDate} from '@common/Ut
 import {Slot} from '../../types';
 import {CalendarDay} from './CalendarDayColumn';
 import {PagerCounts} from './CalendarPager';
-import {emptyCounts, slotKind} from './calendarPager.helpers';
+import {emptyCounts, slotKind} from './calendarHelpers';
 
 export const PAGE_WEEKS = 4;
 

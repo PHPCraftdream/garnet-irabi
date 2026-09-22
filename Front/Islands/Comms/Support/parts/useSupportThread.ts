@@ -8,7 +8,7 @@ import {PendingFile} from '../../../../Common/attachments/AttachmentPicker';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {SupportMessage} from './supportTypes';
 import {collectContext} from './autoContext';
-import {reportAttachmentErrors} from '../../../../Common/attachments/attachmentErrors';
+import {reportAttachmentErrors} from '../../../../Common/attachments/attachmentHelpers';
 
 interface Options {
     messagesUrl: string;

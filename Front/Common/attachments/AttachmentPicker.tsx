@@ -6,7 +6,7 @@ import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {AttachmentAddRow} from './AttachmentAddRow';
 import {AttachmentTile} from './AttachmentTile';
 import {AttachmentLightbox} from './AttachmentLightbox';
-import {MAX_ATTACHMENTS} from './AttachmentPicker.constants';
+import {MAX_ATTACHMENTS} from './attachmentHelpers';
 
 export interface PendingFile {
     id: string;
@@ -31,12 +31,6 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_FILE_SIZE_MB = 5;
 
 const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'txt', 'log']);
-
-function formatSize(bytes: number): string {
-    if (bytes < 1024) return bytes + 'B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + 'KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + 'MB';
-}
 
 /** The reason this file is not going, phrased for the person who picked it. */
 function refusalFor(file: File): string | null {

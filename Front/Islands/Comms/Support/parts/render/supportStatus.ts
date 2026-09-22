@@ -1,5 +1,5 @@
-import {SupportStatus} from './supportTypes';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import {SupportStatus} from '../supportTypes';
+import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 
 export function statusLabel(status: SupportStatus): string {
     const map: Record<SupportStatus, () => string> = {

@@ -1,4 +1,4 @@
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 
 export function getInitials(name: string): string {
     return (name || '?').split(' ').map(w => w[0]?.toUpperCase() || '').slice(0, 2).join('');

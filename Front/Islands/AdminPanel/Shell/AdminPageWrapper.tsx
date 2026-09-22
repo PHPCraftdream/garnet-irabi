@@ -3,7 +3,7 @@ import * as React from 'react';
 import {UserDetailTab} from '../Users/UserDetailTab';
 import {useUserTabs} from './useUserTabs';
 import {TabNav} from '@common/Components/Layout/Navigation/TabNav';
-import {ADMIN_URLS} from './AdminUrls';
+import {ADMIN_URLS} from './adminShared';
 
 interface SimpleWrapperConfig {
     mainLabel: string;

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {SupportStatus} from './supportTypes';
-import {statusLabel} from './supportStatus';
+import {statusLabel} from './render/supportStatus';
 
 const STATUS_CLASS: Record<string, string> = {
     open:              'status-info',

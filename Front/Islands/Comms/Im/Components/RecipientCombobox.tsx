@@ -4,8 +4,8 @@ import * as Popover from '@radix-ui/react-popover';
 import {cn} from '@common/Utils/Ui/cn';
 import {D} from '@common/Support/Debug/D';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {getInitials, roleLabel} from './recipientHelpers';
-import {RecipientDropdown} from './RecipientDropdown';
+import {getInitials, roleLabel} from './Recipient/recipientHelpers';
+import {RecipientDropdown} from './Recipient/RecipientDropdown';
 
 export interface Recipient {
     id: number;

@@ -9,7 +9,7 @@ import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {SupportTicket, SupportMessage, SupportStatus, AssignmentLogEntry, AutoContext} from '../../Comms/Support/parts/supportTypes';
 import {PendingFile} from '../../../Common/attachments/AttachmentPicker';
-import {reportAttachmentErrors} from '../../../Common/attachments/attachmentErrors';
+import {reportAttachmentErrors} from '../../../Common/attachments/attachmentHelpers';
 import TicketHeader from './SupportTicket/TicketHeader';
 import TicketContext from './SupportTicket/TicketContext';
 import TicketClientContext from './SupportTicket/TicketClientContext';

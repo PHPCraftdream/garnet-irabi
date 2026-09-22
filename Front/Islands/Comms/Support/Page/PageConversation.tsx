@@ -1,10 +1,10 @@
 import * as React from 'react';
 
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {SupportTicket, SupportMessage} from './parts/supportTypes';
-import {StatusBadge} from './parts/supportRenders';
-import {SupportMessageList} from './parts/SupportMessageList';
-import AttachmentPicker, {PendingFile} from '../../../Common/attachments/AttachmentPicker';
+import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import {SupportTicket, SupportMessage} from '../parts/supportTypes';
+import {StatusBadge} from '../parts/supportRenders';
+import {SupportMessageList} from '../parts/render/SupportMessageList';
+import AttachmentPicker, {PendingFile} from '../../../../Common/attachments/AttachmentPicker';
 import SendButton from '@common/Components/Controls/SendButton';
 import {useCtrlEnter, CTRL_ENTER_HINT} from '@common/hooks/ui/useCtrlEnter';
 import {formatTs} from '@common/Utils/Time/DateUtils';

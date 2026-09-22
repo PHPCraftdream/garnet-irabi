@@ -1,6 +1,6 @@
 import * as React from 'react';
-import {SupportMessage} from './supportTypes';
-import {SupportBubble} from './SupportBubble';
+import {SupportMessage} from '../supportTypes';
+import {SupportBubble} from '../SupportBubble';
 
 interface ListProps {
     messages: SupportMessage[];

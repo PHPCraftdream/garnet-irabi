@@ -1,10 +1,10 @@
 import * as React from 'react';
 
 import SendButton from '@common/Components/Controls/SendButton';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {SupportTicket, SupportMessage} from './parts/supportTypes';
-import {StatusBadge} from './parts/supportRenders';
-import {SupportBubble} from './parts/SupportBubble';
+import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import {SupportTicket, SupportMessage} from '../parts/supportTypes';
+import {StatusBadge} from '../parts/supportRenders';
+import {SupportBubble} from '../parts/SupportBubble';
 
 interface ConversationProps {
     loading: boolean;

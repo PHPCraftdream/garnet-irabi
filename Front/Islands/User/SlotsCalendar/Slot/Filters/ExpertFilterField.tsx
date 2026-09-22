@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 import {Combobox} from '@common/Components/ui/Combobox';
-import {ExpertMap} from '../types';
+import {ExpertMap} from '../../types';
 
 export const ExpertFilterField: React.FC<{experts: ExpertMap; expertIds: Set<string>; onChange: (ids: Set<string>) => void}> = ({experts, expertIds, onChange}) => {
     const expertEntries = Object.entries(experts);

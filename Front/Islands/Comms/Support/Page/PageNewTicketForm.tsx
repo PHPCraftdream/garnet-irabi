@@ -1,7 +1,7 @@
 import * as React from 'react';
 
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import AttachmentPicker, {PendingFile} from '../../../Common/attachments/AttachmentPicker';
+import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import AttachmentPicker, {PendingFile} from '../../../../Common/attachments/AttachmentPicker';
 import SendButton from '@common/Components/Controls/SendButton';
 import {useCtrlEnter, CTRL_ENTER_HINT} from '@common/hooks/ui/useCtrlEnter';
 

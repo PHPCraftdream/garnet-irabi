@@ -1,8 +1,8 @@
 import * as React from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import {cn} from '@common/Utils/Ui/cn';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {Recipient} from './RecipientCombobox';
+import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
+import {Recipient} from '../RecipientCombobox';
 import {getInitials, roleLabel} from './recipientHelpers';
 
 const Option: React.FC<{r: Recipient; active: boolean; onPick: (r: Recipient) => void}> = ({r, active, onPick}) => (

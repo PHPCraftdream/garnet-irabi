@@ -1,4 +1,13 @@
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
+import {appUrl} from '@common/Utils/Url/appUrl';
+
+// ── Hardcoded admin API URLs (consistent across all admin pages) ──
+
+export const ADMIN_URLS = {
+    detailUrl: appUrl('/admin/~userDetail'),
+    setFlagUrl: appUrl('/admin/~setUserFlag'),
+    createTicketUrl: appUrl('/admin/support/~createForUser'),
+};
 
 /**
  * Мелочи, которые каждый раздел админки писал заново.

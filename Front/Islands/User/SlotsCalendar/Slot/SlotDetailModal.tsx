@@ -10,10 +10,10 @@ import {canActNow, isActionable} from '../../../../Common/booking/bookingAction'
 import {SlotCancelForm} from '../Booking/SlotCancelForm';
 import {SlotItem, ExpertMap} from '../types';
 import QuickChat from '../../../../Common/people/QuickChat';
-import {SlotDateTimeBlock} from './SlotDateTimeBlock';
-import {SlotExpertBlock} from './SlotExpertBlock';
-import {SlotFormatBlock} from './SlotFormatBlock';
-import {SlotPriceBlock} from './SlotPriceBlock';
+import {SlotDateTimeBlock} from './Blocks/SlotDateTimeBlock';
+import {SlotExpertBlock} from './Blocks/SlotExpertBlock';
+import {SlotFormatBlock} from './Blocks/SlotFormatBlock';
+import {SlotPriceBlock} from './Blocks/SlotPriceBlock';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {formatTime as fmtTime, formatDateLong as fmtFullDate} from '@common/Utils/Time/DateUtils';
 import {appUrl} from '@common/Utils/Url/appUrl';

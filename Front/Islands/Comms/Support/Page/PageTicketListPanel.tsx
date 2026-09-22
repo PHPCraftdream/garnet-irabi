@@ -1,8 +1,8 @@
 import * as React from 'react';
 
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {SupportTicket} from './parts/supportTypes';
-import {SupportTicketRow} from './parts/SupportTicketRow';
+import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import {SupportTicket} from '../parts/supportTypes';
+import {SupportTicketRow} from '../parts/SupportTicketRow';
 import Pagination, {PaginationLabels} from '@common/Components/Layout/Paging/Pagination';
 
 interface ListPanelProps {

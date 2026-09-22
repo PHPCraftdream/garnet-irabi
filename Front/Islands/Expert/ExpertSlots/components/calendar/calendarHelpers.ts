@@ -12,3 +12,5 @@ export const slotKind = (s: Slot): PagerKind | null => {
 };
 
 export const emptyCounts = (): PagerCounts => ({free: 0, pending: 0, booked: 0, completed: 0});
+
+export const STATUS_FILTERS = ['all', 'pending', 'free', 'booked', 'completed', 'expired', 'cancelled'] as const;
