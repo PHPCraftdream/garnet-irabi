@@ -2,21 +2,10 @@ import * as React from 'react';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 import {translateStatus} from '../../../../../Common/booking/statusHelpers';
 import {CalendarPagerCounts, PagerCountItem} from '../../../../../Common/booking/CalendarPagerCounts';
-import {Slot} from '../../types';
+import {PAGER_KINDS} from './calendarPager.helpers';
 
-export const PAGER_KINDS = ['free', 'pending', 'booked', 'completed'] as const;
 export type PagerKind = typeof PAGER_KINDS[number];
 export type PagerCounts = Record<PagerKind, number>;
-
-/** Отнести слот к виду для подсказки пагинатора; отменённые не считаются. */
-export const slotKind = (s: Slot): PagerKind | null => {
-    if (s.status === 'free') return 'free';
-    if (s.status === 'completed') return 'completed';
-    if (s.status === 'booked') return s.booking_status === 'pending' ? 'pending' : 'booked';
-    return null;
-};
-
-export const emptyCounts = (): PagerCounts => ({free: 0, pending: 0, booked: 0, completed: 0});
 
 const pagerItems = (counts: PagerCounts): PagerCountItem[] =>
     PAGER_KINDS.map(k => ({

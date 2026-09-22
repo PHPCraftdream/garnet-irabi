@@ -1,8 +1,7 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {formatTs} from '@common/Utils/Time/DateUtils';
-import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {actionLabel} from '../../../Common/booking/bookingAction';
+import {BookingPerson} from './BookingPerson';
 
 export interface PendingBookingItem {
     booking_id: number;
@@ -14,36 +13,6 @@ export interface PendingBookingItem {
     cost: number;
     created_at: number;
 }
-
-export function getInitials(name: string): string {
-    const parts = name.trim().split(/\s+/);
-    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-
-    return (name[0] || '?').toUpperCase();
-}
-
-/** Кто записался и когда занятие. */
-export const BookingPerson: React.FC<{
-    userId: number;
-    userName: string;
-    startAt: number;
-    durationMin: number;
-    cost: number;
-    testId: string;
-}> = ({userId, userName, startAt, durationMin, cost, testId}) => (
-    <div className="flex items-center gap-3">
-        <div className="avatar-circle">{getInitials(userName)}</div>
-        <div>
-            <div className="text-sm font-medium text-on-surface" data-test-id={testId}>
-                <UserLink id={userId} name={userName} className="text-accent hover:underline" />
-            </div>
-            <div className="text-xs text-muted">
-                {formatTs(startAt)} &middot; {durationMin} {t.Slot_Duration_Min()}
-                {cost > 0 && <> &middot; {cost} &#8381;</>}
-            </div>
-        </div>
-    </div>
-);
 
 interface Props {
     booking: PendingBookingItem;

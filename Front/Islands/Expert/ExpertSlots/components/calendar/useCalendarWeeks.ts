@@ -2,7 +2,8 @@ import {useMemo} from 'react';
 import {formatDateShort, weekStartTs, addDaysTs, tsToInputDate} from '@common/Utils/Time/DateUtils';
 import {Slot} from '../../types';
 import {CalendarDay} from './CalendarDayColumn';
-import {PagerCounts, emptyCounts, slotKind} from './CalendarPager';
+import {PagerCounts} from './CalendarPager';
+import {emptyCounts, slotKind} from './calendarPager.helpers';
 
 export const PAGE_WEEKS = 4;
 

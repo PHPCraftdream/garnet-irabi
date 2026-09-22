@@ -1,7 +1,9 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {FiltersState, ExpertMap, TimeOfDay, SlotType, OnlineFilter} from '../types';
-import {ExpertFilterField, FilterChipGroup, PriceRangeFilterField} from './FilterControls';
+import {ExpertFilterField} from './ExpertFilterField';
+import {FilterChipGroup} from './FilterChipGroup';
+import {PriceRangeFilterField} from './PriceRangeFilterField';
 
 interface SlotsFiltersProps {
     filters: FiltersState;
