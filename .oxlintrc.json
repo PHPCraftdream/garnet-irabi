@@ -41,5 +41,13 @@
     "garnet-tsx/one-export-per-component": "warn",
     "garnet-tsx/max-component-lines": "warn",
     "garnet-tsx/max-component-nesting": "warn"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["**/Islands/AdminPanel/Users/UserDetailContext.tsx"],
+      "rules": {
+        "garnet-tsx/one-export-per-component": "off"
+      }
+    }
+  ]
 }
