@@ -3,7 +3,9 @@ import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 import ImageLightbox from '../../../../../Common/media/ImageLightbox';
 import {AccountData, BalanceRow} from '../userDetailTypes';
 import {UserAvatar} from './UserAvatar';
-import {UserHeaderBadges, UserHeaderCounters, UserHeaderMeta} from './UserHeaderBadges';
+import {UserHeaderBadges} from './UserHeaderBadges';
+import {UserHeaderMeta} from './UserHeaderMeta';
+import {UserHeaderCounters} from './UserHeaderCounters';
 import {UserHeaderActions} from './UserHeaderActions';
 
 interface Props {

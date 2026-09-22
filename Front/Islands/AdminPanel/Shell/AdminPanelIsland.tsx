@@ -7,7 +7,7 @@ import {AdminTokensSection} from '../System/AdminTokensSection';
 import {UserDetailContext} from '../Users/UserDetailContext';
 import {UserDetailTab} from '../Users/UserDetailTab';
 import {useUserTabs} from './useUserTabs';
-import {ADMIN_URLS} from './AdminPageWrapper';
+import {ADMIN_URLS} from './AdminUrls';
 import {TabNav, TabDef} from '@common/Components/Layout/Navigation/TabNav';
 import {PageResponse} from '@common/hooks/data/usePagination';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';

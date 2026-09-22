@@ -6,6 +6,8 @@ import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {useOpenUser} from './UserDetailContext';
+import {flag, roleFlagLabel} from './usersFlags';
+import {FlagBtn} from './FlagBtn';
 
 type TabCounts = Record<UserTab, number>;
 
@@ -36,49 +38,6 @@ const tabs: TabDef[] = [
 // linger until the next unrelated refresh.
 const ROLE_TABS = new Set<UserTab>(['moderators', 'owners', 'admins']);
 const TYPE_TABS = new Set<UserTab>(['experts', 'users']);
-
-export function flag(val: string | number | null | undefined): boolean {
-    return val !== null && val !== undefined && Number(val) > 0;
-}
-
-/**
- * Подпись кнопки роли: «+ Модератор» / «− Модератор».
- *
- * Раньше во всех колонках-флагах стояло одинаковое «Назначить», и в тесной
- * строке владелец, целясь в «Модератор», попадал в соседнюю колонку —
- * ровно так один из наших владельцев случайно сделал человека
- * преподавателем. Название роли прямо на кнопке снимает вопрос, а знак
- * говорит, что произойдёт. Полная фраза остаётся в `title`.
- *
- * Собирается из существующих строк, а не из новых: знак и название роли
- * читаются одинаково и по-русски, и по-английски.
- */
-export function roleFlagLabel(role: string, granted: boolean): string {
-    return `${granted ? '−' : '+'} ${role}`;
-}
-
-export function FlagBtn({label, active, cls, disabled, onClick, testId, title}: {
-    label: string;
-    active: boolean;
-    cls: [string, string]; // [active class, inactive class]
-    disabled: boolean;
-    onClick: () => void;
-    testId?: string;
-    title?: string;
-}) {
-    return (
-        <button
-            type="button"
-            data-test-id={testId}
-            title={title}
-            className={`btn btn-sm ${active ? cls[0] : cls[1]}`}
-            disabled={disabled}
-            onClick={onClick}
-        >
-            {label}
-        </button>
-    );
-}
 
 const TabButton: React.FC<{
     tabKey: string;

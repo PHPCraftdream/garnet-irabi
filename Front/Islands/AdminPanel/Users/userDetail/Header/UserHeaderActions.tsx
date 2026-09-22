@@ -1,7 +1,8 @@
 import * as React from 'react';
 import {EntityHistoryButton} from '@common/Components/Admin/EntityHistory/EntityHistoryButton';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {flag, FlagBtn} from '../../UsersSection';
+import {flag} from '../../usersFlags';
+import {FlagBtn} from '../../FlagBtn';
 import {AccountData} from '../userDetailTypes';
 
 interface RoleTogglesProps {

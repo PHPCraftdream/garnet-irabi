@@ -3,15 +3,7 @@ import * as React from 'react';
 import {UserDetailTab} from '../Users/UserDetailTab';
 import {useUserTabs} from './useUserTabs';
 import {TabNav} from '@common/Components/Layout/Navigation/TabNav';
-import {appUrl} from '@common/Utils/Url/appUrl';
-
-// ── Hardcoded admin API URLs (consistent across all admin pages) ──
-
-export const ADMIN_URLS = {
-    detailUrl: appUrl('/admin/~userDetail'),
-    setFlagUrl: appUrl('/admin/~setUserFlag'),
-    createTicketUrl: appUrl('/admin/support/~createForUser'),
-};
+import {ADMIN_URLS} from './AdminUrls';
 
 interface SimpleWrapperConfig {
     mainLabel: string;
