@@ -39,23 +39,25 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\People {
     class DashboardUsersController extends DashboardController {
         public const URL = '/admin/';
 
-        private static function fetchUsers(): array {
-            $config = UserEntityConfig::getEntityConfig();
+        public static function post__usersPage(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
+            if (!static::isModerator()) {
+                return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
+            }
+            ['page' => $page, 'perPage' => $perPage] = PaginationHelper::readPageParams($globals);
+            ['query' => $query, 'sortField' => $sortField, 'sortDir' => $sortDir] = PaginationHelper::readSearchSortParams($globals);
+            $tab = (string)$globals->readPostValue('tab', 'all');
 
-            $accounts = Account::getAccounts(
-                selectCallback: static function (SelectInterface $select) use ($config): void {
-                    $select->resetCols();
-                    $select->cols($config->selectFields());
-                    $select->orderBy(['id desc']);
-                },
-                accountDataFields: $config->dataFields(),
-            );
+            $payload = UsersPageService::fetchUsersPage($page, $perPage, $query, $sortField, $sortDir, $tab);
 
-            foreach ($accounts as &$account) {
-                $config->patchItem($account);
+            return ControllerTools::JSON($payload);
+        }
+
+        public static function post__usersTabCounts(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
+            if (!static::isModerator()) {
+                return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
             }
 
-            return $accounts;
+            return ControllerTools::JSON(UsersPageService::fetchTabCounts());
         }
 
         public static function post__setUserFlag(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
@@ -773,7 +775,8 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\People {
 
             $url = $globals->getUri();
             $t = ForegroundI18n::getInstance();
-            $users = static::fetchUsers();
+            $usersPayload = UsersPageService::fetchUsersPage(1, PaginationHelper::DEFAULT_PER_PAGE);
+            $tabCounts = UsersPageService::fetchTabCounts();
 
             $callerIsAdmin = UserEntityConfig::isAdmin();
             $callerIsOwner = UserEntityConfig::isOwner(); // true for admin too
@@ -812,7 +815,10 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\People {
                 : null;
 
             $content = RenderIsland::render('admin-panel', [
-                'users' => $users,
+                'usersPageUrl' => IRabi::url(static::URL . '~usersPage'),
+                'usersInitialData' => $usersPayload,
+                'usersTabCountsUrl' => IRabi::url(static::URL . '~usersTabCounts'),
+                'usersTabCounts' => $tabCounts,
                 'setFlagUrl' => IRabi::url(static::URL . '~setUserFlag'),
                 'setUserTypeUrl' => IRabi::url(static::URL . '~setUserType'),
                 'userDetailUrl' => IRabi::url(static::URL . '~userDetail'),

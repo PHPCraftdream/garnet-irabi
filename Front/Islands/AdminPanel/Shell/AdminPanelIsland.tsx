@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
-import {AdminUser, GridConfig} from './types';
+import {AdminUser, GridConfig, UserTab} from './types';
 import {UsersSection} from '../Users/UsersSection';
 import {AdminCommentsSection, AdminCommentRow, CommentsAccountOption} from '../Support/AdminCommentsSection';
 import {AdminTokensSection} from '../System/AdminTokensSection';
@@ -15,7 +15,10 @@ import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {Users} from 'lucide-react';
 
 interface Props {
-    users: AdminUser[];
+    usersPageUrl: string;
+    usersInitialData: PageResponse<AdminUser> | null;
+    usersTabCountsUrl?: string;
+    usersTabCounts: Record<UserTab, number>;
     setFlagUrl?: string;
     setUserTypeUrl?: string;
     gridConfig: GridConfig;
@@ -75,7 +78,10 @@ function writeTabToUrl(tab: StaticTabId): void {
 
 export const AdminPanelIsland: React.FC<Props> = (props) => {
     const {
-        users,
+        usersPageUrl,
+        usersInitialData,
+        usersTabCountsUrl,
+        usersTabCounts,
         setFlagUrl,
         setUserTypeUrl,
         gridConfig,
@@ -121,14 +127,15 @@ export const AdminPanelIsland: React.FC<Props> = (props) => {
         return () => window.removeEventListener('popstate', onPop);
     }, []);
 
-    // On mount: hash #user={id} → auto-open user-detail tab (with name from users list)
+    // On mount: hash #user={id} → auto-open user-detail tab. The tab label
+    // starts as a placeholder id (the users list is now server-paginated,
+    // not loaded whole on mount) — UserDetailTab fetches the real name.
     useEffect(() => {
         const hash = window.location.hash;
         if (hash.includes('user=')) {
             const userId = parseInt(hash.split('user=')[1]?.split('&')[0] || '0', 10);
             if (userId > 0) {
-                const user = users.find(u => u.id === userId);
-                openUser(userId, user?.name || `#${userId}`);
+                openUser(userId, `#${userId}`);
                 window.history.replaceState(
                     null,
                     '',
@@ -182,7 +189,15 @@ export const AdminPanelIsland: React.FC<Props> = (props) => {
                 onClose={handleClose}
             />
             {showUsers && (
-                <UsersSection users={users} setFlagUrl={setFlagUrl} setUserTypeUrl={setUserTypeUrl} config={gridConfig} />
+                <UsersSection
+                    pageUrl={usersPageUrl}
+                    initialData={usersInitialData}
+                    tabCountsUrl={usersTabCountsUrl}
+                    initialTabCounts={usersTabCounts}
+                    setFlagUrl={setFlagUrl}
+                    setUserTypeUrl={setUserTypeUrl}
+                    config={gridConfig}
+                />
             )}
             {showComments && (
                 <AdminCommentsSection

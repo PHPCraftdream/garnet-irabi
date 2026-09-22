@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {useMemo, useState} from 'react';
-import {AccountBalanceRow, GridConfig} from '../Shell/types';
-import {AdminGrid} from '../Grid/AdminGrid';
+import {useMemo, useRef, useState} from 'react';
+import {AccountBalanceRow, GridConfig, PageResponse} from '../Shell/types';
+import {AdminGrid, AdminGridHandle} from '../Grid/AdminGrid';
 import {Combobox} from '@common/Components/ui/Combobox';
 import {DateInput} from '@common/Components/ui/DateInput';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
@@ -10,7 +10,9 @@ import {AdminUserLink} from '../../../Common/people/EntityLinks';
 import {BalanceAdjustModal} from './BalanceAdjustModal';
 
 interface Props {
-    balances: AccountBalanceRow[];
+    pageUrl: string;
+    initialData: PageResponse<AccountBalanceRow> | null;
+    initialAccountOptions: {value: string; label: string}[];
     config: GridConfig;
     adjustUrl: string;
     canAdjust: boolean;
@@ -57,37 +59,25 @@ const AdjustBalanceButton: React.FC<{
     </button>
 );
 
-export const BalancesSection: React.FC<Props> = ({balances: initialBalances, config, adjustUrl, canAdjust}) => {
-    const [balances, setBalances] = useState<AccountBalanceRow[]>(initialBalances);
+export const BalancesSection: React.FC<Props> = ({pageUrl, initialData, initialAccountOptions, config, adjustUrl, canAdjust}) => {
     const [accountId, setAccountId] = useState<string>('');
     const [dateFrom, setDateFrom] = useState<string>('');
     const [dateTo, setDateTo] = useState<string>('');
     const [adjusting, setAdjusting] = useState<AccountBalanceRow | null>(null);
+    const gridRef = useRef<AdminGridHandle<AccountBalanceRow>>(null);
 
     const allLabel = t.Admin_Filter_All();
 
-    const accountOptions = useMemo(() => {
-        const arr = balances.map(b => ({
-            value: String(b.account_id),
-            label: b.name || b.login || `#${b.account_id}`,
-        }));
-        arr.sort((a, b) => a.label.localeCompare(b.label));
-        return [{value: '', label: allLabel}, ...arr];
-    }, [balances, allLabel]);
+    const accountOptions = useMemo(
+        () => [{value: '', label: allLabel}, ...initialAccountOptions],
+        [initialAccountOptions, allLabel],
+    );
 
-    const filtered = useMemo(() => {
-        let res = balances;
-        if (accountId) res = res.filter(b => String(b.account_id) === accountId);
-        if (dateFrom) {
-            const tsFrom = Math.floor(new Date(dateFrom + 'T00:00:00Z').getTime() / 1000);
-            res = res.filter(b => b.updated_at >= tsFrom);
-        }
-        if (dateTo) {
-            const tsTo = Math.floor(new Date(dateTo + 'T23:59:59Z').getTime() / 1000);
-            res = res.filter(b => b.updated_at <= tsTo);
-        }
-        return res;
-    }, [balances, accountId, dateFrom, dateTo]);
+    const extraParams = useMemo(() => ({
+        accountId: accountId || undefined,
+        dateFrom: dateFrom ? Math.floor(new Date(dateFrom + 'T00:00:00Z').getTime() / 1000) : undefined,
+        dateTo: dateTo ? Math.floor(new Date(dateTo + 'T23:59:59Z').getTime() / 1000) : undefined,
+    }), [accountId, dateFrom, dateTo]);
 
     const hasActive = !!(accountId || dateFrom || dateTo);
     const reset = () => {
@@ -97,7 +87,7 @@ export const BalancesSection: React.FC<Props> = ({balances: initialBalances, con
     };
 
     const handleAdjusted = (acctId: number, newBalance: number, updatedAt: number) => {
-        setBalances(prev => prev.map(b => b.account_id === acctId
+        gridRef.current?.setItems(prev => prev.map(b => b.account_id === acctId
             ? {...b, balance: newBalance, updated_at: updatedAt}
             : b
         ));
@@ -151,7 +141,10 @@ export const BalancesSection: React.FC<Props> = ({balances: initialBalances, con
             </div>
 
             <AdminGrid
-                rows={filtered}
+                ref={gridRef}
+                pageUrl={pageUrl}
+                initialData={initialData}
+                extraParams={extraParams}
                 config={configWithActions}
                 rowKey={r => r.id}
                 emptyMessage={t.Admin_NoBalances()}

@@ -1,6 +1,6 @@
 import * as React from 'react';
-import {LedgerEntry, LedgerParty, LedgerRefData, GridConfig} from '../Shell/types';
-import {AdminGrid} from '../Grid/AdminGrid';
+import {LedgerEntry, LedgerParty, LedgerRefData, GridConfig, PageResponse} from '../Shell/types';
+import {AdminGrid, AdminGridHandle} from '../Grid/AdminGrid';
 import {Combobox} from '@common/Components/ui/Combobox';
 import {DateInput} from '@common/Components/ui/DateInput';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
@@ -8,8 +8,16 @@ import {formatTs} from '@common/Utils/Time/DateUtils';
 import {AdminUserLink} from '../../../Common/people/EntityLinks';
 import {statusLabel, entryTypeLabel} from '../Grid/gridRenders';
 
+interface LedgerFilterOptions {
+    fromOptions: {value: string; label: string}[];
+    toOptions: {value: string; label: string}[];
+    entryTypes: string[];
+}
+
 interface Props {
-    ledger: LedgerEntry[];
+    pageUrl: string;
+    initialData: PageResponse<LedgerEntry> | null;
+    initialFilterOptions: LedgerFilterOptions;
     config: GridConfig;
 }
 
@@ -80,30 +88,6 @@ const PartyCell: React.FC<{party: LedgerParty}> = ({party}) => {
     );
 };
 
-interface AccountOption {
-    id: number;
-    label: string;
-}
-
-function collectAccounts(ledger: LedgerEntry[], side: 'from' | 'to'): AccountOption[] {
-    const seen = new Map<number, string>();
-    for (const row of ledger) {
-        const party = row[side];
-        if (party.type === 'account' && party.account_id != null && !seen.has(party.account_id)) {
-            seen.set(party.account_id, party.label ?? `#${party.account_id}`);
-        }
-    }
-    return Array.from(seen.entries())
-        .map(([id, label]) => ({id, label}))
-        .sort((a, b) => a.label.localeCompare(b.label));
-}
-
-function collectEntryTypes(ledger: LedgerEntry[]): string[] {
-    const seen = new Set<string>();
-    for (const row of ledger) seen.add(row.entry_type);
-    return Array.from(seen).sort();
-}
-
 function unixDayStart(dateStr: string): number | null {
     if (!dateStr) return null;
     const ts = new Date(dateStr + 'T00:00:00').getTime();
@@ -116,61 +100,33 @@ function unixDayEnd(dateStr: string): number | null {
     return Number.isFinite(ts) ? Math.floor(ts / 1000) : null;
 }
 
-export const LedgerSection: React.FC<Props> = ({ledger, config}) => {
+export const LedgerSection: React.FC<Props> = ({pageUrl, initialData, initialFilterOptions, config}) => {
     const [fromAccountId, setFromAccountId] = React.useState<number>(0);
     const [toAccountId, setToAccountId] = React.useState<number>(0);
     const [dateFrom, setDateFrom] = React.useState<string>('');
     const [dateTo, setDateTo] = React.useState<string>('');
     const [entryType, setEntryType] = React.useState<string>('');
-    const [searchQuery, setSearchQuery] = React.useState<string>('');
+    const gridRef = React.useRef<AdminGridHandle<LedgerEntry>>(null);
 
-    const fromOptions = React.useMemo(() => {
-        const accs = collectAccounts(ledger, 'from');
-        return [
-            {value: '0', label: t.Admin_Filter_All()},
-            ...accs.map(a => ({value: String(a.id), label: a.label})),
-        ];
-    }, [ledger]);
+    const fromOptions = React.useMemo(() => [
+        {value: '0', label: t.Admin_Filter_All()},
+        ...initialFilterOptions.fromOptions,
+    ], [initialFilterOptions.fromOptions]);
 
-    const toOptions = React.useMemo(() => {
-        const accs = collectAccounts(ledger, 'to');
-        return [
-            {value: '0', label: t.Admin_Filter_All()},
-            ...accs.map(a => ({value: String(a.id), label: a.label})),
-        ];
-    }, [ledger]);
+    const toOptions = React.useMemo(() => [
+        {value: '0', label: t.Admin_Filter_All()},
+        ...initialFilterOptions.toOptions,
+    ], [initialFilterOptions.toOptions]);
 
-    const entryTypes = React.useMemo(() => collectEntryTypes(ledger), [ledger]);
+    const entryTypes = initialFilterOptions.entryTypes;
 
-    const filtered = React.useMemo(() => {
-        const dfTs = unixDayStart(dateFrom);
-        const dtTs = unixDayEnd(dateTo);
-        const searchLc = searchQuery.trim().toLowerCase();
-
-        return ledger.filter(row => {
-            if (fromAccountId > 0) {
-                if (row.from.type !== 'account' || row.from.account_id !== fromAccountId) return false;
-            }
-            if (toAccountId > 0) {
-                if (row.to.type !== 'account' || row.to.account_id !== toAccountId) return false;
-            }
-            if (dfTs != null && row.created_at < dfTs) return false;
-            if (dtTs != null && row.created_at > dtTs) return false;
-            if (entryType && row.entry_type !== entryType) return false;
-            // Single free-text search across the text of every column: from/to
-            // party names, entry type, note, amount and the formatted date.
-            if (searchLc) {
-                const blob = [
-                    row.from?.label, row.to?.label,
-                    entryTypeLabel(row.entry_type),
-                    row.note, String(row.amount),
-                    formatTs(row.created_at),
-                ].filter(Boolean).join(' ').toLowerCase();
-                if (!blob.includes(searchLc)) return false;
-            }
-            return true;
-        });
-    }, [ledger, fromAccountId, toAccountId, dateFrom, dateTo, entryType, searchQuery]);
+    const extraParams = React.useMemo(() => ({
+        fromAccountId: fromAccountId || undefined,
+        toAccountId: toAccountId || undefined,
+        entryType: entryType || undefined,
+        dateFrom: unixDayStart(dateFrom) ?? undefined,
+        dateTo: unixDayEnd(dateTo) ?? undefined,
+    }), [fromAccountId, toAccountId, entryType, dateFrom, dateTo]);
 
     const handleReset = React.useCallback(() => {
         setFromAccountId(0);
@@ -178,7 +134,6 @@ export const LedgerSection: React.FC<Props> = ({ledger, config}) => {
         setDateFrom('');
         setDateTo('');
         setEntryType('');
-        setSearchQuery('');
     }, []);
 
     return (
@@ -241,18 +196,6 @@ export const LedgerSection: React.FC<Props> = ({ledger, config}) => {
                         ))}
                     </select>
                 </div>
-                <div className="filter-cell">
-                    <label htmlFor="finance-search">{t.Comment_Filter_Search()}</label>
-                    <input
-                        id="finance-search"
-                        type="search"
-                        value={searchQuery}
-                        onChange={e => setSearchQuery(e.target.value)}
-                        placeholder={t.Grid_Search()}
-                        className="form-control"
-                        data-test-id="finance-search"
-                    />
-                </div>
                 <div className="filter-actions">
                     <button
                         type="button"
@@ -268,8 +211,11 @@ export const LedgerSection: React.FC<Props> = ({ledger, config}) => {
             </div>
 
             <AdminGrid
-                rows={filtered}
-                config={{...config, searchFields: []}}
+                ref={gridRef}
+                pageUrl={pageUrl}
+                initialData={initialData}
+                extraParams={extraParams}
+                config={config}
                 rowKey={r => r.id}
                 emptyMessage={t.Admin_NoLedger()}
                 renders={{

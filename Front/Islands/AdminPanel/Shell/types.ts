@@ -1,5 +1,6 @@
 // Generic grid types — re-exported from Common for convenience
-export type {GridColumnConfig, GridConfig, SubGridConfig, DetailViewConfig, DetailSection} from '@common/Components/Admin/AdminGrid/types';
+export type {GridColumnConfig, GridConfig} from '@common/Components/Admin/AdminGrid/types';
+export type {PageResponse} from '@common/hooks/data/usePagination';
 
 // ── IRabi domain types ────────────────────────────────────────────────────────
 
@@ -16,40 +17,6 @@ export interface AdminUser {
     IS_MODERATOR: string | number | null;
     IS_APPROVED: string | number | null;
     IS_DISABLED: string | number | null;
-}
-
-export interface AdminExpert {
-    id: number;
-    login: string;
-    name: string;
-    last_online_time: number | null;
-    IS_ADMIN: string | number | null;
-    IS_OWNER: string | number | null;
-    IS_MODERATOR: string | number | null;
-    IS_APPROVED: string | number | null;
-    IS_DISABLED: string | number | null;
-}
-
-export interface AdminMaterial {
-    id: number;
-    title: string;
-    body_md: string;
-    show_after_start: number;
-    sort_order: number;
-    created_at: number;
-    updated_at: number;
-}
-
-export interface AdminBooking {
-    id: number;
-    user_id: number;
-    user_name: string;
-    expert_id: number;
-    expert_name: string;
-    bookable_type: string;
-    bookable_id: number;
-    status: string;
-    created_at: number;
 }
 
 export interface LedgerRefData {
@@ -94,46 +61,4 @@ export interface AccountBalanceRow {
     type: string;
     balance: number;
     updated_at: number;
-}
-
-export interface ActionLog {
-    id: number;
-    actor_id: number;
-    actor_login: string;
-    actor_name: string;
-    actor_type: string;
-    target_id: number;
-    target_login: string;
-    target_name: string;
-    target_type: string;
-    action: string;
-    old_value: string;
-    new_value: string;
-    created_at: number;
-}
-
-export interface MailLogEntry {
-    id: number;
-    account_id: number | null;
-    account_name: string;
-    account_login: string;
-    recipient_email: string;
-    mail_type: string;
-    subject: string;
-    /** Only present for admin role; stripped for moderators/owners */
-    body_html?: string;
-    /** Structured service data (auth codes etc.); only present for admin */
-    meta?: string | null;
-    status: string;
-    error_log: string | null;
-    created_at: number;
-}
-
-export interface AdminPanelProps {
-    users?: AdminUser[];
-    adminBookings?: AdminBooking[];
-    ledger?: LedgerEntry[];
-    balances?: AccountBalanceRow[];
-    logs?: ActionLog[];
-    setFlagUrl?: string;
 }

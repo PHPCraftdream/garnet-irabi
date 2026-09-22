@@ -33,11 +33,186 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Money {
          */
         private const MAX_ADJUST_AMOUNT = 1_000_000;
 
-        private static function fetchLedger(): array {
-            $rows = BalanceLedger::get()->selectAll(function (SelectInterface $q): void {
-                $q->orderBy(['id DESC']);
-                $q->limit(300);
+        private const LEDGER_SEARCH_FIELDS = ['entry_type', 'note'];
+
+        private const LEDGER_SORT_FIELDS = ['id', 'amount', 'created_at'];
+
+        /**
+         * Raw SQL for "which account is the from/to party of this row" —
+         * mirrors the PHP switch in hydrateLedger() exactly, so the two
+         * never answer differently for the same row. Needed because the
+         * from/to party isn't a plain column: it's account_id itself for
+         * some entry_types, the booking's counterpart (via a join) for
+         * others, or the manual-adjustment actor_id.
+         */
+        private static function ledgerPartySql(string $ledgerTbl, string $bookingsTbl, string $slotsTbl, bool $from): string {
+            $bookingCounterpart = "{$bookingsTbl}.user_id";
+            $slotCounterpart = "{$slotsTbl}.expert_id";
+
+            if ($from) {
+                return "CASE
+                    WHEN {$ledgerTbl}.entry_type = 'booking_invoice' THEN {$ledgerTbl}.account_id
+                    WHEN {$ledgerTbl}.entry_type = 'booking_payment' THEN {$bookingCounterpart}
+                    WHEN {$ledgerTbl}.entry_type = 'booking_refund' AND {$ledgerTbl}.is_credit = 1 THEN {$slotCounterpart}
+                    WHEN {$ledgerTbl}.entry_type = 'booking_refund' AND {$ledgerTbl}.is_credit = 0 THEN {$ledgerTbl}.account_id
+                    WHEN {$ledgerTbl}.entry_type = 'top_up' THEN NULL
+                    WHEN {$ledgerTbl}.entry_type = 'manual' AND {$ledgerTbl}.actor_id > 0
+                        THEN (CASE WHEN {$ledgerTbl}.is_credit = 1 THEN {$ledgerTbl}.actor_id ELSE {$ledgerTbl}.account_id END)
+                    ELSE (CASE WHEN {$ledgerTbl}.is_credit = 1 THEN NULL ELSE {$ledgerTbl}.account_id END)
+                END";
+            }
+
+            return "CASE
+                WHEN {$ledgerTbl}.entry_type = 'booking_invoice' THEN {$slotCounterpart}
+                WHEN {$ledgerTbl}.entry_type = 'booking_payment' THEN {$ledgerTbl}.account_id
+                WHEN {$ledgerTbl}.entry_type = 'booking_refund' AND {$ledgerTbl}.is_credit = 1 THEN {$ledgerTbl}.account_id
+                WHEN {$ledgerTbl}.entry_type = 'booking_refund' AND {$ledgerTbl}.is_credit = 0 THEN {$bookingCounterpart}
+                WHEN {$ledgerTbl}.entry_type = 'top_up' THEN {$ledgerTbl}.account_id
+                WHEN {$ledgerTbl}.entry_type = 'manual' AND {$ledgerTbl}.actor_id > 0
+                    THEN (CASE WHEN {$ledgerTbl}.is_credit = 1 THEN {$ledgerTbl}.account_id ELSE {$ledgerTbl}.actor_id END)
+                ELSE (CASE WHEN {$ledgerTbl}.is_credit = 1 THEN {$ledgerTbl}.account_id ELSE NULL END)
+            END";
+        }
+
+        /**
+         * LEFT JOIN balance_ledger → bookings → time_slots, needed only to
+         * resolve the from/to party SQL above (booking_* entries reference a
+         * counterpart account through the booking/slot, not a ledger column).
+         */
+        private static function joinLedgerParties(SelectInterface $q): void {
+            $ledgerTbl = BalanceLedger::get()->getTableName();
+            $bookingsTbl = Bookings::get()->getTableName();
+            $slotsTbl = TimeSlots::get()->getTableName();
+
+            $q->join('LEFT', $bookingsTbl, "{$bookingsTbl}.id = {$ledgerTbl}.ref_id AND {$ledgerTbl}.ref_type = 'booking'");
+            $q->join('LEFT', $slotsTbl, "{$slotsTbl}.id = {$bookingsTbl}.bookable_id AND {$bookingsTbl}.bookable_type = 'time_slot'");
+        }
+
+        /**
+         * @return array<string, mixed> PageResponse shape
+         */
+        private static function fetchLedgerPage(
+            int $page,
+            int $perPage,
+            string $query = '',
+            ?string $sortField = null,
+            string $sortDir = 'asc',
+            array $filters = [],
+        ): array {
+            $ledgerTbl = BalanceLedger::get()->getTableName();
+            $bookingsTbl = Bookings::get()->getTableName();
+            $slotsTbl = TimeSlots::get()->getTableName();
+
+            $pageData = PaginationHelper::fetchPage(
+                BalanceLedger::get(),
+                $page,
+                $perPage,
+                static function (SelectInterface $q) use ($ledgerTbl, $bookingsTbl, $slotsTbl, $filters, $query, $sortField, $sortDir): void {
+                    $q->resetCols();
+                    $q->cols([
+                        "{$ledgerTbl}.id", "{$ledgerTbl}.account_id", "{$ledgerTbl}.is_credit",
+                        "{$ledgerTbl}.amount", "{$ledgerTbl}.entry_type", "{$ledgerTbl}.ref_type",
+                        "{$ledgerTbl}.ref_id", "{$ledgerTbl}.note", "{$ledgerTbl}.actor_id",
+                        "{$ledgerTbl}.created_at",
+                    ]);
+
+                    if (!empty($filters['fromAccountId']) || !empty($filters['toAccountId'])) {
+                        static::joinLedgerParties($q);
+                        if (!empty($filters['fromAccountId'])) {
+                            $fromSql = static::ledgerPartySql($ledgerTbl, $bookingsTbl, $slotsTbl, from: true);
+                            $q->where("({$fromSql}) = ?", [(int)$filters['fromAccountId']]);
+                        }
+                        if (!empty($filters['toAccountId'])) {
+                            $toSql = static::ledgerPartySql($ledgerTbl, $bookingsTbl, $slotsTbl, from: false);
+                            $q->where("({$toSql}) = ?", [(int)$filters['toAccountId']]);
+                        }
+                    }
+                    if (!empty($filters['entryType'])) {
+                        $q->where("{$ledgerTbl}.entry_type = ?", [$filters['entryType']]);
+                    }
+                    if (!empty($filters['dateFrom'])) {
+                        $q->where("{$ledgerTbl}.created_at >= ?", [(int)$filters['dateFrom']]);
+                    }
+                    if (!empty($filters['dateTo'])) {
+                        $q->where("{$ledgerTbl}.created_at <= ?", [(int)$filters['dateTo']]);
+                    }
+
+                    PaginationHelper::applySearchAndSort(
+                        $q, $query, self::LEDGER_SEARCH_FIELDS, $sortField, $sortDir, self::LEDGER_SORT_FIELDS, "{$ledgerTbl}.id DESC",
+                    );
+                },
+            );
+
+            $pageData->pageItems = static::hydrateLedger($pageData->pageItems);
+
+            return PaginationHelper::toPageResponse($pageData);
+        }
+
+        /**
+         * Combobox options for the From/To filters + the entry-type dropdown
+         * — distinct across the whole table, not just the loaded page.
+         *
+         * @return array{fromOptions: array<int, array{value: string, label: string}>, toOptions: array<int, array{value: string, label: string}>, entryTypes: array<int, string>}
+         */
+        private static function fetchLedgerFilterOptions(): array {
+            $ledgerTbl = BalanceLedger::get()->getTableName();
+            $bookingsTbl = Bookings::get()->getTableName();
+            $slotsTbl = TimeSlots::get()->getTableName();
+
+            $collect = static function (bool $from) use ($ledgerTbl, $bookingsTbl, $slotsTbl): array {
+                $sql = static::ledgerPartySql($ledgerTbl, $bookingsTbl, $slotsTbl, $from);
+                $rows = BalanceLedger::get()->selectAll(static function (SelectInterface $q) use ($sql): void {
+                    static::joinLedgerParties($q);
+                    $q->resetCols();
+                    $q->cols(["({$sql}) AS pid"]);
+                    $q->distinct();
+                    $q->where("({$sql}) IS NOT NULL");
+                });
+                return array_values(array_unique(array_map(static fn (array $r): int => (int)$r['pid'], $rows)));
+            };
+
+            $fromIds = $collect(true);
+            $toIds = $collect(false);
+            $allIds = array_unique(array_merge($fromIds, $toIds));
+
+            $accounts = [];
+            if (!empty($allIds)) {
+                $accs = Account::getAccounts(
+                    selectCallback: static function (SelectInterface $select) use ($allIds): void {
+                        $select->resetCols();
+                        $select->cols(['id', 'login', 'name']);
+                        $select->where('id IN (?)', [array_map('intval', $allIds)]);
+                    },
+                );
+                foreach ($accs as $a) {
+                    $accounts[(int)$a['id']] = $a;
+                }
+            }
+
+            $label = static fn (int $id): string => ($accounts[$id]['name'] ?? '') ?: (($accounts[$id]['login'] ?? '') ?: "#{$id}");
+            $toOption = static fn (int $id): array => ['value' => (string)$id, 'label' => $label($id)];
+
+            $entryTypeRows = BalanceLedger::get()->selectAll(static function (SelectInterface $q): void {
+                $q->resetCols();
+                $q->cols(['entry_type']);
+                $q->distinct();
             });
+
+            return [
+                'fromOptions' => array_map($toOption, $fromIds),
+                'toOptions' => array_map($toOption, $toIds),
+                'entryTypes' => array_values(array_unique(array_column($entryTypeRows, 'entry_type'))),
+            ];
+        }
+
+        /**
+         * @param array<int, array<string, mixed>> $rows
+         * @return array<int, array<string, mixed>>
+         */
+        private static function hydrateLedger(array $rows): array {
+            if ($rows === []) {
+                return $rows;
+            }
 
             // Fetch accounts for all ledger owners + actors (admins who made manual adjustments)
             $accountIds = array_values(array_unique(array_filter(array_column($rows, 'account_id'))));
@@ -236,10 +411,84 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Money {
             return $rows;
         }
 
-        private static function fetchBalances(): array {
-            $balances = AccountBalance::get()->selectAll(function (SelectInterface $q): void {
-                $q->orderBy(['balance DESC']);
-            });
+        private const BALANCES_SORT_FIELDS = ['id', 'balance', 'updated_at'];
+
+        /**
+         * @return array<string, mixed> PageResponse shape
+         */
+        private static function fetchBalancesPage(
+            int $page,
+            int $perPage,
+            string $query = '',
+            ?string $sortField = null,
+            string $sortDir = 'asc',
+            array $filters = [],
+        ): array {
+            $pageData = PaginationHelper::fetchPage(
+                AccountBalance::get(),
+                $page,
+                $perPage,
+                static function (SelectInterface $q) use ($filters, $query, $sortField, $sortDir): void {
+                    if (!empty($filters['accountId'])) {
+                        $q->where('account_id = ?', [(int)$filters['accountId']]);
+                    }
+                    if (!empty($filters['dateFrom'])) {
+                        $q->where('updated_at >= ?', [(int)$filters['dateFrom']]);
+                    }
+                    if (!empty($filters['dateTo'])) {
+                        $q->where('updated_at <= ?', [(int)$filters['dateTo']]);
+                    }
+                    // No real free-text column on account_balance — name/login
+                    // are hydrated below, not searchable server-side.
+                    PaginationHelper::applySearchAndSort($q, $query, [], $sortField, $sortDir, self::BALANCES_SORT_FIELDS, 'balance DESC');
+                },
+            );
+
+            $pageData->pageItems = static::hydrateBalances($pageData->pageItems);
+
+            return PaginationHelper::toPageResponse($pageData);
+        }
+
+        /**
+         * @return array<int, array{value: string, label: string}>
+         */
+        private static function fetchBalancesFilterOptions(): array {
+            $accountIds = array_column(AccountBalance::get()->selectAll(static function (SelectInterface $q): void {
+                $q->resetCols();
+                $q->cols(['account_id']);
+            }), 'account_id');
+            $accountIds = array_values(array_unique(array_map('intval', $accountIds)));
+
+            if (empty($accountIds)) {
+                return [];
+            }
+
+            $accs = Account::getAccounts(
+                selectCallback: static function (SelectInterface $select) use ($accountIds): void {
+                    $select->resetCols();
+                    $select->cols(['id', 'login', 'name']);
+                    $select->where('id IN (?)', [$accountIds]);
+                },
+            );
+
+            $options = array_map(static fn (array $a): array => [
+                'value' => (string)$a['id'],
+                'label' => $a['name'] ?: ($a['login'] ?: "#{$a['id']}"),
+            ], $accs);
+
+            usort($options, static fn (array $a, array $b): int => strcasecmp($a['label'], $b['label']));
+
+            return $options;
+        }
+
+        /**
+         * @param array<int, array<string, mixed>> $balances
+         * @return array<int, array<string, mixed>>
+         */
+        private static function hydrateBalances(array $balances): array {
+            if ($balances === []) {
+                return $balances;
+            }
 
             $accountIds = array_unique(array_filter(array_column($balances, 'account_id')));
             $accounts = [];
@@ -301,8 +550,11 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Money {
                     GridConfig::col('amount',     $t->Admin_Ledger_Amount(), shrink: true),
                     GridConfig::col('note',       $t->Admin_Ledger_Note()),
                 ],
-                searchFields: ['login', 'name', 'entry_type', 'note'],
-                sortFields:   ['id', 'amount', 'created_at'],
+                // login/name are hydrated (joined from accounts), not real
+                // columns on balance_ledger — server-side search can only
+                // cover entry_type/note.
+                searchFields: ['entry_type', 'note'],
+                sortFields:   self::LEDGER_SORT_FIELDS,
                 pageSize:     PaginationHelper::DEFAULT_PER_PAGE,
             );
 
@@ -312,14 +564,20 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Money {
                     GridConfig::col('balance', $t->Admin_Balance_Balance(), shrink: true),
                     GridConfig::col('updated_at', $t->Admin_Balance_Updated()),
                 ],
-                searchFields: ['name'],
-                sortFields:   ['balance', 'updated_at'],
+                // name isn't a real column on account_balance either — the
+                // account combobox filter covers "find by user" instead.
+                searchFields: [],
+                sortFields:   self::BALANCES_SORT_FIELDS,
                 pageSize:     PaginationHelper::DEFAULT_PER_PAGE,
             );
 
             $content = RenderIsland::render('admin-finance', [
-                'ledger' => static::fetchLedger(),
-                'balances' => static::fetchBalances(),
+                'ledgerPageUrl' => IRabi::url(self::URL . '~ledgerPage'),
+                'ledgerInitialData' => static::fetchLedgerPage(1, PaginationHelper::DEFAULT_PER_PAGE),
+                'ledgerInitialFilterOptions' => static::fetchLedgerFilterOptions(),
+                'balancesPageUrl' => IRabi::url(self::URL . '~balancesPage'),
+                'balancesInitialData' => static::fetchBalancesPage(1, PaginationHelper::DEFAULT_PER_PAGE),
+                'balancesInitialAccountOptions' => static::fetchBalancesFilterOptions(),
                 'ledgerGridConfig' => $ledgerGridConfig,
                 'balancesGridConfig' => $balancesGridConfig,
                 'userDetailUrl' => IRabi::url('/admin/~userDetail'),
@@ -338,6 +596,38 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Money {
                     'side_menu_items' => static::getSideMenu($url),
                 ])
             ));
+        }
+
+        public static function post__ledgerPage(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
+            if (!static::isModerator()) {
+                return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
+            }
+            ['page' => $page, 'perPage' => $perPage] = PaginationHelper::readPageParams($globals);
+            ['query' => $query, 'sortField' => $sortField, 'sortDir' => $sortDir] = PaginationHelper::readSearchSortParams($globals);
+            $filters = [
+                'fromAccountId' => (int)$globals->readPostValue('fromAccountId', '0') ?: null,
+                'toAccountId' => (int)$globals->readPostValue('toAccountId', '0') ?: null,
+                'entryType' => (string)$globals->readPostValue('entryType', '') ?: null,
+                'dateFrom' => (int)$globals->readPostValue('dateFrom', '0') ?: null,
+                'dateTo' => (int)$globals->readPostValue('dateTo', '0') ?: null,
+            ];
+
+            return ControllerTools::JSON(static::fetchLedgerPage($page, $perPage, $query, $sortField, $sortDir, $filters));
+        }
+
+        public static function post__balancesPage(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
+            if (!static::isModerator()) {
+                return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
+            }
+            ['page' => $page, 'perPage' => $perPage] = PaginationHelper::readPageParams($globals);
+            ['query' => $query, 'sortField' => $sortField, 'sortDir' => $sortDir] = PaginationHelper::readSearchSortParams($globals);
+            $filters = [
+                'accountId' => (int)$globals->readPostValue('accountId', '0') ?: null,
+                'dateFrom' => (int)$globals->readPostValue('dateFrom', '0') ?: null,
+                'dateTo' => (int)$globals->readPostValue('dateTo', '0') ?: null,
+            ];
+
+            return ControllerTools::JSON(static::fetchBalancesPage($page, $perPage, $query, $sortField, $sortDir, $filters));
         }
 
         public static function post__adjustBalance(IGlobalReqParams $globals, IRouterUriParams $params): mixed {

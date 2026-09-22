@@ -1,10 +1,10 @@
 import * as React from 'react';
-import {useState, useMemo, useEffect} from 'react';
+import {useState, useMemo, useEffect, useRef} from 'react';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {refreshLiveCounts} from '@common/Utils/Data/liveCounts';
-import {GridConfig} from '../Shell/types';
+import {GridConfig, PageResponse} from '../Shell/types';
 import {TabNav, TabDef} from '@common/Components/Layout/Navigation/TabNav';
-import {AdminGrid} from '../Grid/AdminGrid';
+import {AdminGrid, AdminGridHandle} from '../Grid/AdminGrid';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {SupportTicket, SupportStatus} from '../../Comms/Support/parts/supportTypes';
 import {StatusBadge, statusLabel, ALL_STATUSES} from '../../Comms/Support/parts/supportRenders';
@@ -29,8 +29,18 @@ interface Moderator {
     name: string;
 }
 
+interface TicketFilterOptions {
+    users: {value: string; label: string}[];
+    assignees: {value: string; label: string}[];
+    hasUnassigned: boolean;
+    statusCounts: Partial<Record<SupportStatus, number>>;
+}
+
 interface Props {
-    tickets: SupportTicket[];
+    ticketsPageUrl: string;
+    ticketsInitialData: PageResponse<SupportTicket> | null;
+    filterOptionsUrl?: string;
+    initialFilterOptions: TicketFilterOptions;
     gridConfig: GridConfig;
     ticketDetailUrl: string;
     clientContextUrl?: string;
@@ -40,7 +50,6 @@ interface Props {
     assignUrl: string;
     moderators: Moderator[];
     userDetailUrl: string;
-    ticketsListUrl: string;
 }
 
 interface TicketTabKind {
@@ -59,25 +68,30 @@ interface InternalTab extends TabDef {
 }
 
 export const AdminSupportIsland: React.FC<Props> = ({
-    tickets: initialTickets, gridConfig, ticketDetailUrl, clientContextUrl, replyUrl, internalCommentUrl,
-    changeStatusUrl, assignUrl, moderators, userDetailUrl, ticketsListUrl,
+    ticketsPageUrl, ticketsInitialData, filterOptionsUrl, initialFilterOptions, gridConfig, ticketDetailUrl,
+    clientContextUrl, replyUrl, internalCommentUrl, changeStatusUrl, assignUrl, moderators, userDetailUrl,
 }) => {
     const mainTabId = 'main';
 
+    const [filterOptions, setFilterOptions] = useState<TicketFilterOptions>(initialFilterOptions);
+    const gridRef = useRef<AdminGridHandle<SupportTicket>>(null);
+
     // D-198: очередь больше не заморожена в HTML. Перечитывается ровно тогда,
     // когда открытая вкладка сообщает, что обращение изменилось.
-    const [tickets, setTickets] = useState<SupportTicket[]>(initialTickets);
-
     const reloadTickets = React.useCallback(() => {
-        sendPost(ticketsListUrl, {}).then((r: any) => {
-            if (Array.isArray(r?.tickets)) setTickets(r.tickets);
-        }).catch(() => {
-            // Очередь осталась прежней — врать ей нечем, следующее действие
-            // модератора попробует снова.
-        });
+        gridRef.current?.refresh();
+        if (filterOptionsUrl) {
+            sendPost<{}, TicketFilterOptions>(filterOptionsUrl, {}).then((r) => {
+                const data = ('data' in r && r.data) ? r.data : (r as unknown as TicketFilterOptions);
+                setFilterOptions(data);
+            }).catch(() => {
+                // Счётчики/опции фильтров остались прежними — не критично,
+                // следующее действие модератора попробует снова.
+            });
+        }
         // Значок непрочитанных обращений в шапке считает тот же сервер.
         refreshLiveCounts();
-    }, [ticketsListUrl]);
+    }, [filterOptionsUrl]);
 
     const [dynamicTabs, setDynamicTabs] = useState<InternalTab[]>([]);
     const [activeId, setActiveId]       = useState<string>(mainTabId);
@@ -107,8 +121,10 @@ export const AdminSupportIsland: React.FC<Props> = ({
         if (hash.includes('ticket=')) {
             const ticketId = parseInt(hash.split('ticket=')[1]?.split('&')[0] || '0', 10);
             if (ticketId > 0) {
-                const ticket = tickets.find(x => x.id === ticketId);
-                openTicket(ticketId, ticket?.subject || `#${ticketId}`);
+                // Queue is server-paginated now — the ticket may not be on
+                // whatever page happens to be loaded. Placeholder label;
+                // SupportTicketTab fetches the real subject on mount.
+                openTicket(ticketId, `#${ticketId}`);
                 window.history.replaceState(null, '', window.location.pathname);
             }
             return;
@@ -125,14 +141,7 @@ export const AdminSupportIsland: React.FC<Props> = ({
             const saved = JSON.parse(sessionStorage.getItem(OPEN_TICKETS_KEY) || 'null');
             const savedIds: number[] = Array.isArray(saved?.ticketIds) ? saved.ticketIds : [];
             for (const ticketId of savedIds) {
-                // fetchTickets() caps at the 200 most recently updated — under
-                // active queue traffic a ticket that's been open a while can
-                // fall out of that window before the moderator comes back
-                // (D-168). Same fallback as the #ticket= hash path below:
-                // open with a placeholder label, SupportTicketTab fetches the
-                // real subject independently once mounted.
-                const ticket = tickets.find(x => x.id === ticketId);
-                openTicket(ticketId, ticket?.subject || `#${ticketId}`);
+                openTicket(ticketId, `#${ticketId}`);
             }
             if (savedIds.length > 0 && typeof saved.activeId === 'string') {
                 setActiveId(saved.activeId);
@@ -155,70 +164,36 @@ export const AdminSupportIsland: React.FC<Props> = ({
     // Sync active tab: user tabs take priority when active
     const effectiveActiveId = activeUserTabId ?? activeId;
 
-    const statusCounts = useMemo(() => {
-        const counts: Partial<Record<SupportStatus, number>> = {};
-        for (const ticket of tickets) {
-            counts[ticket.status] = (counts[ticket.status] || 0) + 1;
-        }
-        return counts;
-    }, [tickets]);
+    const statusCounts = filterOptions.statusCounts;
+    const totalTickets = useMemo(
+        () => Object.values(statusCounts).reduce((a, b) => a + (b ?? 0), 0),
+        [statusCounts],
+    );
 
     const visibleFilters = useMemo(() => {
         return ALL_STATUSES.filter(s => (statusCounts[s] || 0) > 0);
     }, [statusCounts]);
 
-    const userOptions = useMemo(() => {
-        const map = new Map<string, string>();
-        for (const r of tickets) {
-            const id = String(r.account_id);
-            if (!map.has(id)) {
-                map.set(id, r.user_name || r.user_login || `#${r.account_id}`);
-            }
-        }
-        const arr = Array.from(map.entries()).map(([value, label]) => ({value, label}));
-        arr.sort((a, b) => a.label.localeCompare(b.label));
-        return [{value: '', label: t.Admin_Filter_All()}, ...arr];
-    }, [tickets]);
+    const userOptions = useMemo(
+        () => [{value: '', label: t.Admin_Filter_All()}, ...filterOptions.users],
+        [filterOptions.users],
+    );
 
     const assigneeOptions = useMemo(() => {
-        const map = new Map<string, string>();
-        let hasUnassigned = false;
-        for (const r of tickets) {
-            if (r.assignee_id === null) { hasUnassigned = true; continue; }
-            const id = String(r.assignee_id);
-            if (!map.has(id)) {
-                map.set(id, r.assignee_name || r.assignee_login || `#${r.assignee_id}`);
-            }
-        }
-        const arr = Array.from(map.entries()).map(([value, label]) => ({value, label}));
-        arr.sort((a, b) => a.label.localeCompare(b.label));
         const out: {value: string; label: string}[] = [{value: '', label: t.Admin_Filter_All()}];
-        if (hasUnassigned) out.push({value: ASSIGNEE_UNASSIGNED, label: t.Support_Unassigned()});
-        out.push(...arr);
+        if (filterOptions.hasUnassigned) out.push({value: ASSIGNEE_UNASSIGNED, label: t.Support_Unassigned()});
+        out.push(...filterOptions.assignees);
         return out;
-    }, [tickets]);
+    }, [filterOptions.hasUnassigned, filterOptions.assignees]);
 
-    const filteredTickets = useMemo(() => {
-        let res = tickets;
-        if (statusFilter !== 'all') res = res.filter(ticket => ticket.status === statusFilter);
-        if (userId) res = res.filter(ticket => String(ticket.account_id) === userId);
-        if (assigneeId) {
-            if (assigneeId === ASSIGNEE_UNASSIGNED) {
-                res = res.filter(ticket => ticket.assignee_id === null);
-            } else {
-                res = res.filter(ticket => String(ticket.assignee_id ?? '') === assigneeId);
-            }
-        }
-        if (dateFrom) {
-            const tsFrom = Math.floor(new Date(dateFrom + 'T00:00:00Z').getTime() / 1000);
-            res = res.filter(ticket => (ticket[dateField] ?? 0) >= tsFrom);
-        }
-        if (dateTo) {
-            const tsTo = Math.floor(new Date(dateTo + 'T23:59:59Z').getTime() / 1000);
-            res = res.filter(ticket => (ticket[dateField] ?? 0) <= tsTo);
-        }
-        return res;
-    }, [tickets, statusFilter, userId, assigneeId, dateField, dateFrom, dateTo]);
+    const extraParams = useMemo(() => ({
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        accountId: userId || undefined,
+        assigneeId: assigneeId || undefined,
+        dateField,
+        dateFrom: dateFrom ? Math.floor(new Date(dateFrom + 'T00:00:00Z').getTime() / 1000) : undefined,
+        dateTo: dateTo ? Math.floor(new Date(dateTo + 'T23:59:59Z').getTime() / 1000) : undefined,
+    }), [statusFilter, userId, assigneeId, dateField, dateFrom, dateTo]);
 
     const staticTabs: InternalTab[] = [
         {id: mainTabId, label: t.Admin_Support(), closeable: false, tabKind: null},
@@ -345,7 +320,7 @@ export const AdminSupportIsland: React.FC<Props> = ({
             return (
                 <div>
                     <SupportStatusBar
-                        total={tickets.length}
+                        total={totalTickets}
                         statuses={visibleFilters}
                         counts={statusCounts}
                         active={statusFilter}
@@ -368,7 +343,10 @@ export const AdminSupportIsland: React.FC<Props> = ({
                         onReset={() => { setUserId(''); setAssigneeId(''); setDateFrom(''); setDateTo(''); }}
                     />
                     <AdminGrid<SupportTicket>
-                        rows={filteredTickets}
+                        ref={gridRef}
+                        pageUrl={ticketsPageUrl}
+                        initialData={ticketsInitialData}
+                        extraParams={extraParams}
                         config={gridConfig}
                         rowKey={row => row.id}
                         renders={ticketRenders}

@@ -1,11 +1,11 @@
 import * as React from 'react';
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {Mailbox} from 'lucide-react';
-import {AdminGrid} from '../../Grid/AdminGrid';
-import {GridConfig} from '../../Shell/types';
+import {AdminGrid, AdminGridHandle} from '../../Grid/AdminGrid';
+import {GridConfig, PageResponse} from '../../Shell/types';
 
 interface EmailQueueRow {
     id: number;
@@ -29,7 +29,8 @@ interface Labels {
 }
 
 interface Props {
-    rows: EmailQueueRow[];
+    pageUrl: string;
+    initialData: PageResponse<EmailQueueRow> | null;
     gridConfig: GridConfig;
     deadLetterCount: number;
     retryUrl: string;
@@ -54,11 +55,11 @@ const statusBadge = (status: string): React.ReactNode => (
 );
 
 export const EmailQueueIsland: React.FC<Props> = (props) => {
-    const {gridConfig, retryUrl, labels} = props;
-    const [rows, setRows] = useState<EmailQueueRow[]>(props.rows);
+    const {pageUrl, initialData, gridConfig, retryUrl, labels} = props;
     const [deadLetterCount, setDeadLetterCount] = useState<number>(props.deadLetterCount);
     const [retryingId, setRetryingId] = useState<number | null>(null);
     const [error, setError] = useState<string>('');
+    const gridRef = useRef<AdminGridHandle<EmailQueueRow>>(null);
 
     const handleRetry = async (id: number): Promise<void> => {
         setRetryingId(id);
@@ -66,7 +67,7 @@ export const EmailQueueIsland: React.FC<Props> = (props) => {
         try {
             const res = await sendPost<{id: number}, RetryResponse>(retryUrl, {id});
             if (res.success && res.row) {
-                setRows(prev => prev.map(r => (r.id === id ? res.row! : r)));
+                gridRef.current?.setItems(prev => prev.map(r => (r.id === id ? res.row! : r)));
             }
             setDeadLetterCount(res.deadLetterCount);
             if (!res.success) {
@@ -97,7 +98,9 @@ export const EmailQueueIsland: React.FC<Props> = (props) => {
                 )}
 
                 <AdminGrid
-                    rows={rows}
+                    ref={gridRef}
+                    pageUrl={pageUrl}
+                    initialData={initialData}
                     config={gridConfig}
                     rowKey={r => r.id}
                     emptyMessage={labels.empty}

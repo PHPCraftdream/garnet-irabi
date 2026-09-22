@@ -107,50 +107,120 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Ops {
          * @return array<string, mixed>
          */
         protected static function extraInitialData(string $activeTab): array {
-            $cronLogs = $activeTab === self::TAB_CRON ? static::fetchCronLogs() : [];
-            $jsErrorLogs = $activeTab === self::TAB_JS_ERRORS ? static::fetchJsErrors() : [];
             return [
                 'cron' => [
-                    'logs' => $cronLogs,
-                    'loaded' => $activeTab === self::TAB_CRON,
+                    'payload' => $activeTab === self::TAB_CRON ? static::fetchCronLogsPage() : null,
+                    'filterOptions' => static::fetchCronFilterOptions(),
                 ],
                 'jsErrors' => [
-                    'logs' => $jsErrorLogs,
-                    'loaded' => $activeTab === self::TAB_JS_ERRORS,
+                    'payload' => $activeTab === self::TAB_JS_ERRORS ? static::fetchJsErrorsPage() : null,
+                    'filterOptions' => static::fetchJsErrorsFilterOptions(),
                 ],
             ];
         }
 
         /**
-         * @return array<int, array<string, mixed>>
+         * @param array{taskName?: string, dateFrom?: int, dateTo?: int} $filters
+         * @return array<string, mixed> PageResponse shape
          */
-        protected static function fetchCronLogs(int $limit = 200): array {
-            $rows = CronLog::get()->selectAll(static function (SelectInterface $query) use ($limit): void {
-                $query->orderBy(['id DESC']);
-                $query->limit($limit);
-            });
+        protected static function fetchCronLogsPage(
+            int $page = 1,
+            int $perPage = 10,
+            string $query = '',
+            ?string $sortField = null,
+            string $sortDir = 'asc',
+            array $filters = [],
+        ): array {
+            $searchFields = ['task_name', 'status', 'output', 'error_message'];
+            $sortFields = ['id', 'started_at', 'duration_ms', 'task_name', 'status'];
 
-            // Normalize numeric columns to int (DbTable returns strings for INT columns).
-            foreach ($rows as &$row) {
+            $pageData = PaginationHelper::fetchPage(
+                CronLog::get(),
+                $page,
+                $perPage,
+                static function (SelectInterface $q) use ($query, $sortField, $sortDir, $searchFields, $sortFields, $filters): void {
+                    if (isset($filters['taskName']) && $filters['taskName'] !== '') {
+                        $q->where('task_name = :flt_task', ['flt_task' => $filters['taskName']]);
+                    }
+                    if (isset($filters['dateFrom'])) {
+                        $q->where('started_at >= :flt_from', ['flt_from' => $filters['dateFrom']]);
+                    }
+                    if (isset($filters['dateTo'])) {
+                        $q->where('started_at <= :flt_to', ['flt_to' => $filters['dateTo']]);
+                    }
+                    PaginationHelper::applySearchAndSort($q, $query, $searchFields, $sortField, $sortDir, $sortFields);
+                },
+            );
+
+            foreach ($pageData->pageItems as &$row) {
                 $row['id'] = (int)($row['id'] ?? 0);
                 $row['started_at'] = (int)($row['started_at'] ?? 0);
                 $row['finished_at'] = (int)($row['finished_at'] ?? 0);
                 $row['duration_ms'] = (int)($row['duration_ms'] ?? 0);
                 $row['created_at'] = (int)($row['created_at'] ?? 0);
             }
-            return $rows;
+            unset($row);
+
+            return PaginationHelper::toPageResponse($pageData);
+        }
+
+        /** @return array{taskNames: list<string>} */
+        protected static function fetchCronFilterOptions(): array {
+            $taskNames = array_map('strval', array_column(
+                CronLog::get()->selectAll(static function (SelectInterface $q): void {
+                    $q->resetCols();
+                    $q->cols(['DISTINCT task_name AS task_name']);
+                }),
+                'task_name',
+            ));
+            sort($taskNames);
+            return ['taskNames' => $taskNames];
         }
 
         /**
-         * @return array<int, array<string, mixed>>
+         * @param array{accountId?: int, file?: string, dateFrom?: int, dateTo?: int} $filters
+         * @return array<string, mixed> PageResponse shape
          */
-        protected static function fetchJsErrors(int $limit = 200): array {
-            $rows = JsErrors::get()->selectAll(static function (SelectInterface $query) use ($limit): void {
-                $query->orderBy(['last_seen_at DESC', 'id DESC']);
-                $query->limit($limit);
-            });
+        protected static function fetchJsErrorsPage(
+            int $page = 1,
+            int $perPage = 10,
+            string $query = '',
+            ?string $sortField = null,
+            string $sortDir = 'asc',
+            array $filters = [],
+        ): array {
+            // account_name is hydrated after the query below, not a real
+            // column — LIKE-searching it here would error. The account
+            // dropdown filter (accountId, server-side) covers that axis.
+            $searchFields = ['message', 'file', 'url'];
+            $sortFields = ['id', 'last_seen_at', 'first_seen_at', 'count'];
 
-            // Normalize numeric columns + nulls.
+            $pageData = PaginationHelper::fetchPage(
+                JsErrors::get(),
+                $page,
+                $perPage,
+                static function (SelectInterface $q) use ($query, $sortField, $sortDir, $searchFields, $sortFields, $filters): void {
+                    if (isset($filters['accountId'])) {
+                        $q->where('account_id = :flt_account', ['flt_account' => $filters['accountId']]);
+                    }
+                    if (isset($filters['file']) && $filters['file'] !== '') {
+                        $q->where('file = :flt_file', ['flt_file' => $filters['file']]);
+                    }
+                    if (isset($filters['dateFrom'])) {
+                        $q->where('last_seen_at >= :flt_from', ['flt_from' => $filters['dateFrom']]);
+                    }
+                    if (isset($filters['dateTo'])) {
+                        $q->where('last_seen_at <= :flt_to', ['flt_to' => $filters['dateTo']]);
+                    }
+                    // account_name isn't a real column (hydrated below) — LIKE on
+                    // it via applySearchAndSort would error, so it's excluded from
+                    // searchFields at the SQL layer despite the JS type declaring it.
+                    PaginationHelper::applySearchAndSort($q, $query, $searchFields, $sortField, $sortDir, $sortFields);
+                },
+            );
+
+            $rows = $pageData->pageItems;
+
             foreach ($rows as &$row) {
                 $row['id'] = (int)($row['id'] ?? 0);
                 $row['line'] = (int)($row['line'] ?? 0);
@@ -164,7 +234,6 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Ops {
             }
             unset($row);
 
-            // Hydrate account_name for non-null account_ids.
             $accountIds = array_unique(array_filter(
                 array_column($rows, 'account_id'),
                 static fn ($id) => is_int($id) && $id > 0,
@@ -193,26 +262,98 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Ops {
                     $row['account_name'] = '';
                 }
             }
+            unset($row);
 
-            return $rows;
+            $pageData->pageItems = $rows;
+            return PaginationHelper::toPageResponse($pageData);
+        }
+
+        /** @return array{accounts: list<array{id: int, name: string}>, files: list<string>} */
+        protected static function fetchJsErrorsFilterOptions(): array {
+            $accountIds = array_map('intval', array_filter(array_column(
+                JsErrors::get()->selectAll(static function (SelectInterface $q): void {
+                    $q->resetCols();
+                    $q->cols(['DISTINCT account_id AS account_id']);
+                    $q->where('account_id IS NOT NULL');
+                }),
+                'account_id',
+            )));
+
+            $accounts = [];
+            if (!empty($accountIds)) {
+                $accs = Account::getAccounts(
+                    selectCallback: static function (SelectInterface $select) use ($accountIds): void {
+                        $select->resetCols();
+                        $select->cols(['id', 'login', 'name']);
+                        $select->where('id IN (?)', [$accountIds]);
+                    },
+                );
+                foreach ($accs as $a) {
+                    $accounts[] = ['id' => (int)$a['id'], 'name' => (string)($a['name'] ?? $a['login'] ?? ('#' . $a['id']))];
+                }
+                usort($accounts, static fn (array $a, array $b): int => strcmp($a['name'], $b['name']));
+            }
+
+            $files = array_map('strval', array_column(
+                JsErrors::get()->selectAll(static function (SelectInterface $q): void {
+                    $q->resetCols();
+                    $q->cols(['DISTINCT file AS file']);
+                }),
+                'file',
+            ));
+            sort($files);
+
+            return ['accounts' => $accounts, 'files' => $files];
         }
 
         public static function post__cronPage(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
             if (!static::isModerator()) {
                 return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
             }
-            return ControllerTools::JSON([
-                'logs' => static::fetchCronLogs(),
-            ]);
+            ['page' => $page, 'perPage' => $perPage] = PaginationHelper::readPageParams($globals);
+            ['query' => $query, 'sortField' => $sortField, 'sortDir' => $sortDir] = PaginationHelper::readSearchSortParams($globals);
+            $filters = [];
+            $taskName = trim((string)$globals->readPostValue('taskName', ''));
+            if ($taskName !== '') {
+                $filters['taskName'] = $taskName;
+            }
+            $dateFrom = (int)$globals->readPostValue('dateFrom', 0);
+            if ($dateFrom > 0) {
+                $filters['dateFrom'] = $dateFrom;
+            }
+            $dateTo = (int)$globals->readPostValue('dateTo', 0);
+            if ($dateTo > 0) {
+                $filters['dateTo'] = $dateTo;
+            }
+
+            return ControllerTools::JSON(static::fetchCronLogsPage($page, $perPage, $query, $sortField, $sortDir, $filters));
         }
 
         public static function post__jsErrorsPage(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
             if (!static::isModerator()) {
                 return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
             }
-            return ControllerTools::JSON([
-                'logs' => static::fetchJsErrors(),
-            ]);
+            ['page' => $page, 'perPage' => $perPage] = PaginationHelper::readPageParams($globals);
+            ['query' => $query, 'sortField' => $sortField, 'sortDir' => $sortDir] = PaginationHelper::readSearchSortParams($globals);
+            $filters = [];
+            $accountId = (int)$globals->readPostValue('accountId', 0);
+            if ($accountId > 0) {
+                $filters['accountId'] = $accountId;
+            }
+            $file = trim((string)$globals->readPostValue('file', ''));
+            if ($file !== '') {
+                $filters['file'] = $file;
+            }
+            $dateFrom = (int)$globals->readPostValue('dateFrom', 0);
+            if ($dateFrom > 0) {
+                $filters['dateFrom'] = $dateFrom;
+            }
+            $dateTo = (int)$globals->readPostValue('dateTo', 0);
+            if ($dateTo > 0) {
+                $filters['dateTo'] = $dateTo;
+            }
+
+            return ControllerTools::JSON(static::fetchJsErrorsPage($page, $perPage, $query, $sortField, $sortDir, $filters));
         }
     }
 }

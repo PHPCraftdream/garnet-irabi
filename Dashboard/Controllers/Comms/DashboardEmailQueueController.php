@@ -37,13 +37,9 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Comms {
 
         public const URL = '/admin/email-queue/';
 
-        /**
-         * Rows fetched for the grid (most recent first). AdminGrid paginates
-         * client-side over whatever it's handed, same as Finance's ledger
-         * grid (300) — a bounded "recent activity" window, not a full
-         * historical export.
-         */
-        private const FETCH_LIMIT = 200;
+        private const SEARCH_FIELDS = ['recipient_email', 'subject', 'status'];
+
+        private const SORT_FIELDS = ['id', 'created_at', 'status'];
 
         protected static function isAdmin(): bool {
             return UserEntityConfig::isAdmin();
@@ -78,23 +74,35 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Comms {
         }
 
         /**
-         * @return array<int, array<string, mixed>>
+         * @return array<string, mixed> PageResponse shape
          */
-        private static function fetchRows(): array {
+        private static function fetchEmailQueuePage(
+            int $page,
+            int $perPage,
+            string $query = '',
+            ?string $sortField = null,
+            string $sortDir = 'asc',
+        ): array {
             // Select only the columns we render — body_html is LONGTEXT and
-            // would bloat the island payload for no UI benefit.
-            $rows = EmailQueue::get()->selectAll(static function (SelectInterface $q): void {
-                $q->resetCols();
-                $q->cols([
-                    'id', 'recipient_email', 'subject', 'status',
-                    'attempts', 'max_attempts', 'next_attempt_at',
-                    'sent_at', 'created_at',
-                ]);
-                $q->orderBy(['id DESC']);
-                $q->limit(self::FETCH_LIMIT);
-            });
+            // would bloat the response for no UI benefit.
+            $pageData = PaginationHelper::fetchPage(
+                EmailQueue::get(),
+                $page,
+                $perPage,
+                static function (SelectInterface $q) use ($query, $sortField, $sortDir): void {
+                    $q->resetCols();
+                    $q->cols([
+                        'id', 'recipient_email', 'subject', 'status',
+                        'attempts', 'max_attempts', 'next_attempt_at',
+                        'sent_at', 'created_at',
+                    ]);
+                    PaginationHelper::applySearchAndSort($q, $query, self::SEARCH_FIELDS, $sortField, $sortDir, self::SORT_FIELDS);
+                },
+            );
 
-            return array_map(static fn (array $row): array => static::hydrateRow($row), $rows);
+            $pageData->pageItems = array_map(static fn (array $row): array => static::hydrateRow($row), $pageData->pageItems);
+
+            return PaginationHelper::toPageResponse($pageData);
         }
 
         private static function gridConfig(): array {
@@ -125,7 +133,8 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Comms {
             $t = ForegroundI18n::getInstance();
 
             $content = RenderIsland::render('admin-email-queue', [
-                'rows' => static::fetchRows(),
+                'pageUrl' => IRabi::url(static::URL . '~page'),
+                'initialData' => static::fetchEmailQueuePage(1, PaginationHelper::DEFAULT_PER_PAGE),
                 'gridConfig' => static::gridConfig(),
                 'deadLetterCount' => static::deadLetterCount(),
                 'retryUrl' => IRabi::url(static::URL . '~retry'),
@@ -146,6 +155,16 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Comms {
                     'side_menu_items' => static::getSideMenu($url),
                 ])
             ));
+        }
+
+        public static function post__page(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
+            if (!static::isAdmin()) {
+                return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
+            }
+            ['page' => $page, 'perPage' => $perPage] = PaginationHelper::readPageParams($globals);
+            ['query' => $query, 'sortField' => $sortField, 'sortDir' => $sortDir] = PaginationHelper::readSearchSortParams($globals);
+
+            return ControllerTools::JSON(static::fetchEmailQueuePage($page, $perPage, $query, $sortField, $sortDir));
         }
 
         /**

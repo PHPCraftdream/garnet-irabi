@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
-import {LedgerEntry, AccountBalanceRow, GridConfig} from '../Shell/types';
+import {LedgerEntry, AccountBalanceRow, GridConfig, PageResponse} from '../Shell/types';
 import {LedgerSection} from './LedgerSection';
 import {BalancesSection} from './BalancesSection';
 import {UserDetailContext} from '../Users/UserDetailContext';
@@ -12,9 +12,19 @@ import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {Banknote} from 'lucide-react';
 
+interface LedgerFilterOptions {
+    fromOptions: {value: string; label: string}[];
+    toOptions: {value: string; label: string}[];
+    entryTypes: string[];
+}
+
 interface Props {
-    ledger: LedgerEntry[];
-    balances: AccountBalanceRow[];
+    ledgerPageUrl: string;
+    ledgerInitialData: PageResponse<LedgerEntry> | null;
+    ledgerInitialFilterOptions: LedgerFilterOptions;
+    balancesPageUrl: string;
+    balancesInitialData: PageResponse<AccountBalanceRow> | null;
+    balancesInitialAccountOptions: {value: string; label: string}[];
     ledgerGridConfig: GridConfig;
     balancesGridConfig: GridConfig;
     userDetailUrl: string;
@@ -44,7 +54,9 @@ function writeTabToUrl(tab: FinanceTabId): void {
 }
 
 export const AdminFinanceIsland: React.FC<Props> = ({
-    ledger, balances, ledgerGridConfig, balancesGridConfig, userDetailUrl, adjustUrl, canAdjust, initialTab,
+    ledgerPageUrl, ledgerInitialData, ledgerInitialFilterOptions,
+    balancesPageUrl, balancesInitialData, balancesInitialAccountOptions,
+    ledgerGridConfig, balancesGridConfig, userDetailUrl, adjustUrl, canAdjust, initialTab,
 }) => {
     const [activeMainTab, setActiveMainTab] = useState<FinanceTabId>(initialTab);
 
@@ -115,10 +127,22 @@ export const AdminFinanceIsland: React.FC<Props> = ({
                 onClose={handleClose}
             />
             {showFinance && (
-                <LedgerSection ledger={ledger} config={ledgerGridConfig} />
+                <LedgerSection
+                    pageUrl={ledgerPageUrl}
+                    initialData={ledgerInitialData}
+                    initialFilterOptions={ledgerInitialFilterOptions}
+                    config={ledgerGridConfig}
+                />
             )}
             {showBalances && (
-                <BalancesSection balances={balances} config={balancesGridConfig} adjustUrl={adjustUrl} canAdjust={canAdjust} />
+                <BalancesSection
+                    pageUrl={balancesPageUrl}
+                    initialData={balancesInitialData}
+                    initialAccountOptions={balancesInitialAccountOptions}
+                    config={balancesGridConfig}
+                    adjustUrl={adjustUrl}
+                    canAdjust={canAdjust}
+                />
             )}
             {activeUserTab && (
                 <UserDetailTab

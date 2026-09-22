@@ -1,14 +1,19 @@
 import * as React from 'react';
-import {useState, useMemo} from 'react';
-import {AdminUser, GridConfig, UserTab} from '../Shell/types';
-import {AdminGrid} from '../Grid/AdminGrid';
+import {useMemo, useRef, useState} from 'react';
+import {AdminUser, GridConfig, PageResponse, UserTab} from '../Shell/types';
+import {AdminGrid, AdminGridHandle} from '../Grid/AdminGrid';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {useOpenUser} from './UserDetailContext';
 
+type TabCounts = Record<UserTab, number>;
+
 interface Props {
-    users: AdminUser[];
+    pageUrl: string;
+    initialData: PageResponse<AdminUser> | null;
+    tabCountsUrl?: string;
+    initialTabCounts: TabCounts;
     setFlagUrl?: string;
     setUserTypeUrl?: string;
     config: GridConfig;
@@ -25,19 +30,15 @@ const tabs: TabDef[] = [
     {key: 'admins',     labelFn: () => t.Admin_Tab_Admins()},
 ];
 
+// Role flags/type changes can move a row out of the currently viewed tab
+// (e.g. revoking IS_MODERATOR while on the "Moderators" tab) — those need a
+// server refetch of the current page, not a local patch, or the row would
+// linger until the next unrelated refresh.
+const ROLE_TABS = new Set<UserTab>(['moderators', 'owners', 'admins']);
+const TYPE_TABS = new Set<UserTab>(['experts', 'users']);
+
 export function flag(val: string | number | null | undefined): boolean {
     return val !== null && val !== undefined && Number(val) > 0;
-}
-
-function filterByTab(users: AdminUser[], tab: UserTab): AdminUser[] {
-    switch (tab) {
-        case 'experts':   return users.filter(u => u.type === 'expert');
-        case 'users':   return users.filter(u => u.type === 'user');
-        case 'moderators': return users.filter(u => flag(u.IS_MODERATOR) && !flag(u.IS_OWNER) && !flag(u.IS_ADMIN));
-        case 'owners':     return users.filter(u => flag(u.IS_OWNER) && !flag(u.IS_ADMIN));
-        case 'admins':     return users.filter(u => flag(u.IS_ADMIN));
-        default:           return users;
-    }
 }
 
 /**
@@ -220,23 +221,15 @@ const UserLoginCell: React.FC<{
 );
 
 export const UsersSection: React.FC<Props> = ({
-    users: initialUsers, setFlagUrl, setUserTypeUrl, config,
+    pageUrl, initialData, tabCountsUrl, initialTabCounts, setFlagUrl, setUserTypeUrl, config,
 }) => {
     const [activeTab, setActiveTab] = useState<UserTab>('all');
-    const [users, setUsers]         = useState<AdminUser[]>(initialUsers);
+    const [tabCounts, setTabCounts] = useState<TabCounts>(initialTabCounts);
     const [pending, setPending]     = useState<Record<number, boolean>>({});
+    const gridRef = useRef<AdminGridHandle<AdminUser>>(null);
     const openUser = useOpenUser();
 
-    const tabCounts = useMemo(() => ({
-        all:        users.length,
-        experts:   users.filter(u => u.type === 'expert').length,
-        users:   users.filter(u => u.type === 'user').length,
-        moderators: users.filter(u => flag(u.IS_MODERATOR) && !flag(u.IS_OWNER) && !flag(u.IS_ADMIN)).length,
-        owners:     users.filter(u => flag(u.IS_OWNER) && !flag(u.IS_ADMIN)).length,
-        admins:     users.filter(u => flag(u.IS_ADMIN)).length,
-    }), [users]);
-
-    const tabFiltered = useMemo(() => filterByTab(users, activeTab), [users, activeTab]);
+    const extraParams = useMemo(() => ({tab: activeTab}), [activeTab]);
 
     const gridConfig = useMemo(() => {
         if (activeTab === 'experts' || activeTab === 'all') return config;
@@ -246,13 +239,30 @@ export const UsersSection: React.FC<Props> = ({
         };
     }, [config, activeTab]);
 
-    const setFlag = async (userId: number, flagName: string, value: 0 | 1) => {
+    const refreshTabCounts = async () => {
+        if (!tabCountsUrl) return;
+        try {
+            const resp = await sendPost<{}, TabCounts>(tabCountsUrl, {});
+            const data = ('data' in resp && resp.data) ? resp.data : (resp as unknown as TabCounts);
+            setTabCounts(data);
+        } catch {
+            // best-effort — stale counts are cosmetic, not worth surfacing an error for
+        }
+    };
+
+    const setFlag = async (userId: number, flagName: FlagKey, value: 0 | 1) => {
         if (!setFlagUrl || pending[userId]) return;
         setPending(p => ({...p, [userId]: true}));
         try {
             const csrf = (window as any).__GARNET_CSRF__ ?? '';
             await sendPost(setFlagUrl, {CSRF_TOKEN: csrf, user_id: userId, flag: flagName, value});
-            setUsers(prev => prev.map(u => u.id === userId ? {...u, [flagName]: value || null} : u));
+            const affectsTab = flagName === 'IS_MODERATOR' || flagName === 'IS_OWNER' || flagName === 'IS_ADMIN';
+            if (affectsTab && ROLE_TABS.has(activeTab)) {
+                gridRef.current?.refresh();
+            } else {
+                gridRef.current?.setItems(prev => prev.map(u => u.id === userId ? {...u, [flagName]: value || null} : u));
+            }
+            if (affectsTab) void refreshTabCounts();
         } finally {
             setPending(p => ({...p, [userId]: false}));
         }
@@ -264,7 +274,12 @@ export const UsersSection: React.FC<Props> = ({
         try {
             const csrf = (window as any).__GARNET_CSRF__ ?? '';
             await sendPost(setUserTypeUrl, {CSRF_TOKEN: csrf, user_id: userId, type: nextType});
-            setUsers(prev => prev.map(u => u.id === userId ? {...u, type: nextType} : u));
+            if (TYPE_TABS.has(activeTab)) {
+                gridRef.current?.refresh();
+            } else {
+                gridRef.current?.setItems(prev => prev.map(u => u.id === userId ? {...u, type: nextType} : u));
+            }
+            void refreshTabCounts();
         } finally {
             setPending(p => ({...p, [userId]: false}));
         }
@@ -286,7 +301,10 @@ export const UsersSection: React.FC<Props> = ({
             </ul>
 
             <AdminGrid
-                rows={tabFiltered}
+                ref={gridRef}
+                pageUrl={pageUrl}
+                initialData={initialData}
+                extraParams={extraParams}
                 config={gridConfig}
                 rowKey={r => r.id}
                 emptyMessage={t.Admin_NoUsers()}

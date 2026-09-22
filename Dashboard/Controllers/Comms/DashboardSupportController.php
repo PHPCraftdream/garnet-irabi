@@ -65,15 +65,23 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Comms {
          * значения как есть, без вычислений, и unix-время в ячейке — это не
          * ответ человеку.
          *
-         * @return array<int, array<string, mixed>>
+         * @return array<string, mixed> PageResponse shape
          */
-        protected static function fetchTickets(): array {
-            $tickets = parent::fetchTickets();
+        protected static function fetchTicketsPage(
+            int $page,
+            int $perPage,
+            string $query = '',
+            ?string $sortField = null,
+            string $sortDir = 'asc',
+            array $filters = [],
+        ): array {
+            $payload = parent::fetchTicketsPage($page, $perPage, $query, $sortField, $sortDir, $filters);
 
-            if ($tickets === []) {
-                return $tickets;
+            if ($payload['items'] === []) {
+                return $payload;
             }
 
+            $tickets = $payload['items'];
             $ids = array_map(static fn (array $row): int => (int)$row['id'], $tickets);
             $relayPending = static::ticketsAwaitingRelay($ids);
 
@@ -95,7 +103,9 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Comms {
             }
             unset($ticket);
 
-            return $tickets;
+            $payload['items'] = $tickets;
+
+            return $payload;
         }
 
         /**
@@ -442,12 +452,44 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Comms {
          * что и для карточки занятия в каталоге: отдельное чтение без условий,
          * ровно тех же данных, что и при первой отрисовке.
          */
-        public static function post__ticketsList(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
+        public static function post__ticketsPage(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
+            if (!static::isModerator()) {
+                return ControllerTools::JSON(['error' => 'Forbidden'], status: 403);
+            }
+            ['page' => $page, 'perPage' => $perPage] = PaginationHelper::readPageParams($globals);
+            ['query' => $query, 'sortField' => $sortField, 'sortDir' => $sortDir] = PaginationHelper::readSearchSortParams($globals);
+            $filters = static::readTicketFilters($globals);
+
+            return ControllerTools::JSON(static::fetchTicketsPage($page, $perPage, $query, $sortField, $sortDir, $filters));
+        }
+
+        public static function post__ticketsFilterOptions(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
             if (!static::isModerator()) {
                 return ControllerTools::JSON(['error' => 'Forbidden'], status: 403);
             }
 
-            return ControllerTools::JSON(['tickets' => static::fetchTickets()]);
+            return ControllerTools::JSON([
+                ...static::fetchTicketsFilterOptions(),
+                'statusCounts' => static::fetchTicketStatusCounts(),
+            ]);
+        }
+
+        /**
+         * @return array<string, mixed>
+         */
+        private static function readTicketFilters(IGlobalReqParams $globals): array {
+            $status = (string)$globals->readPostValue('status', '');
+            $accountId = (int)$globals->readPostValue('accountId', '0');
+            $assigneeIdRaw = (string)$globals->readPostValue('assigneeId', '');
+
+            return [
+                'status' => in_array($status, self::VALID_STATUSES, true) ? $status : null,
+                'accountId' => $accountId > 0 ? $accountId : null,
+                'assigneeId' => $assigneeIdRaw === self::ASSIGNEE_UNASSIGNED ? self::ASSIGNEE_UNASSIGNED : ((int)$assigneeIdRaw ?: null),
+                'dateField' => (string)$globals->readPostValue('dateField', 'updated_at'),
+                'dateFrom' => (int)$globals->readPostValue('dateFrom', '0') ?: null,
+                'dateTo' => (int)$globals->readPostValue('dateTo', '0') ?: null,
+            ];
         }
 
         /**
@@ -593,7 +635,13 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Comms {
             $t = ForegroundI18n::getInstance();
 
             $content = RenderIsland::render('admin-support', [
-                'tickets' => static::fetchTickets(),
+                'ticketsPageUrl' => IRabi::url(static::URL . '~ticketsPage'),
+                'ticketsInitialData' => static::fetchTicketsPage(1, PaginationHelper::DEFAULT_PER_PAGE),
+                'filterOptionsUrl' => IRabi::url(static::URL . '~ticketsFilterOptions'),
+                'initialFilterOptions' => [
+                    ...static::fetchTicketsFilterOptions(),
+                    'statusCounts' => static::fetchTicketStatusCounts(),
+                ],
                 'gridConfig' => GridConfig::make(
                     columns: [
                         GridConfig::col('id', 'ID'),
@@ -612,14 +660,15 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Comms {
                         GridConfig::col('waiting_label', $t->Support_Waiting(), shrink: true),
                         GridConfig::col('updated_at', $t->Support_Updated()),
                     ],
-                    searchFields: ['subject', 'user_login', 'user_name', 'status', 'assignee_name'],
-                    // Сортировка по created_at, а не по created_label: в метке
-                    // строка вида «15.09.2026 13:32», и сортировка по ней
-                    // выстроит обращения по дню месяца.
-                    sortFields: ['id', 'status', 'created_at', 'updated_at', 'assignee_name'],
-                    pageSize: PaginationHelper::DEFAULT_PER_PAGE,
+                    // user_login/user_name/assignee_name/relay_label/
+                    // created_label/waiting_label — PHP-hydrated, not real
+                    // columns on support_tickets, so only `subject` can be a
+                    // server-side LIKE search field (same constraint as the
+                    // AdminLog viewer's account_name).
+                    searchFields: ['subject'],
+                    sortFields:   ['id', 'status', 'created_at', 'updated_at'],
+                    pageSize:     PaginationHelper::DEFAULT_PER_PAGE,
                 ),
-                'ticketsListUrl' => IRabi::url(static::URL . '~ticketsList'),
                 'ticketDetailUrl' => IRabi::url(static::URL . '~ticketDetail'),
                 // D-209: занятия и деньги человека, написавшего в поддержку.
                 'clientContextUrl' => IRabi::url(static::URL . '~clientContext'),
