@@ -9,6 +9,7 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Comms {
     use PHPCraftdream\Garnet\Kernel\Interfaces\Web\Router\IRouterUriParams;
     use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
     use PHPCraftdream\Garnet\Kernel\Io\Render\Twig\TwigParams;
+    use PHPCraftdream\IRabi\Common\Support\PaginationHelper;
     use PHPCraftdream\IRabi\Common\Tables\Mail\EmailQueue;
     use PHPCraftdream\IRabi\Dashboard\Controllers\Shell\DashboardController;
     use PHPCraftdream\IRabi\Dashboard\GridConfig;
@@ -36,9 +37,6 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Comms {
 
         public const URL = '/admin/email-queue/';
 
-        /** Rows shown per page load / refresh (most recent first). */
-        private const LIST_LIMIT = 200;
-
         protected static function isAdmin(): bool {
             return UserEntityConfig::isAdmin();
         }
@@ -56,35 +54,44 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Comms {
         }
 
         /**
-         * @return array<int, array<string, mixed>>
+         * @param array<string, mixed> $row
+         * @return array<string, mixed>
          */
-        private static function fetchRows(int $limit = self::LIST_LIMIT): array {
+        private static function hydrateRow(array $row): array {
+            $row['id'] = (int)$row['id'];
+            $row['attempts'] = (int)($row['attempts'] ?? 0);
+            $row['max_attempts'] = (int)($row['max_attempts'] ?? 0);
+            $row['next_attempt_at'] = isset($row['next_attempt_at'])
+                ? (int)$row['next_attempt_at']
+                : null;
+            $row['sent_at'] = isset($row['sent_at']) ? (int)$row['sent_at'] : null;
+            $row['created_at'] = (int)($row['created_at'] ?? 0);
+            return $row;
+        }
+
+        /**
+         * @return array<string, mixed>
+         */
+        private static function buildPayload(int $page, int $perPage): array {
             // Select only the columns we render — body_html is LONGTEXT and
             // would bloat the island payload for no UI benefit.
-            $rows = EmailQueue::get()->selectAll(static function (SelectInterface $q) use ($limit): void {
-                $q->resetCols();
-                $q->cols([
-                    'id', 'recipient_email', 'subject', 'status',
-                    'attempts', 'max_attempts', 'next_attempt_at',
-                    'sent_at', 'created_at',
-                ]);
-                $q->orderBy(['id DESC']);
-                $q->limit($limit);
-            });
+            $pageData = PaginationHelper::fetchPage(
+                EmailQueue::get(),
+                $page,
+                $perPage,
+                static function (SelectInterface $q): void {
+                    $q->resetCols();
+                    $q->cols([
+                        'id', 'recipient_email', 'subject', 'status',
+                        'attempts', 'max_attempts', 'next_attempt_at',
+                        'sent_at', 'created_at',
+                    ]);
+                    $q->orderBy(['id DESC']);
+                },
+            );
+            $pageData->pageItems = array_map(static fn (array $row): array => static::hydrateRow($row), $pageData->pageItems);
 
-            foreach ($rows as &$row) {
-                $row['id'] = (int)$row['id'];
-                $row['attempts'] = (int)($row['attempts'] ?? 0);
-                $row['max_attempts'] = (int)($row['max_attempts'] ?? 0);
-                $row['next_attempt_at'] = isset($row['next_attempt_at'])
-                    ? (int)$row['next_attempt_at']
-                    : null;
-                $row['sent_at'] = isset($row['sent_at']) ? (int)$row['sent_at'] : null;
-                $row['created_at'] = (int)($row['created_at'] ?? 0);
-            }
-            unset($row);
-
-            return $rows;
+            return PaginationHelper::toPageResponse($pageData);
         }
 
         private static function gridConfig(): array {
@@ -101,7 +108,7 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Comms {
                 ],
                 searchFields: ['recipient_email', 'subject', 'status'],
                 sortFields:   ['id', 'created_at', 'status'],
-                pageSize:     self::LIST_LIMIT,
+                pageSize:     PaginationHelper::DEFAULT_PER_PAGE,
             );
         }
 
@@ -114,9 +121,10 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Comms {
             $t = ForegroundI18n::getInstance();
 
             $content = RenderIsland::render('admin-email-queue', [
-                'rows' => static::fetchRows(),
+                'emailQueuePayload' => static::buildPayload(1, PaginationHelper::DEFAULT_PER_PAGE),
                 'gridConfig' => static::gridConfig(),
                 'deadLetterCount' => static::deadLetterCount(),
+                'pageUrl' => IRabi::url(static::URL . '~page'),
                 'retryUrl' => IRabi::url(static::URL . '~retry'),
                 'labels' => [
                     'title' => $t->Admin_EmailQueue_Title(),
@@ -135,6 +143,14 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Comms {
                     'side_menu_items' => static::getSideMenu($url),
                 ])
             ));
+        }
+
+        public static function post__page(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
+            if (!static::isAdmin()) {
+                return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
+            }
+            ['page' => $page, 'perPage' => $perPage] = PaginationHelper::readPageParams($globals);
+            return ControllerTools::JSON(static::buildPayload($page, $perPage));
         }
 
         /**
@@ -168,20 +184,10 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Comms {
             EmailQueue::get()->updateById(['attempts' => 0], $id);
 
             $row = EmailQueue::get()->selectById($id);
-            if (!empty($row)) {
-                $row['id'] = (int)$row['id'];
-                $row['attempts'] = (int)($row['attempts'] ?? 0);
-                $row['max_attempts'] = (int)($row['max_attempts'] ?? 0);
-                $row['next_attempt_at'] = isset($row['next_attempt_at'])
-                    ? (int)$row['next_attempt_at']
-                    : null;
-                $row['sent_at'] = isset($row['sent_at']) ? (int)$row['sent_at'] : null;
-                $row['created_at'] = (int)($row['created_at'] ?? 0);
-            }
 
             return ControllerTools::JSON([
                 'success' => true,
-                'row' => $row ?: null,
+                'row' => $row ? static::hydrateRow($row) : null,
                 'deadLetterCount' => static::deadLetterCount(),
             ]);
         }

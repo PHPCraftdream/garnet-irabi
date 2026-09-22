@@ -10,6 +10,9 @@
  *      next_attempt_at, and the dead-letter counter drops by 1.
  *   4. max_attempts is now 6 (was 3) for emails enqueued via the real
  *      EmailNotifications path (support-ticket-created → moderator mail).
+ *   5. Direct user report (22.09): the page fetched a flat 200-row slice
+ *      with no way to see anything past it. Now paginated via the shared
+ *      admin PaginationHelper/useAdminPage stack (10/page).
  */
 
 import { test, expect, tn } from '../../helpers/scoped-test';
@@ -241,5 +244,48 @@ test.describe('Email queue — max_attempts raised to 6', () => {
         for (const row of rows) {
             expect(Number(row.max_attempts)).toBe(6);
         }
+    });
+});
+
+// ── 5. Pagination ────────────────────────────────────────────────────────
+
+test.describe('Email queue dashboard — pagination', () => {
+    const tag = `PW page probe ${Date.now()}`;
+    const rowIds: number[] = [];
+
+    test('seed 15 rows — one more page than the 10/page default', async () => {
+        for (let i = 0; i < 15; i++) {
+            rowIds.push(await seedDeadLetterRow(`${tag} #${i}`));
+        }
+        expect(rowIds.filter(id => id > 0).length).toBe(15);
+    });
+
+    test('page 1 shows 10 rows and a pager; page 2 shows the rest', async ({ adminPage }) => {
+        if (rowIds.length < 15) { test.skip(); return; }
+
+        await adminPage.goto('/admin/email-queue/');
+        await adminPage.waitForSelector('[data-test-id="admin-email-queue"]', { timeout: 12000 });
+
+        // Newest-first ordering: the 15 freshly-seeded rows fill all of page 1.
+        await expect(adminPage.locator('[data-test-id="admin-email-queue"] tbody tr')).toHaveCount(10, { timeout: 8000 });
+
+        const pager = adminPage.locator('[data-test-id="pagination"]').first();
+        await expect(pager).toBeVisible({ timeout: 8000 });
+        await expect(pager.locator('[data-test-id="pagination-next"]')).toBeEnabled();
+
+        await pager.locator('[data-test-id="pagination-next"]').click();
+        await expect.poll(async () =>
+            adminPage.locator('[data-test-id="admin-email-queue"] tbody tr').count()
+        , { timeout: 8000 }).toBeGreaterThan(0);
+
+        // Page 2 holds the remaining 5 of these 15 (plus whatever else the
+        // scope already had past position 20) — assert the newest of our
+        // rows is gone from page 2's DOM (it was on page 1).
+        const newestRowId = rowIds[rowIds.length - 1];
+        await expect(adminPage.locator(`[data-test-id="email-queue-row-${newestRowId}"]`)).toHaveCount(0);
+    });
+
+    test('cleanup seeded pagination-probe rows', async () => {
+        for (const id of rowIds) await deleteRow(id);
     });
 });

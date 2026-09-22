@@ -4,6 +4,11 @@ import {sendPost} from '@common/Api/Send/sendPost';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {Mailbox} from 'lucide-react';
+import Pagination from '@common/Components/Layout/Paging/Pagination';
+import {PageResponse} from '@common/hooks/data/usePagination';
+import {DEFAULT_PAGE_SIZE} from '@common/Utils/Data/pagination';
+import {adminPaginationLabels} from '../../Shell/adminShared';
+import {useAdminPage} from '../../Shell/useAdminPage';
 
 interface EmailQueueRow {
     id: number;
@@ -36,7 +41,8 @@ interface Labels {
 }
 
 interface Props {
-    rows: EmailQueueRow[];
+    emailQueuePayload: PageResponse<EmailQueueRow> | null;
+    pageUrl: string;
     gridConfig: GridConfig;
     deadLetterCount: number;
     retryUrl: string;
@@ -59,6 +65,9 @@ const STATUS_BADGE: Record<string, string> = {
 const statusBadge = (status: string): React.ReactNode => (
     <span className={`badge ${STATUS_BADGE[status] ?? 'status-muted'}`}>{status}</span>
 );
+
+/** No filters on this page — a stable reference so useAdminPage's debounce effect doesn't refire every render. */
+const NO_FILTERS = {};
 
 interface RowProps {
     row: EmailQueueRow;
@@ -127,8 +136,14 @@ const EmailQueueTable: React.FC<TableProps> = ({rows, columns, retryLabel, retry
 );
 
 export const EmailQueueIsland: React.FC<Props> = (props) => {
-    const {gridConfig, retryUrl, labels} = props;
-    const [rows, setRows] = useState<EmailQueueRow[]>(props.rows);
+    const {emailQueuePayload, pageUrl, gridConfig, retryUrl, labels} = props;
+    const {items: rows, setItems: setRows, page, totalPages, total, loading, goToPage} =
+        useAdminPage<EmailQueueRow, typeof NO_FILTERS, {page: number; perPage: number}>({
+            url: pageUrl,
+            initialData: emailQueuePayload,
+            filters: NO_FILTERS,
+            buildBody: (_filters, page) => ({page, perPage: DEFAULT_PAGE_SIZE}),
+        });
     const [deadLetterCount, setDeadLetterCount] = useState<number>(props.deadLetterCount);
     const [retryingId, setRetryingId] = useState<number | null>(null);
     const [error, setError] = useState<string>('');
@@ -152,6 +167,17 @@ export const EmailQueueIsland: React.FC<Props> = (props) => {
         }
     };
 
+    const pager = (
+        <Pagination
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            loading={loading}
+            onPageChange={goToPage}
+            labels={adminPaginationLabels}
+        />
+    );
+
     return (
         <div data-test-id="admin-email-queue">
             <PageHeader title={labels.title} icon={<Mailbox size={22} aria-hidden="true" />} />
@@ -169,6 +195,8 @@ export const EmailQueueIsland: React.FC<Props> = (props) => {
                     </div>
                 )}
 
+                <div className="mb-3">{pager}</div>
+
                 {rows.length === 0 && <p className="text-muted">{labels.empty}</p>}
                 {rows.length > 0 && (
                     <EmailQueueTable
@@ -179,6 +207,8 @@ export const EmailQueueIsland: React.FC<Props> = (props) => {
                         onRetry={handleRetry}
                     />
                 )}
+
+                <div className="mt-3">{pager}</div>
             </div>
         </div>
     );
