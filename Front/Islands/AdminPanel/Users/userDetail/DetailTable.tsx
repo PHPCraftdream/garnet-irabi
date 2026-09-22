@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {SectionTitle} from './Header/UserAvatar';
+import {SectionTitle} from './Header/SectionTitle';
 
 interface Props {
     title: string;

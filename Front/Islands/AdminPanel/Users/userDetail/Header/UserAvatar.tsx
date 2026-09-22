@@ -30,7 +30,3 @@ export const UserAvatar: React.FC<Props> = ({name, photo, onView}) => {
         </button>
     );
 };
-
-export const SectionTitle: React.FC<{children: React.ReactNode}> = ({children}) => (
-    <h3 className="admin-section-title">{children}</h3>
-);

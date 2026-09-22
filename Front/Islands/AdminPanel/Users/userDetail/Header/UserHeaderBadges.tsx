@@ -1,7 +1,6 @@
 import * as React from 'react';
-import {formatTs} from '@common/Utils/Time/DateUtils';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {flag} from '../../UsersSection';
+import {flag} from '../../usersFlags';
 import {AccountData} from '../userDetailTypes';
 
 interface BadgesProps {
@@ -25,44 +24,3 @@ export const UserHeaderBadges: React.FC<BadgesProps> = ({account, displayName, i
         {flag(account.IS_DISABLED) && <span className="badge bg-secondary">{t.User_Status_Disabled()}</span>}
     </div>
 );
-
-/** Регистрация, последний визит, номер. */
-export const UserHeaderMeta: React.FC<{account: AccountData}> = ({account}) => (
-    <div className="admin-user-meta">
-        {account.reg_time && <span>{t.User_RegTime()}: {formatTs(account.reg_time)}</span>}
-        {account.last_online_time && <span>{t.User_LastOnline()}: {formatTs(account.last_online_time)}</span>}
-        <span>ID: {account.id}</span>
-    </div>
-);
-
-interface CountersProps {
-    expertCancelCount: number;
-    userCancelCount: number;
-    expertDeclineCount: number;
-    userDeclineCount: number;
-}
-
-/**
- * Счётчики отказов и отмен.
- *
- * Отказ и отмена разведены намеренно: отказ по неподтверждённой заявке стоит
- * человеку куда меньше, чем отмена уже подтверждённого занятия. Показывается
- * только то, что не ноль, — пустые счётчики ничего не сообщают.
- */
-export const UserHeaderCounters: React.FC<CountersProps> = ({
-    expertCancelCount,
-    userCancelCount,
-    expertDeclineCount,
-    userDeclineCount,
-}) => {
-    if (!expertCancelCount && !userCancelCount && !expertDeclineCount && !userDeclineCount) return null;
-
-    return (
-        <div className="admin-user-meta">
-            {expertDeclineCount > 0 && <span className="text-warning">{t.User_ExpertDeclines()}: {expertDeclineCount}</span>}
-            {expertCancelCount > 0 && <span className="text-danger">{t.User_ExpertCancellations()}: {expertCancelCount}</span>}
-            {userDeclineCount > 0 && <span className="text-warning">{t.User_UserDeclines()}: {userDeclineCount}</span>}
-            {userCancelCount > 0 && <span className="text-danger">{t.User_UserCancellations()}: {userCancelCount}</span>}
-        </div>
-    );
-};
