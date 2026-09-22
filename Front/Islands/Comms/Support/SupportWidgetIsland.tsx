@@ -15,7 +15,12 @@ import AttachmentDisplay from '../../../Common/attachments/AttachmentDisplay';
 import {PendingFile} from '../../../Common/attachments/AttachmentPicker';
 import {initAutoContext} from './parts/autoContext';
 import {useSupportThread} from './parts/useSupportThread';
-import {WidgetFab, WidgetPanelHeader, WidgetImLink, WidgetTicketList, WidgetConversation, WidgetNewTicketForm} from './SupportWidgetParts';
+import {WidgetFab} from './WidgetFab';
+import {WidgetPanelHeader} from './WidgetPanelHeader';
+import {WidgetImLink} from './WidgetImLink';
+import {WidgetTicketList} from './WidgetTicketList';
+import {WidgetConversation} from './WidgetConversation';
+import {WidgetNewTicketForm} from './WidgetNewTicketForm';
 
 type WidgetView = 'list' | 'conversation' | 'new';
 

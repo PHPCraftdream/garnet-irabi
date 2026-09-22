@@ -1,7 +1,8 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {SupportTicket, SupportStatus, UserRole} from '../../../Comms/Support/parts/supportTypes';
-import {StatusBadge, ALL_STATUSES, statusLabel} from '../../../Comms/Support/parts/supportRenders';
+import {StatusBadge} from '../../../Comms/Support/parts/supportRenders';
+import {ALL_STATUSES, statusLabel} from '../../../Comms/Support/parts/supportStatus';
 import {AdminUserLink} from '../../../../Common/people/EntityLinks';
 import {UserAvatar} from '../../../../Common/media/UserAvatar';
 import {formatTs} from '@common/Utils/Time/DateUtils';
