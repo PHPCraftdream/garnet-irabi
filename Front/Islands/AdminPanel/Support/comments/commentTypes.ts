@@ -43,7 +43,6 @@ export interface ModerationResponse {
     moderation_status: AdminCommentRow['moderation_status'];
 }
 
-export const COMMENTS_PER_PAGE = 50;
 export const COMMENT_BODY_TRUNC = 160;
 
 export function truncate(s: string, n: number): string {

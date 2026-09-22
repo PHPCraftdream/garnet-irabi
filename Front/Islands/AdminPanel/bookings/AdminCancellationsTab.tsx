@@ -2,7 +2,6 @@ import * as React from 'react';
 import Pagination from '@common/Components/Layout/Paging/Pagination';
 import {PageResponse} from '@common/hooks/data/usePagination';
 import {formatTs} from '@common/Utils/Time/DateUtils';
-import {DEFAULT_PAGE_SIZE} from '@common/Utils/Data/pagination';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {EntityLink} from '../../../Common/people/EntityLink';
 import {userLinks} from '../../../Common/people/entityLinkHelpers';
@@ -116,9 +115,9 @@ const AdminCancellationsTab: React.FC<Props> = ({
 }) => {
     const [filters, setFilters] = React.useState<Filters>(EMPTY);
 
-    const buildBody = React.useCallback((f: Filters, page: number) => ({
+    const buildBody = React.useCallback((f: Filters, page: number, perPage: number) => ({
         page,
-        perPage: DEFAULT_PAGE_SIZE,
+        perPage,
         search: f.search,
         dateFrom: f.dateFrom,
         dateTo: f.dateTo,
@@ -126,7 +125,7 @@ const AdminCancellationsTab: React.FC<Props> = ({
         user_id: f.userId,
     }), []);
 
-    const {items, page, totalPages, total, loading, goToPage} = useAdminPage<CancellationRow, Filters>({
+    const {items, page, perPage, totalPages, total, loading, goToPage, setPerPage} = useAdminPage<CancellationRow, Filters>({
         url: pageUrl,
         initialData,
         filters,
@@ -174,7 +173,16 @@ const AdminCancellationsTab: React.FC<Props> = ({
     ];
 
     const pager = (
-        <Pagination page={page} totalPages={totalPages} total={total} loading={loading} onPageChange={goToPage} labels={adminPaginationLabels} />
+        <Pagination
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            loading={loading}
+            onPageChange={goToPage}
+            labels={adminPaginationLabels}
+            pageSize={perPage}
+            onPageSizeChange={setPerPage}
+        />
     );
 
     return (

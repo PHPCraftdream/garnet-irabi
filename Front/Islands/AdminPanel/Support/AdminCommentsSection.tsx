@@ -9,7 +9,6 @@ import {LogDetailModal} from '@common/Components/Admin/AdminLog/LogDetailModal';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {
     AdminCommentRow,
-    COMMENTS_PER_PAGE,
     CommentsAccountOption,
     CommentsFetchBody,
     ModerationResponse,
@@ -57,9 +56,9 @@ export const AdminCommentsSection: React.FC<AdminCommentsSectionProps> = (props)
     const [bodyModal, setBodyModal] = React.useState<AdminCommentRow | null>(null);
     const {confirmState, confirm, handleConfirm, handleCancel} = useConfirm();
 
-    const buildBody = React.useCallback((f: CommentsFilterState, page: number): CommentsFetchBody => ({
+    const buildBody = React.useCallback((f: CommentsFilterState, page: number, perPage: number): CommentsFetchBody => ({
         page,
-        perPage: COMMENTS_PER_PAGE,
+        perPage,
         author_id: f.authorId,
         expert_id: f.expertId,
         date_from: f.dateFrom,
@@ -68,7 +67,7 @@ export const AdminCommentsSection: React.FC<AdminCommentsSectionProps> = (props)
         hidden_only: f.hiddenOnly ? '1' : '0',
     }), []);
 
-    const {items, page, totalPages, total, loading, goToPage, setItems} =
+    const {items, page, perPage, totalPages, total, loading, goToPage, setPerPage, setItems} =
         useAdminPage<AdminCommentRow, CommentsFilterState, CommentsFetchBody>({
             url: commentsPageUrl,
             initialData: commentsPayload,
@@ -156,6 +155,8 @@ export const AdminCommentsSection: React.FC<AdminCommentsSectionProps> = (props)
             loading={loading}
             onPageChange={goToPage}
             labels={adminPaginationLabels}
+            pageSize={perPage}
+            onPageSizeChange={setPerPage}
         />
     );
 

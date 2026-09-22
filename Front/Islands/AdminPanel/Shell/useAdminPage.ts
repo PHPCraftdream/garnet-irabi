@@ -2,6 +2,7 @@ import * as React from 'react';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {PageResponse} from '@common/hooks/data/usePagination';
+import {usePageSize} from '@common/hooks/data/usePageSize';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 
 interface Options<TRow, TFilters, TBody extends object> {
@@ -9,8 +10,8 @@ interface Options<TRow, TFilters, TBody extends object> {
     /** Данные, отданные сервером при рендере страницы; null — грузим сами. */
     initialData: PageResponse<TRow> | null;
     filters: TFilters;
-    /** Собрать тело запроса из фильтров и номера страницы. */
-    buildBody: (filters: TFilters, page: number) => TBody;
+    /** Собрать тело запроса из фильтров, номера страницы и размера страницы. */
+    buildBody: (filters: TFilters, page: number, perPage: number) => TBody;
     /** Задержка перед применением изменившегося фильтра. */
     debounceMs?: number;
 }
@@ -18,10 +19,12 @@ interface Options<TRow, TFilters, TBody extends object> {
 interface Result<TRow> {
     items: TRow[];
     page: number;
+    perPage: number;
     totalPages: number;
     total: number;
     loading: boolean;
     goToPage: (p: number) => void;
+    setPerPage: (n: number) => void;
     reload: () => void;
     setItems: React.Dispatch<React.SetStateAction<TRow[]>>;
 }
@@ -41,6 +44,11 @@ export function useAdminPage<TRow, TFilters, TBody extends object = Record<strin
 ): Result<TRow> {
     const {url, initialData, filters, buildBody, debounceMs = 300} = opts;
 
+    // Тот же общий localStorage-стейт, что и у framework-хука usePagination
+    // (AdminGrid/AdminLogGrid) — чтобы селектор «строк на странице» вёл себя
+    // одинаково во всей админке, а не только там, где рендерится AdminGrid.
+    const [perPage, setStoredPerPage] = usePageSize();
+
     const [items, setItems] = React.useState<TRow[]>(initialData?.items ?? []);
     const [page, setPage] = React.useState<number>(initialData?.page ?? 1);
     const [totalPages, setTotalPages] = React.useState<number>(initialData?.totalPages ?? 1);
@@ -55,10 +63,10 @@ export function useAdminPage<TRow, TFilters, TBody extends object = Record<strin
     const buildRef = React.useRef(buildBody);
     buildRef.current = buildBody;
 
-    const fetchPage = React.useCallback(async (targetPage: number) => {
+    const fetchPage = React.useCallback(async (targetPage: number, targetPerPage: number = perPage) => {
         setLoading(true);
         try {
-            const body = buildRef.current(filtersRef.current, targetPage);
+            const body = buildRef.current(filtersRef.current, targetPage, targetPerPage);
             const resp = await sendPost<TBody, PageResponse<TRow>>(url, body);
             const data = ('data' in resp && resp.data) ? resp.data : (resp as unknown as PageResponse<TRow>);
             setItems(data.items);
@@ -71,7 +79,7 @@ export function useAdminPage<TRow, TFilters, TBody extends object = Record<strin
         } finally {
             setLoading(false);
         }
-    }, [url]);
+    }, [url, perPage]);
 
     React.useEffect(() => {
         if (initialData === null && !loadedOnce) {
@@ -97,7 +105,12 @@ export function useAdminPage<TRow, TFilters, TBody extends object = Record<strin
         void fetchPage(p);
     }, [fetchPage, totalPages, page, loading]);
 
+    const setPerPage = React.useCallback((n: number) => {
+        setStoredPerPage(n);
+        void fetchPage(1, n);
+    }, [fetchPage, setStoredPerPage]);
+
     const reload = React.useCallback(() => void fetchPage(page), [fetchPage, page]);
 
-    return {items, page, totalPages, total, loading, goToPage, reload, setItems};
+    return {items, page, perPage, totalPages, total, loading, goToPage, setPerPage, reload, setItems};
 }

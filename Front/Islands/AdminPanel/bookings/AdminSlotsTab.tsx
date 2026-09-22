@@ -2,7 +2,6 @@ import * as React from 'react';
 import Pagination from '@common/Components/Layout/Paging/Pagination';
 import {PageResponse} from '@common/hooks/data/usePagination';
 import {formatTs} from '@common/Utils/Time/DateUtils';
-import {DEFAULT_PAGE_SIZE} from '@common/Utils/Data/pagination';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {EntityLink} from '../../../Common/people/EntityLink';
 import {userLinks} from '../../../Common/people/entityLinkHelpers';
@@ -75,9 +74,9 @@ interface Props {
 export const AdminSlotsTab: React.FC<Props> = ({initialData, pageUrl, allowedStatuses, experts, users}) => {
     const [filters, setFilters] = React.useState<SlotsFilters>(EMPTY_FILTERS);
 
-    const buildBody = React.useCallback((f: SlotsFilters, page: number) => ({
+    const buildBody = React.useCallback((f: SlotsFilters, page: number, perPage: number) => ({
         page,
-        perPage: DEFAULT_PAGE_SIZE,
+        perPage,
         search: f.search,
         status: f.status,
         expert_id: f.expertId,
@@ -87,7 +86,7 @@ export const AdminSlotsTab: React.FC<Props> = ({initialData, pageUrl, allowedSta
         date_to: f.dateTo,
     }), []);
 
-    const {items, page, totalPages, total, loading, goToPage} = useAdminPage<AdminSlotRow, SlotsFilters>({
+    const {items, page, perPage, totalPages, total, loading, goToPage, setPerPage} = useAdminPage<AdminSlotRow, SlotsFilters>({
         url: pageUrl,
         initialData,
         filters,
@@ -133,7 +132,16 @@ export const AdminSlotsTab: React.FC<Props> = ({initialData, pageUrl, allowedSta
     ];
 
     const pager = (
-        <Pagination page={page} totalPages={totalPages} total={total} loading={loading} onPageChange={goToPage} labels={adminPaginationLabels} />
+        <Pagination
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            loading={loading}
+            onPageChange={goToPage}
+            labels={adminPaginationLabels}
+            pageSize={perPage}
+            onPageSizeChange={setPerPage}
+        />
     );
 
     return (
