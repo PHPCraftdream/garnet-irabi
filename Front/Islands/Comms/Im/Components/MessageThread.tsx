@@ -6,7 +6,8 @@ import {ImConversation, ImMessage} from '../imTypes';
 import MessageBubble from './MessageBubble';
 import AttachmentPicker, {PendingFile} from '../../../../Common/attachments/AttachmentPicker';
 import SendButton from '@common/Components/Controls/SendButton';
-import {EntityLink, userLinks} from '../../../../Common/people/EntityLinks';
+import {EntityLink} from '../../../../Common/people/EntityLink';
+import {userLinks} from '../../../../Common/people/entityLinkHelpers';
 import {UserAvatar} from '../../../../Common/media/UserAvatar';
 
 interface Props {

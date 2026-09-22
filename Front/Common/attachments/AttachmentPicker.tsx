@@ -6,6 +6,7 @@ import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {AttachmentAddRow} from './AttachmentAddRow';
 import {AttachmentTile} from './AttachmentTile';
 import {AttachmentLightbox} from './AttachmentLightbox';
+import {MAX_ATTACHMENTS} from './AttachmentPicker.constants';
 
 export interface PendingFile {
     id: string;
@@ -29,19 +30,6 @@ interface Props {
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_FILE_SIZE_MB = 5;
 
-/**
- * Сколько файлов можно приложить.
- *
- * Число одно на все формы. Виджет поддержки обещал три, страница
- * поддержки — пять, а операция у них одна и та же: создать обращение.
- * Человек получал разное обещание в зависимости от того, через какую дверь
- * зашёл (нашла mod-2).
- *
- * Ограничение живёт только на клиенте — сервер числа файлов не проверяет.
- * Это любезность к отправителю, а не гарантия, и потому тем более не
- * должно расходиться между экранами.
- */
-export const MAX_ATTACHMENTS = 5;
 const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'txt', 'log']);
 
 function formatSize(bytes: number): string {

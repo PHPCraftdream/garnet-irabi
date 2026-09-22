@@ -1,7 +1,8 @@
 import * as React from 'react';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {EntityLink, userLinks} from '../../../../Common/people/EntityLinks';
+import {EntityLink} from '../../../../Common/people/EntityLink';
+import {userLinks} from '../../../../Common/people/entityLinkHelpers';
 import {AdminCommentRow, COMMENT_BODY_TRUNC, truncate} from './commentTypes';
 import {CommentAuthorCell} from './CommentAuthorCell';
 import {CommentStatusCell} from './CommentStatusCell';
