@@ -1,5 +1,6 @@
 {
   "$schema": "./vendor/phpcraftdream/garnet-framework/FrontBuilder/node_modules/oxlint/configuration_schema.json",
+  "jsPlugins": ["./vendor/phpcraftdream/garnet-framework/FrontBuilder/oxlint-plugins/garnet-tsx-rules.js"],
   "plugins": ["react", "typescript", "unicorn", "import"],
   "env": {
     "browser": true,
@@ -35,6 +36,10 @@
     "no-unused-expressions": "warn",
     "no-extra-boolean-cast": "warn",
     "no-cond-assign": "warn",
-    "typescript/no-this-alias": "warn"
+    "typescript/no-this-alias": "warn",
+
+    "garnet-tsx/one-export-per-component": "warn",
+    "garnet-tsx/max-component-lines": "warn",
+    "garnet-tsx/max-component-nesting": "warn"
   }
 }
