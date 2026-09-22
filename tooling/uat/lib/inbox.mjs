@@ -23,8 +23,21 @@ import { htmlToText, extractLinks, extractCodes, clip, indent } from './text.mjs
  * Фильтр по тестовому домену, а не по списку адресов: письма реальных
  * клиентов не должны попадать в выборку вообще.
  *
+ * D-266: `FwAppMailer::sendHtmlMail()` пишет в `mail_log` ПРИ КАЖДОЙ
+ * отправке, независимо от того, кто её инициировал — прямой вызов или
+ * обработка `email_queue` кроном. Обработанная строка очереди почти
+ * всегда получает пару в `mail_log` (то же письмо, та же секунда — это
+ * не дубль отправки, а два разных журнала одного события: очередь и
+ * аудит доставки). Без дедупа персона видит «два письма» там, где ушло
+ * одно, и заводит ложный баг. Совпадающая queue-строка со статусом
+ * `sent` убирается, если для неё нашлась log-строка с тем же адресатом
+ * и темой в пределах {@link PAIR_WINDOW_SEC} секунд — log остаётся
+ * единственным источником правды для уже отправленного письма.
+ *
  * @returns Map<personaId, row[]> — row.src = 'log' | 'queue'
  */
+const PAIR_WINDOW_SEC = 10;
+
 export function collectMail(roster, personas, sinceOf) {
     const out = new Map(personas.map((p) => [p.id, []]));
     if (!personas.length) return out;
@@ -53,7 +66,7 @@ export function collectMail(roster, personas, sinceOf) {
 
     for (const row of rows(
         roster,
-        `SELECT l.id, l.recipient_email, l.subject, l.body_html, l.status, l.mail_type` +
+        `SELECT l.id, l.recipient_email, l.subject, l.body_html, l.status, l.mail_type, l.created_at` +
         (recipients
             ? `, (SELECT GROUP_CONCAT(r.recipient_email) FROM ${recipients} r WHERE r.mail_log_id = l.id) AS extra`
             : ', NULL AS extra') +
@@ -67,12 +80,34 @@ export function collectMail(roster, personas, sinceOf) {
 
     for (const row of rows(
         roster,
-        `SELECT id, recipient_email, subject, body_html, status, NULL AS mail_type, NULL AS extra ` +
+        `SELECT id, recipient_email, subject, body_html, status, NULL AS mail_type, NULL AS extra, ` +
+        `COALESCE(sent_at, created_at) AS created_at ` +
         `FROM ${tn(roster, 'email_queue')} ` +
         `WHERE id > ${minSince('email_id')} AND recipient_email LIKE ${like} ORDER BY id`
     )) push(row, 'queue');
 
+    for (const list of out.values()) dedupeQueueAgainstLog(list);
+
     return out;
+}
+
+/**
+ * Flag (not remove) a 'sent' queue row that a 'log' row already accounts
+ * for — see D-266 above. Flagging rather than splicing keeps the row's id
+ * in the list for the read-mark watermark (advanceMail/maxBySrc): dropping
+ * it outright would leave `last_seen.email_id` stuck below it forever,
+ * re-matching and re-hiding the same historical row on every future poll.
+ */
+function dedupeQueueAgainstLog(list) {
+    const logRows = list.filter((r) => r.src === 'log');
+    for (const row of list) {
+        if (row.src !== 'queue' || row.status !== 'sent') continue;
+        row.hidden = logRows.some((l) =>
+            String(l.recipient_email).toLowerCase() === String(row.recipient_email).toLowerCase() &&
+            l.subject === row.subject &&
+            Math.abs(Number(l.created_at) - Number(row.created_at)) <= PAIR_WINDOW_SEC
+        );
+    }
 }
 
 /** Максимальный id по источнику — для сдвига отметок прочтения. */
@@ -97,6 +132,7 @@ export function fetchMail(roster, persona, opts = {}) {
     if (opts.silent) return list;
 
     for (const row of list) {
+        if (row.hidden) continue;
         const text = htmlToText(row.body_html);
         const links = extractLinks(row.body_html);
         const codes = extractCodes(row.body_html, text);
@@ -107,7 +143,7 @@ export function fetchMail(roster, persona, opts = {}) {
         console.log(indent(clip(text)));
     }
 
-    if (!list.length) console.log('  писем нет');
+    if (!list.some((r) => !r.hidden)) console.log('  писем нет');
     return list;
 }
 
@@ -267,13 +303,14 @@ export function printInbox(inbox, roster) {
 
     for (const persona of roster.personas) {
         const box = inbox.get(persona.id);
-        const n = box.mail.length + box.im.length + box.support.length;
+        const visibleMail = box.mail.filter((r) => !r.hidden);
+        const n = visibleMail.length + box.im.length + box.support.length;
         if (!n) continue;
         total += n;
 
         console.log(`\n### ${persona.id} (${persona.role}) <${persona.email}>`);
 
-        for (const row of box.mail) {
+        for (const row of visibleMail) {
             const text = htmlToText(row.body_html);
             const links = extractLinks(row.body_html);
             const codes = extractCodes(row.body_html, text);
