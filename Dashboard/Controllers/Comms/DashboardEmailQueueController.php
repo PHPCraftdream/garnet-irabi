@@ -37,6 +37,14 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Comms {
 
         public const URL = '/admin/email-queue/';
 
+        /**
+         * Rows fetched for the grid (most recent first). AdminGrid paginates
+         * client-side over whatever it's handed, same as Finance's ledger
+         * grid (300) — a bounded "recent activity" window, not a full
+         * historical export.
+         */
+        private const FETCH_LIMIT = 200;
+
         protected static function isAdmin(): bool {
             return UserEntityConfig::isAdmin();
         }
@@ -70,28 +78,23 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Comms {
         }
 
         /**
-         * @return array<string, mixed>
+         * @return array<int, array<string, mixed>>
          */
-        private static function buildPayload(int $page, int $perPage): array {
+        private static function fetchRows(): array {
             // Select only the columns we render — body_html is LONGTEXT and
             // would bloat the island payload for no UI benefit.
-            $pageData = PaginationHelper::fetchPage(
-                EmailQueue::get(),
-                $page,
-                $perPage,
-                static function (SelectInterface $q): void {
-                    $q->resetCols();
-                    $q->cols([
-                        'id', 'recipient_email', 'subject', 'status',
-                        'attempts', 'max_attempts', 'next_attempt_at',
-                        'sent_at', 'created_at',
-                    ]);
-                    $q->orderBy(['id DESC']);
-                },
-            );
-            $pageData->pageItems = array_map(static fn (array $row): array => static::hydrateRow($row), $pageData->pageItems);
+            $rows = EmailQueue::get()->selectAll(static function (SelectInterface $q): void {
+                $q->resetCols();
+                $q->cols([
+                    'id', 'recipient_email', 'subject', 'status',
+                    'attempts', 'max_attempts', 'next_attempt_at',
+                    'sent_at', 'created_at',
+                ]);
+                $q->orderBy(['id DESC']);
+                $q->limit(self::FETCH_LIMIT);
+            });
 
-            return PaginationHelper::toPageResponse($pageData);
+            return array_map(static fn (array $row): array => static::hydrateRow($row), $rows);
         }
 
         private static function gridConfig(): array {
@@ -105,6 +108,7 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Comms {
                     GridConfig::col('attempts',        $t->Admin_EmailQueue_Attempts()),
                     GridConfig::col('max_attempts',    $t->Admin_EmailQueue_MaxAttempts()),
                     GridConfig::col('next_attempt_at', $t->Admin_EmailQueue_NextAttempt()),
+                    GridConfig::col('retry',           $t->Admin_EmailQueue_Retry(), shrink: true),
                 ],
                 searchFields: ['recipient_email', 'subject', 'status'],
                 sortFields:   ['id', 'created_at', 'status'],
@@ -121,10 +125,9 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Comms {
             $t = ForegroundI18n::getInstance();
 
             $content = RenderIsland::render('admin-email-queue', [
-                'emailQueuePayload' => static::buildPayload(1, PaginationHelper::DEFAULT_PER_PAGE),
+                'rows' => static::fetchRows(),
                 'gridConfig' => static::gridConfig(),
                 'deadLetterCount' => static::deadLetterCount(),
-                'pageUrl' => IRabi::url(static::URL . '~page'),
                 'retryUrl' => IRabi::url(static::URL . '~retry'),
                 'labels' => [
                     'title' => $t->Admin_EmailQueue_Title(),
@@ -143,14 +146,6 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Comms {
                     'side_menu_items' => static::getSideMenu($url),
                 ])
             ));
-        }
-
-        public static function post__page(IGlobalReqParams $globals, IRouterUriParams $params): mixed {
-            if (!static::isAdmin()) {
-                return ControllerTools::JSON(['error' => 'Access denied'], status: 403);
-            }
-            ['page' => $page, 'perPage' => $perPage] = PaginationHelper::readPageParams($globals);
-            return ControllerTools::JSON(static::buildPayload($page, $perPage));
         }
 
         /**

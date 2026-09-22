@@ -266,14 +266,15 @@ test.describe('Email queue dashboard — pagination', () => {
         await adminPage.goto('/admin/email-queue/');
         await adminPage.waitForSelector('[data-test-id="admin-email-queue"]', { timeout: 12000 });
 
-        // Newest-first ordering: the 15 freshly-seeded rows fill all of page 1.
+        // Newest-first ordering: the 15 freshly-seeded rows fill all of page 1
+        // (AdminGrid — the same shared component Users/Experts/Finance/Support
+        // use — 10/page by default).
         await expect(adminPage.locator('[data-test-id="admin-email-queue"] tbody tr')).toHaveCount(10, { timeout: 8000 });
 
-        const pager = adminPage.locator('[data-test-id="pagination"]').first();
-        await expect(pager).toBeVisible({ timeout: 8000 });
-        await expect(pager.locator('[data-test-id="pagination-next"]')).toBeEnabled();
+        const nextBtn = adminPage.locator('[data-test-id="admin-grid-next"]');
+        await expect(nextBtn).toBeEnabled({ timeout: 8000 });
 
-        await pager.locator('[data-test-id="pagination-next"]').click();
+        await nextBtn.click();
         await expect.poll(async () =>
             adminPage.locator('[data-test-id="admin-email-queue"] tbody tr').count()
         , { timeout: 8000 }).toBeGreaterThan(0);
