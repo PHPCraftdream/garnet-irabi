@@ -162,7 +162,7 @@ test.describe('D-199: the money follows the words — an unanswered request is d
 		const conn = await mysql.createConnection(DB);
 		try {
 			const [rows] = await conn.execute<any[]>(
-				`SELECT subject, body FROM ${tn('email_queue')}
+				`SELECT subject, body_html FROM ${tn('email_queue')}
 				 WHERE recipient_email = ? AND id > ?
 				 ORDER BY id DESC LIMIT 1`,
 				['user1@dev.test', emailMaxIdBefore],
@@ -170,7 +170,7 @@ test.describe('D-199: the money follows the words — an unanswered request is d
 			expect(rows.length).toBe(1);
 			expect(rows[0].subject).toContain('Истёк срок ответа');
 			expect(rows[0].subject).not.toContain('отклонена');
-			expect(rows[0].body).not.toContain('отклонена');
+			expect(rows[0].body_html).not.toContain('отклонена');
 		} finally {
 			await conn.end();
 		}
