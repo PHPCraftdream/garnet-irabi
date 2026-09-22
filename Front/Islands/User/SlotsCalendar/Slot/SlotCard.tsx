@@ -112,7 +112,7 @@ export const SlotCard: React.FC<SlotCardProps> = ({slot, experts, isBooked, book
     return (
         <div
             ref={cardRef}
-            className="slot-card group"
+            className="time-slot-card group"
             data-test-id={`slot-card-${slot.id}`}
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
