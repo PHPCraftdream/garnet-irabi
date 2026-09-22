@@ -127,7 +127,7 @@ test.describe('D-199: the money follows the words — an unanswered request is d
 		expect(await getUserCancellationKind(runningBookingId)).toBe('decline');
 	});
 
-	test('D-254: the auto-decline posts the same chat notice a manual decline would', async () => {
+	test('D-254: the auto-decline posts a chat notice, same as a manual decline would', async () => {
 		if (!runningBookingId) { test.skip(); return; }
 
 		const conn = await mysql.createConnection(DB);
@@ -140,13 +140,37 @@ test.describe('D-199: the money follows the words — an unanswered request is d
 			expect(convRows.length).toBeGreaterThan(0);
 			const convId = convRows[0].id;
 
+			// D-265: the wording changed from "отклонена" (reads as the expert
+			// actively rejecting the request) to "не успел подтвердить" (they
+			// simply never answered) — match the new text, not the old one.
 			const [msgRows] = await conn.execute<any[]>(
 				`SELECT sender_id, body FROM ${tn('im_messages')}
 				 WHERE conversation_id = ? AND sender_id = ? AND body LIKE ?
 				 ORDER BY id DESC LIMIT 1`,
-				[convId, expertId, '%отклонена%'],
+				[convId, expertId, '%не успел подтвердить%'],
 			);
 			expect(msgRows.length).toBe(1);
+			expect(msgRows[0].body).not.toContain('отклонена');
+		} finally {
+			await conn.end();
+		}
+	});
+
+	test('D-265: the notification e-mail says the response window expired, not "rejected"', async () => {
+		if (!runningBookingId) { test.skip(); return; }
+
+		const conn = await mysql.createConnection(DB);
+		try {
+			const [rows] = await conn.execute<any[]>(
+				`SELECT subject, body FROM ${tn('email_queue')}
+				 WHERE recipient_email = ? AND id > ?
+				 ORDER BY id DESC LIMIT 1`,
+				['user1@dev.test', emailMaxIdBefore],
+			);
+			expect(rows.length).toBe(1);
+			expect(rows[0].subject).toContain('Истёк срок ответа');
+			expect(rows[0].subject).not.toContain('отклонена');
+			expect(rows[0].body).not.toContain('отклонена');
 		} finally {
 			await conn.end();
 		}

@@ -22,6 +22,14 @@ namespace PHPCraftdream\IRabi\Foreground\I18n\Ru {
             'Email_BookingRejected_Subject' => 'Бронь отклонена на %s',
             'Email_BookingRejected_Title' => 'Бронь отклонена',
             'Email_BookingRejected_Body' => 'К сожалению, ваша бронь отклонена экспертом.',
+            // D-265: у этого письма отдельный текст, а не переиспользование
+            // Email_BookingRejected_* с причиной — «отклонена» читается как
+            // активный отказ эксперта, а тут эксперт просто не успел
+            // ответить до начала занятия. Разные основания для дальнейших
+            // действий ученика, значит разная формулировка.
+            'Email_BookingMissedResponse_Subject' => 'Истёк срок ответа на бронь — %s',
+            'Email_BookingMissedResponse_Title' => 'Истёк срок ответа на бронь',
+            'Email_BookingMissedResponse_Body' => 'Эксперт не успел подтвердить бронь до начала занятия. Бронь автоматически отменена, деньги возвращены.',
             'Email_BookingCancelled_Subject' => 'Бронь отменена на %s',
             'Email_BookingCancelled_Title' => 'Бронь отменена',
             'Email_BookingCancelled_Body' => 'Бронь отменена (%s).',

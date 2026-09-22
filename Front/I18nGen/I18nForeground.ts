@@ -438,6 +438,7 @@ class I18n extends I18nBase {
     Bookings_HidePast: t = (a = []) => this.t('Bookings_HidePast', a);
     Booking_Chat_Confirmed: t = (a = []) => this.t('Booking_Chat_Confirmed', a);
     Booking_Chat_Declined: t = (a = []) => this.t('Booking_Chat_Declined', a);
+    Booking_Chat_MissedResponse: t = (a = []) => this.t('Booking_Chat_MissedResponse', a);
     Booking_Chat_Cancelled: t = (a = []) => this.t('Booking_Chat_Cancelled', a);
     Booking_Chat_LocationChanged: t = (a = []) => this.t('Booking_Chat_LocationChanged', a);
     Booking_Chat_Rescheduled: t = (a = []) => this.t('Booking_Chat_Rescheduled', a);
@@ -532,6 +533,9 @@ class I18n extends I18nBase {
     Email_BookingRejected_Subject: t = (a = []) => this.t('Email_BookingRejected_Subject', a);
     Email_BookingRejected_Title: t = (a = []) => this.t('Email_BookingRejected_Title', a);
     Email_BookingRejected_Body: t = (a = []) => this.t('Email_BookingRejected_Body', a);
+    Email_BookingMissedResponse_Subject: t = (a = []) => this.t('Email_BookingMissedResponse_Subject', a);
+    Email_BookingMissedResponse_Title: t = (a = []) => this.t('Email_BookingMissedResponse_Title', a);
+    Email_BookingMissedResponse_Body: t = (a = []) => this.t('Email_BookingMissedResponse_Body', a);
     Email_BookingCancelled_Subject: t = (a = []) => this.t('Email_BookingCancelled_Subject', a);
     Email_BookingCancelled_Title: t = (a = []) => this.t('Email_BookingCancelled_Title', a);
     Email_BookingCancelled_Body: t = (a = []) => this.t('Email_BookingCancelled_Body', a);

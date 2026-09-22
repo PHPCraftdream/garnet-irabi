@@ -432,6 +432,7 @@ export class I18nDataRU {
     static Bookings_HidePast = 'Скрыть прошедшие';
     static Booking_Chat_Confirmed = 'Ваша бронь на %s подтверждена.';
     static Booking_Chat_Declined = 'Ваша бронь на %s отклонена.';
+    static Booking_Chat_MissedResponse = 'Ваша бронь на %s отменена: эксперт не успел подтвердить её до начала занятия.';
     static Booking_Chat_Cancelled = 'Ваша бронь на %s отменена.';
     static Booking_Chat_LocationChanged = 'Место встречи для занятия %s изменилось — прежняя ссылка или адрес, которые вы получали раньше в переписке, больше не действительны. Актуальное место — в карточке брони.';
     static Booking_Chat_Rescheduled = 'Занятие перенесено: было %s, стало %s.';
@@ -526,6 +527,9 @@ export class I18nDataRU {
     static Email_BookingRejected_Subject = 'Бронь отклонена на %s';
     static Email_BookingRejected_Title = 'Бронь отклонена';
     static Email_BookingRejected_Body = 'К сожалению, ваша бронь отклонена экспертом.';
+    static Email_BookingMissedResponse_Subject = 'Истёк срок ответа на бронь — %s';
+    static Email_BookingMissedResponse_Title = 'Истёк срок ответа на бронь';
+    static Email_BookingMissedResponse_Body = 'Эксперт не успел подтвердить бронь до начала занятия. Бронь автоматически отменена, деньги возвращены.';
     static Email_BookingCancelled_Subject = 'Бронь отменена на %s';
     static Email_BookingCancelled_Title = 'Бронь отменена';
     static Email_BookingCancelled_Body = 'Бронь отменена (%s).';

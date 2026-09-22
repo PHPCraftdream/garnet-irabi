@@ -432,6 +432,7 @@ export class I18nDataEN {
     static Bookings_HidePast = 'Hide past';
     static Booking_Chat_Confirmed = 'Your booking for %s is confirmed.';
     static Booking_Chat_Declined = 'Your booking for %s was declined.';
+    static Booking_Chat_MissedResponse = 'Your booking for %s was cancelled: the expert did not confirm it before the session started.';
     static Booking_Chat_Cancelled = 'Your booking for %s was cancelled.';
     static Booking_Chat_LocationChanged = 'The meeting place for the session on %s has changed — any link or address you received earlier in chat no longer works. Check your booking for the current one.';
     static Booking_Chat_Rescheduled = 'The lesson has been moved: it was %s, it is now %s.';
@@ -526,6 +527,9 @@ export class I18nDataEN {
     static Email_BookingRejected_Subject = 'Booking rejected on %s';
     static Email_BookingRejected_Title = 'Booking rejected';
     static Email_BookingRejected_Body = 'Unfortunately, your booking has been rejected by the expert.';
+    static Email_BookingMissedResponse_Subject = 'Response window expired — %s';
+    static Email_BookingMissedResponse_Title = 'Response window expired';
+    static Email_BookingMissedResponse_Body = 'The expert did not confirm the booking before the session started. The booking was cancelled automatically and refunded.';
     static Email_BookingCancelled_Subject = 'Booking cancelled on %s';
     static Email_BookingCancelled_Title = 'Booking cancelled';
     static Email_BookingCancelled_Body = 'Booking cancelled (%s).';

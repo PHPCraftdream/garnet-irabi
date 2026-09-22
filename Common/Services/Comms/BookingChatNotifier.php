@@ -33,6 +33,22 @@ namespace PHPCraftdream\IRabi\Common\Services\Comms {
             ));
         }
 
+        /**
+         * D-265: separate wording from declined() — this fires when the
+         * expert simply never answered before the session started, not when
+         * they actively looked at the request and rejected it. "Отклонена"
+         * reads as the latter; the reader draws the wrong conclusion about
+         * why (and whether to expect a different outcome next time).
+         *
+         * @param array{start_at?: int, duration_min?: int, cost?: int, is_online?: int, location?: string} $slot
+         */
+        public static function missedResponse(int $expertId, int $userId, array $slot): void {
+            static::send($expertId, $userId, sprintf(
+                (string)ForegroundI18n::getInstance()->Booking_Chat_MissedResponse(),
+                static::when($expertId, $slot),
+            ));
+        }
+
         /** @param array{start_at?: int, duration_min?: int, cost?: int, is_online?: int, location?: string} $slot */
         public static function cancelled(int $expertId, int $userId, array $slot): void {
             static::send($expertId, $userId, sprintf(

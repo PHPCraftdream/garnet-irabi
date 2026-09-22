@@ -77,6 +77,9 @@ namespace PHPCraftdream\IRabi\Foreground\I18n\Ru {
 
             'Booking_Chat_Confirmed' => 'Ваша бронь на %s подтверждена.',
             'Booking_Chat_Declined' => 'Ваша бронь на %s отклонена.',
+            // D-265: та же логика, что у Email_BookingMissedResponse_* —
+            // эксперт не отклонял бронь активно, а не успел ответить.
+            'Booking_Chat_MissedResponse' => 'Ваша бронь на %s отменена: эксперт не успел подтвердить её до начала занятия.',
             'Booking_Chat_Cancelled' => 'Ваша бронь на %s отменена.',
             'Booking_Chat_LocationChanged' => 'Место встречи для занятия %s изменилось — прежняя ссылка или адрес, которые вы получали раньше в переписке, больше не действительны. Актуальное место — в карточке брони.',
             'Booking_Chat_Rescheduled' => 'Занятие перенесено: было %s, стало %s.',

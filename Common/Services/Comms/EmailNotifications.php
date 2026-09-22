@@ -43,6 +43,7 @@ namespace PHPCraftdream\IRabi\Common\Services\Comms {
         public const TYPE_BOOKING_CREATED = 'bookingCreated';
         public const TYPE_BOOKING_CONFIRMED = 'bookingConfirmed';
         public const TYPE_BOOKING_REJECTED = 'bookingRejected';
+        public const TYPE_BOOKING_MISSED_RESPONSE = 'bookingMissedResponse';
         public const TYPE_BOOKING_CANCELLED = 'bookingCancelled';
         public const TYPE_NEW_MESSAGE = 'newMessage';
         public const TYPE_SUPPORT_TICKET_CREATED = 'supportTicketCreated';
@@ -66,6 +67,7 @@ namespace PHPCraftdream\IRabi\Common\Services\Comms {
                 ['id' => static::TYPE_BOOKING_CREATED, 'label' => $t->Email_BookingCreated_Title()],
                 ['id' => static::TYPE_BOOKING_CONFIRMED, 'label' => $t->Email_BookingConfirmed_Title()],
                 ['id' => static::TYPE_BOOKING_REJECTED, 'label' => $t->Email_BookingRejected_Title()],
+                ['id' => static::TYPE_BOOKING_MISSED_RESPONSE, 'label' => $t->Email_BookingMissedResponse_Title()],
                 ['id' => static::TYPE_BOOKING_CANCELLED, 'label' => $t->Email_BookingCancelled_Title()],
                 ['id' => static::TYPE_BOOKING_REMINDER_1D, 'label' => $t->Email_Reminder_Title_1d()],
                 ['id' => static::TYPE_BOOKING_REMINDER_2H, 'label' => $t->Email_Reminder_Title_2h()],
@@ -428,6 +430,35 @@ namespace PHPCraftdream\IRabi\Common\Services\Comms {
         }
 
         /**
+         * D-265: fired only from the cron auto-decline-by-no-answer path.
+         * Same layout as buildBookingRejected(), separate title/subject —
+         * "отклонена" reads as the expert actively rejecting the request,
+         * which didn't happen here (they just never answered in time).
+         *
+         * @return array{subject: string, body: string}
+         */
+        private static function buildBookingMissedResponse(int $recipientId, string $expertName, int $startAt, int $durationMin, int $maxUsers = 1): array {
+            $t = ForegroundI18n::getInstance();
+            $rows = [];
+            if ($expertName !== '') {
+                $rows[] = ['label' => $t->Email_Row_Expert(), 'value' => $expertName];
+            }
+            $rows[] = ['label' => $t->Email_Row_DateTime(), 'value' => static::formatSlotInfo($recipientId, $startAt, $durationMin)];
+            $rows = [...$rows, ...static::groupLessonRow($maxUsers)];
+            return [
+                'subject' => $t->Email_BookingMissedResponse_Subject(FwAppSettings::brandName()),
+                'body' => static::renderEmail(
+                    $t->Email_BookingMissedResponse_Title(),
+                    $rows,
+                    [
+                        'text' => $t->Email_Cta_FindAnotherSlot(),
+                        'href' => static::absoluteUrl('/slots/'),
+                    ],
+                ),
+            ];
+        }
+
+        /**
          * @return array{subject: string, body: string}
          */
         private static function buildBookingCancelled(int $recipientId, int $startAt, int $durationMin, string $cancelledBy, string $reason = '', int $maxUsers = 1): array {
@@ -660,6 +691,19 @@ namespace PHPCraftdream\IRabi\Common\Services\Comms {
             FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body'], self::MAX_SEND_ATTEMPTS);
         }
 
+        public static function bookingMissedResponse(int $studentId, int $startAt, int $durationMin, int $expertId = 0, int $maxUsers = 1): void {
+            $email = static::getAccountEmail($studentId);
+            if (!$email) {
+                return;
+            }
+            if (!static::gate($studentId, self::CAT_BOOKINGS)) {
+                return;
+            }
+            $expertName = $expertId > 0 ? static::getAccountName($expertId) : '';
+            $rendered = static::buildBookingMissedResponse($studentId, $expertName, $startAt, $durationMin, $maxUsers);
+            FwEmailQueueService::enqueue($email, $rendered['subject'], $rendered['body'], self::MAX_SEND_ATTEMPTS);
+        }
+
         /**
          * Напоминание о занятии ученику.
          *
@@ -841,6 +885,7 @@ namespace PHPCraftdream\IRabi\Common\Services\Comms {
                 static::TYPE_BOOKING_CREATED => static::buildBookingCreated($recipientId, $stubUser, $startAt, $durationMin),
                 static::TYPE_BOOKING_CONFIRMED => static::buildBookingConfirmed($recipientId, $stubExpert, $startAt, $durationMin),
                 static::TYPE_BOOKING_REJECTED => static::buildBookingRejected($recipientId, $stubExpert, $startAt, $durationMin, $stubReason),
+                static::TYPE_BOOKING_MISSED_RESPONSE => static::buildBookingMissedResponse($recipientId, $stubExpert, $startAt, $durationMin),
                 static::TYPE_BOOKING_CANCELLED => static::buildBookingCancelled($recipientId, $startAt, $durationMin, $stubActor),
                 static::TYPE_BOOKING_REMINDER_1D => static::buildReminder($recipientId, '1d', $stubExpert, $startAt, $durationMin, $t->Email_Reminder_Body_Student(), '/bookings/'),
                 static::TYPE_BOOKING_REMINDER_2H => static::buildReminder($recipientId, '2h', $stubExpert, $startAt, $durationMin, $t->Email_Reminder_Body_Student(), '/bookings/'),
@@ -859,6 +904,7 @@ namespace PHPCraftdream\IRabi\Common\Services\Comms {
                 static::TYPE_BOOKING_CREATED,
                 static::TYPE_BOOKING_CONFIRMED,
                 static::TYPE_BOOKING_REJECTED,
+                static::TYPE_BOOKING_MISSED_RESPONSE,
                 static::TYPE_BOOKING_CANCELLED,
                 static::TYPE_BOOKING_REMINDER_1D,
                 static::TYPE_BOOKING_REMINDER_2H,

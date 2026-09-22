@@ -209,18 +209,20 @@ class CronCompletionService {
                 }
 
                 // Notify the user: their request was not accepted before the
-                // session time. bookingRejected is the closest existing
-                // template — it addresses the user and fills in the expert name.
-                EmailNotifications::bookingRejected($userId, $startAt, $durationMin, $expertId, '', (int)($slot['max_users'] ?? 1));
+                // session time. D-265: bookingMissedResponse, not
+                // bookingRejected — the expert never acted on the request at
+                // all, and "отклонена" reads as an active rejection that
+                // didn't happen.
+                EmailNotifications::bookingMissedResponse($userId, $startAt, $durationMin, $expertId, (int)($slot['max_users'] ?? 1));
 
-                // D-254: every OTHER decline path (expert clicks "decline" in
-                // ExpertBookingsService) posts the same notice into the shared
-                // chat via BookingChatNotifier::declined() — this cron path did
-                // the email and the profile-counter bookkeeping above but left
-                // the chat silent, so a student re-reading that dialog later saw
+                // D-254/D-265: every OTHER decline path (expert clicks
+                // "decline" in ExpertBookingsService) posts a notice into the
+                // shared chat via BookingChatNotifier — this cron path did the
+                // email and the profile-counter bookkeeping above but left the
+                // chat silent, so a student re-reading that dialog later saw
                 // no record the request was ever answered at all.
                 if ($expertId > 0) {
-                    BookingChatNotifier::declined($expertId, $userId, $slot);
+                    BookingChatNotifier::missedResponse($expertId, $userId, $slot);
                 }
 
                 $stats['pending_expired']++;
