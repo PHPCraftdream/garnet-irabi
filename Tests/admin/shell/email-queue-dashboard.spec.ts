@@ -266,12 +266,17 @@ test.describe('Email queue dashboard — pagination', () => {
         await adminPage.goto('/admin/email-queue/');
         await adminPage.waitForSelector('[data-test-id="admin-email-queue"]', { timeout: 12000 });
 
+        // AdminGrid's page size is a cross-grid localStorage preference
+        // (garnet.pageSize) — pin it to 10 so this assertion doesn't depend
+        // on whatever another spec/run left it at.
+        await adminPage.locator('[data-test-id="page-size-select"]').first().selectOption('10');
+
         // Newest-first ordering: the 15 freshly-seeded rows fill all of page 1
         // (AdminGrid — the same shared component Users/Experts/Finance/Support
         // use — 10/page by default).
         await expect(adminPage.locator('[data-test-id="admin-email-queue"] tbody tr')).toHaveCount(10, { timeout: 8000 });
 
-        const nextBtn = adminPage.locator('[data-test-id="admin-grid-next"]');
+        const nextBtn = adminPage.locator('[data-test-id="admin-grid-next"]').first();
         await expect(nextBtn).toBeEnabled({ timeout: 8000 });
 
         await nextBtn.click();
