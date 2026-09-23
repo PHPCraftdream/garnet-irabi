@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "88b1e5b80513b5cd870200d82d3af79f",
+    "content-hash": "2bad2180d48c81f84ceee54a157e3f7c",
     "packages": [
         {
             "name": "aura/cli",
@@ -1115,7 +1115,7 @@
         },
         {
             "name": "phpcraftdream/garnet-framework",
-            "version": "v0.1.0-alpha97",
+            "version": "v0.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHPCraftdream/garnet-framework.git",
@@ -4897,9 +4897,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "phpcraftdream/garnet-framework": 15
-    },
+    "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": [],
