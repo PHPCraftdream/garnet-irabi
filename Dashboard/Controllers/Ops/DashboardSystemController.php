@@ -13,6 +13,7 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Ops {
     use PHPCraftdream\Garnet\Kernel\Io\Http\Router\Controller\ControllerTools;
     use PHPCraftdream\Garnet\Kernel\Io\Render\Twig\TwigParams;
     use PHPCraftdream\Garnet\Kernel\Io\Services\Mailer\Mailer;
+    use PHPCraftdream\Garnet\Kernel\Io\Services\VersionInfo\AppVersionInfo;
     use PHPCraftdream\IRabi\Common\Services\Comms\EmailNotifications;
     use PHPCraftdream\IRabi\Common\System\AppSettings;
     use PHPCraftdream\IRabi\Common\Tables\Ops\EntityHistory;
@@ -126,6 +127,12 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Ops {
                 'opcacheResetBtn' => 'Сбросить OPcache',
                 'opcacheResetSuccess' => 'OPcache сброшен',
                 'opcacheResetUnavailable' => 'OPcache недоступен в этом SAPI',
+                // Версии — как OPcache reset, инлайн-лейблы без отдельного i18n-круга.
+                'versionInfoTitle' => 'Версия',
+                'versionInfoApp' => 'Приложение',
+                'versionInfoFramework' => 'Фреймворк',
+                'versionInfoBuiltAt' => 'Собрано',
+                'versionInfoUnknown' => 'неизвестно',
             ];
         }
 
@@ -146,6 +153,7 @@ namespace PHPCraftdream\IRabi\Dashboard\Controllers\Ops {
                 'opcacheResetUrl' => $baseUrl . '~opcacheReset',
                 'labels' => static::getLabels(),
                 'mailTypes' => EmailNotifications::listTypesForUi(),
+                'versionInfo' => AppVersionInfo::current(),
             ]);
 
             return ControllerTools::ok(HtmlLayout::render(
