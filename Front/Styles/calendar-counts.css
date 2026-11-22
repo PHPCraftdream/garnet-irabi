@@ -1,5 +1,6 @@
 @reference "tailwindcss";
 
+/* Роли смешивают статусные цвета Garnet-темы: в палитре их нет, а тёмная ветка должна следовать за темой. */
 @theme inline reference {
   /* carburetor-disable-next-line valid-color-role */
   --color-pagerfree-wash: color-mix(in srgb, var(--color-status-green) 18%, transparent);

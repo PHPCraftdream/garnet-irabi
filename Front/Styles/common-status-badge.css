@@ -5,6 +5,15 @@
 @utility type-entity-person-admin { @apply text-[10px] no-underline; }
 @utility shape-entity-person-role { @apply px-1.5 py-0.5 rounded; }
 @utility type-entity-person-role { @apply text-[10px]; }
+@utility shape-avatar-sm { @apply w-9 h-9 rounded-full; }
+@utility shape-avatar-lg { @apply w-20 h-20 rounded-full; }
+@utility shape-avatar-photo { @apply border object-cover; }
+@utility layout-avatar-center { @apply flex items-center justify-center; }
+@utility layout-avatar-fixed { @apply flex-shrink-0; }
+@utility type-avatar-initials-sm { @apply text-sm font-semibold; }
+@utility type-avatar-initials-lg { @apply text-2xl font-bold; }
+@utility tone-entityadmin-border { @apply border-entityadmin-edge; }
+/* Роли ссылаются на цвета Garnet-темы: у них нет записей в палитре, и темовая ветка должна следовать за темой. */
 @theme inline reference {
   /* carburetor-disable-next-line valid-color-role */
   --color-entityadmin-edge: var(--color-border);
@@ -18,7 +27,12 @@
 
 @utility tone-entityadmin-outline { @apply border-entityadmin-edge text-entityadmin-ink hover:border-entityadmin-edge-hover hover:text-entityadmin-ink-hover; }
 
+/* Семейства avatar нет в .carburetorrc.json: у аватара тон welcomeavatar soft, край entityadmin border. */
 @layer components {
+  .avatar-circle { @apply shape-avatar-sm layout-avatar-center layout-avatar-fixed type-avatar-initials-sm tone-welcomeavatar-soft; }
+  .avatar-circle-lg { @apply shape-avatar-lg layout-avatar-center type-avatar-initials-lg tone-welcomeavatar-soft; }
+  .avatar-circle-img { @apply shape-avatar-sm shape-avatar-photo layout-avatar-fixed tone-entityadmin-border; }
+  .avatar-circle-lg-img { @apply shape-avatar-lg shape-avatar-photo tone-entityadmin-border; }
   .entity-person-link { @apply tone-bookaccent-plain type-book-place-link; }
   .entity-person-group { @apply tone-bookneutral-plain layout-entity-person-group; }
   .entity-person-admin { @apply tone-entityadmin-outline shape-entity-person-admin type-entity-person-admin; }

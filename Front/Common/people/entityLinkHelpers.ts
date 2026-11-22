@@ -15,3 +15,9 @@ export function ticketLinks(_ticketId: number) {
         adminUrl: appUrl(`/admin/support/`),
     };
 }
+
+/** Link class attribute with the caller's own class appended. */
+export function classAttr(own: string, extra?: string): {className: string} {
+    if (!own) return {className: extra ?? ''};
+    return extra ? {className: `${own} ${extra}`} : {className: own};
+}

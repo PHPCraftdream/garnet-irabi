@@ -1,11 +1,12 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {usePreview} from '@common/Components/UserPreviewModal/PreviewContext';
+import {PreviewContext, type PreviewCtx} from '@common/Components/UserPreviewModal/PreviewContext';
 import {appUrl} from '@common/Utils/Url/appUrl';
+import {classAttr} from './entityLinkHelpers';
 
 /** Simple user link for public pages — links to /expert/id~ or /user/id~ */
 type LinkProps = {id: number; name: string; hasExpertProfile?: boolean; className?: string};
-type ContextValue = ReturnType<typeof usePreview>['openPreview'];
+type ContextValue = PreviewCtx['openPreview'];
 
 class LinkView extends AntiHookComponent<LinkProps & {openPreview: ContextValue}> {
     private readonly onClick = (e: React.MouseEvent) => {
@@ -19,19 +20,13 @@ class LinkView extends AntiHookComponent<LinkProps & {openPreview: ContextValue}
 
     render() {
         const {id, name, hasExpertProfile, className = ''} = this.props;
-        // Совместимость с переданным классом ссылки.
-        // carburetor-disable-next-line require-function-class
-        if (!id || !name) return <span className={className}>{name || '—'}</span>;
+        if (!id || !name) return <span {...classAttr('', className)}>{name || '—'}</span>;
         const url = appUrl(hasExpertProfile ? `/expert/id~${id}` : `/user/id~${id}`);
-
-
-
-        // carburetor-disable-next-line require-function-class
-        return <a href={url} className={`entity-person-link ${className}`} onClick={this.onClick}>{name}</a>;
+        const attrs = classAttr('entity-person-link', className);
+        return <a {...attrs} href={url} onClick={this.onClick}>{name}</a>;
     }
 }
 
 export function UserLink(props: LinkProps) {
-    const {openPreview} = usePreview();
-    return <LinkView {...props} openPreview={openPreview} />;
+    return <PreviewContext.Consumer>{ctx => <LinkView {...props} openPreview={ctx.openPreview} />}</PreviewContext.Consumer>;
 }

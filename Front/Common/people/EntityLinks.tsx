@@ -2,6 +2,7 @@ import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {UserDetailContext} from '../../Islands/AdminPanel/Users/UserDetailContext';
 import {appUrl} from '@common/Utils/Url/appUrl';
+import {classAttr} from './entityLinkHelpers';
 
 /** Admin user link — opens user detail tab via context, falls back to href navigation */
 type LinkProps = {id: number; name: string; role?: string; className?: string; dataTestId?: string};
@@ -19,16 +20,12 @@ class LinkView extends AntiHookComponent<LinkProps & {openUser: ContextValue}> {
     };
 
     render() {
-        const {id, name, role, className = '', dataTestId} = this.props;
-        // Совместимость с переданным классом ссылки.
-        // carburetor-disable-next-line require-function-class
-        if (!id) return <span className={className}>{name || '—'}</span>;
+        const {id, name, role, className, dataTestId} = this.props;
+        if (!id) return <span {...classAttr('', className)}>{name || '—'}</span>;
 
-
-
+        const group = classAttr('entity-person-group', className);
         return (
-            // carburetor-disable-next-line require-function-class
-            <span className={`entity-person-group ${className}`}>
+            <span {...group}>
                 <a
                     href={appUrl(`/admin/#user=${id}`)}
                     className="entity-person-link"
@@ -41,7 +38,6 @@ class LinkView extends AntiHookComponent<LinkProps & {openUser: ContextValue}> {
     }
 }
 
-export function AdminUserLink(props: LinkProps) {
-    const {openUser} = React.useContext(UserDetailContext);
-    return <LinkView {...props} openUser={openUser} />;
-}
+export const AdminUserLink: React.FC<LinkProps> = props => (
+    <UserDetailContext.Consumer>{ctx => <LinkView {...props} openUser={ctx.openUser} />}</UserDetailContext.Consumer>
+);

@@ -64,6 +64,7 @@ export default class QuickChat extends AntiHookComponent<Props> {
         this.mounted = true;
         void this.load();
         this.timer = window.setInterval(this.poll, 20000);
+        this.messagesEndRef.current?.scrollIntoView({behavior: 'smooth'});
     }
 
     componentDidUpdate(previous: Readonly<Props>): void {

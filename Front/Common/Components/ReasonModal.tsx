@@ -1,7 +1,6 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import SendButton from '@common/Components/Controls/SendButton';
-import {useBodyScrollLock} from '@common/hooks/ui/useBodyScrollLock';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {ModalShell} from './ModalShell';
 
@@ -139,8 +138,27 @@ class ReasonModalView extends AntiHookComponent<ReasonModalProps> {
     }
 }
 
-export const ReasonModal: React.FC<ReasonModalProps> = (props) => {
-    const {open} = props;
-    useBodyScrollLock(open);
-    return open ? <ReasonModalView {...props} /> : null;
-};
+/**
+ * Запирает прокрутку страницы, пока окно открыто.
+ *
+ * Сохраняем прежнее значение `overflow`: у вложенных окон второе запоминает
+ * `'hidden'`, поэтому при закрытии вернёт `'hidden'`, а не исходное значение.
+ */
+export class ReasonModal extends AntiHookComponent<ReasonModalProps> {
+    private readonly lockBody = () => {
+        if (!this.props.open) return;
+        const previous = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = previous;
+        };
+    };
+
+    protected useEffects(): void {
+        this.useEffect(this.lockBody, [this.props.open]);
+    }
+
+    render() {
+        return this.props.open ? <ReasonModalView {...this.props} /> : null;
+    }
+}
