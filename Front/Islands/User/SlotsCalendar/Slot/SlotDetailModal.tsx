@@ -5,7 +5,7 @@ import {Portal} from '@common/Components/Layout/Portal';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {canActNow} from '../../../../Common/booking/bookingAction';
 import {SlotCancelForm} from '../Booking/SlotCancelForm';
-import {SlotItem, ExpertMap} from '../types';
+import {SlotItem, ExpertMap} from '../State/types';
 import {SlotDateTimeBlock} from './Blocks/SlotDateTimeBlock';
 import {SlotExpertBlock} from './Blocks/SlotExpertBlock';
 import {SlotFormatBlock} from './Blocks/SlotFormatBlock';

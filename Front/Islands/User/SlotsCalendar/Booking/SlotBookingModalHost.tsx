@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import BookingModal from './BookingModal';
-import type {ExpertMap, SlotItem} from '../types';
+import type {ExpertMap, SlotItem} from '../State/types';
 import type {SlotBookingController} from './SlotBookingController';
 
 interface Props {

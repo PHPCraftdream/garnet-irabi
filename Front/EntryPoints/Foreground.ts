@@ -31,7 +31,7 @@ createIsland({className: 'support-widget-init', lazy: () => import('../Islands/C
 // User pages
 createIsland({className: 'dashboard-init', lazy: () => import('../Islands/User/Dashboard/DashboardIsland'), exportName: 'DashboardIsland'});
 createIsland({className: 'slots-calendar-init', lazy: () => import('../Islands/User/SlotsCalendar/SlotsCalendarIsland'), exportName: 'SlotsCalendarIsland'});
-createIsland({className: 'booking-form-init', lazy: () => import('../Islands/User/Bookings/BookingForm'), exportName: 'BookingFormIsland'});
+createIsland({className: 'booking-form-init', lazy: () => import('../Islands/User/Bookings/forms/BookingForm'), exportName: 'BookingFormIsland'});
 createIsland({className: 'bookings-list-init', lazy: () => import('../Islands/User/Bookings/BookingsList'), exportName: 'BookingsListIsland'});
 createIsland({className: 'expert-profile-init', lazy: () => import('../Islands/User/Users/ExpertProfile'), exportName: 'ExpertProfileIsland'});
 createIsland({className: 'user-profile-init', lazy: () => import('../Islands/User/Users/UserProfileIsland'), exportName: 'UserProfileIsland'});

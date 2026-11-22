@@ -2,12 +2,12 @@ import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import Pagination from '@common/Components/Layout/Paging/Pagination';
 import {PageResponse} from '@common/hooks/data/usePagination';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {translateStatus} from '../../../Common/booking/statusHelpers';
-import {AccountOption, adminPaginationLabels, buildAccountOptions} from '../Shell/adminShared';
-import {AdminPageController} from '../Shell/AdminPageController';
-import {AdminFilterBar, FilterCell} from './AdminFilterBar';
-import {AdminSlotRow, copyRow, EMPTY_FILTERS, SlotsFilters} from './bookingsTypes';
+import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import {translateStatus} from '../../../../Common/booking/statusHelpers';
+import {AccountOption, adminPaginationLabels, buildAccountOptions} from '../../Shell/adminShared';
+import {AdminPageController} from '../../Shell/AdminPageController';
+import {AdminFilterBar, FilterCell} from '../AdminFilterBar';
+import {AdminSlotRow, copyRow, EMPTY_FILTERS, SlotsFilters} from '../bookingsTypes';
 import {AdminSlotsTable} from './AdminSlotsTable';
 import {AdminSlotsEmpty} from './AdminSlotsEmpty';
 

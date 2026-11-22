@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {Slot} from '../../types';
-import {CalendarDay, CalendarDayColumn} from './CalendarDayColumn';
-import {CalendarDragController} from './CalendarDragController';
+import {Slot} from '../../../types';
+import {CalendarDay, CalendarDayColumn} from '../CalendarDayColumn';
+import {CalendarDragController} from '../CalendarDragController';
 import {CalendarWeek} from './calendarWeeks';
 
 interface Props {

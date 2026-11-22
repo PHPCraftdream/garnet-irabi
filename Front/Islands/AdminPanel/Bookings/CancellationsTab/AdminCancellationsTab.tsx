@@ -2,20 +2,48 @@ import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import Pagination from '@common/Components/Layout/Paging/Pagination';
 import {PageResponse} from '@common/hooks/data/usePagination';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {translateStatus} from '../../../Common/booking/statusHelpers';
-import {AccountOption, adminPaginationLabels, buildAccountOptions} from '../Shell/adminShared';
-import {AdminPageController} from '../Shell/AdminPageController';
-import {AdminFilterBar, FilterCell} from './AdminFilterBar';
-import {AdminBookingRow, BookingsFilters, copyRow, EMPTY_FILTERS} from './bookingsTypes';
-import {AdminBookingsTable} from './AdminBookingsTable';
+import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import {AccountOption, adminPaginationLabels, buildAccountOptions} from '../../Shell/adminShared';
+import {AdminPageController} from '../../Shell/AdminPageController';
+import {AdminFilterBar, FilterCell} from '../AdminFilterBar';
+import {AdminCancellationsTable} from './AdminCancellationsTable';
+import {copyRow} from '../bookingsTypes';
+
+export interface CancellationRow {
+    id: number;
+    created_at: number;
+    expert_id: number;
+    expert_name: string;
+    expert_has_profile: boolean;
+    user_id: number;
+    user_name: string;
+    slot_id: number;
+    slot_time: number;
+    booking_id: number;
+    reason: string;
+}
+
+interface Filters {
+    search: string;
+    dateFrom: string;
+    dateTo: string;
+    expertId: number;
+    userId: number;
+}
+
+const EMPTY: Filters = {search: '', dateFrom: '', dateTo: '', expertId: 0, userId: 0};
 
 interface Props {
-    initialData: PageResponse<AdminBookingRow> | null;
+    initialData: PageResponse<CancellationRow> | null;
     pageUrl: string;
-    allowedStatuses: string[];
+    isModerator: boolean;
+    /** Префикс test-id: вкладки отмен преподавателя и ученика не должны совпадать. */
+    kind: 'expert' | 'user';
     experts: AccountOption[];
     users: AccountOption[];
+    /** Показывать ли столбцы сторон. Администратор видит обе. */
+    showExpertColumn?: boolean;
+    showUserColumn?: boolean;
 }
 
 interface PagerState {
@@ -26,24 +54,19 @@ interface PagerState {
     loading: boolean;
 }
 
-function statusOption(status: string) {
-    return {value: status, label: translateStatus(status)};
-}
-
-const buildBody = (f: BookingsFilters, page: number, perPage: number) => ({
+const buildBody = (f: Filters, page: number, perPage: number) => ({
     page,
     perPage,
     search: f.search,
-    status: f.status,
+    dateFrom: f.dateFrom,
+    dateTo: f.dateTo,
     expert_id: f.expertId,
     user_id: f.userId,
-    date_from: f.dateFrom,
-    date_to: f.dateTo,
 });
 
-class FilterStore extends Carburetor<BookingsFilters> {
+class FilterStore extends Carburetor<Filters> {
     constructor() {
-        super(EMPTY_FILTERS);
+        super(EMPTY);
     }
 
     readonly snapshot = () => this.getData();
@@ -52,7 +75,7 @@ class FilterStore extends Carburetor<BookingsFilters> {
         return () => this.unsubscribe(id);
     };
 
-    private replace(next: BookingsFilters): void {
+    private replace(next: Filters): void {
         const before = this.getData();
         if (next === before) return;
         const version = this.getVersion();
@@ -63,13 +86,13 @@ class FilterStore extends Carburetor<BookingsFilters> {
         }
     }
 
-    readonly patch = (patch: Partial<BookingsFilters>) => this.replace({...this.getData(), ...patch});
-    readonly reset = () => this.replace(EMPTY_FILTERS);
+    readonly patch = (patch: Partial<Filters>) => this.replace({...this.getData(), ...patch});
+    readonly reset = () => this.replace(EMPTY);
 }
 
-export class AdminBookingsTab extends AntiHookComponent<Props> {
+class AdminCancellationsTab extends AntiHookComponent<Props> {
     private readonly filterStore = new FilterStore();
-    private readonly pagination = new AdminPageController<AdminBookingRow, BookingsFilters>({
+    private readonly pagination = new AdminPageController<CancellationRow, Filters>({
         url: this.props.pageUrl,
         initialData: this.props.initialData,
         filters: this.filterStore.getData(),
@@ -98,25 +121,15 @@ export class AdminBookingsTab extends AntiHookComponent<Props> {
     private readonly changeUserId = (value: number) => this.filterStore.patch({userId: value});
     private readonly changeDateFrom = (value: string) => this.filterStore.patch({dateFrom: value});
     private readonly changeDateTo = (value: string) => this.filterStore.patch({dateTo: value});
-    private readonly changeStatus = (value: string) => this.filterStore.patch({status: value});
 
-    private filterCells(filters: BookingsFilters): FilterCell[] {
-        const {experts, users, allowedStatuses} = this.props;
+    private filterCells(testIdPrefix: string, filters: Filters): FilterCell[] {
+        const {experts, users} = this.props;
         const expertOptions = buildAccountOptions(experts);
         const userOptions = buildAccountOptions(users);
         return [
             {
-                kind: 'select',
-                id: 'admin-bookings-status',
-                label: t.Admin_Filter_Status(),
-                value: filters.status,
-                options: [{value: '', label: t.Admin_Filter_All()}, ...allowedStatuses.map(statusOption)],
-                onChange: this.changeStatus,
-            },
-            {kind: 'text', id: 'admin-bookings-search', label: t.Admin_Filter_SearchID(), value: filters.search, onChange: this.changeSearch},
-            {
                 kind: 'person',
-                id: 'admin-bookings-expert',
+                id: `${testIdPrefix}-expert`,
                 label: t.Admin_Filter_Expert(),
                 value: filters.expertId,
                 options: expertOptions,
@@ -126,7 +139,7 @@ export class AdminBookingsTab extends AntiHookComponent<Props> {
             },
             {
                 kind: 'person',
-                id: 'admin-bookings-user',
+                id: `${testIdPrefix}-user`,
                 label: t.Admin_Filter_User(),
                 value: filters.userId,
                 options: userOptions,
@@ -134,8 +147,9 @@ export class AdminBookingsTab extends AntiHookComponent<Props> {
                 searchPlaceholder: t.Admin_Filter_SearchUser(),
                 onChange: this.changeUserId,
             },
-            {kind: 'date', id: 'admin-bookings-date-from', label: t.Admin_Filter_DateFrom(), value: filters.dateFrom, onChange: this.changeDateFrom},
-            {kind: 'date', id: 'admin-bookings-date-to', label: t.Admin_Filter_DateTo(), value: filters.dateTo, onChange: this.changeDateTo},
+            {kind: 'date', id: `${testIdPrefix}-date-from`, label: t.Admin_Filter_DateFrom(), value: filters.dateFrom, onChange: this.changeDateFrom},
+            {kind: 'date', id: `${testIdPrefix}-date-to`, label: t.Admin_Filter_DateTo(), value: filters.dateTo, onChange: this.changeDateTo},
+            {kind: 'text', id: `${testIdPrefix}-search`, label: t.Admin_Filter_Reason(), value: filters.search, onChange: this.changeSearch},
         ];
     }
 
@@ -155,23 +169,48 @@ export class AdminBookingsTab extends AntiHookComponent<Props> {
         );
     }
 
+    private renderTable(items: CancellationRow[], columns: string[], testIdPrefix: string, showExpertColumn: boolean, showUserColumn: boolean) {
+        if (items.length === 0) return null;
+        return (
+            <AdminCancellationsTable
+                items={items}
+                columns={columns}
+                testIdPrefix={testIdPrefix}
+                isModerator={this.props.isModerator}
+                showExpertColumn={showExpertColumn}
+                showUserColumn={showUserColumn}
+            />
+        );
+    }
+
     render() {
         const filters = this.useCarburetor(this.filterStore);
         const pagination = this.useCarburetor(this.pagination);
         const {loading} = pagination;
         const items = pagination.items.map(copyRow);
-        const cells = this.filterCells(filters);
+        const {kind, showExpertColumn = true, showUserColumn = true} = this.props;
+        const testIdPrefix = kind === 'expert' ? 'expert-cancellations' : 'user-cancellations';
+        const columns = [
+            t.Cancellations_ColumnDate(),
+            ...(showExpertColumn ? [t.Cancellations_ColumnExpert()] : []),
+            ...(showUserColumn ? [t.Cancellations_ColumnUser()] : []),
+            t.Cancellations_ColumnSlot(),
+            t.Cancellations_ColumnBooking(),
+            t.Cancellations_ColumnReason(),
+        ];
 
         const pager = this.renderPager(pagination);
 
         return (
-            <div data-test-id="admin-bookings-tab">
-                <AdminFilterBar cells={cells} loading={loading} resetTestId="admin-bookings-reset" onReset={this.filterStore.reset} />
+            <div data-test-id={`${testIdPrefix}-tab`}>
+                <AdminFilterBar cells={this.filterCells(testIdPrefix, filters)} loading={loading} resetTestId={`${testIdPrefix}-reset`} onReset={this.filterStore.reset} />
                 <div className="admin-grid-pagination-top">{pager}</div>
-                {items.length === 0 && <p className="admin-bookings-empty">{t.Admin_NoBookings()}</p>}
-                {items.length > 0 && <AdminBookingsTable items={items} />}
+                {items.length === 0 && <p className="admin-bookings-empty">{t.Cancellations_Empty()}</p>}
+                {this.renderTable(items, columns, testIdPrefix, showExpertColumn, showUserColumn)}
                 <div className="admin-bookings-pager-bottom">{pager}</div>
             </div>
         );
     }
 }
+
+export default AdminCancellationsTab;

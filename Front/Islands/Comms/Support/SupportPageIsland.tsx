@@ -16,9 +16,9 @@ import {PageEmpty} from './Page/PageEmpty';
 import {PageNewTicketForm} from './Page/PageNewTicketForm';
 import {PageConversation} from './Page/PageConversation';
 import {PendingFile} from '../../../Common/attachments/AttachmentPicker';
-import {initAutoContext} from './parts/autoContext';
-import {SupportThreadController} from './parts/SupportThreadController';
-import {SupportSending} from './parts/supportSending';
+import {initAutoContext} from './parts/thread/autoContext';
+import {SupportThreadController} from './parts/thread/SupportThreadController';
+import {SupportSending} from './parts/thread/supportSending';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {LifeBuoy} from 'lucide-react';
 

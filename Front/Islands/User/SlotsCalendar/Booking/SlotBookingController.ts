@@ -6,9 +6,9 @@ import {appUrl} from '@common/Utils/Url/appUrl';
 import {refreshLiveCounts} from '@common/Utils/Data/liveCounts';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {bookErrorCode, bookErrorMessage} from './bookingErrors';
-import type {SlotItem} from '../types';
-import type {SlotsCalendarBookingStore} from '../SlotsCalendarBookingStore';
-import type {SlotsCalendarBookingActions} from '../SlotsCalendarBookingActions';
+import type {SlotItem} from '../State/types';
+import type {SlotsCalendarBookingStore} from '../State/SlotsCalendarBookingStore';
+import type {SlotsCalendarBookingActions} from '../State/SlotsCalendarBookingActions';
 
 /** Контекст брони, который сервер отдаёт для слота (/slots/~bookData). */
 export interface SlotBookingData {

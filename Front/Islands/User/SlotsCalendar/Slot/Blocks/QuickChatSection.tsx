@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 import QuickChat from '../../../../../Common/people/QuickChat';
-import {SlotItem} from '../../types';
+import {SlotItem} from '../../State/types';
 
 interface Props {
     slot: SlotItem;

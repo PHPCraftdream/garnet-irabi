@@ -3,10 +3,10 @@ import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {PageResponse} from '@common/hooks/data/usePagination';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {CalendarRange} from 'lucide-react';
-import AdminCancellationsTab, {CancellationRow} from './AdminCancellationsTab';
+import AdminCancellationsTab, {CancellationRow} from './CancellationsTab/AdminCancellationsTab';
 import {AccountOption} from '../Shell/adminShared';
-import {AdminSlotsTab} from './AdminSlotsTab';
-import {AdminBookingsTab} from './AdminBookingsTab';
+import {AdminSlotsTab} from './SlotsTab/AdminSlotsTab';
+import {AdminBookingsTab} from './BookingsTab/AdminBookingsTab';
 import {AdminBookingRow, AdminSlotRow} from './bookingsTypes';
 import {AdminBookingsTabNav, TabKey} from './AdminBookingsTabNav';
 

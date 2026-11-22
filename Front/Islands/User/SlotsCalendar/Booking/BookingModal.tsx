@@ -6,8 +6,8 @@ import {appUrl} from '@common/Utils/Url/appUrl';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {BookingSlotSummary} from './BookingSlotSummary';
 import {ExtraSlotPicker} from '../Slot/ExtraSlotPicker';
-import type {SlotItem, ExpertMap} from '../types';
-import {sortByStart} from '../slotsCalendarSelectors';
+import type {SlotItem, ExpertMap} from '../State/types';
+import {sortByStart} from '../State/slotsCalendarSelectors';
 import {priceFor, canPay, type SlotBookingController} from './SlotBookingController';
 
 interface Props {

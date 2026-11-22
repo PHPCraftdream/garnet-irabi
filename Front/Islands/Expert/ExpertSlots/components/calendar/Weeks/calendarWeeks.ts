@@ -1,7 +1,7 @@
 import {formatDateShort, weekStartTs, addDaysTs, tsToInputDate} from '@common/Utils/Time/DateUtils';
-import {Slot} from '../../types';
-import {CalendarDay} from './CalendarDayColumn';
-import {emptyCounts, slotKind} from './calendarHelpers';
+import {Slot} from '../../../types';
+import {CalendarDay} from '../CalendarDayColumn';
+import {emptyCounts, slotKind} from '../calendarHelpers';
 
 export const PAGE_WEEKS = 4;
 

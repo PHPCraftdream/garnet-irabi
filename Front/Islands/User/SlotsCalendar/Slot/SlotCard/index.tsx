@@ -2,7 +2,7 @@ import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {createPortal} from 'react-dom';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {SlotItem, ExpertMap, ExpertInfo} from '../../types';
+import {SlotItem, ExpertMap, ExpertInfo} from '../../State/types';
 import {EntityLink} from '../../../../../Common/people/EntityLink';
 import {userLinks} from '../../../../../Common/people/entityLinkHelpers';
 import {formatTime} from '@common/Utils/Time/DateUtils';

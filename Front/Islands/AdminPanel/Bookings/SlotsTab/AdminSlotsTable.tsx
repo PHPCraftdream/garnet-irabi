@@ -1,11 +1,11 @@
 import * as React from 'react';
 import {formatTs} from '@common/Utils/Time/DateUtils';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {EntityLink} from '../../../Common/people/EntityLink';
-import {userLinks} from '../../../Common/people/entityLinkHelpers';
-import {UniversalBadge} from '../../../Common/booking/StatusBadge';
-import {translateStatus} from '../../../Common/booking/statusHelpers';
-import {AdminSlotRow} from './bookingsTypes';
+import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import {EntityLink} from '../../../../Common/people/EntityLink';
+import {userLinks} from '../../../../Common/people/entityLinkHelpers';
+import {UniversalBadge} from '../../../../Common/booking/StatusBadge';
+import {translateStatus} from '../../../../Common/booking/statusHelpers';
+import {AdminSlotRow} from '../bookingsTypes';
 
 const SlotTr: React.FC<{row: AdminSlotRow}> = ({row}) => (
     <tr className="admin-booking-table-row" data-test-id={`admin-slot-row-${row.id}`}>

@@ -5,9 +5,9 @@ import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {Slot} from '../types';
 import {CalendarStatusFilter, StatusFilter} from './calendar/CalendarStatusFilter';
 import {CalendarPager, PagerKind} from './calendar/CalendarPager';
-import {ExpertCalendarWeeks} from './calendar/ExpertCalendarWeeks';
+import {ExpertCalendarWeeks} from './calendar/Weeks/ExpertCalendarWeeks';
 import {CalendarDragController} from './calendar/CalendarDragController';
-import {buildCalendarWindow, countCalendarSlots, PAGE_WEEKS} from './calendar/calendarWeeks';
+import {buildCalendarWindow, countCalendarSlots, PAGE_WEEKS} from './calendar/Weeks/calendarWeeks';
 
 interface Props {
     slots: Slot[];

@@ -1,7 +1,7 @@
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {weekStartTs, addDaysTs, tsToInputDate, tsToHour} from '@common/Utils/Time/DateUtils';
 import type {DayInfo, SlotItem, SlotStatusFilter, TimeOfDay, SlotType, OnlineFilter} from './types';
-import type {PagerCountItem} from '../../../Common/booking/CalendarPagerCounts';
+import type {PagerCountItem} from '../../../../Common/booking/CalendarPagerCounts';
 
 export type ReadonlyFiltersState = {
     readonly expertIds: ReadonlySet<string>;

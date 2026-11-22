@@ -2,7 +2,7 @@ import * as React from 'react';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 import {slotPlaceLabel, slotPlaceValue, slotSeatsLeftLine} from '../../../../../Common/booking/slotFormat';
-import {SlotItem, ExpertInfo} from '../../types';
+import {SlotItem, ExpertInfo} from '../../State/types';
 
 interface Props {
     slot: SlotItem;

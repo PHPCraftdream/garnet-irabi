@@ -4,9 +4,9 @@ import SendButton from '@common/Components/Controls/SendButton';
 import {useBodyScrollLock} from '@common/hooks/ui/useBodyScrollLock';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {formatTs} from '@common/Utils/Time/DateUtils';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {ModalShell} from '../../../Common/Components/ModalShell';
+import {ModalShell} from '../../../../Common/Components/ModalShell';
 
 interface SlotOption {
     id: number;

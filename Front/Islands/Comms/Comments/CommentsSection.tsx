@@ -12,7 +12,7 @@ import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {Comment} from './commentTypes';
 import {CommentCard} from './CommentCard';
-import {SupportSending} from '../Support/parts/supportSending';
+import {SupportSending} from '../Support/parts/thread/supportSending';
 import {ConfirmController} from './confirmController';
 
 interface CommentsSectionProps {

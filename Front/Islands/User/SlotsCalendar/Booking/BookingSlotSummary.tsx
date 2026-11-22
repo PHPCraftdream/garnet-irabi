@@ -3,7 +3,7 @@ import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {formatTime as fmtTime, formatDateShort as fmtDate} from '@common/Utils/Time/DateUtils';
 import {slotFormatLine} from '../../../../Common/booking/slotFormat';
-import type {SlotItem, ExpertInfo} from '../types';
+import type {SlotItem, ExpertInfo} from '../State/types';
 
 interface Props {
     slot: SlotItem;

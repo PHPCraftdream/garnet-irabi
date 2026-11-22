@@ -1,10 +1,10 @@
 import * as React from 'react';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {ExpertMap, TimeOfDay, SlotType, OnlineFilter} from '../types';
-import type {ReadonlyFiltersState} from '../slotsCalendarSelectors';
-import {ExpertFilterField} from './Filters/ExpertFilterField';
-import {FilterChipGroup} from './Filters/FilterChipGroup';
-import {PriceRangeFilterField} from './Filters/PriceRangeFilterField';
+import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
+import {ExpertMap, TimeOfDay, SlotType, OnlineFilter} from '../../State/types';
+import type {ReadonlyFiltersState} from '../../State/slotsCalendarSelectors';
+import {ExpertFilterField} from './ExpertFilterField';
+import {FilterChipGroup} from './FilterChipGroup';
+import {PriceRangeFilterField} from './PriceRangeFilterField';
 
 interface SlotsFiltersProps {
     filters: ReadonlyFiltersState;

@@ -2,7 +2,7 @@ import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {formatDateShort, formatTime} from '@common/Utils/Time/DateUtils';
-import type {SlotItem} from '../types';
+import type {SlotItem} from '../State/types';
 
 interface OptionProps {
     slot: SlotItem;

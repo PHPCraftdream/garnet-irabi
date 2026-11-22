@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 import {slotFormatLine} from '../../../../../Common/booking/slotFormat';
-import {SlotItem} from '../../types';
+import {SlotItem} from '../../State/types';
 
 export function SlotCardMeta({slot}: {slot: SlotItem}) {
     return (

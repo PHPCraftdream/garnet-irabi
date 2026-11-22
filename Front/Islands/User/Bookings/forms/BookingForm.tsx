@@ -4,12 +4,12 @@ import {D} from '@common/Support/Debug/D';
 import {useSending} from '@common/hooks/data/useSending';
 import SendButton from '@common/Components/Controls/SendButton';
 import {sendPost} from '@common/Api/Send/sendPost';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/Time/DateUtils';
-import {EntityLink} from '../../../Common/people/EntityLink';
-import {userLinks} from '../../../Common/people/entityLinkHelpers';
-import {IrabiPreviewProvider} from '../../../Common/people/IrabiPreviewProvider';
-import {slotPlaceLabel, slotPlaceValue} from '../../../Common/booking/slotFormat';
+import {EntityLink} from '../../../../Common/people/EntityLink';
+import {userLinks} from '../../../../Common/people/entityLinkHelpers';
+import {IrabiPreviewProvider} from '../../../../Common/people/IrabiPreviewProvider';
+import {slotPlaceLabel, slotPlaceValue} from '../../../../Common/booking/slotFormat';
 import {goTo} from '@common/Dom/Nav/GoTo';
 import {appUrl} from '@common/Utils/Url/appUrl';
 

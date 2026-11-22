@@ -1,4 +1,4 @@
-import type {AutoContext} from './supportTypes';
+import type {AutoContext} from '../supportTypes';
 import {D} from '@common/Support/Debug/D';
 
 /**
