@@ -1,16 +1,16 @@
 @reference "tailwindcss";
 
 @theme inline reference {
+  /* Псевдоним роли темы: палитра сломала бы тёмную тему. */
   /* carburetor-disable-next-line valid-color-role */
   --color-bookformexpert-wash: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-bookformexpert-ink: currentColor;
 }
 
-@utility tone-bookformexpert-soft { @apply bg-bookformexpert-wash text-bookformexpert-ink; }
+@utility tone-bookformexpert-soft { @apply bg-bookformexpert-wash text-current; }
 @utility shape-book-form-container { @apply max-w-lg mx-auto; }
 @utility shape-book-form-card { @apply rounded-lg border; }
 @utility shape-book-form-body { @apply p-5; }
+/* ! обязателен: unlayered h2 {text-xl; mb-3} в vendor 01-base.css сильнее @layer components. */
 @utility shape-book-form-title { @apply mb-2!; }
 @utility type-book-form-title { @apply text-base! font-semibold; }
 @utility shape-book-form-details { @apply mb-4 space-y-2; }

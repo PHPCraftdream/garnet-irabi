@@ -1,6 +1,7 @@
 @reference "tailwindcss";
 
 @theme inline reference {
+  /* Псевдонимы ролей темы: палитра сломала бы тёмную тему. */
   /* carburetor-disable-next-line valid-color-role */
   --color-welcomeavatar-wash: var(--color-accent-subtle);
   /* carburetor-disable-next-line valid-color-role */

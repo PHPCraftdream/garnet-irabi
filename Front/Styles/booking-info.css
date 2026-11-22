@@ -1,6 +1,7 @@
 @reference "tailwindcss";
 
 @theme inline reference {
+  /* Псевдонимы ролей темы: палитра сломала бы тёмную тему. */
   /* carburetor-disable-next-line valid-color-role */
   --color-booksecondary-ink: var(--color-text-secondary);
   /* carburetor-disable-next-line valid-color-role */
@@ -19,8 +20,6 @@
   --color-bookprimary-ink: var(--color-text-primary);
   /* carburetor-disable-next-line valid-color-role */
   --color-booksummary-wash: var(--color-accent-subtle);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-booksummary-ink: currentColor;
   /* carburetor-disable-next-line valid-color-role */
   --color-bookneutral-wash-hover: var(--color-bg-surface-hover);
   /* carburetor-disable-next-line valid-color-role */
@@ -41,8 +40,6 @@
   --color-bookdismiss-ink: var(--color-text-muted);
   /* carburetor-disable-next-line valid-color-role */
   --color-bookdismiss-ink-hover: var(--color-text-secondary);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-bookdismiss-wash: transparent;
   /* carburetor-disable-next-line valid-color-role */
   --color-bookdismiss-wash-hover: var(--color-bg-surface-hover);
 }
@@ -67,10 +64,11 @@
 @utility shape-book-card-body { @apply p-5; }
 @utility shape-book-card-header { @apply mb-2; }
 @utility layout-book-card-header { @apply flex justify-between items-start; }
+/* ! обязателен: unlayered h5 {mb-1.5; font-size:0.9375rem} в vendor 01-base.css сильнее @layer components. */
 @utility shape-book-card-title { @apply mb-2!; }
 @utility type-book-card-title { @apply text-base! font-semibold; }
 
-@utility tone-booksummary-soft { @apply bg-booksummary-wash text-booksummary-ink; }
+@utility tone-booksummary-soft { @apply bg-booksummary-wash text-current; }
 @utility shape-book-summary-panel { @apply p-3 rounded-lg mb-4; }
 @utility type-book-summary-time { @apply font-medium; }
 @utility type-book-summary-cost { @apply text-sm font-medium; }
@@ -81,7 +79,7 @@
 
 @utility tone-bookcancel-outlined { @apply bg-bookcancel-wash border-bookcancel-edge; }
 @utility tone-bookdismiss-outlined {
-  @apply border-bookdismiss-edge text-bookdismiss-ink bg-bookdismiss-wash [&:hover]:border-bookdismiss-edge-hover [&:hover]:text-bookdismiss-ink-hover [&:hover]:bg-bookdismiss-wash-hover;
+  @apply border-bookdismiss-edge text-bookdismiss-ink bg-transparent [&:hover]:border-bookdismiss-edge-hover [&:hover]:text-bookdismiss-ink-hover [&:hover]:bg-bookdismiss-wash-hover;
 }
 @utility shape-book-cancel-panel { @apply p-3 rounded-lg border space-y-3; }
 @utility shape-book-cancel-label { @apply mb-1; }

@@ -1,6 +1,7 @@
 @reference "tailwindcss";
 
 @theme inline reference {
+  /* Псевдонимы ролей темы: палитра сломала бы тёмную тему. */
   /* carburetor-disable-next-line valid-color-role */
   --color-userdashbadge-wash: var(--color-accent-subtle);
   /* carburetor-disable-next-line valid-color-role */
@@ -15,6 +16,7 @@
 @utility tone-userdashempty-outlined { @apply bg-userdashempty-wash border-userdashempty-edge; }
 @utility layout-user-dash-section-header { @apply flex items-center justify-between; }
 @utility shape-user-dash-section-header { @apply mb-3; }
+/* ! нужен: unlayered h2 { text-xl } сильнее @layer components. */
 @utility type-user-dash-section-heading { @apply text-base! font-semibold; }
 @utility shape-user-dash-section-heading { @apply mb-3; }
 @utility type-user-dash-view-all { @apply text-sm hover:underline; }

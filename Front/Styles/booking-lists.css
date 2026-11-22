@@ -12,6 +12,7 @@
 @utility shape-bookings-pager-top { @apply mb-4; }
 @utility shape-bookings-pager-bottom { @apply mt-4; }
 @utility layout-bookings-groups { @apply flex flex-col gap-3; }
+@utility shape-book-page-narrow { @apply mx-auto w-full max-w-4xl; }
 
 @layer components {
   .expert-bookings-grid { @apply tone-bookneutral-plain layout-expert-bookings-grid; }
@@ -25,4 +26,5 @@
   .bookings-pager-top { @apply tone-bookneutral-plain shape-bookings-pager-top; }
   .bookings-pager-bottom { @apply tone-bookneutral-plain shape-bookings-pager-bottom; }
   .bookings-groups { @apply tone-bookneutral-plain layout-bookings-groups; }
+  .bookings-page-narrow { @apply tone-bookneutral-plain shape-book-page-narrow; }
 }

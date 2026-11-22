@@ -13,7 +13,9 @@
   .booking-card-filter-row { @apply tone-bookneutral-plain layout-slot-status-filters; }
 }
 
+/* Unlayered отступ секции сильнее слоя components. */
 /* carburetor-disable-next-line valid-function-class */
 .section-soft[data-bookings-filters] { @apply mb-4; }
+/* Unlayered ml-auto сдвигает чип «прошедшие» вправо. */
 /* carburetor-disable-next-line valid-function-class */
 :is(.slot-filter-chip, .slot-filter-chip-active)[data-bookings-past] { @apply ml-auto; }

@@ -1,12 +1,11 @@
 @reference "tailwindcss";
 
 @theme inline reference {
+  /* Псевдонимы ролей темы: палитра сломала бы тёмную тему. */
   /* carburetor-disable-next-line valid-color-role */
   --color-userbalance-edge: var(--color-border);
   /* carburetor-disable-next-line valid-color-role */
   --color-userbalance-wash: var(--color-accent-subtle);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-balancerow-ink: currentColor;
   /* carburetor-disable-next-line valid-color-role */
   --color-balanceborder-edge: var(--color-border);
   /* carburetor-disable-next-line valid-color-role */
@@ -20,7 +19,7 @@
 @utility shape-balance-topup-offset { @apply mb-6; }
 @utility tone-userbalance-outlined { @apply bg-userbalance-wash border-userbalance-edge; }
 @utility tone-balancecard-outlined { @apply bg-balancecard-wash border-balancecard-edge; }
-@utility tone-balancerow-soft { @apply text-balancerow-ink hover:bg-balancerow-wash-hover; }
+@utility tone-balancerow-soft { @apply text-current hover:bg-balancerow-wash-hover; }
 @utility tone-balanceborder-outline { @apply border-balanceborder-edge; }
 @utility shape-balance-caption { @apply mb-1; }
 @utility type-balance-caption { @apply text-sm; }

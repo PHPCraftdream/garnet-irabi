@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {appUrl} from '@common/Utils/Url/appUrl';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 
@@ -7,7 +8,7 @@ interface Props {
     onBookSlot: (slotId: number) => void;
 }
 
-export class NewsSlotLink extends React.Component<Props> {
+export class NewsSlotLink extends AntiHookComponent<Props> {
     private readonly book = () => this.props.onBookSlot(this.props.slotId);
 
     public render() {

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
+import type {TReadonly} from '@react-carburetor/core';
 import {IrabiPreviewProvider} from '../../../Common/people/IrabiPreviewProvider';
 import {WelcomeCard} from './Widgets/WelcomeCard';
 import {NotificationsWidget} from './Widgets/NotificationsWidget';
@@ -129,10 +130,8 @@ export class DashboardIsland extends AntiHookComponent<DashboardProps> {
 
     private readonly handleConfirmed = (booking: PendingBookingItem): void => {
         const {pending, confirmed} = this.ui.getData();
-        const nextConfirmed = [...confirmed, booking];
         // Сортируем только новую копию списка.
-        // oxlint-disable-next-line unicorn/no-array-sort
-        nextConfirmed.sort(compareBookingStart);
+        const nextConfirmed = [...confirmed, booking].toSorted(compareBookingStart);
         this.patch({
             pending: pending.filter(b => b.booking_id !== booking.booking_id),
             confirmed: nextConfirmed,
@@ -145,7 +144,7 @@ export class DashboardIsland extends AntiHookComponent<DashboardProps> {
         void this.reloadStats();
     };
 
-    private renderExpert({usersThisMonth, earningsThisMonth, declines, cancellations, missed}: DashboardState) {
+    private renderExpert({usersThisMonth, earningsThisMonth, declines, cancellations, missed}: TReadonly<DashboardState>) {
         const {isExpert, expertPendingBookingsList, expertConfirmedBookingsList} = this.props;
         const pending = this.pending() as PendingBookingItem[];
         const confirmed = this.confirmed() as ConfirmedBookingItem[];

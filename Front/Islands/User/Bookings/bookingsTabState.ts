@@ -34,11 +34,6 @@ export interface BookingsState {
 }
 
 export class BookingsStateStore extends Carburetor<BookingsState> {
-    readonly subscribeReact = (listener: () => void) => {
-        const id = this.subscribe(listener);
-        return () => this.unsubscribe(id);
-    };
-    readonly snapshot = () => this.getData();
     applyPage(data: BookingsPageResponse): void {
         const before = this.getData();
         this.replace(before, {...before, bookings: data.items, page: data.page, totalPages: data.totalPages,
