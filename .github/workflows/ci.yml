@@ -62,7 +62,7 @@ jobs:
         run: composer ci
 
   frontend:
-    name: App Frontend — oxlint + tsgo
+    name: App Frontend — oxlint + carburetor-lint + tsgo
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
