@@ -1,4 +1,4 @@
-import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
+import {AntiHookComponent, Carburetor, type TReadonly} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import Pagination from '@common/Components/Layout/Paging/Pagination';
@@ -90,6 +90,18 @@ interface CommentsTableView {
 /** `useCarburetor` отдаёт данные только для чтения, а модалке нужен изменяемый ConfirmState. */
 type ConfirmView = ReturnType<ConfirmController['snapshot']>;
 
+/** Фильтры менять нельзя, но копия нужна: дочерняя панель читает поля не через прокси. */
+function readFilters(filters: TReadonly<CommentsFilterState>): CommentsFilterState {
+    return {
+        authorId: filters.authorId,
+        expertId: filters.expertId,
+        dateFrom: filters.dateFrom,
+        dateTo: filters.dateTo,
+        search: filters.search,
+        hiddenOnly: filters.hiddenOnly,
+    };
+}
+
 /**
  * Отзывы в админке: фильтры, таблица и три решения по каждому отзыву.
  *
@@ -106,6 +118,13 @@ export class AdminCommentsSection extends AntiHookComponent<AdminCommentsSection
         filters: EMPTY_FILTERS,
         buildBody,
     });
+    /*
+     * Страница, смена решения и скрытие приходят заменой `items` целиком, а `setData`
+     * диффит замену до листьев: подписка на маркер `items.~p` такого не видит, и строки
+     * остаются прежними. Снимок читает поля строк и меняет идентичность только вместе с
+     * содержимым (RULES.md, «Подписки useCarburetor»).
+     */
+    private readonly rows = this.connectSelection(this.pager, state => state.items);
     private unsubscribeFilters?: () => void;
 
     // Новый массив на каждом рендере перерисовывал бы CommentsFilters,
@@ -270,13 +289,14 @@ export class AdminCommentsSection extends AntiHookComponent<AdminCommentsSection
     }
 
     render() {
-        const {items, page, perPage, totalPages, total, loading} = this.useCarburetor(this.pager);
+        const {page, perPage, totalPages, total, loading} = this.useCarburetor(this.pager);
+        const items = this.rows() as AdminCommentRow[];
         const {filters, bodyModal} = this.useCarburetor(this.ui);
         const confirmState = this.useCarburetor(this.confirm) as ConfirmView;
         const {authorOptions, expertOptions} = this.accountOptions();
         return (
             <div data-test-id="admin-comments">
-                {this.renderTable({items, page, perPage, totalPages, total, loading, filters,
+                {this.renderTable({items, page, perPage, totalPages, total, loading, filters: readFilters(filters),
                     authorOptions, expertOptions})}
                 {bodyModal && (
                     <LogDetailModal title={t.Comment_Body() + ' #' + bodyModal.id} onClose={this.ui.closeBody}>
@@ -286,7 +306,7 @@ export class AdminCommentsSection extends AntiHookComponent<AdminCommentsSection
                     </LogDetailModal>
                 )}
 
-                <ConfirmModal state={confirmState} onConfirm={this.confirm.handleConfirm} onCancel={this.confirm.handleCancel} />
+                <ConfirmModal state={{...confirmState, items: [...confirmState.items]}} onConfirm={this.confirm.handleConfirm} onCancel={this.confirm.handleCancel} />
             </div>
         );
     }

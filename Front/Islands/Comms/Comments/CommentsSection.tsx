@@ -94,6 +94,13 @@ export class CommentsSection extends AntiHookComponent<CommentsSectionProps> {
     private readonly ui = new Carburetor<{body: string}>({body: ''});
     private readonly sending = new SupportSending();
     private readonly confirm = new ConfirmController();
+    /*
+     * Страница приходит заменой `items` целиком, а `setData` диффит замену до листьев:
+     * подписка на маркер `items.~p` такого не видит, и карточки остаются с прежними
+     * прокси. Снимок читает поля строк и меняет идентичность только вместе с
+     * содержимым (RULES.md, «Подписки useCarburetor»).
+     */
+    private readonly rows = this.connectSelection(this.pagination, state => state.items);
 
     // Обёртки как в usePagination: его сторожа отличаются от сторожа контролёра.
     private readonly goToPage = (p: number) => {
@@ -101,7 +108,6 @@ export class CommentsSection extends AntiHookComponent<CommentsSectionProps> {
         if (p < 1 || p > totalPages || p === page) return;
         void this.pagination.fetchPage(p);
     };
-    private readonly refresh = (): void => void this.pagination.fetchPage(this.pagination.snapshot().page);
     private readonly setPerPage = this.pagination.setPerPage;
 
     // Уборка вынесена в поле: ссылка на неё должна быть стабильной.
@@ -234,7 +240,8 @@ export class CommentsSection extends AntiHookComponent<CommentsSectionProps> {
 
     render() {
         const {body} = this.useCarburetor(this.ui);
-        const {items, page, perPage, totalPages, total, loading} = this.useCarburetor(this.pagination);
+        const {page, perPage, totalPages, total, loading} = this.useCarburetor(this.pagination);
+        const items = this.rows() as Comment[];
         const {sending} = this.useCarburetor(this.sending);
         const confirmState = this.useCarburetor(this.confirm) as ConfirmView;
         const {isModerator} = this.props;
@@ -246,7 +253,8 @@ export class CommentsSection extends AntiHookComponent<CommentsSectionProps> {
                 {this.renderList(items, loading)}
                 {this.renderPager({page, totalPages, total, loading, perPage}, false)}
                 {this.renderForm(body, sending)}
-                <ConfirmModal state={confirmState} onConfirm={this.confirm.handleConfirm} onCancel={this.confirm.handleCancel} />
+                {/* Плоская копия: поле, прочитанное здесь, и есть подписка — прокси в state её не даёт. */}
+                <ConfirmModal state={{...confirmState, items: [...confirmState.items]}} onConfirm={this.confirm.handleConfirm} onCancel={this.confirm.handleCancel} />
             </div>
         );
     }

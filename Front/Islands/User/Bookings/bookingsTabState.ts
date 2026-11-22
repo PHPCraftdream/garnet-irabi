@@ -1,4 +1,4 @@
-import {Carburetor} from '@react-carburetor/core';
+import {Carburetor, type TReadonly} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import type {PageResponse} from '@common/hooks/data/usePagination';
@@ -31,6 +31,85 @@ export interface BookingsState {
     rescheduleBookingId: number | null;
     rescheduleError: string | undefined;
     confirmingId: number | null;
+}
+
+/*
+ * Подписка — это пути, прочитанные в этом render. Вкладки фильтров и карточки
+ * читают поля в своём render, то есть через прокси не записывают ничего, и
+ * прокси им отдавать бессмысленно: изменение прошло бы мимо подписки. Поэтому
+ * данные страницы копируем здесь плоскими объектами (RULES.md, «Подписки
+ * useCarburetor»).
+ */
+function readBooking(row: TReadonly<Booking>): Booking {
+    return {
+        id: row.id,
+        user_id: row.user_id,
+        bookable_id: row.bookable_id,
+        bookable_type: row.bookable_type,
+        status: row.status,
+        created_at: row.created_at,
+        confirmed_at: row.confirmed_at,
+        cancelled_role: row.cancelled_role,
+        cancel_reason: row.cancel_reason,
+    };
+}
+
+function readSlot(row: TReadonly<SlotInfo>): SlotInfo {
+    return {
+        start_at: row.start_at,
+        is_online: row.is_online,
+        location: row.location,
+        platform: row.platform,
+        expert_id: row.expert_id,
+        cost: row.cost,
+        cancellation_penalty_percent: row.cancellation_penalty_percent,
+        max_users: row.max_users,
+        booked_count: row.booked_count,
+    };
+}
+
+function readExpert(row: TReadonly<ExpertInfo>): ExpertInfo {
+    return {display_name: row.display_name};
+}
+
+function readUser(row: TReadonly<UserInfo>): UserInfo {
+    return {name: row.name};
+}
+
+function readCounts(counts: TReadonly<BookingCounts>): BookingCounts {
+    return {
+        all: counts.all,
+        pending: counts.pending,
+        confirmed: counts.confirmed,
+        cancelled: counts.cancelled,
+        completed: counts.completed,
+        past: counts.past,
+    };
+}
+
+function readMap<T, R>(source: TReadonly<Record<number, T>>, read: (row: TReadonly<T>) => R): Record<number, R> {
+    const plain: Record<number, R> = {};
+    for (const key of Object.keys(source)) plain[Number(key)] = read(source[Number(key)]);
+    return plain;
+}
+
+/** Данные страницы, уже прочитанные в render: только их видят вкладки и карточки. */
+export interface BookingsPageData {
+    bookings: Booking[];
+    slots: Record<number, SlotInfo>;
+    experts: Record<number, ExpertInfo>;
+    users: Record<number, UserInfo>;
+    counts: BookingCounts;
+}
+
+export function readBookingsPage(state: TReadonly<BookingsState>): BookingsPageData {
+    return {
+        bookings: state.bookings.map(readBooking),
+        slots: readMap(state.slots, readSlot),
+        experts: readMap(state.experts, readExpert),
+        users: readMap(state.users, readUser),
+        counts: readCounts(state.counts),
+    };
 }
 
 export class BookingsStateStore extends Carburetor<BookingsState> {

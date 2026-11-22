@@ -312,6 +312,12 @@ export class UsersSection extends AntiHookComponent<Props> {
     private readonly ui = new UsersListState(this.props.initialTabCounts);
     private readonly gridRef = React.createRef<AdminGridHandle<AdminUser>>();
     private readonly actions = new UsersListActions(this.ui, this.gridRef, () => this.props);
+    /*
+     * `pending` — объект-маркер: точечные правки его не будят, а флаги читают дочерние строки
+     * внутри рендера AdminGrid, то есть вне попытки рендера этой секции. Снимок читает ключи
+     * и меняет идентичность только вместе с содержимым.
+     */
+    private readonly pendingFlags = this.connectSelection(this.ui, state => state.pending);
 
     private extraParams?: {tab: UserTab; value: {tab: UserTab}};
     private gridConfig?: {config: GridConfig; tab: UserTab; value: GridConfig};
@@ -373,7 +379,8 @@ export class UsersSection extends AntiHookComponent<Props> {
     }
 
     render() {
-        const {activeTab, tabCounts, pending} = this.useCarburetor(this.ui);
+        const {activeTab, tabCounts} = this.useCarburetor(this.ui);
+        const pending = this.pendingFlags() as Record<number, boolean>;
         return (
             <div>
                 {this.renderTabs(activeTab, tabCounts)}

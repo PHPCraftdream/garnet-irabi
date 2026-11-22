@@ -78,6 +78,12 @@ export class MyReviews extends AntiHookComponent<MyReviewsProps> {
         this.pagination.start();
     }
 
+    // Как setUrl в usePagination: смена listUrl подхватывается без немедленного перезапроса.
+    componentDidUpdate(previous: Readonly<MyReviewsProps>): void {
+        super.componentDidUpdate(previous);
+        if (this.props.listUrl !== previous.listUrl) this.pagination.setUrl(this.props.listUrl);
+    }
+
     componentWillUnmount(): void {
         this.pagination.dispose();
         super.componentWillUnmount();

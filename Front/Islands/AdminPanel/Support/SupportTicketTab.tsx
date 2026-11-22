@@ -96,6 +96,14 @@ export default class SupportTicketTab extends AntiHookComponent<Props> {
     private readonly ui = new TicketUIStore();
     private readonly files = new Carburetor<{reply: PendingFile[]; internal: PendingFile[]}>({reply: [], internal: []});
     private readonly sending = new SupportSending();
+    /*
+     * Опрос каждые 15 с и выбор файла заменяют `data`/`reply`/`internal` целиком, а `setData`
+     * диффит замену до листьев: подписка на маркеры `data.~p`/`reply.~p` такого не видит, и
+     * дети-классы остаются со старыми прокси. Снимок `connectSelection` читает поля и меняет
+     * идентичность только вместе с содержимым (RULES.md, «Подписки useCarburetor»).
+     */
+    private readonly detailSnapshot = this.connectSelection(this.ui, state => state.data);
+    private readonly filesSnapshot = this.connectSelection(this.files, state => state);
     private timer?: number;
     private messageCount: number | null = null;
     // replyText предыдущего рендера: раньше его давал snapshot в props.
@@ -306,10 +314,10 @@ export default class SupportTicketTab extends AntiHookComponent<Props> {
     render() {
         const {ticketId, clientContextUrl, moderators} = this.props;
         // Вид из useCarburetor — TReadonly; детям нужны те же мутабельные типы, что и раньше.
-        const ui = this.useCarburetor(this.ui) as TicketUI;
-        const {reply: replyFiles, internal: internalFiles} = this.useCarburetor(this.files) as {reply: PendingFile[]; internal: PendingFile[]};
+        const {error, replyText, internalText, staleWarning, staleReplySent} = this.useCarburetor(this.ui);
+        const data = this.detailSnapshot() as TicketDetailData | null;
+        const {reply: replyFiles, internal: internalFiles} = this.filesSnapshot() as {reply: PendingFile[]; internal: PendingFile[]};
         const {sending} = this.useCarburetor(this.sending);
-        const {data, error} = ui;
         if (error) return <div className="admin-support-detail-error">{error}</div>;
         if (!data) return <div className="admin-support-detail-loading">{t.User_Loading()}</div>;
         const {ticket, messages, assignmentLog} = data;
@@ -338,8 +346,8 @@ export default class SupportTicketTab extends AntiHookComponent<Props> {
                 <TicketClientContext ticketId={ticketId} clientContextUrl={clientContextUrl} />
 
                 <TicketAttachments messages={messages} />
-                {this.renderNotices({staleWarning: ui.staleWarning, staleReplySent: ui.staleReplySent})}
-                {this.renderForms({replyText: ui.replyText, internalText: ui.internalText, replyFiles, internalFiles, sending})}
+                {this.renderNotices({staleWarning, staleReplySent})}
+                {this.renderForms({replyText, internalText, replyFiles, internalFiles, sending})}
             </div>
         );
     }

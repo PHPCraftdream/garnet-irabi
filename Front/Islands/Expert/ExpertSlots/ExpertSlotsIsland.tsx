@@ -369,8 +369,7 @@ class ExpertSlotsView extends AntiHookComponent<ViewProps> {
         );
     }
 
-    private renderEditModal(state: State) {
-        const {editingSlot} = state;
+    private renderEditModal(editingSlot: Slot | null) {
         return (
             <>
                 {editingSlot && (
@@ -423,13 +422,15 @@ class ExpertSlotsView extends AntiHookComponent<ViewProps> {
         // каждое поле: остров подписывается на изменения полей, дети получают
         // обычные объекты со свежей ссылкой.
         const slots = state.slots.map(copySlot);
+        // Модалка правит поля черновика в своём render — прокси туда не отдаём.
+        const editingSlot = state.editingSlot ? copySlot(state.editingSlot) : null;
         return (
             <>
                 {this.renderHeading()}
                 {this.renderActions()}
                 {this.renderCreateModals(state)}
                 {this.renderCalendar(slots)}
-                {this.renderEditModal(state)}
+                {this.renderEditModal(editingSlot)}
                 {this.renderConfirmations(state, slots)}
                 <BodyScrollLock locked={state.showCreateModal || state.showBatchModal} />
             </>

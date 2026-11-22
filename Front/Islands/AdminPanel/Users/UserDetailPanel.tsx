@@ -180,6 +180,12 @@ export default class UserDetailPanel extends AntiHookComponent<Props> {
 
     private readonly ui = new UserDetailStore();
     private readonly actions = new UserDetailActions(this.ui, () => this.props);
+    /*
+     * `useCarburetor` отдал бы detail маркером `data.~p`, который не просыпается от замены
+     * detail целиком и от точечных правок, — а разделы читают поля уже в своих рендерах.
+     * Снимок отсоединяет detail вместе со всеми вложенными списками.
+     */
+    private readonly detail = this.connectSelection(this.ui, state => state.data);
 
     private readonly clearToast = () => this.ui.setToastMsg(null);
 
@@ -209,9 +215,9 @@ export default class UserDetailPanel extends AntiHookComponent<Props> {
     }
 
     public render() {
-        const {data, error, flagPending, photoRemovePending, showWriteModal, showClearModal, cleared, toastMsg, lightboxOpen} =
+        const {error, flagPending, photoRemovePending, showWriteModal, showClearModal, cleared, toastMsg, lightboxOpen} =
             this.useCarburetor(this.ui);
-        const panelData = data as UserDetailData;
+        const data = this.detail() as UserDetailData | null;
         if (error) return <div className="admin-support-detail-error">{error}</div>;
         if (!data) return <div className="admin-support-detail-loading">{t.User_Loading()}</div>;
 
@@ -224,10 +230,10 @@ export default class UserDetailPanel extends AntiHookComponent<Props> {
             <div className="admin-support-detail" data-test-id="user-detail-pane">
                 {toastMsg && <div className="admin-user-notice">{toastMsg}</div>}
 
-                {this.renderHeader(panelData, flagPending, photoRemovePending, lightboxOpen)}
-                {this.renderStudentSections(panelData)}
-                {this.renderExpertSections(panelData)}
-                {this.renderModals(panelData, showWriteModal, showClearModal)}
+                {this.renderHeader(data, flagPending, photoRemovePending, lightboxOpen)}
+                {this.renderStudentSections(data)}
+                {this.renderExpertSections(data)}
+                {this.renderModals(data, showWriteModal, showClearModal)}
             </div>
         );
     }

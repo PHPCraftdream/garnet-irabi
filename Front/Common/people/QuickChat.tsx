@@ -57,7 +57,7 @@ export default class QuickChat extends AntiHookComponent<Props> {
     private refetchQueued = false;
     private timer?: number;
     private mounted = false;
-    private lastMessages?: QuickMessage[];
+    private lastSignature = '';
 
     componentDidMount(): void {
         super.componentDidMount();
@@ -65,7 +65,7 @@ export default class QuickChat extends AntiHookComponent<Props> {
         void this.load();
         this.timer = window.setInterval(this.poll, 20000);
         this.messagesEndRef.current?.scrollIntoView({behavior: 'smooth'});
-        this.lastMessages = this.ui.getData().messages;
+        this.lastSignature = this.messageSignature();
     }
 
     componentDidUpdate(previous: Readonly<Props>): void {
@@ -76,9 +76,11 @@ export default class QuickChat extends AntiHookComponent<Props> {
             window.clearInterval(this.timer);
             this.timer = window.setInterval(this.poll, 20000);
         }
-        const {messages} = this.ui.getData();
-        if (messages !== this.lastMessages) {
-            this.lastMessages = messages;
+        // Стор публикует только реальные изменения: тот же набор сообщений после
+        // опроса не перерисовывает компонент, поэтому сравнивается содержимое, а не ссылка.
+        const signature = this.messageSignature();
+        if (signature !== this.lastSignature) {
+            this.lastSignature = signature;
             this.messagesEndRef.current?.scrollIntoView({behavior: 'smooth'});
         }
     }
@@ -88,6 +90,11 @@ export default class QuickChat extends AntiHookComponent<Props> {
         this.refetchQueued = false;
         window.clearInterval(this.timer);
         super.componentWillUnmount();
+    }
+
+    private messageSignature(): string {
+        const {messages} = this.ui.getData();
+        return `${messages.length}:${messages[messages.length - 1]?.id ?? ''}`;
     }
 
     private patch(changes: Partial<QuickChatState>): void {

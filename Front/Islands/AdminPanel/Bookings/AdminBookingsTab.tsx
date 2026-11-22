@@ -7,7 +7,7 @@ import {translateStatus} from '../../../Common/booking/statusHelpers';
 import {AccountOption, adminPaginationLabels, buildAccountOptions} from '../Shell/adminShared';
 import {AdminPageController} from '../Shell/AdminPageController';
 import {AdminFilterBar, FilterCell} from './AdminFilterBar';
-import {AdminBookingRow, BookingsFilters, EMPTY_FILTERS} from './bookingsTypes';
+import {AdminBookingRow, BookingsFilters, copyRow, EMPTY_FILTERS} from './bookingsTypes';
 import {AdminBookingsTable} from './AdminBookingsTable';
 
 interface Props {
@@ -159,7 +159,7 @@ export class AdminBookingsTab extends AntiHookComponent<Props> {
         const filters = this.useCarburetor(this.filterStore);
         const pagination = this.useCarburetor(this.pagination);
         const {loading} = pagination;
-        const items = [...pagination.items];
+        const items = pagination.items.map(copyRow);
         const cells = this.filterCells(filters);
 
         const pager = this.renderPager(pagination);

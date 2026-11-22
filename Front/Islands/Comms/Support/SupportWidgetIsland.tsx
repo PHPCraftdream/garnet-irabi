@@ -51,6 +51,16 @@ export class SupportWidgetIsland extends AntiHookComponent<Props> {
     private readonly files = new Carburetor<{list: PendingFile[]}>({list: []});
     private readonly live = new Carburetor<{counts: LiveCounts | null}>({counts: null});
     private readonly messagesEnd = React.createRef<HTMLDivElement>();
+    /*
+     * Список обращений, переписка и выбранные файлы приходят заменой массива целиком, а
+     * `setData` диффит замену до листьев: подписка на маркер `tickets.~p`/`messages.~p`
+     * фоновый опрос не замечает, и строки остаются со старыми прокси. Снимок
+     * `connectSelection` читает поля и меняет идентичность только вместе с содержимым
+     * (RULES.md, «Подписки useCarburetor»).
+     */
+    private readonly ticketsSnapshot = this.connectSelection(this.ui, state => state.tickets);
+    private readonly threadSnapshot = this.connectSelection(this.thread, state => state);
+    private readonly filesSnapshot = this.connectSelection(this.files, state => state);
 
     private readonly setFiles = (files: PendingFile[]) => this.files.setData({list: files});
     private readonly setLiveCounts = (counts: LiveCounts) => this.live.setData({counts});
@@ -221,11 +231,12 @@ export class SupportWidgetIsland extends AntiHookComponent<Props> {
     }
 
     render() {
-        const {isOpen, badge, imUnread, view, loadingTickets, tickets, selectedTicketId,
+        const {isOpen, badge, imUnread, view, loadingTickets, selectedTicketId,
             replyText, subject, message} = this.useCarburetor(this.ui);
-        const {messages, loading: loadingMessages} = this.useCarburetor(this.thread);
+        const tickets = this.ticketsSnapshot() as SupportTicket[];
+        const {messages, loading: loadingMessages} = this.threadSnapshot();
         const {sending} = this.useCarburetor(this.sending);
-        const {list: files} = this.useCarburetor(this.files);
+        const {list: files} = this.filesSnapshot();
         const {pageUrl, imPageUrl = '/im/'} = this.props;
         return (
             <>

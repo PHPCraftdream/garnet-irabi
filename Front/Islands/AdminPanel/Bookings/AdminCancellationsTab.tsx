@@ -7,6 +7,7 @@ import {AccountOption, adminPaginationLabels, buildAccountOptions} from '../Shel
 import {AdminPageController} from '../Shell/AdminPageController';
 import {AdminFilterBar, FilterCell} from './AdminFilterBar';
 import {AdminCancellationsTable} from './AdminCancellationsTable';
+import {copyRow} from './bookingsTypes';
 
 export interface CancellationRow {
     id: number;
@@ -186,7 +187,7 @@ class AdminCancellationsTab extends AntiHookComponent<Props> {
         const filters = this.useCarburetor(this.filterStore);
         const pagination = this.useCarburetor(this.pagination);
         const {loading} = pagination;
-        const items = [...pagination.items];
+        const items = pagination.items.map(copyRow);
         const {kind, showExpertColumn = true, showUserColumn = true} = this.props;
         const testIdPrefix = kind === 'expert' ? 'expert-cancellations' : 'user-cancellations';
         const columns = [
