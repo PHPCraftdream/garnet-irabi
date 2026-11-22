@@ -12,17 +12,14 @@ import {I18nForeground as t} from '../../I18nGen/I18nForeground';
  */
 interface HeaderProps {
     title: string;
-    extraTitleClass?: string;
     titleTone?: 'danger';
     testId: string;
     onClose: () => void;
 }
 
-const ModalHeader: React.FC<HeaderProps> = ({title, extraTitleClass = '', titleTone, testId, onClose}) => (
+const ModalHeader: React.FC<HeaderProps> = ({title, titleTone, testId, onClose}) => (
     <div className="modal-shell-header">
-        {/* Совместимость с переданным вызывающей стороной классом заголовка. */}
-        {/* carburetor-disable-next-line require-function-class */}
-        <h3 className={extraTitleClass ? `modal-shell-title ${extraTitleClass}` : 'modal-shell-title'} data-tone={titleTone}>{title}</h3>
+        <h3 className="modal-shell-title" data-tone={titleTone}>{title}</h3>
         <button
             type="button"
             className="modal-shell-close"
@@ -38,8 +35,6 @@ const ModalHeader: React.FC<HeaderProps> = ({title, extraTitleClass = '', titleT
 
 interface Props {
     title: string;
-    /** Дополнительный класс заголовка — например, красный у необратимых действий. */
-    titleClassName?: string;
     titleTone?: 'danger';
     testId: string;
     onClose: () => void;
@@ -54,12 +49,12 @@ export class ModalShell extends AntiHookComponent<Props> {
     };
 
     render() {
-        const {title, titleClassName, titleTone, testId, onClose, size = 'md', children} = this.props;
+        const {title, titleTone, testId, onClose, size = 'md', children} = this.props;
         return (
             <Portal>
                 <div className="modal-shell-overlay" onClick={this.closeFromBackdrop} data-test-id={testId}>
                     <div role="dialog" aria-modal="true" aria-label={title} className={size === 'lg' ? 'modal-shell-card-lg' : 'modal-shell-card-md'}>
-                        <ModalHeader title={title} extraTitleClass={titleClassName} titleTone={titleTone} testId={testId} onClose={onClose} />
+                        <ModalHeader title={title} titleTone={titleTone} testId={testId} onClose={onClose} />
                         {children}
                     </div>
                 </div>

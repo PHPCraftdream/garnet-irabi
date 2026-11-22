@@ -17,7 +17,7 @@ const Author: React.FC<{msg: SupportMessage}> = ({msg}) => {
     if (!msg.author_name) return null;
 
     return msg.author_id > 0
-        ? <AdminUserLink id={msg.author_id} name={msg.author_name} className="admin-support-author" />
+        ? <AdminUserLink id={msg.author_id} name={msg.author_name} variant="support-author" />
         : <span className="admin-support-author-muted">{msg.author_name}</span>;
 };
 

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {Settings} from 'lucide-react';
-import {usePreview} from '@common/Components/UserPreviewModal/PreviewContext';
+import {PreviewContext, type PreviewCtx} from '@common/Components/UserPreviewModal/PreviewContext';
 
 /**
  * Dual links for moderators: public view + admin view.
@@ -25,12 +25,11 @@ interface EntityLinkProps {
     adminMode?: boolean;
     /** Account id used to open the inline preview modal (foreground only). */
     userId?: number;
-    className?: string;
     adminTitle?: string;
 }
 
 type LinkProps = EntityLinkProps;
-type ContextValue = ReturnType<typeof usePreview>['openPreview'];
+type ContextValue = PreviewCtx['openPreview'];
 
 function stopLinkClick(event: React.MouseEvent): void { event.stopPropagation(); }
 
@@ -47,22 +46,17 @@ class LinkView extends AntiHookComponent<LinkProps & {openPreview: ContextValue}
     };
 
     render() {
-        const {name, publicUrl, adminUrl, isModerator, adminMode, userId, className = '', adminTitle, openPreview} = this.props;
+        const {name, publicUrl, adminUrl, isModerator, adminMode, userId, adminTitle, openPreview} = this.props;
 
         // In admin mode: main link = adminUrl, no gear icon
         const mainUrl = adminMode ? adminUrl : publicUrl;
 
-        // Совместимость с переданным классом ссылки.
-        // carburetor-disable-next-line require-function-class
-        if (!mainUrl && !adminUrl) return <span className={className}>{name}</span>;
+        if (!mainUrl && !adminUrl) return <span>{name}</span>;
 
         const previewEligible = !adminMode && !!openPreview && !!userId && userId > 0;
 
-
-
         return (
-            // carburetor-disable-next-line require-function-class
-            <span className={`entity-person-group ${className}`}>
+            <span className="entity-person-group">
                 {mainUrl ? (
                     <a
                         href={mainUrl}
@@ -91,6 +85,5 @@ class LinkView extends AntiHookComponent<LinkProps & {openPreview: ContextValue}
 }
 
 export function EntityLink(props: LinkProps) {
-    const {openPreview} = usePreview();
-    return <LinkView {...props} openPreview={openPreview} />;
+    return <PreviewContext.Consumer>{ctx => <LinkView {...props} openPreview={ctx.openPreview} />}</PreviewContext.Consumer>;
 }

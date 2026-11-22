@@ -1,9 +1,3 @@
-@theme inline reference {
-  /* carburetor-disable-next-line valid-color-role */
-  --color-attachment-ink: var(--color-text-muted);
-}
-
-@utility tone-attachment-plain { @apply text-attachment-ink; }
 @utility layout-attachment-input { @apply hidden; }
 @utility layout-attachment-row { @apply flex items-center gap-2 flex-wrap; }
 @utility type-attachment-hint { @apply text-xs; }
@@ -11,5 +5,5 @@
 @layer components {
   .attachment-input { @apply layout-attachment-input tone-neutral-plain; }
   .attachment-row { @apply layout-attachment-row tone-neutral-plain; }
-  .attachment-hint { @apply type-attachment-hint tone-attachment-plain; }
+  .attachment-hint { @apply type-attachment-hint tone-supportmuted-plain; }
 }

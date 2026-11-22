@@ -15,17 +15,11 @@ import {appUrl} from '@common/Utils/Url/appUrl';
 export const AdminUserDualLink: React.FC<{
     id: number;
     name: string;
-    className?: string;
     dataTestId?: string;
-}> = ({id, name, className = '', dataTestId}) => {
-    if (!id || id <= 0) {
-        // Совместимость с переданным классом ссылки.
-        // carburetor-disable-next-line require-function-class
-        return <span className={className}>{name || '—'}</span>;
-    }
+}> = ({id, name, dataTestId}) => {
+    if (!id || id <= 0) return <span>{name || '—'}</span>;
     return (
-        // carburetor-disable-next-line require-function-class
-        <span className={`entity-person-group ${className}`}>
+        <span className="entity-person-group">
             <a
                 href={appUrl(`/user/id~${id}`)}
                 className="entity-person-link"

@@ -4,6 +4,7 @@
   --palette-pick-white: #fff;
 }
 
+/* Роли ссылаются на цвета Garnet-темы: у них нет записей в палитре, и темовая ветка должна следовать за темой. */
 @theme inline reference {
   --color-pick-wash: var(--palette-pick-nav);
   --color-pick-wash-hover: var(--palette-pick-nav-hover);
