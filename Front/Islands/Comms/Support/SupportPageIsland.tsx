@@ -38,6 +38,11 @@ function findTicket(tickets: readonly SupportTicket[], id: number): SupportTicke
     return tickets.find(ticket => ticket.id === id);
 }
 
+/** Подпись переписки: прокрутка срабатывает на смену содержимого, а не на каждый опрос. */
+function messagesSignature(messages: readonly SupportMessage[]): string {
+    return `${messages.length}:${messages[messages.length - 1]?.id ?? ''}`;
+}
+
 export class SupportPageIsland extends AntiHookComponent<Props> {
     private readonly pagination = new PaginationController<SupportTicket>({url: this.props.ticketPageUrl, initialData: this.props.ticketsPagination});
     private readonly ui = new SupportPageState();
@@ -59,6 +64,13 @@ export class SupportPageIsland extends AntiHookComponent<Props> {
      * вглубь не замечает, поэтому берём их снимком (RULES.md, «Подписки useCarburetor»).
      */
     private readonly filesSnapshot = this.connectSelection(this.files, state => state);
+    /*
+     * Заголовок переписки (`subject`/`status`/`created_at`/`updated_at`) рисует
+     * `PageConversation` в своём рендере, а ответ на обращение заменяет тикет с тем же id:
+     * подписка на один `id` такого не замечает. Снимок читает поля тикета и меняет
+     * идентичность вместе с содержимым (RULES.md, «Подписки useCarburetor»).
+     */
+    private readonly selectedTicketSnapshot = this.connectSelection(this.ui, state => state.selectedTicketData);
 
     // Обёртки как в usePagination: его сторожа отличаются от сторожа контроллера.
     private readonly ticketGoToPage = (p: number) => {
@@ -76,7 +88,7 @@ export class SupportPageIsland extends AntiHookComponent<Props> {
 
     protected override useEffects(): void {
         const {selectedId} = this.ui.snapshot();
-        const {messages} = this.thread.snapshot();
+        const scrollSignature = messagesSignature(this.thread.snapshot().messages);
 
         this.useEffect('pagination', () => {
             this.pagination.start();
@@ -98,7 +110,8 @@ export class SupportPageIsland extends AntiHookComponent<Props> {
             return this.stopThreadPolling;
         }, [selectedId]);
 
-        this.useEffect('scroll', () => { this.messagesEnd.current?.scrollIntoView({behavior: 'smooth'}); }, [messages]);
+        // selectedId в зависимостях: повторное открытие той же переписки заново создаёт якорь и должно прокручивать вниз.
+        this.useEffect('scroll', () => { this.messagesEnd.current?.scrollIntoView({behavior: 'smooth'}); }, [scrollSignature, selectedId]);
     }
 
     private readonly fetchMessages = (ticketId: number) => {
@@ -249,8 +262,8 @@ export class SupportPageIsland extends AntiHookComponent<Props> {
         const {page: ticketPage, totalPages: ticketTotalPages, total: ticketTotal,
             loading: ticketsLoading, perPage: ticketPerPage} = this.useCarburetor(this.pagination);
         const items = this.ticketsSnapshot() as SupportTicket[];
-        const {selectedId, selectedTicketData, readIds, showNewForm, subject, message,
-            replyText} = this.useCarburetor(this.ui);
+        const {selectedId, readIds, showNewForm, subject, message, replyText} = this.useCarburetor(this.ui);
+        const selectedTicketData = this.selectedTicketSnapshot() as SupportTicket | null;
         const {messages, loading: loadingMessages} = this.threadSnapshot();
         const {create: createFiles, reply: replyFiles} = this.filesSnapshot() as {create: PendingFile[]; reply: PendingFile[]};
         const {sending} = this.useCarburetor(this.sending);

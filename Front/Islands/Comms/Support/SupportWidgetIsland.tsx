@@ -37,6 +37,11 @@ function findTicket(tickets: SupportTicket[], id: number | null): SupportTicket 
     return tickets.find(ticket => ticket.id === id);
 }
 
+/** Подпись переписки: прокрутка срабатывает на смену содержимого, а не на каждый опрос. */
+function messagesSignature(messages: readonly SupportMessage[]): string {
+    return `${messages.length}:${messages[messages.length - 1]?.id ?? ''}`;
+}
+
 function notifyCreated(ticketId?: number, etaMinutes?: number): void {
     const confirmation = ticketId
         ? t.Support_TicketCreatedWithId([String(ticketId)]) + (etaMinutes ? ' ' + t.Support_TicketEtaHint([String(etaMinutes)]) : '')
@@ -73,7 +78,7 @@ export class SupportWidgetIsland extends AntiHookComponent<Props> {
 
     protected override useEffects(): void {
         const {selectedTicketId, isOpen, view} = this.ui.snapshot();
-        const {messages} = this.thread.snapshot();
+        const scrollSignature = messagesSignature(this.thread.snapshot().messages);
         const pollEnabled = isOpen && view === 'conversation';
         const listing = isOpen && view === 'list';
 
@@ -108,7 +113,8 @@ export class SupportWidgetIsland extends AntiHookComponent<Props> {
             return () => window.clearInterval(id);
         }, [listing]);
 
-        this.useEffect('scroll', () => { this.messagesEnd.current?.scrollIntoView({behavior: 'smooth'}); }, [messages]);
+        // selectedTicketId и pollEnabled в зависимостях: повторное открытие той же переписки заново создаёт якорь и должно прокручивать вниз.
+        this.useEffect('scroll', () => { this.messagesEnd.current?.scrollIntoView({behavior: 'smooth'}); }, [scrollSignature, selectedTicketId, pollEnabled]);
     }
 
     private readonly pollList = () => {

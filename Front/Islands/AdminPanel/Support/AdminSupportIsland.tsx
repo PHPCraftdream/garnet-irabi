@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
+import {AntiHookComponent, Carburetor, type TReadonly} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {refreshLiveCounts} from '@common/Utils/Data/liveCounts';
 import {GridConfig, PageResponse} from '../Shell/types';
@@ -238,6 +238,21 @@ function userTabDefinition(tab: UserTabs[number]): InternalTab {
     return {...tab, tabKind: {kind: 'user-detail', accountId: tab.tabKind.accountId}};
 }
 
+/** Плоская копия вкладки: `TabNav` и `renderContent` читают её поля в своих рендерах. */
+function copyTab(tab: TReadonly<InternalTab>): InternalTab {
+    const tabKind = tab.tabKind;
+    return {
+        id: tab.id,
+        label: tab.label,
+        closeable: tab.closeable,
+        parentId: tab.parentId,
+        tabKind: tabKind === null ? null
+            : tabKind.kind === 'user-detail'
+                ? {kind: 'user-detail', accountId: tabKind.accountId}
+                : {kind: 'ticket-detail', ticketId: tabKind.ticketId, subject: tabKind.subject},
+    };
+}
+
 function hasUserTab(tabs: UserTabs, id: string): boolean {
     return tabs.some(tab => tab.id === id);
 }
@@ -428,7 +443,7 @@ export class AdminSupportIsland extends AntiHookComponent<Props> {
         const activeId = user.activeId ?? tabState.activeId;
         const allTabs: InternalTab[] = [
             {id: MAIN_TAB_ID, label: t.Admin_Support(), closeable: false, tabKind: null},
-            ...tabState.dynamicTabs,
+            ...tabState.dynamicTabs.map(copyTab),
             ...user.tabs.map(userTabDefinition),
         ];
         return (
