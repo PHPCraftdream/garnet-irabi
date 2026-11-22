@@ -5,7 +5,7 @@ import {ExpertInfo, ExpertMap} from '../../types';
 
 interface Props {
     experts: ExpertMap;
-    expertIds: Set<string>;
+    expertIds: ReadonlySet<string>;
     onChange: (ids: Set<string>) => void;
 }
 

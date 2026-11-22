@@ -2,8 +2,6 @@ import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {D} from '@common/Support/Debug/D';
-import {useBodyScrollLock} from '@common/hooks/ui/useBodyScrollLock';
-import {useShake} from '@common/hooks/ui/useShake';
 import SendButton from '@common/Components/Controls/SendButton';
 import {Portal} from '@common/Components/Layout/Portal';
 import {appUrl} from '@common/Utils/Url/appUrl';
@@ -12,10 +10,11 @@ import {bookErrorCode, bookErrorMessage} from './bookingErrors';
 import {BookingSlotSummary} from './BookingSlotSummary';
 import {ExtraSlotPicker} from '../Slot/ExtraSlotPicker';
 import type {SlotItem, ExpertMap} from '../types';
+import {sortByStart} from '../slotsCalendarSelectors';
 
 interface Props {
     slot: SlotItem;
-    allSlots: SlotItem[];
+    allSlots: readonly SlotItem[];
     experts: ExpertMap;
     bookedIds: Set<number>;
     balance: number;
@@ -25,40 +24,29 @@ interface Props {
     onBooked: (bookedIds: number[]) => void;
 }
 
-interface ViewProps extends Props {
-    balanceShaking: boolean;
-    shakeBalance: () => void;
-}
-
 interface State {
     selected: number[];
     error: string;
     sending: boolean;
+    shaking: boolean;
 }
 
 function stopClick(event: React.MouseEvent<HTMLDivElement>): void {
     event.stopPropagation();
 }
 
-function compareStart(left: SlotItem, right: SlotItem): number {
-    return left.start_at - right.start_at;
-}
-
 function getOtherSlots({allSlots, slot, bookedIds}: Props): SlotItem[] {
     const available = allSlots.filter(other => other.expert_id === slot.expert_id && other.id !== slot.id && !bookedIds.has(other.id) && other.status === 'free');
-    // Сортируем свежий массив, не исходные слоты.
-    // oxlint-disable-next-line unicorn/no-array-sort
-    available.sort(compareStart);
-    return available.slice(0, 10);
+    return sortByStart(available).slice(0, 10);
 }
 
-function priceFor(ids: readonly number[], slots: SlotItem[]): number {
+function priceFor(ids: readonly number[], slots: readonly SlotItem[]): number {
     let sum = 0;
     for (const id of ids) sum += slots.find(slot => slot.id === id)?.cost ?? 0;
     return sum;
 }
 
-function uidsFor(ids: readonly number[], slots: SlotItem[]): Record<string, string> {
+function uidsFor(ids: readonly number[], slots: readonly SlotItem[]): Record<string, string> {
     const uids: Record<string, string> = {};
     for (const id of ids) {
         const uid = slots.find(slot => slot.id === id)?.uid;
@@ -71,11 +59,43 @@ function canPay(balance: number, total: number): boolean {
     return total === 0 || balance >= total;
 }
 
-class BookingModalView extends AntiHookComponent<ViewProps> {
-    private readonly store = new Carburetor<State>({selected: [this.props.slot.id], error: '', sending: false});
+export default class BookingModal extends AntiHookComponent<Props> {
+    private readonly store = new Carburetor<State>({selected: [this.props.slot.id], error: '', sending: false, shaking: false});
+    private shakeTimer?: number;
+    private shakeFrame?: number;
+
+    protected useEffects(): void {
+        this.useEffect('bodyScrollLock', () => {
+            const previous = document.body.style.overflow;
+            document.body.style.overflow = 'hidden';
+            return () => {
+                document.body.style.overflow = previous;
+            };
+        }, []);
+    }
+
+    componentWillUnmount(): void {
+        window.clearTimeout(this.shakeTimer);
+        if (this.shakeFrame !== undefined) cancelAnimationFrame(this.shakeFrame);
+        super.componentWillUnmount();
+    }
+
+    private readonly stopShake = () => this.update({shaking: false});
+
+    private readonly startShake = () => {
+        this.update({shaking: true});
+        this.shakeTimer = window.setTimeout(this.stopShake, 500);
+    };
+
+    private readonly shakeBalance = () => {
+        window.clearTimeout(this.shakeTimer);
+        if (this.shakeFrame !== undefined) cancelAnimationFrame(this.shakeFrame);
+        this.update({shaking: false});
+        this.shakeFrame = requestAnimationFrame(this.startShake);
+    };
     private readonly selection = this.connectSelection(this.store, state => state.selected);
     private selectionCache?: {ids: readonly number[]; value: Set<number>};
-    private otherCache?: {slot: SlotItem; allSlots: SlotItem[]; bookedIds: Set<number>; value: SlotItem[]};
+    private otherCache?: {slot: SlotItem; allSlots: readonly SlotItem[]; bookedIds: Set<number>; value: SlotItem[]};
 
     private update(patch: Partial<State>): void {
         this.store.setData({...this.store.getData(), ...patch});
@@ -106,11 +126,11 @@ class BookingModalView extends AntiHookComponent<ViewProps> {
     private readonly book = async () => {
         const {selected, sending} = this.store.getData();
         if (!selected.length) return;
-        const {allSlots, balance, csrf, bookUrl, onBooked, onClose, shakeBalance} = this.props;
+        const {allSlots, balance, csrf, bookUrl, onBooked, onClose} = this.props;
         const total = priceFor(selected, allSlots);
         // Кнопка остаётся доступной, чтобы подсветить нехватку средств.
         if (!canPay(balance, total)) {
-            shakeBalance();
+            this.shakeBalance();
             return;
         }
         if (sending) return;
@@ -148,8 +168,8 @@ class BookingModalView extends AntiHookComponent<ViewProps> {
         );
     }
 
-    private renderTotal(total: number, count: number) {
-        const {balance, balanceShaking} = this.props;
+    private renderTotal(total: number, count: number, shaking: boolean) {
+        const {balance} = this.props;
         return (
             <>
                 <div className="booking-dialog-total">
@@ -160,7 +180,7 @@ class BookingModalView extends AntiHookComponent<ViewProps> {
                     <span className="booking-summary-balance">{t.Booking_Balance()}: {balance} &#8381;</span>
                 </div>
                 {!canPay(balance, total) && (
-                    <div className={balanceShaking ? 'booking-dialog-error-shake' : 'booking-dialog-error-funds'} data-booking-error={balanceShaking ? 'shake' : 'funds'} data-test-id="booking-insufficient">
+                    <div className={shaking ? 'booking-dialog-error-shake' : 'booking-dialog-error-funds'} data-booking-error={shaking ? 'shake' : 'funds'} data-test-id="booking-insufficient">
                         {t.Booking_InsufficientBalance()}{' '}
                         <a href={appUrl('/balance')} className="booking-place-link">(&#8593; {t.Balance_TopUp()})</a>
                     </div>
@@ -183,7 +203,7 @@ class BookingModalView extends AntiHookComponent<ViewProps> {
 
     render() {
         const {slot, allSlots, experts, onClose} = this.props;
-        const {error, sending} = this.useCarburetor(this.store);
+        const {error, sending, shaking} = this.useCarburetor(this.store);
         const ids = this.selection();
         const total = priceFor(ids, allSlots);
         return (
@@ -193,7 +213,7 @@ class BookingModalView extends AntiHookComponent<ViewProps> {
                         {this.renderHeader()}
                         <BookingSlotSummary slot={slot} expert={experts[slot.expert_id]} />
                         <ExtraSlotPicker slots={this.otherSlots()} selected={this.getSelection(ids)} onToggle={this.toggle} />
-                        {this.renderTotal(total, ids.length)}
+                        {this.renderTotal(total, ids.length, shaking)}
                         {error && <div className="booking-dialog-error">{error}</div>}
                         {this.renderActions(total, ids.length, sending)}
                     </div>
@@ -201,10 +221,4 @@ class BookingModalView extends AntiHookComponent<ViewProps> {
             </Portal>
         );
     }
-}
-
-export default function BookingModal(props: Props) {
-    useBodyScrollLock(true);
-    const [balanceShaking, shakeBalance] = useShake();
-    return <BookingModalView {...props} balanceShaking={balanceShaking} shakeBalance={shakeBalance} />;
 }

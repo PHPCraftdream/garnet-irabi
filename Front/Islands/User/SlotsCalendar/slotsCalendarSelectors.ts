@@ -1,11 +1,18 @@
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {weekStartTs, addDaysTs, tsToInputDate, tsToHour} from '@common/Utils/Time/DateUtils';
-import type {DayInfo, FiltersState, SlotItem, SlotStatusFilter} from './types';
+import type {DayInfo, SlotItem, SlotStatusFilter, TimeOfDay, SlotType, OnlineFilter} from './types';
 import type {PagerCountItem} from '../../../Common/booking/CalendarPagerCounts';
 
-function compareStart(left: SlotItem, right: SlotItem): number {
-    return left.start_at - right.start_at;
-}
+export type ReadonlyFiltersState = {
+    readonly expertIds: ReadonlySet<string>;
+    readonly priceMin: string;
+    readonly priceMax: string;
+    readonly timeOfDay: TimeOfDay;
+    readonly slotType: SlotType;
+    readonly onlineFilter: OnlineFilter;
+};
+
+type SlotStatusesView = Readonly<Record<string, string>>;
 
 function emptyCounts() {
     return {free: 0, mine: 0};
@@ -37,13 +44,28 @@ function buildWeekDays(weekStartUnix: number, nowSec: number): DayInfo[] {
     return days;
 }
 
-export function indexSlotStatuses(slots: SlotItem[]) {
+/** Возвращает копию списка, отсортированную по времени начала. */
+export function sortByStart(slots: readonly SlotItem[]): SlotItem[] {
+    const out = slots.slice();
+    for (let i = 1; i < out.length; i++) {
+        const item = out[i];
+        let j = i - 1;
+        while (j >= 0 && out[j].start_at > item.start_at) {
+            out[j + 1] = out[j];
+            j--;
+        }
+        out[j + 1] = item;
+    }
+    return out;
+}
+
+export function indexSlotStatuses(slots: readonly SlotItem[]) {
     const m = new Map<number, string>();
     for (const s of slots) m.set(s.id, s.status);
     return m;
 }
 
-export function getEffectiveBookedIds(bookedIds: number[], slotStatuses: Record<string, string>, slotStatusById: Map<number, string>) {
+export function getEffectiveBookedIds(bookedIds: readonly number[], slotStatuses: SlotStatusesView, slotStatusById: Map<number, string>) {
     const result = new Set<number>();
     for (const id of bookedIds) {
         const bookingStatus = slotStatuses[String(id)];
@@ -53,7 +75,7 @@ export function getEffectiveBookedIds(bookedIds: number[], slotStatuses: Record<
     return result;
 }
 
-export function applyCalendarFilters(slots: SlotItem[], filters: FiltersState) {
+export function applyCalendarFilters(slots: readonly SlotItem[], filters: ReadonlyFiltersState) {
     return slots.filter(slot => {
         if (filters.expertIds.size > 0 && !filters.expertIds.has(String(slot.expert_id))) return false;
         if (filters.priceMin !== '') { const min = Number(filters.priceMin); if (!isNaN(min) && slot.cost < min) return false; }
@@ -80,7 +102,7 @@ export function applyCalendarFilters(slots: SlotItem[], filters: FiltersState) {
     });
 }
 
-export function applyStatusFilter(propertyFilteredSlots: SlotItem[], statusFilter: SlotStatusFilter, effectiveBookedIds: Set<number>, slotStatuses: Record<string, string>) {
+export function applyStatusFilter(propertyFilteredSlots: readonly SlotItem[], statusFilter: SlotStatusFilter, effectiveBookedIds: ReadonlySet<number>, slotStatuses: SlotStatusesView) {
     if (statusFilter === 'all') return propertyFilteredSlots;
     const nowSec = Math.floor(Date.now() / 1000);
     return propertyFilteredSlots.filter(slot => {
@@ -96,7 +118,7 @@ export function applyStatusFilter(propertyFilteredSlots: SlotItem[], statusFilte
     });
 }
 
-export function getCalendarWeek(filteredSlots: SlotItem[], weekOffset: number) {
+export function getCalendarWeek(filteredSlots: readonly SlotItem[], weekOffset: number) {
     const nowSec = Math.floor(Date.now() / 1000);
     const currentWeekStart = weekStartTs(nowSec);
     const wsUnix = addDaysTs(currentWeekStart, weekOffset * 7);
@@ -114,17 +136,16 @@ export function getCalendarWeek(filteredSlots: SlotItem[], weekOffset: number) {
         }
     }
     let weekSlotCount = 0;
-    for (const arr of slotsByDay.values()) {
+    for (const [key, arr] of slotsByDay) {
         // Каждый массив создан здесь, исходный список не меняется.
-        // oxlint-disable-next-line unicorn/no-array-sort
-        arr.sort(compareStart);
+        slotsByDay.set(key, sortByStart(arr));
         weekSlotCount += arr.length;
     }
 
     return { weekStartUnix: wsUnix, weekEndUnix, days, slotsByDay, weekSlotCount };
 }
 
-export function getPagerCounts(propertyFilteredSlots: SlotItem[], ws: number, we: number, effectiveBookedIds: Set<number>, slotStatuses: Record<string, string>) {
+export function getPagerCounts(propertyFilteredSlots: readonly SlotItem[], ws: number, we: number, effectiveBookedIds: ReadonlySet<number>, slotStatuses: SlotStatusesView) {
     const prev = emptyCounts(), next = emptyCounts(), now = emptyCounts();
     for (const s of propertyFilteredSlots) {
         const mine = effectiveBookedIds.has(s.id) && (slotStatuses[String(s.id)] || '') !== 'cancelled';
