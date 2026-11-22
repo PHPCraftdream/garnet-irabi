@@ -1,3 +1,9 @@
+/* valid-color-role подавлен на весь файл: роли объявляются здесь один раз и ссылаются на семантические токены
+   темы Garnet (--color-*), у которых есть ветка [data-theme="dark"]; --palette-* хранит сырые значения и
+   зафиксировал бы светлый цвет. common-roles.css — единственная точка объявления ролей, поэтому и подавление
+   одно, а не построчное. */
+/* carburetor-disable valid-color-role */
+
 /* common.less компилируется в одну таблицу стилей: @apply разрешается по итоговому состоянию темы.
    Поэтому сброс палитры объявлен ровно один раз — до всех ролей. */
 
@@ -9,630 +15,350 @@
   --color-lightbox-ink: var(--palette-lightbox-white);
 
 /* Роли следуют за токенами темы Garnet (--color-*): у них есть ветка [data-theme="dark"], а --palette-* хранит сырые значения и зафиксировал бы светлый цвет. */
-  /* carburetor-disable-next-line valid-color-role */
   --color-attachment-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
   --color-attachment-edge-hover: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-attachment-wash: var(--color-bg-surface-alt);
-  /* carburetor-disable-next-line valid-color-role */
   --color-attachment-ink: var(--color-text-muted);
 
 /* Роли следуют за токенами темы Garnet (--color-*): у них есть ветка [data-theme="dark"], а --palette-* хранит сырые значения и зафиксировал бы светлый цвет. */
   --color-pick-wash: var(--palette-pick-nav);
   --color-pick-wash-hover: var(--palette-pick-nav-hover);
   --color-pick-ink: var(--palette-pick-white);
-  /* carburetor-disable-next-line valid-color-role */
   --color-pickdanger-wash: var(--color-danger-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-pickdanger-wash-hover: var(--color-danger-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-pickdanger-ink: var(--color-danger);
-  /* carburetor-disable-next-line valid-color-role */
   --color-pickneutral-wash: var(--color-bg-surface-alt);
-  /* carburetor-disable-next-line valid-color-role */
   --color-pickneutral-wash-hover: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-pickneutral-ink: var(--color-text-primary);
 
 /* Локальные семейства берут роли из семантических токенов Garnet (var(--color-border), var(--color-accent), …),
    у которых есть ветка [data-theme="dark"]. Слой --palette-* приложения (Front/Carburetor/classes.css) содержит
-   сырые значения и в тёмной теме не переключается, поэтому valid-color-role гасится на каждое объявление;
+   сырые значения и в тёмной теме не переключается, поэтому valid-color-role гасится одной директивой уровня файла (строка 1);
    правилам вне @layer components нужен приоритет над слоем — там valid-function-class. */
-  /* carburetor-disable-next-line valid-color-role */
   --color-adminstatusempty-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
   --color-adminstatusempty-ink: var(--color-text-secondary);
-  /* carburetor-disable-next-line valid-color-role */
   --color-adminstatusemptyhover-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
   --color-adminstatusemptyhover-ink: var(--color-text-secondary);
-  /* carburetor-disable-next-line valid-color-role */
   --color-adminstatusemptyhover-wash-hover: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-userprofileadmin-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
   --color-userprofileadmin-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
   --color-userprofileadmin-ink-hover: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-userprofileadmin-edge-hover: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-recipienttrigger-wash-hover: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-recipienttrigger-edge-focus: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-recipientsearch-ink-placeholder: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
   --color-recipientoption-ink: var(--color-on-surface);
-  /* carburetor-disable-next-line valid-color-role */
   --color-recipientoption-wash-hover: var(--color-accent-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-widgetfab-wash: var(--color-bg-surface-alt);
-  /* carburetor-disable-next-line valid-color-role */
   --color-widgetfab-ink: var(--color-on-surface);
-  /* carburetor-disable-next-line valid-color-role */
   --color-widgetfab-wash-hover: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-adminattachmenticon-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
   --color-adminattachmenticon-wash: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-adminattachmentrow-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
   --color-adminattachmentrow-wash: var(--color-bg-surface);
-  /* carburetor-disable-next-line valid-color-role */
   --color-adminattachmentrow-edge-hover: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-widgethistory-wash-hover: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-ticketrowactive-edge: var(--color-border-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-ticketrowactive-wash: var(--color-accent-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-ticketrowactive-wash-hover: var(--color-accent-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-ticketrowactive-wash-focus: var(--color-accent-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-ticketrowidle-edge: var(--color-border-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-ticketrowidle-wash-hover: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-adminticketrole-wash: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
   --color-adminticketrole-ink: var(--color-text-secondary);
-  /* carburetor-disable-next-line valid-color-role */
   --color-adminstatusactive-edge: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-adminstatusactive-wash: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-adminstatusactive-wash-hover: var(--color-accent-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-adminstatusactive-ink: var(--color-accent-text);
-  /* carburetor-disable-next-line valid-color-role */
   --color-admininternal-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
   --color-admininternal-wash: var(--color-warning-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-admininternal-ink: var(--color-on-surface);
-  /* carburetor-disable-next-line valid-color-role */
   --color-adminhistory-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
   --color-adminhistory-ink-hover: var(--color-text-secondary);
-  /* carburetor-disable-next-line valid-color-role */
   --color-ticketstatusblue-wash: var(--color-status-blue-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-ticketstatusblue-ink: var(--color-status-blue);
-  /* carburetor-disable-next-line valid-color-role */
   --color-ticketstatuscyan-wash: var(--color-status-cyan-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-ticketstatuscyan-ink: var(--color-status-cyan);
-  /* carburetor-disable-next-line valid-color-role */
   --color-ticketstatusyellow-wash: var(--color-status-yellow-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-ticketstatusyellow-ink: var(--color-status-yellow);
-  /* carburetor-disable-next-line valid-color-role */
   --color-ticketstatusorange-wash: var(--color-status-orange-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-ticketstatusorange-ink: var(--color-status-orange);
-  /* carburetor-disable-next-line valid-color-role */
   --color-ticketstatusred-wash: var(--color-status-red-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-ticketstatusred-ink: var(--color-status-red);
-  /* carburetor-disable-next-line valid-color-role */
   --color-ticketstatuspurple-wash: var(--color-status-purple-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-ticketstatuspurple-ink: var(--color-status-purple);
-  /* carburetor-disable-next-line valid-color-role */
   --color-ticketstatusgreen-wash: var(--color-status-green-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-ticketstatusgreen-ink: var(--color-status-green);
-  /* carburetor-disable-next-line valid-color-role */
   --color-ticketstatusgray-wash: var(--color-status-gray-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-ticketstatusgray-ink: var(--color-status-gray);
-  /* carburetor-disable-next-line valid-color-role */
   --color-imback-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
   --color-imback-wash: var(--color-bg-surface-alt);
-  /* carburetor-disable-next-line valid-color-role */
   --color-imback-ink: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-recipienttrigger-edge: var(--color-border-strong);
-  /* carburetor-disable-next-line valid-color-role */
   --color-recipienttrigger-wash: var(--color-bg-surface);
-  /* carburetor-disable-next-line valid-color-role */
   --color-recipienttrigger-ink: var(--color-on-surface);
-  /* carburetor-disable-next-line valid-color-role */
   --color-recipientsearch-wash: var(--color-bg-surface-alt);
-  /* carburetor-disable-next-line valid-color-role */
   --color-recipientsearch-ink: var(--color-on-surface);
-  /* carburetor-disable-next-line valid-color-role */
   --color-recipientaccent-wash: var(--color-accent-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-recipientaccent-ink: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-widgetim-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
   --color-widgetim-wash: var(--color-bg-surface-alt);
-  /* carburetor-disable-next-line valid-color-role */
   --color-widgetim-wash-hover: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-widgetim-ink: var(--color-on-surface);
-  /* carburetor-disable-next-line valid-color-role */
   --color-widgetmessage-wash: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-widgetmessage-ink: var(--color-on-surface);
-  /* carburetor-disable-next-line valid-color-role */
   --color-widgetown-wash: var(--color-accent-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-widgetown-ink: var(--color-on-surface);
 
   /* Псевдоним роли темы: палитра сломала бы тёмную тему. */
-  /* carburetor-disable-next-line valid-color-role */
   --color-newsaccent-ink: var(--color-accent);
 
   /* Псевдоним роли темы: палитра сломала бы тёмную тему. */
-  /* carburetor-disable-next-line valid-color-role */
   --color-newsneutral-edge: var(--color-border);
 
   /* Псевдонимы ролей темы: палитра сломала бы тёмную тему. */
-  /* carburetor-disable-next-line valid-color-role */
   --color-dashwarn-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
   --color-dashwarn-wash: var(--color-warning-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-dashwarn-wash-hover: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-dashwarn-ink: var(--color-warning);
-  /* carburetor-disable-next-line valid-color-role */
   --color-dashaccent-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
   --color-dashaccent-wash: var(--color-accent-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-dashaccent-wash-hover: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-dashaccent-ink: var(--color-accent);
 
 /* Garnet theme vars are the palette; copying literals would fork the theme */
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotaccent-wash: var(--color-accent-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotsurface-wash: var(--color-bg-surface-alt);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotborder-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotlink-ink: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotformatonline-wash: var(--color-status-green-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotformatonline-ink: var(--color-status-green);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotformatoffline-wash: var(--color-status-orange-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotformatoffline-ink: var(--color-status-orange);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotpanel-wash: var(--color-bg-surface-alt);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotpanel-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotstatusdanger-wash: var(--color-status-red-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotstatusdanger-ink: var(--color-status-red);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotstatusinfo-wash: var(--color-status-blue-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotstatusinfo-ink: var(--color-status-blue);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotclose-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotclose-ink-hover: var(--color-text-primary);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slothead-wash: var(--color-bg-surface);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slothead-edge: var(--color-border);
 
   /* Псевдонимы ролей темы: палитра сломала бы тёмную тему. */
-  /* carburetor-disable-next-line valid-color-role */
   --color-bookaccent-ink: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-booksurface-wash: var(--color-bg-surface-alt);
-  /* carburetor-disable-next-line valid-color-role */
   --color-bookrefund-wash: color-mix(in srgb, var(--color-accent) 10%, transparent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-bookrefund-ink: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-bookwarning-ink: var(--color-warning);
-  /* carburetor-disable-next-line valid-color-role */
   --color-booksummary-wash: var(--color-accent-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-bookneutral-wash-hover: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-bookcancel-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
   --color-bookcancel-wash: var(--color-bg-surface-alt);
-  /* carburetor-disable-next-line valid-color-role */
   --color-booktitle-ink: var(--color-on-surface);
-  /* carburetor-disable-next-line valid-color-role */
   --color-bookclose-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
   --color-bookclose-ink-hover: var(--color-on-surface);
-  /* carburetor-disable-next-line valid-color-role */
   --color-bookdismiss-edge: var(--color-border-strong);
-  /* carburetor-disable-next-line valid-color-role */
   --color-bookdismiss-edge-hover: var(--color-gray-400);
-  /* carburetor-disable-next-line valid-color-role */
   --color-bookdismiss-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
   --color-bookdismiss-ink-hover: var(--color-text-secondary);
-  /* carburetor-disable-next-line valid-color-role */
   --color-bookdismiss-wash-hover: var(--color-bg-surface-hover);
 
 /* Garnet theme vars are the palette; copying literals would fork the theme */
-  /* carburetor-disable-next-line valid-color-role */
   --color-weekempty-ink: color-mix(in srgb, var(--color-text-muted) 75%, transparent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-weekborder-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
   --color-weekaccent-ink: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-weekcurrent-wash: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-weekcurrent-ink: var(--color-accent-text);
 
   /* Псевдонимы ролей темы: палитра сломала бы тёмную тему. */
-  /* carburetor-disable-next-line valid-color-role */
   --color-welcomeavatar-wash: var(--color-accent-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-welcomeavatar-ink: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-welcomeimage-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
   --color-welcomeaccent-ink: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-welcomeuser-wash: var(--color-status-blue-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-welcomeuser-ink: var(--color-status-blue);
-  /* carburetor-disable-next-line valid-color-role */
   --color-welcomeexpert-wash: var(--color-status-green-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-welcomeexpert-ink: var(--color-status-green);
-  /* carburetor-disable-next-line valid-color-role */
   --color-welcomemoderator-wash: var(--color-status-purple-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-welcomemoderator-ink: var(--color-status-purple);
-  /* carburetor-disable-next-line valid-color-role */
   --color-welcomeowner-wash: var(--color-status-yellow-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-welcomeowner-ink: var(--color-status-yellow);
-  /* carburetor-disable-next-line valid-color-role */
   --color-welcomeadmin-wash: var(--color-status-red-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-welcomeadmin-ink: var(--color-status-red);
 
 /* Garnet theme vars are the palette; copying literals would fork the theme */
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotpartlink-ink: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotpartpanel-edge: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotpartpanel-wash: var(--color-bg-surface-alt);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotbookinfo-wash: var(--color-status-blue-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotbookinfo-ink: var(--color-status-blue);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotbooksuccess-wash: var(--color-status-green-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotbooksuccess-ink: var(--color-status-green);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotbookdanger-wash: var(--color-status-red-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotbookdanger-ink: var(--color-status-red);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotbookwarning-wash: var(--color-status-yellow-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotbookwarning-ink: var(--color-status-yellow);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotbooknotice-wash: var(--color-status-orange-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotbooknotice-ink: var(--color-status-orange);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotbookspecial-wash: var(--color-status-purple-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotbookspecial-ink: var(--color-status-purple);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotbookactive-wash: var(--color-status-cyan-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotbookactive-ink: var(--color-status-cyan);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotbookmuted-wash: var(--color-status-gray-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotbookmuted-ink: var(--color-status-gray);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotaction-fill: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotaction-fill-hover: var(--color-accent-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotaction-on-fill: var(--color-accent-text);
 
 /* Garnet theme vars are the palette; copying literals would fork the theme */
-  /* carburetor-disable-next-line valid-color-role */
   --color-filteridle-wash: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-filteridle-ink: var(--color-text-secondary);
-  /* carburetor-disable-next-line valid-color-role */
   --color-filteridle-ink-hover: var(--color-text-primary);
-  /* carburetor-disable-next-line valid-color-role */
   --color-filteractive-wash: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-filteractive-wash-hover: var(--color-accent-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-filteractive-wash-focus: var(--color-accent-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-filteractive-wash-active: var(--color-accent-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-filteractive-ink: var(--color-accent-text);
-  /* carburetor-disable-next-line valid-color-role */
   --color-filteractive-edge: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-filteractive-ink-subtle: color-mix(in srgb, var(--color-accent) 35%, transparent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-filterfield-wash: var(--color-bg-surface);
-  /* carburetor-disable-next-line valid-color-role */
   --color-filterfield-ink: var(--color-text-primary);
-  /* carburetor-disable-next-line valid-color-role */
   --color-filterfield-ink-subtle: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
   --color-filterfield-edge: var(--color-border-strong);
-  /* carburetor-disable-next-line valid-color-role */
   --color-filterfield-edge-focus: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-filtercount-wash: var(--color-bg-surface-alt);
-  /* carburetor-disable-next-line valid-color-role */
   --color-filtercount-ink: var(--color-text-muted);
   --color-filtercountactive-wash: var(--palette-filtercount-white);
-  /* carburetor-disable-next-line valid-color-role */
   --color-filtercountactive-ink: var(--color-accent-text);
 
 /* valid-color-role ждёт var(--palette-*): часть ролей блока ссылается на цвета Garnet-темы (--color-text-secondary, --color-bg-surface-hover, --color-status-*), которые переключаются в [data-theme="dark"] — дублировать их в палитру нельзя без форка темы; часть — на фиксированные токены Tailwind (amber-50, red-300, red-600, white), сохранённые ради исходных значений из master, а не ради темы. */
-  /* carburetor-disable-next-line valid-color-role */
   --color-batchexisting-ink: var(--color-text-secondary);
-  /* carburetor-disable-next-line valid-color-role */
   --color-batchexisting-wash: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-batchrowwarning-wash: var(--color-amber-50);
-  /* carburetor-disable-next-line valid-color-role */
   --color-batchremove-edge: var(--color-red-300);
-  /* carburetor-disable-next-line valid-color-role */
   --color-batchremove-edge-hover: var(--color-red-600);
-  /* carburetor-disable-next-line valid-color-role */
   --color-batchremove-ink: var(--color-red-600);
-  /* carburetor-disable-next-line valid-color-role */
   --color-batchremove-ink-hover: var(--color-white);
-  /* carburetor-disable-next-line valid-color-role */
   --color-batchremove-wash-hover: var(--color-red-600);
-  /* carburetor-disable-next-line valid-color-role */
   --color-batchavailable-wash: var(--color-status-green-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-batchavailable-ink: var(--color-status-green);
-  /* carburetor-disable-next-line valid-color-role */
   --color-batchrestricted-wash: var(--color-status-red-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-batchrestricted-ink: var(--color-status-red);
-  /* carburetor-disable-next-line valid-color-role */
   --color-batchproposed-wash: var(--color-status-blue-bg);
-  /* carburetor-disable-next-line valid-color-role */
   --color-batchproposed-ink: var(--color-status-blue);
-  /* carburetor-disable-next-line valid-color-role */
   --color-batchtable-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
   --color-batchtable-ink: var(--color-text-secondary);
-  /* carburetor-disable-next-line valid-color-role */
   --color-batchtable-wash: var(--color-bg-surface-alt);
-  /* carburetor-disable-next-line valid-color-role */
   --color-batchtitle-ink: var(--color-on-surface);
-  /* carburetor-disable-next-line valid-color-role */
   --color-batchclose-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
   --color-batchclose-ink-hover: var(--color-on-surface);
 
-/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (slot-filters.css:3-5), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы; поэтому роли ниже остаются ссылками на --color-*. */
-  /* carburetor-disable-next-line valid-color-role */
+/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (booking/slots/slot-filters.css:2), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы; поэтому роли ниже остаются ссылками на --color-*. */
   --color-expertcardcancelled-wash: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-expertcardcancelled-ink: var(--color-text-secondary);
-  /* carburetor-disable-next-line valid-color-role */
   --color-editslotnotice-wash: var(--color-bg-surface-alt);
-  /* carburetor-disable-next-line valid-color-role */
   --color-expertslotpending-edge: var(--color-warning);
 
 /* Роли следуют за токенами темы Garnet (--color-*): у них есть ветка [data-theme="dark"], а --palette-* хранит сырые значения и зафиксировал бы светлый цвет. */
-  /* carburetor-disable-next-line valid-color-role */
   --color-externaldanger-ink: var(--color-danger);
-  /* carburetor-disable-next-line valid-color-role */
   --color-externalprimary-fill: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-externalprimary-fill-hover: var(--color-accent-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-externalprimary-on-fill: var(--color-accent-text);
 
 /* Garnet theme vars are the palette; copying literals would fork the theme */
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotpageaccent-ink: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotpageaccent-ink-hover: var(--color-accent-hover);
 
-/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (slot-filters.css:3-5), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы. */
-  /* carburetor-disable-next-line valid-color-role */
+/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (booking/slots/slot-filters.css:2), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы. */
   --color-calnav-wash: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-calnav-ink: var(--color-text-secondary);
-  /* carburetor-disable-next-line valid-color-role */
   --color-calnav-ink-hover: var(--color-text-primary);
 
 /* Роли смешивают статусные цвета Garnet-темы: в палитре их нет, а тёмная ветка должна следовать за темой. */
-  /* carburetor-disable-next-line valid-color-role */
   --color-pagerfree-wash: color-mix(in srgb, var(--color-status-green) 18%, transparent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-pagerfree-ink: var(--color-status-green);
-  /* carburetor-disable-next-line valid-color-role */
   --color-pagerfree-edge: var(--color-status-green);
-  /* carburetor-disable-next-line valid-color-role */
   --color-pagerpending-wash: color-mix(in srgb, var(--color-status-orange) 18%, transparent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-pagerpending-ink: var(--color-status-orange);
-  /* carburetor-disable-next-line valid-color-role */
   --color-pagerpending-edge: var(--color-status-orange);
-  /* carburetor-disable-next-line valid-color-role */
   --color-pagerbooked-wash: color-mix(in srgb, var(--color-status-blue) 18%, transparent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-pagerbooked-ink: var(--color-status-blue);
-  /* carburetor-disable-next-line valid-color-role */
   --color-pagerbooked-edge: var(--color-status-blue);
-  /* carburetor-disable-next-line valid-color-role */
   --color-pagercompleted-wash: color-mix(in srgb, var(--color-status-gray) 20%, transparent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-pagercompleted-ink: var(--color-status-gray);
-  /* carburetor-disable-next-line valid-color-role */
   --color-pagercompleted-edge: var(--color-status-gray);
 
-/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (slot-filters.css:3-5), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы. */
-  /* carburetor-disable-next-line valid-color-role */
+/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (booking/slots/slot-filters.css:2), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы. */
   --color-expertfilter-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
   --color-expertfilter-ink: var(--color-text-secondary);
-  /* carburetor-disable-next-line valid-color-role */
   --color-expertfilter-wash-hover: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-expertactive-edge: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-expertactive-ink: var(--color-accent-text);
-  /* carburetor-disable-next-line valid-color-role */
   --color-expertactive-wash: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-expertactive-wash-hover: var(--color-accent-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-expertactive-wash-focus: var(--color-accent-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-expertactive-wash-active: var(--color-accent-hover);
 
-/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (slot-filters.css:3-5), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы. */
-  /* carburetor-disable-next-line valid-color-role */
+/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (booking/slots/slot-filters.css:2), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы. */
   --color-expertday-wash: var(--color-accent-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-expertdayaccent-ink: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-expertedit-ink: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-expertedit-wash-hover: var(--color-accent-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-expertdanger-ink: var(--color-danger);
-  /* carburetor-disable-next-line valid-color-role */
   --color-expertdanger-wash-hover: var(--color-danger-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-expertweek-edge: var(--color-border);
 
 /* Роли следуют за токенами темы Garnet (--color-*): у них есть ветка [data-theme="dark"], а --palette-* хранит сырые значения и зафиксировал бы светлый цвет. */
   /* Роль tokenmuted-filter: эквивалент (border-subtle + text-muted) лежит в модуле фреймворка, который конфиг линта не сканирует, а valid-tone-class запрещает тону брать кирпичи чужого семейства. */
-  /* carburetor-disable-next-line valid-color-role */
   --color-tokenmuted-edge: var(--color-border-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-tokenmuted-ink-subtle: var(--color-text-muted);
   /* Роль вкладок users: framework tone-tabnavinactive-outline выглядит эквивалентно, но его ink-hover — --color-text-secondary, а вкладке нужен --color-text-primary, поэтому переиспользование изменило бы цвет при наведении. */
-  /* carburetor-disable-next-line valid-color-role */
   --color-usersidle-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
   --color-usersidle-ink-hover: var(--color-text-primary);
-  /* carburetor-disable-next-line valid-color-role */
   --color-usersidle-edge-hover: var(--color-border-strong);
 
 /* Роль moneybalance: эквивалент --color-success есть только в модуле фреймворка, который конфиг линта не сканирует, а valid-tone-class запрещает тону брать кирпичи чужого семейства. */
-  /* carburetor-disable-next-line valid-color-role */
   --color-moneybalance-ink: var(--color-success);
 
 /* Роли следуют за токенами темы Garnet (--color-*): у них есть ветка [data-theme="dark"], а --palette-* хранит сырые значения и зафиксировал бы светлый цвет. */
 /* Плитка — композитный тон (edge + wash + два hover-варианта): одиночного эквивалента нет, а Function применяет только один Tone. */
-  /* carburetor-disable-next-line valid-color-role */
   --color-admindashboardtile-edge: var(--color-border-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-admindashboardtile-wash: var(--color-bg-surface-alt);
-  /* carburetor-disable-next-line valid-color-role */
   --color-admindashboardtile-edge-hover: var(--color-border-strong);
-  /* carburetor-disable-next-line valid-color-role */
   --color-admindashboardtile-wash-hover: var(--color-bg-surface);
 
   /* Псевдоним роли темы: палитра сломала бы тёмную тему. */
-  /* carburetor-disable-next-line valid-color-role */
   --color-bookformexpert-wash: var(--color-bg-surface-hover);
 
   /* Псевдонимы ролей темы: палитра сломала бы тёмную тему. */
-  /* carburetor-disable-next-line valid-color-role */
   --color-userbalance-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
   --color-userbalance-wash: var(--color-accent-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-balanceborder-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
   --color-balancecard-wash: var(--color-bg-surface);
-  /* carburetor-disable-next-line valid-color-role */
   --color-balancecard-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
   --color-balancerow-wash-hover: var(--color-bg-surface-hover);
 
   /* Псевдонимы ролей темы: палитра сломала бы тёмную тему. */
-  /* carburetor-disable-next-line valid-color-role */
   --color-userdashbadge-wash: var(--color-accent-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-userdashbadge-ink: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-userdashempty-wash: var(--color-bg-surface-alt);
-  /* carburetor-disable-next-line valid-color-role */
   --color-userdashempty-edge: var(--color-border-strong);
 
   /* Псевдонимы ролей темы: палитра сломала бы тёмную тему. */
-  /* carburetor-disable-next-line valid-color-role */
   --color-newsarchiveidle-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
   --color-newsarchiveidle-ink-hover: var(--color-text-primary);
-  /* carburetor-disable-next-line valid-color-role */
   --color-newsarchiveidle-wash-hover: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
   --color-newsarchiveidle-edge: var(--color-border);
 
-/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (slot-filters.css:3-5), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы. */
-  /* carburetor-disable-next-line valid-color-role */
+/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (booking/slots/slot-filters.css:2), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы. */
   --color-expertbookingok-wash: var(--color-success-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-expertbookingok-ink: var(--color-success);
 
 /* Роли следуют за токенами темы Garnet (--color-*): у них есть ветка [data-theme="dark"], а --palette-* хранит сырые значения и зафиксировал бы светлый цвет. */
-  /* carburetor-disable-next-line valid-color-role */
   --color-entityadmin-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
   --color-entityadmin-edge-hover: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
   --color-entityadmin-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
   --color-entityadmin-ink-hover: var(--color-accent);
 }

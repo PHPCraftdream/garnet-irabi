@@ -31,7 +31,7 @@
 @utility layout-expert-profile-slots { @apply grid grid-cols-1 md:grid-cols-2 gap-4; }
 
 @layer components {
-  /* tone-adminattachmenticon-soft (support-widget.css) — та же пара токенов: bg-surface-hover + text-muted. */
+  /* tone-adminattachmenticon-soft (support/widget/support-widget-utilities.css) — та же пара токенов: bg-surface-hover + text-muted. */
   .expert-profile-avatar-placeholder { @apply tone-adminattachmenticon-soft layout-expert-profile-avatar shape-expert-profile-avatar type-expert-profile-initials; }
   .expert-profile-avatar-button { @apply tone-adminuserphoto-plain layout-expert-profile-avatar-button shape-expert-profile-avatar-button behavior-expert-profile-avatar-button; }
   .expert-profile-avatar-image { @apply tone-widgetneutral-plain shape-expert-profile-avatar shape-expert-profile-avatar-image effect-expert-profile-avatar-image; }
