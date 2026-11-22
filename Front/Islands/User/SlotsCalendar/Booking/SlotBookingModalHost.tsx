@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import BookingModal from './BookingModal';
-import type {ExpertMap} from '../types';
+import type {ExpertMap, SlotItem} from '../types';
 import type {SlotBookingController} from './SlotBookingController';
 
 interface Props {
@@ -16,12 +16,17 @@ export class SlotBookingModalHost extends AntiHookComponent<Props> {
     render() {
         const {bookData} = this.useCarburetor(this.props.controller);
         if (!bookData) return null;
+        // Модалка рисует поля слота и эксперта в своём render: библиотека
+        // записывает такие чтения только владельцу прокси, поэтому копируем
+        // их здесь — обычные объекты со свежей ссылкой.
+        const slot: SlotItem = {...bookData.slot};
+        const expert = {...bookData.expert};
         return (
             <BookingModal
                 controller={this.props.controller}
-                slot={bookData.slot}
-                allSlots={[bookData.slot]}
-                experts={{[String(bookData.expert.account_id)]: bookData.expert} as ExpertMap}
+                slot={slot}
+                allSlots={[slot]}
+                experts={{[String(expert.account_id)]: expert} as ExpertMap}
                 bookedIds={this.emptyBookedIds}
                 balance={bookData.balance}
                 bookUrl={bookData.bookUrl}

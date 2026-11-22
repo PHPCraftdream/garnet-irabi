@@ -31,7 +31,10 @@ import {
     groupBookings,
 } from './card/bookingCardTypes';
 import {BookingGroup} from './card/BookingGroup';
-import {BookingsNavigation, BookingsStateStore, type BookingsState} from './bookingsTabState';
+import {
+    BookingsNavigation, BookingsStateStore, readBookingsPage,
+    type BookingsPageData, type BookingsState,
+} from './bookingsTabState';
 import {BookingsFilterTabs} from './card/BookingsFilterTabs';
 
 export type {SlotInfo, ExpertInfo, UserInfo, BookingCounts, BookingsViewAs} from './card/bookingCardTypes';
@@ -250,16 +253,16 @@ class BookingsView extends AntiHookComponent<ViewProps> {
     private readonly viewExpert = () => this.props.navigation.handleViewChange('expert');
     private readonly viewUser = () => this.props.navigation.handleViewChange('user');
 
-    private renderGroup(state: TReadonly<BookingsState>, group: ReturnType<typeof groupBookings>[number]) {
+    private renderGroup(state: TReadonly<BookingsState>, page: BookingsPageData, group: ReturnType<typeof groupBookings>[number]) {
         const {store, isModerator} = this.props;
-        const {slots, experts, users, viewAs, confirmingId} = state;
+        const {viewAs, confirmingId} = state;
         return (
             <BookingGroup
                 key={group.key}
                 group={group}
-                slots={slots}
-                experts={experts}
-                users={users}
+                slots={page.slots}
+                experts={page.experts}
+                users={page.users}
                 viewAs={viewAs}
                 isModerator={isModerator}
                 onCancelOpen={store.setCancelBookingId}
@@ -271,21 +274,20 @@ class BookingsView extends AntiHookComponent<ViewProps> {
         );
     }
 
-    private renderGroups(state: TReadonly<BookingsState>) {
-        const {bookings, slots} = state;
-        // groupBookings читает вход, но просит изменяемый массив — отдаём копию.
-        const groups = groupBookings([...bookings], slots);
+    private renderGroups(state: TReadonly<BookingsState>, page: BookingsPageData) {
+        const groups = groupBookings(page.bookings, page.slots);
         return (
             <div className="bookings-groups">
-                {bookings.length === 0 && <p className="booking-list-empty">{t.Booking_UserNoBookings()}</p>}
-                {groups.map(group => this.renderGroup(state, group))}
+                {page.bookings.length === 0 && <p className="booking-list-empty">{t.Booking_UserNoBookings()}</p>}
+                {groups.map(group => this.renderGroup(state, page, group))}
             </div>
         );
     }
 
-    private renderModals(state: TReadonly<BookingsState>) {
+    private renderModals(state: TReadonly<BookingsState>, page: BookingsPageData) {
         const {store, cancelSending, rejectSending, rescheduleSending} = this.props;
-        const {bookings, slots, cancelBookingId, rejectBookingId, rescheduleBookingId, rescheduleError} = state;
+        const {cancelBookingId, rejectBookingId, rescheduleBookingId, rescheduleError} = state;
+        const {bookings, slots} = page;
         return (
             <>
                 <ReasonModal
@@ -384,7 +386,8 @@ class BookingsView extends AntiHookComponent<ViewProps> {
 
     render() {
         const state = this.useCarburetor(this.props.store);
-        const {counts, statusFilter, showPast} = state;
+        const page = readBookingsPage(state);
+        const {statusFilter, showPast} = state;
         const {handleStatusChange, handleTogglePast} = this.props.navigation;
         const pager = this.renderPager(state);
         return (
@@ -393,7 +396,7 @@ class BookingsView extends AntiHookComponent<ViewProps> {
 
                 <BookingsFilterTabs
                     title={this.currentTitle(state)}
-                    counts={counts}
+                    counts={page.counts}
                     statusFilter={statusFilter}
                     showPast={showPast}
                     onStatusChange={handleStatusChange}
@@ -402,11 +405,11 @@ class BookingsView extends AntiHookComponent<ViewProps> {
 
                 <div className="bookings-pager-top">{pager}</div>
 
-                {this.renderGroups(state)}
+                {this.renderGroups(state, page)}
 
                 <div className="bookings-pager-bottom">{pager}</div>
 
-                {this.renderModals(state)}
+                {this.renderModals(state, page)}
             </div>
         );
     }

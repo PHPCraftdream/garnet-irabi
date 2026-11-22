@@ -7,7 +7,7 @@ import {translateStatus} from '../../../Common/booking/statusHelpers';
 import {AccountOption, adminPaginationLabels, buildAccountOptions} from '../Shell/adminShared';
 import {AdminPageController} from '../Shell/AdminPageController';
 import {AdminFilterBar, FilterCell} from './AdminFilterBar';
-import {AdminSlotRow, EMPTY_FILTERS, SlotsFilters} from './bookingsTypes';
+import {AdminSlotRow, copyRow, EMPTY_FILTERS, SlotsFilters} from './bookingsTypes';
 import {AdminSlotsTable} from './AdminSlotsTable';
 import {AdminSlotsEmpty} from './AdminSlotsEmpty';
 
@@ -161,7 +161,7 @@ export class AdminSlotsTab extends AntiHookComponent<Props> {
         const filters = this.useCarburetor(this.filterStore);
         const pagination = this.useCarburetor(this.pagination);
         const {loading} = pagination;
-        const items = [...pagination.items];
+        const items = pagination.items.map(copyRow);
         const cells = this.filterCells(filters);
 
         const pager = this.renderPager(pagination);

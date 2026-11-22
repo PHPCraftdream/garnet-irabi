@@ -45,13 +45,26 @@ export class SupportPageIsland extends AntiHookComponent<Props> {
     private readonly files = new Carburetor<{create: PendingFile[]; reply: PendingFile[]}>({create: [], reply: []});
     private readonly sending = new SupportSending();
     private readonly messagesEnd = React.createRef<HTMLDivElement>();
+    /*
+     * Список обращений и переписка приходят заменой массива целиком, а `setData`
+     * диффит замену до листьев: подписка на маркер `tickets.~p`/`messages.~p`
+     * тихий опрос не замечает, и строки остаются со старыми прокси. Снимок
+     * `connectSelection` читает поля и меняет идентичность только вместе с содержимым
+     * (RULES.md, «Подписки useCarburetor»).
+     */
+    private readonly ticketsSnapshot = this.connectSelection(this.pagination, state => state.items);
+    private readonly threadSnapshot = this.connectSelection(this.thread, state => state);
+    /*
+     * Выбранные файлы тоже заменяются массивом целиком: подписка на маркер `files.~p` записи
+     * вглубь не замечает, поэтому берём их снимком (RULES.md, «Подписки useCarburetor»).
+     */
+    private readonly filesSnapshot = this.connectSelection(this.files, state => state);
 
     // Обёртки как в usePagination: его сторожа отличаются от сторожа контроллера.
     private readonly ticketGoToPage = (p: number) => {
         if (p < 1 || p > this.pagination.snapshot().totalPages || p === this.pagination.snapshot().page) return;
         void this.pagination.fetchPage(p);
     };
-    private readonly ticketRefresh = (): void => void this.pagination.fetchPage(this.pagination.snapshot().page);
     private readonly ticketSetPerPage = this.pagination.setPerPage;
 
     private readonly setCreateFiles = (files: PendingFile[]) => this.files.setData({...this.files.getData(), create: files});
@@ -233,12 +246,13 @@ export class SupportPageIsland extends AntiHookComponent<Props> {
     }
 
     render() {
-        const {items, page: ticketPage, totalPages: ticketTotalPages, total: ticketTotal,
+        const {page: ticketPage, totalPages: ticketTotalPages, total: ticketTotal,
             loading: ticketsLoading, perPage: ticketPerPage} = this.useCarburetor(this.pagination);
+        const items = this.ticketsSnapshot() as SupportTicket[];
         const {selectedId, selectedTicketData, readIds, showNewForm, subject, message,
             replyText} = this.useCarburetor(this.ui);
-        const {messages, loading: loadingMessages} = this.useCarburetor(this.thread);
-        const {create: createFiles, reply: replyFiles} = this.useCarburetor(this.files);
+        const {messages, loading: loadingMessages} = this.threadSnapshot();
+        const {create: createFiles, reply: replyFiles} = this.filesSnapshot() as {create: PendingFile[]; reply: PendingFile[]};
         const {sending} = this.useCarburetor(this.sending);
         const readTicketIds = new Set(readIds);
         const selectedTicket = selectedId ? (selectedTicketData?.id === selectedId ? selectedTicketData : findTicket(items, selectedId) ?? null) : null;

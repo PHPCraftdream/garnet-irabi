@@ -8,7 +8,6 @@ import {UserDetailContext} from '../Users/UserDetailContext';
 import type {UserDetailContextValue} from '../Users/UserDetailContext';
 import {UserDetailTab} from '../Users/UserDetailTab';
 import {UserTabsStore} from './UserTabsStore';
-import type {UserInternalTab} from './UserTabsStore';
 import {ADMIN_URLS} from './adminShared';
 import {TabNav, TabDef} from '@common/Components/Layout/Navigation/TabNav';
 import {PageResponse} from '@common/hooks/data/usePagination';
@@ -111,7 +110,7 @@ class AdminPanel extends AntiHookComponent<PanelProps> {
         if (this.props.tabs.getData().tabs.some(ut => ut.id === id)) this.props.tabs.closeUser(id);
     };
 
-    private renderContent(activeId: string, userTabs: readonly UserInternalTab[]) {
+    private renderContent(activeId: string, activeAccountId: number | undefined) {
         const {
             usersPageUrl,
             usersInitialData,
@@ -144,13 +143,6 @@ class AdminPanel extends AntiHookComponent<PanelProps> {
         const showUsers = activeId === 'users';
         const showComments = activeId === 'comments';
         const showTokens = activeId === 'tokens';
-        let activeUserTab: UserInternalTab | undefined;
-        for (const tab of userTabs) {
-            if (tab.id === activeId) {
-                activeUserTab = tab;
-                break;
-            }
-        }
 
         return (
             <>
@@ -189,9 +181,9 @@ class AdminPanel extends AntiHookComponent<PanelProps> {
                         updateUrl={tokensUpdateUrl}
                     />
                 )}
-                {activeUserTab && (
+                {activeAccountId !== undefined && (
                     <UserDetailTab
-                        accountId={activeUserTab.tabKind.accountId}
+                        accountId={activeAccountId}
                         detailUrl={userDetailUrl || ADMIN_URLS.detailUrl}
                         setFlagUrl={setFlagUrl ?? ADMIN_URLS.setFlagUrl}
                         createTicketUrl={createTicketUrl ?? ADMIN_URLS.createTicketUrl}
@@ -209,11 +201,19 @@ class AdminPanel extends AntiHookComponent<PanelProps> {
 
         const activeId: string = activeUserTabId ?? staticTab;
 
+        // Плоские копии: TabNav — класс, его собственные чтения не записываются,
+        // поэтому нужные ему поля читаются здесь.
+        const userTabDefs: TabDef[] = [];
+        let activeAccountId: number | undefined;
+        for (const tab of userTabs) {
+            userTabDefs.push({id: tab.id, label: tab.label, closeable: tab.closeable});
+            if (tab.id === activeId) activeAccountId = tab.tabKind.accountId;
+        }
         const allTabs: TabDef[] = [
             {id: 'users', label: t.Admin_Users(), closeable: false},
             {id: 'comments', label: t.Admin_Comments(), closeable: false},
             {id: 'tokens', label: t.Admin_Tokens(), closeable: false},
-            ...userTabs,
+            ...userTabDefs,
         ];
 
         return (
@@ -226,7 +226,7 @@ class AdminPanel extends AntiHookComponent<PanelProps> {
                         onSelect={this.handleSelect}
                         onClose={this.handleClose}
                     />
-                    {this.renderContent(activeId, userTabs)}
+                    {this.renderContent(activeId, activeAccountId)}
                 </div>
             </>
         );
