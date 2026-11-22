@@ -1,18 +1,19 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {FiltersState, ExpertMap, TimeOfDay, SlotType, OnlineFilter} from '../types';
+import {ExpertMap, TimeOfDay, SlotType, OnlineFilter} from '../types';
+import type {ReadonlyFiltersState} from '../slotsCalendarSelectors';
 import {ExpertFilterField} from './Filters/ExpertFilterField';
 import {FilterChipGroup} from './Filters/FilterChipGroup';
 import {PriceRangeFilterField} from './Filters/PriceRangeFilterField';
 
 interface SlotsFiltersProps {
-    filters: FiltersState;
+    filters: ReadonlyFiltersState;
     experts: ExpertMap;
-    onChange: (filters: FiltersState) => void;
+    onChange: (filters: ReadonlyFiltersState) => void;
 }
 
 export class SlotsFilters extends React.Component<SlotsFiltersProps> {
-    private updateFilter<K extends keyof FiltersState>(key: K, value: FiltersState[K]): void {
+    private updateFilter<K extends keyof ReadonlyFiltersState>(key: K, value: ReadonlyFiltersState[K]): void {
         this.props.onChange({...this.props.filters, [key]: value});
     }
 

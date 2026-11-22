@@ -1,5 +1,6 @@
 @reference "tailwindcss";
 
+/* Garnet theme vars are the palette; copying literals would fork the theme */
 @theme inline reference {
   /* carburetor-disable-next-line valid-color-role */
   --color-weekmuted-ink: var(--color-text-muted);

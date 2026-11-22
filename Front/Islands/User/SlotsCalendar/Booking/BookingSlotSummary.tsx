@@ -27,7 +27,7 @@ function BookingGroup({size}: {size: number}) {
     if (!(size > 1)) return null;
     return (
         <div className="booking-summary-group">
-            <span className="booking-summary-badge" data-test-id="booking-group-badge">{t.Slot_GroupBadge([size])}</span>
+            <span className="slot-group-badge" data-test-id="booking-group-badge">{t.Slot_GroupBadge([size])}</span>
         </div>
     );
 }

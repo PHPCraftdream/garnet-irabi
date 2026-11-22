@@ -1,6 +1,5 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {useBodyScrollLock} from '@common/hooks/ui/useBodyScrollLock';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {Portal} from '@common/Components/Layout/Portal';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
@@ -84,7 +83,7 @@ function stopClick(event: React.MouseEvent<HTMLDivElement>): void {
     event.stopPropagation();
 }
 
-class SlotDetailModalView extends AntiHookComponent<Props> {
+export default class SlotDetailModal extends AntiHookComponent<Props> {
     private readonly ui = new SlotDetailUIStore();
 
     private readonly handleEscape = (event: KeyboardEvent) => {
@@ -99,6 +98,16 @@ class SlotDetailModalView extends AntiHookComponent<Props> {
     componentWillUnmount(): void {
         document.removeEventListener('keydown', this.handleEscape);
         super.componentWillUnmount();
+    }
+
+    protected useEffects(): void {
+        this.useEffect('bodyScrollLock', () => {
+            const previous = document.body.style.overflow;
+            document.body.style.overflow = 'hidden';
+            return () => {
+                document.body.style.overflow = previous;
+            };
+        }, []);
     }
 
     private readonly submitCancel = async () => {
@@ -183,9 +192,4 @@ class SlotDetailModalView extends AntiHookComponent<Props> {
             </Portal>
         );
     }
-}
-
-export default function SlotDetailModal(props: Props) {
-    useBodyScrollLock(true);
-    return <SlotDetailModalView {...props} />;
 }
