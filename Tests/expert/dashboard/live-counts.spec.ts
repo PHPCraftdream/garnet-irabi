@@ -52,8 +52,8 @@ test.describe('Live nav counters (~counts poll)', () => {
         // generous margin under load — leaving the other three at the
         // default 5s timeout let them flake independently of badge 1.
         await expect(page.locator('[data-test-id="nav-брони"] .count-badge-warning')).toHaveText('7', { timeout: 12000 });
-        await expect(page.locator('[data-test-id="util-messages"] .util-badge')).toHaveText('3', { timeout: 12000 });
-        await expect(page.locator('[data-test-id="util-support"] .util-badge')).toHaveText('4', { timeout: 12000 });
+        await expect(page.locator('[data-test-id="util-messages"] .utility-unread-badge')).toHaveText('3', { timeout: 12000 });
+        await expect(page.locator('[data-test-id="util-support"] .utility-unread-badge')).toHaveText('4', { timeout: 12000 });
         // D-210: widget badge is support-only now — it used to sum unread
         // support + unread IM, which double-counted personal messages as
         // support load for a live client.

@@ -30,8 +30,8 @@ test.describe('Admin dashboard — working user links', () => {
         const row = rows.first();
 
         // New layout: an action line + a users row, in one block.
-        await expect(row.locator('.admin-dash-activity-head')).toHaveCount(1);
-        await expect(row.locator('.admin-dash-activity-users')).toHaveCount(1);
+        await expect(row.locator('.admin-home-activity-head')).toHaveCount(1);
+        await expect(row.locator('.admin-home-activity-users')).toHaveCount(1);
 
         // Dual link: public profile (common-link) + admin gear (common-link-admin-tag).
         const profile = row.locator('a.common-link').first();

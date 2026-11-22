@@ -89,7 +89,7 @@ test.describe('iRabi Batch Slot Creation — создание', () => {
 		await expect(batchModal.locator('#batchPreview')).toBeVisible({ timeout: 5000 });
 
 		// Check for overlap warning badges
-		const warningBadges = batchModal.locator('#batchPreview .badge.bg-warning, #batchPreview .text-warning');
+		const warningBadges = batchModal.locator('#batchPreview .batch-preview-warning');
 		const warningCount = await warningBadges.count();
 		console.log('Overlap warnings found:', warningCount);
 
