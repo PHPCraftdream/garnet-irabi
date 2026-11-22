@@ -1,7 +1,7 @@
 @reference "tailwindcss";
 
-/* carburetor-disable-next-line valid-color-role */
 @theme inline reference {
+  /* Псевдонимы ролей темы: палитра сломала бы тёмную тему. */
   /* carburetor-disable-next-line valid-color-role */
   --color-newsarchiveidle-ink: var(--color-text-muted);
   /* carburetor-disable-next-line valid-color-role */
@@ -53,12 +53,15 @@
   .news-archive[aria-pressed="true"] { @apply tone-adminstatusactive-outlined; }
   .news-archive[aria-pressed="false"] { @apply tone-newsarchiveidle-outlined; }
   .news-feed { @apply shape-newsfeed-card tone-cardsurface-outlined; }
-  .news-feed-header { @apply layout-newsfeed-header shape-newsfeed-header tone-supportconv-outline; }
+  .news-feed-header { @apply layout-newsfeed-header shape-newsfeed-header tone-newsneutral-outline; }
   .news-feed-header-group { @apply layout-newsfeed-header-group tone-bookneutral-plain; }
   .news-feed-title { @apply type-newsfeed-title tone-widgetim-plain; }
   .news-feed-unread { @apply layout-newsfeed-badge shape-newsfeed-badge type-newsfeed-badge tone-settingssave-outlined; }
   .news-feed-mark-all { @apply type-newsfeed-mark-all tone-bookaccent-plain; }
   .news-feed-content { @apply tone-bookneutral-plain; }
+  /* Разделители строк: Trait'ом divide-subtle невыразим (@apply divide-subtle линтер отвергает — «utility on no floor»), поэтому правило с селектором-потомком в @layer components. */
+  /* carburetor-disable-next-line valid-function-class */
+  .news-feed-content > * + *, .news-feed-content-loading > * + * { border-top: 1px solid var(--color-border-subtle); }
   .news-feed-content-loading { @apply tone-bookneutral-plain effect-newsfeed-loading; }
   .news-feed-empty { @apply shape-newsfeed-empty type-newsfeed-empty tone-bookmuted-plain; }
   .dashboard-page { @apply tone-bookneutral-plain shape-im-page shape-dashboard-column; }

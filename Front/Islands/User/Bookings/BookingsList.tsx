@@ -45,7 +45,7 @@ const BookingsListIslandInner: React.FC<Props> = (props) => {
     } = props;
 
     return (
-        <div className="page-narrow">
+        <div className="bookings-page-narrow">
             <BookingsTab
                 bookingsPagination={bookingsPagination}
                 bookingsPageUrl={bookingsPageUrl}

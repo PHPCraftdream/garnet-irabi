@@ -3,15 +3,20 @@
 @utility layout-expert-bookings-grid { @apply grid grid-cols-1 md:grid-cols-2 gap-4; }
 @utility layout-booking-list-actions { @apply flex gap-2; }
 @utility shape-booking-list-actions { @apply mt-3; }
+/* ! обязателен: unlayered h5 {mb-1.5; font-size:0.9375rem} в vendor 01-base.css сильнее @layer components, а в master ту же роль играл unlayered .card-title. */
 @utility shape-booking-list-title { @apply mb-2!; }
 @utility type-booking-list-title { @apply text-base! font-semibold; }
 @utility shape-booking-list-meta { @apply mb-1; }
 @utility type-booking-list-meta { @apply text-sm; }
 @utility layout-bookings-view-switch { @apply flex gap-2; }
 @utility shape-bookings-view-switch { @apply mb-4; }
+/* border-transparent здесь не отдельный Tone, а часть размера btn-sm: рамка .btn прозрачна, перекрашивает её Tone/стеклянная тема. */
+/* carburetor-disable-next-line valid-trait-class */
+@utility shape-book-view-button { @apply px-2 py-1 rounded border border-transparent; }
 @utility shape-bookings-pager-top { @apply mb-4; }
 @utility shape-bookings-pager-bottom { @apply mt-4; }
 @utility layout-bookings-groups { @apply flex flex-col gap-3; }
+@utility shape-book-page-narrow { @apply mx-auto w-full max-w-4xl; }
 
 @layer components {
   .expert-bookings-grid { @apply tone-bookneutral-plain layout-expert-bookings-grid; }
@@ -20,9 +25,55 @@
   .booking-list-actions { @apply tone-bookneutral-plain layout-booking-list-actions shape-booking-list-actions; }
   .booking-list-empty { @apply tone-bookmuted-plain; }
   .bookings-view-switch { @apply tone-bookneutral-plain layout-bookings-view-switch shape-bookings-view-switch; }
-  .bookings-view-button { @apply tone-bookneutral-plain layout-compact-action shape-confirm-button type-confirm-button behavior-compact-action effect-compact-action motion-compact-action; }
+  .bookings-view-button { @apply tone-bookneutral-plain layout-compact-action shape-book-view-button type-compact-action behavior-compact-action effect-compact-action motion-compact-action; }
   .bookings-view-button[data-tone="active"] { @apply tone-settingssave-outlined; }
   .bookings-pager-top { @apply tone-bookneutral-plain shape-bookings-pager-top; }
   .bookings-pager-bottom { @apply tone-bookneutral-plain shape-bookings-pager-bottom; }
   .bookings-groups { @apply tone-bookneutral-plain layout-bookings-groups; }
+  .bookings-page-narrow { @apply tone-bookneutral-plain shape-book-page-narrow; }
+}
+
+/* Тень btn-primary: state-блок меняет только Tone, поэтому box-shadow вынесен в отдельное правило. */
+/* Правило намеренно вне @layer components, чтобы перебивать компонентный слой. */
+/* carburetor-disable-next-line valid-function-class */
+.bookings-view-button[data-tone="active"] { @apply effect-primary-action-shadow; }
+
+/* Стеклянная тема: bookings-view-button заменяет btn btn-sm, у которого в glass.css свои правила. */
+/* Правило намеренно вне @layer components, чтобы перебивать компонентный слой, как делает glass.css фреймворка. */
+/* carburetor-disable-next-line valid-function-class */
+.glass-skin .bookings-view-button {
+  transition: box-shadow 0.18s ease, filter 0.18s ease, transform 0.12s ease;
+  border: 1px solid color-mix(in srgb, white 16%, var(--color-border));
+}
+
+/* Правило намеренно вне @layer components: hover-тень должна перебивать компонентные эффекты. */
+/* carburetor-disable-next-line valid-function-class */
+.glass-skin .bookings-view-button:hover {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 32%, transparent),
+    0 6px 7px -8px color-mix(in srgb, var(--color-accent) 45%, transparent),
+    0 0 6px -6px color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
+/* Активная кнопка заменяет .btn-primary, у которого в glass.css градиентная заливка и постоянное свечение. */
+/* Правило намеренно вне @layer components, чтобы перебивать компонентный слой, как делает glass.css фреймворка. */
+/* carburetor-disable-next-line valid-function-class */
+.glass-skin .bookings-view-button[data-tone="active"] {
+  background-image: linear-gradient(135deg, var(--color-accent), color-mix(in srgb, var(--color-status-purple) 70%, var(--color-accent)));
+  border: 1px solid color-mix(in srgb, white 22%, transparent);
+  box-shadow:
+    0 6px 7px -6px color-mix(in srgb, var(--color-accent) 55%, transparent),
+    0 0 7px -8px color-mix(in srgb, var(--color-status-purple) 50%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 28%, transparent);
+}
+
+/* Правило намеренно вне @layer components: hover-градиент .btn-primary должен перебивать компонентный слой. */
+/* carburetor-disable-next-line valid-function-class */
+.glass-skin .bookings-view-button[data-tone="active"]:hover {
+  background-image: linear-gradient(135deg, var(--color-accent-hover), color-mix(in srgb, var(--color-status-purple) 78%, var(--color-accent-hover)));
+  filter: brightness(1.04);
+  box-shadow:
+    0 8px 8px -6px color-mix(in srgb, var(--color-accent) 65%, transparent),
+    0 0 10px -6px color-mix(in srgb, var(--color-status-purple) 60%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 32%, transparent);
 }

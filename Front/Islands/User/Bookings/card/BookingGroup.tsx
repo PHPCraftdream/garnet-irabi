@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {Booking, BookingGroupData, ExpertInfo, SlotInfo, UserInfo, BookingsViewAs} from './bookingCardTypes';
@@ -56,7 +57,7 @@ const GroupHeader: React.FC<{group: BookingGroupData}> = ({group}) => {
  * Одиночная бронь остаётся обычной карточкой без обёртки: группа из одного
  * человека выглядела бы странно.
  */
-export class BookingGroup extends React.Component<Props> {
+export class BookingGroup extends AntiHookComponent<Props> {
     private readonly renderCard = (booking: Booking) => {
         const {group, ...cardProps} = this.props;
         return <BookingCard key={booking.id} booking={booking} {...cardProps} hideCost={group.bookings.length > 1} />;

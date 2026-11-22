@@ -1,16 +1,16 @@
 @reference "tailwindcss";
 
 @theme inline reference {
+  /* Псевдоним роли темы: палитра сломала бы тёмную тему. */
   /* carburetor-disable-next-line valid-color-role */
   --color-bookformexpert-wash: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-bookformexpert-ink: currentColor;
 }
 
-@utility tone-bookformexpert-soft { @apply bg-bookformexpert-wash text-bookformexpert-ink; }
+@utility tone-bookformexpert-soft { @apply bg-bookformexpert-wash text-current; }
 @utility shape-book-form-container { @apply max-w-lg mx-auto; }
 @utility shape-book-form-card { @apply rounded-lg border; }
 @utility shape-book-form-body { @apply p-5; }
+/* ! обязателен: unlayered h2 {text-xl; mb-3} в vendor 01-base.css сильнее @layer components. */
 @utility shape-book-form-title { @apply mb-2!; }
 @utility type-book-form-title { @apply text-base! font-semibold; }
 @utility shape-book-form-details { @apply mb-4 space-y-2; }
@@ -44,4 +44,25 @@
   .reschedule-option { @apply tone-bookneutral-plain layout-reschedule-option behavior-reschedule-option; }
   .reschedule-actions { @apply tone-bookneutral-plain layout-reschedule-actions; }
   .reschedule-dismiss { @apply tone-confirmsecondary-solid layout-compact-action shape-confirm-button type-confirm-button behavior-compact-action effect-compact-action motion-compact-action; }
+}
+
+/* Стеклянная тема: reschedule-dismiss заменяет btn btn-secondary, у которого в glass.css свои правила. */
+/* Правило намеренно вне @layer components, чтобы перебивать компонентный слой, как делает glass.css фреймворка. */
+/* carburetor-disable-next-line valid-function-class */
+.glass-skin .reschedule-dismiss {
+  transition: box-shadow 0.18s ease, filter 0.18s ease, transform 0.12s ease;
+  border: 1px solid color-mix(in srgb, white 16%, var(--color-border));
+  background-color: color-mix(in srgb, var(--color-bg-surface) 35%, transparent) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(110%);
+  backdrop-filter: blur(8px) saturate(110%);
+  color: var(--color-on-surface) !important;
+}
+
+/* Правило намеренно вне @layer components: hover-тень должна перебивать компонентные эффекты, как в glass.css. */
+/* carburetor-disable-next-line valid-function-class */
+.glass-skin .reschedule-dismiss:hover {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 32%, transparent),
+    0 6px 7px -8px color-mix(in srgb, var(--color-accent) 45%, transparent),
+    0 0 6px -6px color-mix(in srgb, var(--color-accent) 40%, transparent);
 }

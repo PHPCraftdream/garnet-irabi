@@ -6,6 +6,7 @@ import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {NewsPagination} from './NewsPagination';
 import {useSlotBooking} from '../../SlotsCalendar/Booking/useSlotBooking';
+import {useNewsFeedReload} from './useNewsFeedReload';
 import {NewsEvent} from './newsTypes';
 import {NewsGroup, NewsGroupRow} from './NewsGroupRow';
 import {EventMessage} from './EventMessage';
@@ -233,7 +234,7 @@ class NewsFeedInner extends AntiHookComponent<FeedInnerProps> {
     private renderRows(loading: boolean) {
         const items = this.items();
         return (
-            <div className={loading ? 'news-feed-content-loading' : 'news-feed-content'} data-loading={loading}>
+            <div className={loading ? 'news-feed-content-loading' : 'news-feed-content'}>
                 {items.length === 0 && !loading && <div className="news-feed-empty">{t.News_Empty()}</div>}
                 {groupConsecutive(items).map(this.renderGroup)}
             </div>
@@ -243,7 +244,7 @@ class NewsFeedInner extends AntiHookComponent<FeedInnerProps> {
     render() {
         const {page, totalPages, total, unreadCount, loading, showArchived} = this.useCarburetor(this.ui);
         return (
-            <div className="news-feed" id="news-feed" data-test-id="news-feed">
+            <div className="news-feed" data-test-id="news-feed">
                 {this.renderHeader(unreadCount, showArchived)}
                 {totalPages > 1 && (
                     <NewsPagination position="top" page={page} totalPages={totalPages} onPageChange={this.handlePageChange} total={total} loading={loading} />
@@ -258,17 +259,8 @@ class NewsFeedInner extends AntiHookComponent<FeedInnerProps> {
     }
 }
 
-class BookingBridge {
-    readonly inner = React.createRef<NewsFeedInner>();
-    readonly onBooked = (): void => this.inner.current?.reloadAfterBooking();
-}
-
-function createBookingBridge(): BookingBridge {
-    return new BookingBridge();
-}
-
 export const NewsFeed: React.FC<Props> = props => {
-    const bridge = React.useMemo(createBookingBridge, []);
-    const {openBooking, bookingModal} = useSlotBooking({onBooked: bridge.onBooked});
-    return <NewsFeedInner ref={bridge.inner} {...props} handleBookSlot={openBooking} bookingModal={bookingModal} />;
+    const {ref, onBooked} = useNewsFeedReload<NewsFeedInner>();
+    const {openBooking, bookingModal} = useSlotBooking({onBooked});
+    return <NewsFeedInner ref={ref} {...props} handleBookSlot={openBooking} bookingModal={bookingModal} />;
 };
