@@ -14,12 +14,6 @@
   --color-externalprimary-fill-hover: var(--color-accent-hover);
   /* carburetor-disable-next-line valid-color-role */
   --color-externalprimary-on-fill: var(--color-accent-text);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-externalsecondary-fill: var(--color-gray-500);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-externalsecondary-fill-hover: var(--color-gray-600);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-externalsecondary-on-fill: var(--color-white);
 }
 
 @utility tone-externalneutral-plain { @apply text-inherit; }
@@ -30,7 +24,6 @@
 @utility type-external-heading { @apply text-base font-semibold; }
 @utility tone-externalheading-plain { @apply text-externalheading-ink; }
 @utility tone-externalprimary-solid { @apply border-transparent bg-externalprimary-fill text-externalprimary-on-fill [&:hover]:bg-externalprimary-fill-hover; }
-@utility tone-externalsecondary-solid { @apply border-transparent bg-externalsecondary-fill text-externalsecondary-on-fill [&:hover]:bg-externalsecondary-fill-hover; }
 @utility layout-external-button { @apply inline-flex items-center justify-center gap-1.5; }
 @utility shape-external-button { @apply rounded border px-2 py-1; }
 @utility type-external-button { @apply text-xs font-medium leading-normal no-underline whitespace-nowrap; }
@@ -52,7 +45,7 @@
   .external-page { @apply shape-external-page tone-externalneutral-plain; }
   .external-heading { @apply shape-external-heading type-external-heading tone-externalheading-plain; }
   .external-primary-action { @apply tone-externalprimary-solid layout-external-button shape-external-button type-external-button behavior-external-button effect-external-button motion-external-button effect-primary-action-shadow; }
-  .external-secondary-action { @apply tone-externalsecondary-solid layout-external-button shape-external-button type-external-button behavior-external-button effect-external-button motion-external-button; }
+  .external-secondary-action { @apply tone-confirmsecondary-solid layout-external-button shape-external-button type-external-button behavior-external-button effect-external-button motion-external-button; }
   .external-invalid { @apply tone-externaldanger-plain; }
   .external-description { @apply tone-externalmuted-plain; }
   .external-details { @apply shape-external-details type-external-details tone-externalneutral-plain; }

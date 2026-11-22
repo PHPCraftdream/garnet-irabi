@@ -6,6 +6,8 @@
   --color-attachment-edge-hover: var(--color-accent);
   /* carburetor-disable-next-line valid-color-role */
   --color-attachment-wash: var(--color-bg-surface-alt);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-attachment-ink: var(--color-text-muted);
 }
 
 @utility tone-attachment-outline { @apply border-attachment-edge hover:border-attachment-edge-hover; }
@@ -35,6 +37,6 @@
   .attachment-file-link { @apply shape-attachment-frame layout-attachment-frame motion-attachment-frame tone-attachment-outline; }
   .attachment-file-content { @apply shape-attachment-file-content layout-attachment-file-content type-attachment-file-content tone-attachment-soft; }
   .attachment-file-name { @apply shape-attachment-file-name layout-attachment-file-name type-attachment-file-name tone-neutral-plain; }
-  .attachment-file-size { @apply type-attachment-file-size tone-attachment-plain; }
+  .attachment-file-size { @apply type-attachment-file-size tone-supportmuted-plain; }
   .attachment-list { @apply shape-attachment-list layout-attachment-list tone-neutral-plain; }
 }

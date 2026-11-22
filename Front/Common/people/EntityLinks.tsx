@@ -2,10 +2,9 @@ import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {UserDetailContext} from '../../Islands/AdminPanel/Users/UserDetailContext';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {classAttr} from './entityLinkHelpers';
 
 /** Admin user link — opens user detail tab via context, falls back to href navigation */
-type LinkProps = {id: number; name: string; role?: string; className?: string; dataTestId?: string};
+type LinkProps = {id: number; name: string; role?: string; variant?: 'support-author'; dataTestId?: string};
 type ContextValue = React.ContextType<typeof UserDetailContext>['openUser'];
 
 class LinkView extends AntiHookComponent<LinkProps & {openUser: ContextValue}> {
@@ -20,12 +19,11 @@ class LinkView extends AntiHookComponent<LinkProps & {openUser: ContextValue}> {
     };
 
     render() {
-        const {id, name, role, className, dataTestId} = this.props;
-        if (!id) return <span {...classAttr('', className)}>{name || '—'}</span>;
+        const {id, name, role, variant, dataTestId} = this.props;
+        if (!id) return <span>{name || '—'}</span>;
 
-        const group = classAttr('entity-person-group', className);
         return (
-            <span {...group}>
+            <span className={variant === 'support-author' ? 'entity-person-support-author' : 'entity-person-group'}>
                 <a
                     href={appUrl(`/admin/#user=${id}`)}
                     className="entity-person-link"

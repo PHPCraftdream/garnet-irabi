@@ -5,6 +5,7 @@
 @utility type-entity-person-admin { @apply text-[10px] no-underline; }
 @utility shape-entity-person-role { @apply px-1.5 py-0.5 rounded; }
 @utility type-entity-person-role { @apply text-[10px]; }
+@utility type-entity-person-support-author { @apply text-xs font-medium; }
 @utility shape-avatar-sm { @apply w-9 h-9 rounded-full; }
 @utility shape-avatar-lg { @apply w-20 h-20 rounded-full; }
 @utility shape-avatar-photo { @apply border object-cover; }
@@ -29,6 +30,8 @@
 
 /* Семейства avatar нет в .carburetorrc.json: у аватара тон welcomeavatar soft, край entityadmin border. */
 @layer components {
+  /* Вариант ссылки на автора: раньше приходил отдельным доп. классом. */
+  .entity-person-support-author { @apply layout-entity-person-group tone-bookaccent-plain type-entity-person-support-author; }
   .avatar-circle { @apply shape-avatar-sm layout-avatar-center layout-avatar-fixed type-avatar-initials-sm tone-welcomeavatar-soft; }
   .avatar-circle-lg { @apply shape-avatar-lg layout-avatar-center type-avatar-initials-lg tone-welcomeavatar-soft; }
   .avatar-circle-img { @apply shape-avatar-sm shape-avatar-photo layout-avatar-fixed tone-entityadmin-border; }

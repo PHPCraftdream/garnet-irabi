@@ -2,10 +2,9 @@ import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {PreviewContext, type PreviewCtx} from '@common/Components/UserPreviewModal/PreviewContext';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {classAttr} from './entityLinkHelpers';
 
 /** Simple user link for public pages — links to /expert/id~ or /user/id~ */
-type LinkProps = {id: number; name: string; hasExpertProfile?: boolean; className?: string};
+type LinkProps = {id: number; name: string; hasExpertProfile?: boolean};
 type ContextValue = PreviewCtx['openPreview'];
 
 class LinkView extends AntiHookComponent<LinkProps & {openPreview: ContextValue}> {
@@ -19,11 +18,10 @@ class LinkView extends AntiHookComponent<LinkProps & {openPreview: ContextValue}
     };
 
     render() {
-        const {id, name, hasExpertProfile, className = ''} = this.props;
-        if (!id || !name) return <span {...classAttr('', className)}>{name || '—'}</span>;
+        const {id, name, hasExpertProfile} = this.props;
+        if (!id || !name) return <span>{name || '—'}</span>;
         const url = appUrl(hasExpertProfile ? `/expert/id~${id}` : `/user/id~${id}`);
-        const attrs = classAttr('entity-person-link', className);
-        return <a {...attrs} href={url} onClick={this.onClick}>{name}</a>;
+        return <a className="entity-person-link" href={url} onClick={this.onClick}>{name}</a>;
     }
 }
 
