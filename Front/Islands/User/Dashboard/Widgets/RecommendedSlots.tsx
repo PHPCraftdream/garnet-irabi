@@ -4,7 +4,8 @@ import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {useSlotBooking} from '../../SlotsCalendar/Booking/useSlotBooking';
+import {SlotBookingController} from '../../SlotsCalendar/Booking/SlotBookingController';
+import {SlotBookingModalHost} from '../../SlotsCalendar/Booking/SlotBookingModalHost';
 
 interface SlotTeaser {
     id: number;
@@ -68,27 +69,35 @@ class SlotTeaserRow extends AntiHookComponent<{slot: SlotTeaser; onBook: (id: nu
     }
 }
 
+interface Props {
+    slots: SlotTeaser[];
+}
+
 /** Подборка занятий на главной. */
-export const RecommendedSlots: React.FC<{slots: SlotTeaser[]}> = ({slots}) => {
+export class RecommendedSlots extends AntiHookComponent<Props> {
     // Общий поток бронирования: занятие открывается окном, а не уводит на
     // отдельную страницу. После успеха страница перезагружается, чтобы
     // ближайшие занятия и баланс показали новую бронь.
-    const {openBooking, bookingModal} = useSlotBooking({onBooked: reloadPage});
+    private readonly controller = new SlotBookingController();
+    private readonly book = (slotId: number) => void this.controller.openBooking(slotId);
 
-    if (slots.length === 0) return null;
-    const rows: React.ReactNode[] = [];
-    for (const slot of slots) rows.push(<SlotTeaserRow key={slot.id} slot={slot} onBook={openBooking} />);
+    render() {
+        const {slots} = this.props;
+        if (slots.length === 0) return null;
+        const rows: React.ReactNode[] = [];
+        for (const slot of slots) rows.push(<SlotTeaserRow key={slot.id} slot={slot} onBook={this.book} />);
 
-    return (
-        <div data-test-id="recommended-slots">
-            <div className="user-dash-section-header">
-                <h2 className="user-dash-section-heading">{t.Dash_Recommendations()}</h2>
-                <a href={appUrl('/slots')} className="user-dash-view-all">{t.Dash_ViewAll()}</a>
+        return (
+            <div data-test-id="recommended-slots">
+                <div className="user-dash-section-header">
+                    <h2 className="user-dash-section-heading">{t.Dash_Recommendations()}</h2>
+                    <a href={appUrl('/slots')} className="user-dash-view-all">{t.Dash_ViewAll()}</a>
+                </div>
+                <div className="user-dash-list">
+                    {rows}
+                </div>
+                <SlotBookingModalHost controller={this.controller} onBooked={reloadPage} />
             </div>
-            <div className="user-dash-list">
-                {rows}
-            </div>
-            {bookingModal}
-        </div>
-    );
-};
+        );
+    }
+}
