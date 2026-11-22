@@ -630,6 +630,7 @@
   .admin-comments-pager-top { @apply tone-widgetneutral-plain shape-token-field; }
   .admin-comments-pager-bottom { @apply tone-widgetneutral-plain shape-admin-comments-pager-bottom; }
   .admin-comments-body { @apply tone-widgetneutral-plain type-admin-comments-body; }
+  .admin-comments-author-muted { @apply tone-supportmuted-plain; }
 }
 
 /* Shared component overrides retain their unlayered precedence. */

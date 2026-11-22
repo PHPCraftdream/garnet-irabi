@@ -1,14 +1,13 @@
 import * as React from 'react';
-import {useState} from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {sendPostFormData} from '@common/Api/Send/sendPostFormData';
 import {D} from '@common/Support/Debug/D';
-import {useSending} from '@common/hooks/data/useSending';
 
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {SupportTicket, SupportMessage, SupportStatus, AssignmentLogEntry, AutoContext} from '../../Comms/Support/parts/supportTypes';
+import {SupportSending} from '../../Comms/Support/parts/supportSending';
 import {PendingFile} from '../../../Common/attachments/AttachmentPicker';
 import {reportAttachmentErrors} from '../../../Common/attachments/attachmentHelpers';
 import TicketHeader from './SupportTicket/TicketHeader';
@@ -93,32 +92,29 @@ class TicketUIStore extends Carburetor<TicketUI> {
     readonly dismissStaleReply = () => this.setStaleReplySent(false);
 }
 
-function createTicketUI(): TicketUIStore {
-    return new TicketUIStore();
-}
-
-interface TabViewProps extends Props, ReturnType<typeof useSending> {
-    ui: TicketUIStore;
-    snapshot: ReturnType<TicketUIStore['snapshot']>;
-    replyFiles: PendingFile[];
-    internalFiles: PendingFile[];
-    setReplyFiles: (files: PendingFile[]) => void;
-    setInternalFiles: (files: PendingFile[]) => void;
-}
-
-class SupportTicketView extends AntiHookComponent<TabViewProps> {
+export default class SupportTicketTab extends AntiHookComponent<Props> {
+    private readonly ui = new TicketUIStore();
+    private readonly files = new Carburetor<{reply: PendingFile[]; internal: PendingFile[]}>({reply: [], internal: []});
+    private readonly sending = new SupportSending();
     private timer?: number;
     private messageCount: number | null = null;
+    // replyText предыдущего рендера: раньше его давал snapshot в props.
+    private lastReplyText = '';
+
+    private readonly setReplyFiles = (files: PendingFile[]) => this.files.setData({...this.files.getData(), reply: files});
+    private readonly setInternalFiles = (files: PendingFile[]) => this.files.setData({...this.files.getData(), internal: files});
 
     componentDidMount(): void {
         super.componentDidMount();
         this.openTicket();
     }
 
-    componentDidUpdate(previous: Readonly<TabViewProps>): void {
+    componentDidUpdate(previous: Readonly<Props>): void {
         super.componentDidUpdate(previous);
-        const {ticketId, ticketDetailUrl, snapshot, ui} = this.props;
-        if (previous.snapshot.replyText !== snapshot.replyText && !snapshot.replyText.trim()) ui.setStaleWarning(false);
+        const {ticketId, ticketDetailUrl} = this.props;
+        const {replyText} = this.ui.getData();
+        if (this.lastReplyText !== replyText && !replyText.trim()) this.ui.setStaleWarning(false);
+        this.lastReplyText = replyText;
         if (ticketId !== previous.ticketId || ticketDetailUrl !== previous.ticketDetailUrl) this.openTicket();
     }
 
@@ -129,11 +125,10 @@ class SupportTicketView extends AntiHookComponent<TabViewProps> {
 
     private openTicket(): void {
         window.clearInterval(this.timer);
-        const {ui} = this.props;
         this.messageCount = null;
-        ui.setDataSnapshot(null);
-        ui.setStaleWarning(false);
-        ui.setStaleReplySent(false);
+        this.ui.setDataSnapshot(null);
+        this.ui.setStaleWarning(false);
+        this.ui.setStaleReplySent(false);
         this.loadDetail(true);
         this.timer = window.setInterval(this.poll, 15000);
     }
@@ -142,9 +137,9 @@ class SupportTicketView extends AntiHookComponent<TabViewProps> {
         if (!document.hidden) this.loadDetail();
     };
 
-    private loadDetail(notify = false, target = this.props): void {
+    private loadDetail(notify = false, target: Props = this.props): void {
         const {ticketId, ticketDetailUrl, onTicketChanged} = target;
-        const {setError, setDataSnapshot: setData, setStaleWarning} = target.ui;
+        const {setError, setDataSnapshot: setData, setStaleWarning} = this.ui;
         setError(null);
         D('support.admin.detail', {ticketId});
         sendPost(ticketDetailUrl, {ticket_id: ticketId}).then((r: any) => {
@@ -154,7 +149,7 @@ class SupportTicketView extends AntiHookComponent<TabViewProps> {
                 if (
                     this.messageCount !== null &&
                     newData.messages.length > this.messageCount &&
-                    this.props.snapshot.replyText.trim()
+                    this.ui.getData().replyText.trim()
                 ) {
                     // Кто-то ответил в тикете, пока модератор набирал свой ответ —
                     // именно так mod-1/mod-2 в одном цикле чуть не продублировали ответы.
@@ -169,14 +164,15 @@ class SupportTicketView extends AntiHookComponent<TabViewProps> {
     }
 
     private readonly handleReply = () => {
-        if (this.props.snapshot.replyText.trim()) void this.props.withSending(this.sendReply);
+        if (this.ui.getData().replyText.trim()) void this.sending.withSending(this.sendReply);
     };
 
     private readonly sendReply = async () => {
         const target = this.props;
-        const {ticketId, replyFiles, setReplyFiles, replyUrl} = target;
-        const {replyText} = target.snapshot;
-        const {setReplyText, setStaleReplySent} = target.ui;
+        const {ticketId, replyUrl} = target;
+        const {reply: replyFiles} = this.files.getData();
+        const {replyText} = this.ui.getData();
+        const {setReplyText, setStaleReplySent} = this.ui;
         try {
             D('support.admin.reply', {ticketId, hasAttachments: replyFiles.length > 0});
             const fd = new FormData();
@@ -190,7 +186,7 @@ class SupportTicketView extends AntiHookComponent<TabViewProps> {
             for (const f of replyFiles) fd.append('attachments[]', f.file, f.name);
             const resp = await sendPostFormData<FormData, any>(replyUrl, fd);
             setReplyText('');
-            setReplyFiles([]);
+            this.setReplyFiles([]);
             setStaleReplySent(!!resp?.staleReply);
             this.loadDetail(true, target);
             reportAttachmentErrors(resp);
@@ -201,14 +197,15 @@ class SupportTicketView extends AntiHookComponent<TabViewProps> {
     };
 
     private readonly handleInternalComment = () => {
-        if (this.props.snapshot.internalText.trim()) void this.props.withSending(this.sendInternal);
+        if (this.ui.getData().internalText.trim()) void this.sending.withSending(this.sendInternal);
     };
 
     private readonly sendInternal = async () => {
         const target = this.props;
-        const {ticketId, internalFiles, setInternalFiles, internalCommentUrl} = target;
-        const {internalText} = target.snapshot;
-        const {setInternalText} = target.ui;
+        const {ticketId, internalCommentUrl} = target;
+        const {internal: internalFiles} = this.files.getData();
+        const {internalText} = this.ui.getData();
+        const {setInternalText} = this.ui;
         try {
             D('support.admin.internal', {ticketId});
             const fd = new FormData();
@@ -217,7 +214,7 @@ class SupportTicketView extends AntiHookComponent<TabViewProps> {
             for (const f of internalFiles) fd.append('attachments[]', f.file, f.name);
             const resp = await sendPostFormData<FormData, any>(internalCommentUrl, fd);
             setInternalText('');
-            setInternalFiles([]);
+            this.setInternalFiles([]);
             this.loadDetail(true, target);
             reportAttachmentErrors(resp);
         } catch (err: any) {
@@ -253,8 +250,8 @@ class SupportTicketView extends AntiHookComponent<TabViewProps> {
         }
     };
 
-    private renderNotices() {
-        const {ui, snapshot: {staleWarning, staleReplySent}} = this.props;
+    private renderNotices(notices: {staleWarning: boolean; staleReplySent: boolean}) {
+        const {staleWarning, staleReplySent} = notices;
         return (
             <>
                 {staleWarning && (
@@ -269,7 +266,7 @@ class SupportTicketView extends AntiHookComponent<TabViewProps> {
                         <button
                             type="button"
                             className="admin-support-stale-dismiss"
-                            onClick={ui.dismissStaleReply}
+                            onClick={this.ui.dismissStaleReply}
                             data-test-id="support-stale-reply-notice-dismiss"
                         >
                             {t.Action_Close()}
@@ -280,16 +277,16 @@ class SupportTicketView extends AntiHookComponent<TabViewProps> {
         );
     }
 
-    private renderForms() {
-        const {ui, snapshot: {replyText, internalText}, replyFiles, internalFiles, setReplyFiles, setInternalFiles, sending} = this.props;
-        const {setReplyText, setInternalText} = ui;
+    private renderForms(forms: {replyText: string; internalText: string; replyFiles: PendingFile[]; internalFiles: PendingFile[]; sending: boolean}) {
+        const {replyText, internalText, replyFiles, internalFiles, sending} = forms;
+        const {setReplyText, setInternalText} = this.ui;
         return (
             <>
                 <TicketReplyForm
                     replyText={replyText}
                     onReplyTextChange={setReplyText}
                     replyFiles={replyFiles}
-                    onReplyFilesChange={setReplyFiles}
+                    onReplyFilesChange={this.setReplyFiles}
                     sending={sending}
                     onSend={this.handleReply}
                 />
@@ -298,7 +295,7 @@ class SupportTicketView extends AntiHookComponent<TabViewProps> {
                     internalText={internalText}
                     onInternalTextChange={setInternalText}
                     internalFiles={internalFiles}
-                    onInternalFilesChange={setInternalFiles}
+                    onInternalFilesChange={this.setInternalFiles}
                     sending={sending}
                     onSend={this.handleInternalComment}
                 />
@@ -307,7 +304,12 @@ class SupportTicketView extends AntiHookComponent<TabViewProps> {
     }
 
     render() {
-        const {ticketId, clientContextUrl, moderators, snapshot: {data, error}} = this.props;
+        const {ticketId, clientContextUrl, moderators} = this.props;
+        // Вид из useCarburetor — TReadonly; детям нужны те же мутабельные типы, что и раньше.
+        const ui = this.useCarburetor(this.ui) as TicketUI;
+        const {reply: replyFiles, internal: internalFiles} = this.useCarburetor(this.files) as {reply: PendingFile[]; internal: PendingFile[]};
+        const {sending} = this.useCarburetor(this.sending);
+        const {data, error} = ui;
         if (error) return <div className="admin-support-detail-error">{error}</div>;
         if (!data) return <div className="admin-support-detail-loading">{t.User_Loading()}</div>;
         const {ticket, messages, assignmentLog} = data;
@@ -336,19 +338,9 @@ class SupportTicketView extends AntiHookComponent<TabViewProps> {
                 <TicketClientContext ticketId={ticketId} clientContextUrl={clientContextUrl} />
 
                 <TicketAttachments messages={messages} />
-                {this.renderNotices()}
-                {this.renderForms()}
+                {this.renderNotices({staleWarning: ui.staleWarning, staleReplySent: ui.staleReplySent})}
+                {this.renderForms({replyText: ui.replyText, internalText: ui.internalText, replyFiles, internalFiles, sending})}
             </div>
         );
     }
-}
-
-export default function SupportTicketTab(props: Props) {
-    const [ui] = useState(createTicketUI);
-    const snapshot = React.useSyncExternalStore(ui.subscribeSnapshot, ui.snapshot, ui.snapshot);
-    const [replyFiles, setReplyFiles] = useState<PendingFile[]>([]);
-    const [internalFiles, setInternalFiles] = useState<PendingFile[]>([]);
-    const sending = useSending();
-    return <SupportTicketView {...props} {...sending} ui={ui} snapshot={snapshot} replyFiles={replyFiles}
-        internalFiles={internalFiles} setReplyFiles={setReplyFiles} setInternalFiles={setInternalFiles} />;
 }

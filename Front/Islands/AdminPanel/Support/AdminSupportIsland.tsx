@@ -1,6 +1,5 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
-import {useState, useMemo, useEffect, useRef} from 'react';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {refreshLiveCounts} from '@common/Utils/Data/liveCounts';
 import {GridConfig, PageResponse} from '../Shell/types';
@@ -13,9 +12,9 @@ import {statusLabel, ALL_STATUSES} from '../../Comms/Support/parts/render/suppor
 import SupportTicketTab from './SupportTicketTab';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {AdminUserLink} from '../../../Common/people/EntityLinks';
-import {UserDetailContext} from '../Users/UserDetailContext';
+import {UserDetailContext, type UserDetailContextValue} from '../Users/UserDetailContext';
 import {UserDetailTab} from '../Users/UserDetailTab';
-import {useUserTabs} from '../Shell/useUserTabs';
+import {AdminSupportUserTabs} from './adminSupportUserTabs';
 import {ADMIN_URLS} from '../Shell/adminShared';
 import {SupportTicketFilters} from './SupportTicket/Forms/SupportTicketFilters';
 import {SupportStatusBar} from './SupportTicket/Forms/SupportStatusBar';
@@ -32,8 +31,9 @@ interface Moderator {
 }
 
 interface TicketFilterOptions {
-    users: {value: string; label: string}[];
-    assignees: {value: string; label: string}[];
+    // Только чтение: опции приходят из снапшота стора и мутировать их нельзя.
+    users: readonly {value: string; label: string}[];
+    assignees: readonly {value: string; label: string}[];
     hasUnassigned: boolean;
     statusCounts: Partial<Record<SupportStatus, number>>;
 }
@@ -118,10 +118,6 @@ class QueueTabStore extends Carburetor<QueueTabs> {
     }
 }
 
-function createQueueTabs(): QueueTabStore {
-    return new QueueTabStore();
-}
-
 interface QueueFilters {
     statusFilter: SupportStatus | 'all';
     userId: string;
@@ -142,7 +138,8 @@ class QueueFilterStore extends Carburetor<QueueFilters> {
         return () => this.unsubscribe(id);
     };
 
-    private update(patch: Partial<QueueFilters>): void {
+    // Не update: это имя занято методом базы Carburetor.
+    private patch(patch: Partial<QueueFilters>): void {
         const before = this.getData();
         const next = {...before, ...patch};
         if (before.statusFilter === next.statusFilter && before.userId === next.userId &&
@@ -151,17 +148,13 @@ class QueueFilterStore extends Carburetor<QueueFilters> {
         this.setData(next);
     }
 
-    readonly setStatusFilter = (statusFilter: QueueFilters['statusFilter']) => this.update({statusFilter});
-    readonly setUserId = (userId: string) => this.update({userId});
-    readonly setAssigneeId = (assigneeId: string) => this.update({assigneeId});
-    readonly setDateField = (dateField: DateField) => this.update({dateField});
-    readonly setDateFrom = (dateFrom: string) => this.update({dateFrom});
-    readonly setDateTo = (dateTo: string) => this.update({dateTo});
-    readonly reset = () => this.update({userId: '', assigneeId: '', dateFrom: '', dateTo: ''});
-}
-
-function createQueueFilters(): QueueFilterStore {
-    return new QueueFilterStore();
+    readonly setStatusFilter = (statusFilter: QueueFilters['statusFilter']) => this.patch({statusFilter});
+    readonly setUserId = (userId: string) => this.patch({userId});
+    readonly setAssigneeId = (assigneeId: string) => this.patch({assigneeId});
+    readonly setDateField = (dateField: DateField) => this.patch({dateField});
+    readonly setDateFrom = (dateFrom: string) => this.patch({dateFrom});
+    readonly setDateTo = (dateTo: string) => this.patch({dateTo});
+    readonly reset = () => this.patch({userId: '', assigneeId: '', dateFrom: '', dateTo: ''});
 }
 
 const SUPPORT_ICON = <LifeBuoy size={22} aria-hidden="true" />;
@@ -221,7 +214,7 @@ const ticketCellRenderers = {
     ),
 };
 
-type UserTabs = ReturnType<typeof useUserTabs>['userTabs'];
+type UserTabs = ReturnType<AdminSupportUserTabs['snapshot']>['tabs'];
 const OPEN_TICKETS_KEY = 'admin-support-open-tickets';
 
 function saveTicketTabs(dynamicTabs: InternalTab[], activeId: string): void {
@@ -253,7 +246,7 @@ function findTab(tabs: InternalTab[], id: string): InternalTab | undefined {
     return tabs.find(tab => tab.id === id);
 }
 
-type UserTabControls = ReturnType<typeof useUserTabs>;
+type UserTabControls = AdminSupportUserTabs;
 
 function openQueueTicket(tabs: QueueTabStore, setActive: UserTabControls['setActiveUserTabId'], id: number, subject: string) {
     tabs.open(id, subject);
@@ -301,20 +294,16 @@ function queueParams({statusFilter, userId, assigneeId, dateField, dateFrom, dat
     };
 }
 
-type ViewProps = Props & {
-    tabs: QueueTabStore;
-    tabState: QueueTabs;
-    filters: QueueFilterStore;
-    filterState: QueueFilters;
-    extraParams: ReturnType<typeof queueParams>;
-    user: UserTabControls;
-    userDetail: React.ContextType<typeof UserDetailContext>;
-};
-
-class AdminSupportView extends AntiHookComponent<ViewProps> {
+export class AdminSupportIsland extends AntiHookComponent<Props> {
+    private readonly tabs = new QueueTabStore();
+    private readonly filters = new QueueFilterStore();
+    private readonly userTabs = new AdminSupportUserTabs();
+    private readonly userDetail: UserDetailContextValue = {openUser: this.userTabs.openUser};
     private readonly gridRef = React.createRef<AdminGridHandle<SupportTicket>>();
     private readonly filterOptions = new Carburetor({value: this.props.initialFilterOptions});
     private readonly optionsSnapshot = this.connectSelection(this.filterOptions, state => state.value);
+    // AdminGrid перезапрашивает данные при смене identity extraParams: держим объект, пока не сменился снапшот фильтров.
+    private paramsCache?: {filters: Readonly<QueueFilters>; value: ReturnType<typeof queueParams>};
 
     private readonly applyOptions = (response: Awaited<ReturnType<typeof sendPost<{}, TicketFilterOptions>>>) => {
         const value = ('data' in response && response.data) ? response.data : (response as unknown as TicketFilterOptions);
@@ -328,28 +317,36 @@ class AdminSupportView extends AntiHookComponent<ViewProps> {
         refreshLiveCounts();
     };
 
+    private extraParams(filters: Readonly<QueueFilters>): ReturnType<typeof queueParams> {
+        if (this.paramsCache?.filters === filters) return this.paramsCache.value;
+        const value = queueParams(filters);
+        this.paramsCache = {filters, value};
+        return value;
+    }
+
     private readonly openTicket = (id: number, subject: string) =>
-        openQueueTicket(this.props.tabs, this.props.user.setActiveUserTabId, id, subject);
+        openQueueTicket(this.tabs, this.userTabs.setActiveUserTabId, id, subject);
 
     private readonly renderSubject = (row: SupportTicket) => <TicketSubject row={row} open={this.openTicket} />;
     private readonly ticketRenders = {...ticketCellRenderers, subject: this.renderSubject};
 
     private readonly handleSelect = (id: string) => {
-        const {tabs, user} = this.props;
-        if (hasUserTab(user.userTabs, id)) user.setActiveUserTabId(id);
+        const {tabs, userTabs} = this;
+        if (hasUserTab(userTabs.snapshot().tabs, id)) userTabs.setActiveUserTabId(id);
         else {
-            user.setActiveUserTabId(null);
+            userTabs.setActiveUserTabId(null);
             tabs.select(id);
         }
     };
 
     private readonly handleClose = (id: string) => {
-        const {tabs, user} = this.props;
-        if (hasUserTab(user.userTabs, id)) user.closeUser(id);
+        const {tabs, userTabs} = this;
+        if (hasUserTab(userTabs.snapshot().tabs, id)) userTabs.closeUser(id);
         else tabs.close(id);
     };
 
-    private renderContent(activeTab: InternalTab | undefined, filterOptions: TicketFilterOptions) {
+    private renderContent(activeTab: InternalTab | undefined, filterOptions: TicketFilterOptions,
+        filterState: Readonly<QueueFilters>, extraParams: ReturnType<typeof queueParams>) {
         const {userDetailUrl, ticketDetailUrl, clientContextUrl, replyUrl, internalCommentUrl,
             changeStatusUrl, assignUrl, moderators} = this.props;
         if (!activeTab) return null;
@@ -366,7 +363,7 @@ class AdminSupportView extends AntiHookComponent<ViewProps> {
             );
         }
 
-        if (activeTab.id === MAIN_TAB_ID) return this.renderQueue(filterOptions);
+        if (activeTab.id === MAIN_TAB_ID) return this.renderQueue(filterOptions, filterState, extraParams);
 
         const tabKind = activeTab.tabKind;
         if (tabKind && tabKind.kind === 'ticket-detail') {
@@ -388,8 +385,9 @@ class AdminSupportView extends AntiHookComponent<ViewProps> {
         return null;
     }
 
-    private renderQueue(options: TicketFilterOptions) {
-        const {filters, filterState, ticketsPageUrl, ticketsInitialData, extraParams, gridConfig} = this.props;
+    private renderQueue(options: TicketFilterOptions, filterState: Readonly<QueueFilters>,
+        extraParams: ReturnType<typeof queueParams>) {
+        const {ticketsPageUrl, ticketsInitialData, gridConfig} = this.props;
         const {statusFilter, userId, assigneeId, dateField, dateFrom, dateTo} = filterState;
         const {statusCounts} = options;
         const all = {value: '', label: t.Admin_Filter_All()};
@@ -400,11 +398,11 @@ class AdminSupportView extends AntiHookComponent<ViewProps> {
         return (
             <div>
                 <SupportStatusBar total={totalOf(statusCounts)} statuses={visibleStatuses(statusCounts)}
-                    counts={statusCounts} active={statusFilter} statusLabel={statusLabel} onSelect={filters.setStatusFilter} />
+                    counts={statusCounts} active={statusFilter} statusLabel={statusLabel} onSelect={this.filters.setStatusFilter} />
                 <SupportTicketFilters userOptions={userOptions} assigneeOptions={assigneeOptions}
                     userId={userId} assigneeId={assigneeId} dateField={dateField} dateFrom={dateFrom} dateTo={dateTo}
-                    onUserId={filters.setUserId} onAssigneeId={filters.setAssigneeId} onDateField={filters.setDateField}
-                    onDateFrom={filters.setDateFrom} onDateTo={filters.setDateTo} onReset={filters.reset} />
+                    onUserId={this.filters.setUserId} onAssigneeId={this.filters.setAssigneeId} onDateField={this.filters.setDateField}
+                    onDateFrom={this.filters.setDateFrom} onDateTo={this.filters.setDateTo} onReset={this.filters.reset} />
                 <AdminGrid<SupportTicket> ref={this.gridRef} pageUrl={ticketsPageUrl} initialData={ticketsInitialData}
                     extraParams={extraParams} config={gridConfig} rowKey={rowKey} renders={this.ticketRenders}
                     emptyMessage={t.Support_NoTickets()} />
@@ -412,48 +410,35 @@ class AdminSupportView extends AntiHookComponent<ViewProps> {
         );
     }
 
+    protected override useEffects(): void {
+        const {dynamicTabs, activeId} = this.tabs.snapshot();
+        this.useEffect('restore', () => {
+            restoreTicketTabs(this.tabs, this.userTabs.openUser, this.userTabs.setActiveUserTabId);
+        }, []);
+        this.useEffect('save', () => {
+            saveTicketTabs(dynamicTabs, activeId);
+        }, [dynamicTabs, activeId]);
+    }
+
     render() {
         const options = this.optionsSnapshot();
-        const {user, userDetail, tabState} = this.props;
-        const activeId = user.activeUserTabId ?? tabState.activeId;
+        const tabState = this.useCarburetor(this.tabs);
+        const filterState = this.useCarburetor(this.filters);
+        const user = this.useCarburetor(this.userTabs);
+        const activeId = user.activeId ?? tabState.activeId;
         const allTabs: InternalTab[] = [
             {id: MAIN_TAB_ID, label: t.Admin_Support(), closeable: false, tabKind: null},
             ...tabState.dynamicTabs,
-            ...user.userTabs.map(userTabDefinition),
+            ...user.tabs.map(userTabDefinition),
         ];
         return (
-            <UserDetailContext.Provider value={userDetail}>
+            <UserDetailContext.Provider value={this.userDetail}>
                 <PageHeader title={t.Admin_Support()} icon={SUPPORT_ICON} />
                 <div className="section-soft">
                     <TabNav tabs={allTabs} activeId={activeId} onSelect={this.handleSelect} onClose={this.handleClose} />
-                    {this.renderContent(findTab(allTabs, activeId), options)}
+                    {this.renderContent(findTab(allTabs, activeId), options, filterState, this.extraParams(filterState))}
                 </div>
             </UserDetailContext.Provider>
         );
     }
 }
-
-export const AdminSupportIsland: React.FC<Props> = (props) => {
-    const [tabs] = useState(createQueueTabs);
-    const tabState = React.useSyncExternalStore(tabs.subscribeSnapshot, tabs.snapshot, tabs.snapshot);
-    const [filters] = useState(createQueueFilters);
-    const filterState = React.useSyncExternalStore(filters.subscribeSnapshot, filters.snapshot, filters.snapshot);
-    const extraParams = useMemo(() => queueParams(filterState), [filterState]);
-    const user = useUserTabs();
-    const {openUser, setActiveUserTabId} = user;
-    const userDetail = useMemo(() => ({openUser}), [openUser]);
-    const initialized = useRef(false);
-    useEffect(() => {
-        if (initialized.current) return;
-        initialized.current = true;
-        restoreTicketTabs(tabs, openUser, setActiveUserTabId);
-    }, [tabs, openUser, setActiveUserTabId]);
-
-    const {dynamicTabs, activeId} = tabState;
-    useEffect(() => {
-        saveTicketTabs(dynamicTabs, activeId);
-    }, [dynamicTabs, activeId]);
-
-    return <AdminSupportView {...props} tabs={tabs} tabState={tabState} filters={filters} filterState={filterState}
-        extraParams={extraParams} user={user} userDetail={userDetail} />;
-};

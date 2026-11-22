@@ -23,7 +23,7 @@ export class SupportPageState extends Carburetor<State> {
         return () => this.unsubscribe(id);
     };
 
-    update(patch: Partial<State>): void {
+    patch(patch: Partial<State>): void {
         const previous = this.getData();
         const version = this.getVersion();
         this.setData({...previous, ...patch});
@@ -35,13 +35,13 @@ export class SupportPageState extends Carburetor<State> {
 
     markRead(id: number, ticket?: SupportTicket): void {
         const {readIds, selectedTicketData} = this.getData();
-        this.update({readIds: readIds.includes(id) ? readIds : [...readIds, id],
+        this.patch({readIds: readIds.includes(id) ? readIds : [...readIds, id],
             selectedTicketData: ticket ? {...ticket, unread_user: 0} : selectedTicketData});
     }
 
-    readonly setSubject = (subject: string) => this.update({subject});
-    readonly setMessage = (message: string) => this.update({message});
-    readonly setReplyText = (replyText: string) => this.update({replyText});
-    readonly closeForm = () => this.update({showNewForm: false});
-    readonly back = () => this.update({selectedId: null, showNewForm: false});
+    readonly setSubject = (subject: string) => this.patch({subject});
+    readonly setMessage = (message: string) => this.patch({message});
+    readonly setReplyText = (replyText: string) => this.patch({replyText});
+    readonly closeForm = () => this.patch({showNewForm: false});
+    readonly back = () => this.patch({selectedId: null, showNewForm: false});
 }

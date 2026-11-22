@@ -2,18 +2,18 @@ import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {D} from '@common/Support/Debug/D';
-import {useSending} from '@common/hooks/data/useSending';
 import {CTRL_ENTER_HINT} from '@common/hooks/ui/useCtrlEnter';
-import {useConfirm} from '@common/hooks/ui/useConfirm';
 import SendButton from '@common/Components/Controls/SendButton';
 import {ConfirmModal} from '@common/Components/Feedback/ConfirmModal';
-import {usePagination} from '@common/hooks/data/usePagination';
+import {PaginationController} from '@common/hooks/data/PaginationController';
 import Pagination, {PaginationLabels} from '@common/Components/Layout/Paging/Pagination';
 
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {Comment} from './commentTypes';
 import {CommentCard} from './CommentCard';
+import {SupportSending} from '../Support/parts/supportSending';
+import {ConfirmController} from './confirmController';
 
 interface CommentsSectionProps {
     entityType: 'expert';
@@ -75,30 +75,81 @@ const statusLabel = (comment: Comment, currentAccountId: number, isModerator: bo
     return t.Comment_StatusMine();
 };
 
-type Props = CommentsSectionProps & ReturnType<typeof useSending> & ReturnType<typeof useConfirm> & {
-    pagination: ReturnType<typeof usePagination<Comment>>;
-};
+/** Значения пагинатора, которые нужны вёрстке. */
+interface PagerView {
+    page: number;
+    totalPages: number;
+    total: number;
+    loading: boolean;
+    perPage: number;
+}
 
-class CommentsView extends AntiHookComponent<Props> {
-    private readonly ui = new Carburetor({body: ''});
+/** `useCarburetor` отдаёт данные только для чтения, а модалке нужен изменяемый ConfirmState. */
+type ConfirmView = ReturnType<ConfirmController['snapshot']>;
+
+export class CommentsSection extends AntiHookComponent<CommentsSectionProps> {
+    // Кэш params объявлен до pagination: контролёр сравнивает params по ссылке.
+    private paramsCache: {entityType: 'expert'; entityId: number; value: Record<string, unknown>} | null = null;
+    private readonly pagination = new PaginationController<Comment>({url: this.props.listUrl, params: this.cachedParams()});
+    private readonly ui = new Carburetor<{body: string}>({body: ''});
+    private readonly sending = new SupportSending();
+    private readonly confirm = new ConfirmController();
+
+    // Обёртки как в usePagination: его сторожа отличаются от сторожа контролёра.
+    private readonly goToPage = (p: number) => {
+        const {page, totalPages} = this.pagination.snapshot();
+        if (p < 1 || p > totalPages || p === page) return;
+        void this.pagination.fetchPage(p);
+    };
+    private readonly refresh = (): void => void this.pagination.fetchPage(this.pagination.snapshot().page);
+    private readonly setPerPage = this.pagination.setPerPage;
+
+    // Уборка вынесена в поле: ссылка на неё должна быть стабильной.
+    private readonly disposePagination = () => this.pagination.dispose();
+
+    /**
+     * Один и тот же объект params, пока не сменилась пара entity_type/entity_id:
+     * новый объект на каждый вызов `setParams` запускал бы лишний запрос.
+     */
+    private cachedParams(): Record<string, unknown> {
+        const {entityType, entityId} = this.props;
+        const cache = this.paramsCache;
+        if (cache !== null && cache.entityType === entityType && cache.entityId === entityId) return cache.value;
+        const value = {entity_type: entityType, entity_id: entityId};
+        this.paramsCache = {entityType, entityId, value};
+        return value;
+    }
+
+    protected override useEffects(): void {
+        this.useEffect('pagination', () => {
+            this.pagination.start();
+
+            return this.disposePagination;
+        }, []);
+
+        this.useEffect('params', () => {
+            this.pagination.setUrl(this.props.listUrl);
+            this.pagination.setParams(this.cachedParams());
+        }, [this.props.listUrl, this.props.entityType, this.props.entityId]);
+    }
 
     private readonly changeBody = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
         this.ui.setData({body: event.target.value});
     };
 
     private readonly submitOnShortcut = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (event.key !== 'Enter' || (!event.ctrlKey && !event.metaKey) || this.props.sending || !this.ui.getData().body.trim()) return;
+        if (event.key !== 'Enter' || (!event.ctrlKey && !event.metaKey) || this.sending.snapshot().sending || !this.ui.getData().body.trim()) return;
         event.preventDefault();
         this.handleCreate();
     };
 
     private readonly handleCreate = () => {
-        if (this.ui.getData().body.trim()) void this.props.withSending(this.create);
+        if (this.ui.getData().body.trim()) void this.sending.withSending(this.create);
     };
 
     private readonly create = async () => {
         const {body} = this.ui.getData();
-        const {entityType, entityId, createUrl, pagination: {page, refresh, goToPage}} = this.props;
+        const {entityType, entityId, createUrl} = this.props;
         D('comments.create', {entityType, entityId, bodyLength: body.trim().length});
         const r = await sendPost<any, any>(createUrl, {
             entity_type: entityType,
@@ -112,20 +163,21 @@ class CommentsView extends AntiHookComponent<Props> {
             // Без этой строки человек видит, что его текста нет, и делает
             // единственный доступный вывод: отправка не сработала.
             showToast(t.Comment_SentForReview(), 'success');
-            if (page === 1) refresh(); else goToPage(1);
+            const {page} = this.pagination.snapshot();
+            if (page === 1) this.refresh(); else this.goToPage(1);
         }
     };
 
     private readonly handleDelete = async (commentId: number) => {
-        const {confirm, deleteUrl, pagination: {refresh}} = this.props;
-        const ok = await confirm(t.Comment_DeleteConfirm());
+        const {deleteUrl} = this.props;
+        const ok = await this.confirm.confirm(t.Comment_DeleteConfirm());
         if (!ok) return;
         D('comments.delete', {commentId});
         try {
             const r = await sendPost<any, any>(deleteUrl, {id: commentId});
             if (r?.success) {
                 D('comments.deleted', {commentId});
-                refresh();
+                this.refresh();
             }
         } catch (err) {
             D('comments.error', {action: 'delete', commentId, error: err});
@@ -133,20 +185,20 @@ class CommentsView extends AntiHookComponent<Props> {
         }
     };
 
-    private renderPager(withSize: boolean) {
-        const {page, totalPages, total, loading, goToPage, perPage, setPerPage} = this.props.pagination;
+    private renderPager(pager: PagerView, withSize: boolean) {
+        const {page, totalPages, total, loading, perPage} = pager;
         if (totalPages <= 1) return null;
         const labels: PaginationLabels = {prev: t.Pagination_Prev(), next: t.Pagination_Next(), of: t.Pagination_Of(), items: t.Pagination_Items()};
         return (
             <div className="admin-support-form">
-                <Pagination page={page} totalPages={totalPages} total={total} loading={loading} compact onPageChange={goToPage}
-                    labels={labels} pageSize={withSize ? perPage : undefined} onPageSizeChange={withSize ? setPerPage : undefined} />
+                <Pagination page={page} totalPages={totalPages} total={total} loading={loading} compact onPageChange={this.goToPage}
+                    labels={labels} pageSize={withSize ? perPage : undefined} onPageSizeChange={withSize ? this.setPerPage : undefined} />
             </div>
         );
     }
 
-    private renderList() {
-        const {currentAccountId, isModerator, pagination: {items, loading}} = this.props;
+    private renderList(items: readonly Comment[], loading: boolean) {
+        const {currentAccountId, isModerator} = this.props;
         if (loading || items.length === 0) {
             return <div className="review-empty">{loading ? t.User_Loading() : t.Comment_NoComments()}</div>;
         }
@@ -158,8 +210,8 @@ class CommentsView extends AntiHookComponent<Props> {
         return <div className="review-list">{cards}</div>;
     }
 
-    private renderForm(body: string) {
-        const {canCreate = true, sending} = this.props;
+    private renderForm(body: string, sending: boolean) {
+        const {canCreate = true} = this.props;
         if (!canCreate) return null;
         return (
             <>
@@ -177,26 +229,20 @@ class CommentsView extends AntiHookComponent<Props> {
 
     render() {
         const {body} = this.useCarburetor(this.ui);
-        const {isModerator, confirmState, handleConfirm, handleCancel} = this.props;
+        const {items, page, perPage, totalPages, total, loading} = this.useCarburetor(this.pagination);
+        const {sending} = this.useCarburetor(this.sending);
+        const confirmState = this.useCarburetor(this.confirm) as ConfirmView;
+        const {isModerator} = this.props;
         return (
             <div data-test-id="comments-section" className="review-section">
                 <h3 className="review-heading">{t.Comment_Title()}</h3>
                 {isModerator && <div className="review-notice" data-test-id="comments-moderator-notice">{t.Comment_ModeratorViewNotice()}</div>}
-                {this.renderPager(true)}
-                {this.renderList()}
-                {this.renderPager(false)}
-                {this.renderForm(body)}
-                <ConfirmModal state={confirmState} onConfirm={handleConfirm} onCancel={handleCancel} />
+                {this.renderPager({page, totalPages, total, loading, perPage}, true)}
+                {this.renderList(items, loading)}
+                {this.renderPager({page, totalPages, total, loading, perPage}, false)}
+                {this.renderForm(body, sending)}
+                <ConfirmModal state={confirmState} onConfirm={this.confirm.handleConfirm} onCancel={this.confirm.handleCancel} />
             </div>
         );
     }
-}
-
-export function CommentsSection(props: CommentsSectionProps) {
-    const {entityType, entityId, listUrl} = props;
-    const params = React.useMemo(() => ({entity_type: entityType, entity_id: entityId}), [entityType, entityId]);
-    const pagination = usePagination<Comment>({url: listUrl, params});
-    const sending = useSending();
-    const confirmation = useConfirm();
-    return <CommentsView {...props} {...sending} {...confirmation} pagination={pagination} />;
 }

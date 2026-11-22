@@ -27,7 +27,7 @@ export class SupportWidgetState extends Carburetor<State> {
         return () => this.unsubscribe(id);
     };
 
-    update(patch: Partial<State>): void {
+    patch(patch: Partial<State>): void {
         const previous = this.getData();
         const version = this.getVersion();
         this.setData({...previous, ...patch});
@@ -37,10 +37,10 @@ export class SupportWidgetState extends Carburetor<State> {
         }
     }
 
-    readonly setSubject = (subject: string) => this.update({subject});
-    readonly setMessage = (message: string) => this.update({message});
-    readonly setReplyText = (replyText: string) => this.update({replyText});
-    readonly close = () => this.update({isOpen: false});
-    readonly openNew = () => this.update({view: 'new', subject: '', message: ''});
-    readonly back = () => this.update({view: 'list'});
+    readonly setSubject = (subject: string) => this.patch({subject});
+    readonly setMessage = (message: string) => this.patch({message});
+    readonly setReplyText = (replyText: string) => this.patch({replyText});
+    readonly close = () => this.patch({isOpen: false});
+    readonly openNew = () => this.patch({view: 'new', subject: '', message: ''});
+    readonly back = () => this.patch({view: 'list'});
 }

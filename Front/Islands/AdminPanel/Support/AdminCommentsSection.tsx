@@ -1,10 +1,8 @@
-import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import Pagination from '@common/Components/Layout/Paging/Pagination';
 import {PageResponse} from '@common/hooks/data/usePagination';
-import {useConfirm} from '@common/hooks/ui/useConfirm';
 import {ConfirmModal} from '@common/Components/Feedback/ConfirmModal';
 import {LogDetailModal} from '@common/Components/Admin/AdminLog/LogDetailModal';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
@@ -16,9 +14,10 @@ import {
     ToggleResponse,
 } from './comments/commentTypes';
 import {adminPaginationLabels, buildAccountOptions} from '../Shell/adminShared';
-import {useAdminPage} from '../Shell/useAdminPage';
 import {CommentsFilterState, CommentsFilters} from './comments/CommentsFilters';
 import {CommentsTable} from './comments/CommentsTable';
+import {CommentsPaginationController} from './comments/CommentsPaginationController';
+import {ConfirmController} from '../../Comms/Comments/confirmController';
 
 export type {AdminCommentRow, CommentsAccountOption} from './comments/commentTypes';
 
@@ -54,7 +53,7 @@ class CommentsUI extends Carburetor<{filters: CommentsFilterState; bodyModal: Ad
         return () => this.unsubscribe(id);
     };
 
-    private update(patch: Partial<ReturnType<CommentsUI['snapshot']>>): void {
+    private patch(patch: Partial<ReturnType<CommentsUI['snapshot']>>): void {
         const before = this.getData();
         const version = this.getVersion();
         this.setData({...before, ...patch});
@@ -64,20 +63,32 @@ class CommentsUI extends Carburetor<{filters: CommentsFilterState; bodyModal: Ad
         }
     }
 
-    readonly changeFilters = (patch: Partial<CommentsFilterState>) => this.update({filters: {...this.getData().filters, ...patch}});
-    readonly resetFilters = () => this.update({filters: EMPTY_FILTERS});
-    readonly openBody = (bodyModal: AdminCommentRow) => this.update({bodyModal});
-    readonly closeBody = () => this.update({bodyModal: null});
-}
-
-function createCommentsUI(): CommentsUI {
-    return new CommentsUI();
+    readonly changeFilters = (patch: Partial<CommentsFilterState>) => this.patch({filters: {...this.getData().filters, ...patch}});
+    readonly resetFilters = () => this.patch({filters: EMPTY_FILTERS});
+    readonly openBody = (bodyModal: AdminCommentRow) => this.patch({bodyModal});
+    readonly closeBody = () => this.patch({bodyModal: null});
 }
 
 function buildBody(filters: CommentsFilterState, page: number, perPage: number): CommentsFetchBody {
     return {page, perPage, author_id: filters.authorId, expert_id: filters.expertId,
         date_from: filters.dateFrom, date_to: filters.dateTo, search: filters.search, hidden_only: filters.hiddenOnly ? '1' : '0'};
 }
+
+/** Поля, которые таблица получает от пагинатора; плюс подписи фильтров из props. */
+interface CommentsTableView {
+    items: AdminCommentRow[];
+    page: number;
+    perPage: number;
+    totalPages: number;
+    total: number;
+    loading: boolean;
+    filters: CommentsFilterState;
+    authorOptions: ReturnType<typeof buildAccountOptions>;
+    expertOptions: ReturnType<typeof buildAccountOptions>;
+}
+
+/** `useCarburetor` отдаёт данные только для чтения, а модалке нужен изменяемый ConfirmState. */
+type ConfirmView = ReturnType<ConfirmController['snapshot']>;
 
 /**
  * Отзывы в админке: фильтры, таблица и три решения по каждому отзыву.
@@ -86,49 +97,58 @@ function buildBody(filters: CommentsFilterState, page: number, perPage: number):
  * держится и правило анонимности (`CommentAuthorCell`), чтобы его нельзя было
  * задеть, поправляя вёрстку таблицы.
  */
-export const AdminCommentsSection: React.FC<AdminCommentsSectionProps> = (props) => {
-    const {commentsPayload, commentsPageUrl, experts, authors} = props;
+export class AdminCommentsSection extends AntiHookComponent<AdminCommentsSectionProps> {
+    private readonly ui = new CommentsUI();
+    private readonly confirm = new ConfirmController();
+    private readonly pager = new CommentsPaginationController({
+        url: this.props.commentsPageUrl,
+        initialData: this.props.commentsPayload,
+        buildBody,
+        debounceMs: 300,
+    });
 
-    const [ui] = React.useState(createCommentsUI);
-    const {filters, bodyModal} = React.useSyncExternalStore(ui.subscribeSnapshot, ui.snapshot, ui.snapshot);
-    const {confirmState, confirm, handleConfirm, handleCancel} = useConfirm();
+    // Новый массив на каждом рендере перерисовывал бы CommentsFilters,
+    // а `experts`/`authors` после монтирования не меняются.
+    private accountOptionsCache: {
+        experts: CommentsAccountOption[];
+        authors: CommentsAccountOption[];
+        authorOptions: ReturnType<typeof buildAccountOptions>;
+        expertOptions: ReturnType<typeof buildAccountOptions>;
+    } | null = null;
 
-    const {items, page, perPage, totalPages, total, loading, goToPage, setPerPage, setItems} =
-        useAdminPage<AdminCommentRow, CommentsFilterState, CommentsFetchBody>({
-            url: commentsPageUrl,
-            initialData: commentsPayload,
-            filters,
-            buildBody,
-        });
+    // Уборки вынесены в поля: ссылка на них должна быть стабильной.
+    private readonly disposePager = () => this.pager.dispose();
 
-    const expertOptions = React.useMemo(() => buildAccountOptions(experts), [experts]);
-    const authorOptions = React.useMemo(() => buildAccountOptions(authors), [authors]);
+    private accountOptions() {
+        const {experts, authors} = this.props;
+        const cache = this.accountOptionsCache;
+        if (cache !== null && cache.experts === experts && cache.authors === authors) return cache;
+        const built = {
+            experts,
+            authors,
+            authorOptions: buildAccountOptions(authors),
+            expertOptions: buildAccountOptions(experts),
+        };
+        this.accountOptionsCache = built;
+        return built;
+    }
 
-    return <AdminCommentsView {...{hideUrl: props.hideUrl, unhideUrl: props.unhideUrl, approveUrl: props.approveUrl,
-        rejectUrl: props.rejectUrl, flagUrl: props.flagUrl, ui, filters, bodyModal, confirm, confirmState, handleConfirm, handleCancel,
-        page, totalPages, total, loading, goToPage, perPage, setPerPage, setItems, items, authorOptions, expertOptions}} />;
-};
+    protected override useEffects(): void {
+        // Фильтры читаются и в render(): их изменение перерисовывает компонент,
+        // поэтому эффект с зависимостью по ссылке срабатывает.
+        const {filters} = this.ui.snapshot();
 
-interface AdminCommentsViewProps extends Pick<AdminCommentsSectionProps, 'hideUrl' | 'unhideUrl' | 'approveUrl' | 'rejectUrl' | 'flagUrl'>, ReturnType<typeof useConfirm> {
-    ui: CommentsUI;
-    filters: CommentsFilterState;
-    bodyModal: AdminCommentRow | null;
-    page: number;
-    totalPages: number;
-    total: number;
-    loading: boolean;
-    goToPage: (page: number) => void;
-    perPage: number;
-    setPerPage: (perPage: number) => void;
-    setItems: React.Dispatch<React.SetStateAction<AdminCommentRow[]>>;
-    items: AdminCommentRow[];
-    authorOptions: ReturnType<typeof buildAccountOptions>;
-    expertOptions: ReturnType<typeof buildAccountOptions>;
-}
+        this.useEffect('pager', () => {
+            this.pager.start();
 
-class AdminCommentsView extends AntiHookComponent<AdminCommentsViewProps> {
+            return this.disposePager;
+        }, []);
+
+        this.useEffect('filters', () => { this.pager.filtersChanged(filters); }, [filters]);
+    }
+
     private patchRow(id: number, patch: Partial<AdminCommentRow>): void {
-        this.props.setItems(previous => {
+        this.pager.setItems(previous => {
             const index = previous.findIndex(row => row.id === id);
             if (index < 0) return previous;
             const items = previous.slice();
@@ -138,8 +158,8 @@ class AdminCommentsView extends AntiHookComponent<AdminCommentsViewProps> {
     }
 
     private readonly toggleHidden = async (row: AdminCommentRow, hide: boolean) => {
-        const {confirm, hideUrl, unhideUrl} = this.props;
-        const ok = await confirm(hide ? t.Comment_HideConfirm() : t.Comment_UnhideConfirm(), {
+        const {hideUrl, unhideUrl} = this.props;
+        const ok = await this.confirm.confirm(hide ? t.Comment_HideConfirm() : t.Comment_UnhideConfirm(), {
             confirmLabel: hide ? t.Comment_Hide() : t.Comment_Unhide(),
             variant: hide ? 'danger' : 'success',
         });
@@ -165,8 +185,8 @@ class AdminCommentsView extends AntiHookComponent<AdminCommentsViewProps> {
      * списка не понять, что уже разобрано.
      */
     private readonly setModeration = async (row: AdminCommentRow, approve: boolean) => {
-        const {confirm, approveUrl, rejectUrl} = this.props;
-        const ok = await confirm(approve ? t.Comment_ApproveConfirm() : t.Comment_RejectConfirm(), {
+        const {approveUrl, rejectUrl} = this.props;
+        const ok = await this.confirm.confirm(approve ? t.Comment_ApproveConfirm() : t.Comment_RejectConfirm(), {
             confirmLabel: approve ? t.Comment_Approve() : t.Comment_Reject(),
             variant: approve ? 'success' : 'danger',
         });
@@ -190,8 +210,8 @@ class AdminCommentsView extends AntiHookComponent<AdminCommentsViewProps> {
      * этом прямо и отдельно предупреждает: не помечать отзыв за резкость.
      */
     private readonly flagComment = async (row: AdminCommentRow) => {
-        const {confirm, flagUrl} = this.props;
-        const ok = await confirm(t.Comment_FlagConfirm(), {confirmLabel: t.Comment_Flag(), variant: 'danger'});
+        const {flagUrl} = this.props;
+        const ok = await this.confirm.confirm(t.Comment_FlagConfirm(), {confirmLabel: t.Comment_Flag(), variant: 'danger'});
         if (!ok) return;
         try {
             const resp = await sendPost<{id: number}, ModerationResponse>(flagUrl, {id: row.id});
@@ -207,9 +227,9 @@ class AdminCommentsView extends AntiHookComponent<AdminCommentsViewProps> {
     };
 
 
-    private renderTable() {
-        const {page, totalPages, total, loading, goToPage, perPage, setPerPage, ui, filters,
-            items, authorOptions, expertOptions} = this.props;
+    private renderTable(view: CommentsTableView) {
+        const {page, perPage, totalPages, total, loading, filters, items, authorOptions, expertOptions} = view;
+        const {goToPage, setPerPage} = this.pager;
         const pager = (
             <Pagination
                 page={page}
@@ -230,15 +250,15 @@ class AdminCommentsView extends AntiHookComponent<AdminCommentsViewProps> {
                     authorOptions={authorOptions}
                     expertOptions={expertOptions}
                     loading={loading}
-                    onChange={ui.changeFilters}
-                    onReset={ui.resetFilters}
+                    onChange={this.ui.changeFilters}
+                    onReset={this.ui.resetFilters}
                 />
                 <div className="admin-comments-pager-top">{pager}</div>
                 {items.length === 0 && <p className="token-cell-muted">{t.Comment_NoComments()}</p>}
                 {items.length > 0 && (
                     <CommentsTable
                         items={items}
-                        onOpenBody={ui.openBody}
+                        onOpenBody={this.ui.openBody}
                         onModerate={this.setModeration}
                         onFlag={this.flagComment}
                         onToggleHidden={this.toggleHidden}
@@ -250,19 +270,24 @@ class AdminCommentsView extends AntiHookComponent<AdminCommentsViewProps> {
     }
 
     render() {
-        const {ui, bodyModal, confirmState, handleConfirm, handleCancel} = this.props;
+        const {items, page, perPage, totalPages, total, loading} = this.useCarburetor(this.pager);
+        const {filters, bodyModal} = this.useCarburetor(this.ui);
+        const confirmState = this.useCarburetor(this.confirm) as ConfirmView;
+        const {authorOptions, expertOptions} = this.accountOptions();
         return (
             <div data-test-id="admin-comments">
-                {this.renderTable()}
+                {/* Массив в сторе изменяемый — приведение снимает только `readonly` из useCarburetor. */}
+                {this.renderTable({items: items as AdminCommentRow[], page, perPage, totalPages, total, loading, filters,
+                    authorOptions, expertOptions})}
                 {bodyModal && (
-                    <LogDetailModal title={t.Comment_Body() + ' #' + bodyModal.id} onClose={ui.closeBody}>
+                    <LogDetailModal title={t.Comment_Body() + ' #' + bodyModal.id} onClose={this.ui.closeBody}>
                         <div className="admin-comments-body" data-test-id="comment-body-modal-content">
                             {bodyModal.body}
                         </div>
                     </LogDetailModal>
                 )}
 
-                <ConfirmModal state={confirmState} onConfirm={handleConfirm} onCancel={handleCancel} />
+                <ConfirmModal state={confirmState} onConfirm={this.confirm.handleConfirm} onCancel={this.confirm.handleCancel} />
             </div>
         );
     }

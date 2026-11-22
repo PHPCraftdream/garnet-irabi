@@ -1,15 +1,14 @@
 import * as React from 'react';
-import {AntiHookComponent} from '@react-carburetor/core';
-import {useState, useEffect} from 'react';
+import {AntiHookComponent, Carburetor, type TReadonly} from '@react-carburetor/core';
 import {D} from '@common/Support/Debug/D';
-import {useSending} from '@common/hooks/data/useSending';
 
 import {showToast} from '@common/Components/Feedback/GlobalToast';
-import {usePagination, PageResponse} from '@common/hooks/data/usePagination';
+import {PageResponse} from '@common/hooks/data/usePagination';
+import {PaginationController} from '@common/hooks/data/PaginationController';
 import {refreshLiveCounts} from '@common/Utils/Data/liveCounts';
 import {PaginationLabels} from '@common/Components/Layout/Paging/Pagination';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {SupportTicket} from './parts/supportTypes';
+import {SupportTicket, SupportMessage} from './parts/supportTypes';
 import {SupportPageState} from './SupportPageState';
 import {PageTicketListPanel} from './Page/PageTicketListPanel';
 import {PageBackButton} from './Page/PageBackButton';
@@ -18,7 +17,8 @@ import {PageNewTicketForm} from './Page/PageNewTicketForm';
 import {PageConversation} from './Page/PageConversation';
 import {PendingFile} from '../../../Common/attachments/AttachmentPicker';
 import {initAutoContext} from './parts/autoContext';
-import {useSupportThread} from './parts/useSupportThread';
+import {SupportThreadController} from './parts/SupportThreadController';
+import {SupportSending} from './parts/supportSending';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {LifeBuoy} from 'lucide-react';
 
@@ -32,95 +32,68 @@ interface Props {
     csrf: string;
 }
 
-function createPageState(): SupportPageState {
-    return new SupportPageState();
-}
-
-export const SupportPageIsland: React.FC<Props> = ({ticketsPagination, ticketPageUrl, messagesUrl, createUrl, replyUrl, downloadUrl: _downloadUrl, csrf: _csrf}) => {
-    const {
-        items: tickets, page: ticketPage, totalPages: ticketTotalPages,
-        total: ticketTotal, loading: ticketsLoading, goToPage: ticketGoToPage, refresh: ticketRefresh,
-        perPage: ticketPerPage, setPerPage: ticketSetPerPage,
-    } = usePagination<SupportTicket>({url: ticketPageUrl, initialData: ticketsPagination});
-
-    const paginationLabels: PaginationLabels = {
-        prev: t.Pagination_Prev(),
-        next: t.Pagination_Next(),
-        of: t.Pagination_Of(),
-        items: t.Pagination_Items(),
-    };
-
-    const [ui] = useState(createPageState);
-    const {selectedId, selectedTicketData, readIds, showNewForm, subject, message, replyText} =
-        React.useSyncExternalStore(ui.subscribeSnapshot, ui.snapshot, ui.snapshot);
-    const readTicketIds = React.useMemo(() => new Set(readIds), [readIds]);
-    const {setSubject, setMessage, setReplyText} = ui;
-    const [createFiles, setCreateFiles] = useState<PendingFile[]>([]);
-    const [replyFiles, setReplyFiles]   = useState<PendingFile[]>([]);
-    const {sending, withSending} = useSending();
-    const thread = useSupportThread({messagesUrl, createUrl, replyUrl});
-    const {messages, loading: loadingMessages, messagesEndRef} = thread;
-
-
-    // Init auto-context collector on mount
-    useEffect(() => { initAutoContext(); }, []);
-
-    const sortedTickets = tickets; // Already sorted by server (updated_at DESC)
-
-    thread.usePolling(selectedId, 15000);
-    return <SupportPageView {...{tickets, sortedTickets, ticketPage, ticketTotalPages, ticketTotal, ticketsLoading,
-        ticketGoToPage, ticketRefresh, ticketPerPage, ticketSetPerPage, paginationLabels, ui, selectedId, selectedTicketData,
-        readTicketIds, showNewForm, subject, message, replyText, setSubject, setMessage, setReplyText, createFiles, setCreateFiles,
-        replyFiles, setReplyFiles, sending, withSending, thread, messages, loadingMessages, messagesEndRef}} />;
-};
-
 const PAGE_ICON = <LifeBuoy size={22} aria-hidden="true" />;
-type ViewProps = Parameters<typeof PageTicketListPanel>[0];
-interface SupportViewProps extends ReturnType<typeof useSending> {
-    ui: SupportPageState;
-    tickets: SupportTicket[];
-    sortedTickets: SupportTicket[];
-    selectedId: number | null;
-    selectedTicketData: SupportTicket | null;
-    readTicketIds: Set<number>;
-    showNewForm: boolean;
-    subject: string;
-    message: string;
-    replyText: string;
-    setSubject: (value: string) => void;
-    setMessage: (value: string) => void;
-    setReplyText: (value: string) => void;
-    createFiles: PendingFile[];
-    replyFiles: PendingFile[];
-    setCreateFiles: (files: PendingFile[]) => void;
-    setReplyFiles: (files: PendingFile[]) => void;
-    ticketPage: number;
-    ticketTotalPages: number;
-    ticketTotal: number;
-    ticketsLoading: boolean;
-    ticketPerPage: number;
-    ticketGoToPage: ViewProps['onPageChange'];
-    ticketSetPerPage: ViewProps['onPageSizeChange'];
-    ticketRefresh: () => void;
-    paginationLabels: PaginationLabels;
-    thread: ReturnType<typeof useSupportThread>;
-    messages: ReturnType<typeof useSupportThread>['messages'];
-    loadingMessages: boolean;
-    messagesEndRef: React.RefObject<HTMLDivElement>;
-}
 
-function findTicket(tickets: SupportTicket[], id: number): SupportTicket | undefined {
+function findTicket(tickets: readonly SupportTicket[], id: number): SupportTicket | undefined {
     return tickets.find(ticket => ticket.id === id);
 }
 
-class SupportPageView extends AntiHookComponent<SupportViewProps> {
+export class SupportPageIsland extends AntiHookComponent<Props> {
+    private readonly pagination = new PaginationController<SupportTicket>({url: this.props.ticketPageUrl, initialData: this.props.ticketsPagination});
+    private readonly ui = new SupportPageState();
+    private readonly thread = new SupportThreadController({messagesUrl: this.props.messagesUrl, createUrl: this.props.createUrl, replyUrl: this.props.replyUrl});
+    private readonly files = new Carburetor<{create: PendingFile[]; reply: PendingFile[]}>({create: [], reply: []});
+    private readonly sending = new SupportSending();
+    private readonly messagesEnd = React.createRef<HTMLDivElement>();
+
+    // Обёртки как в usePagination: его сторожа отличаются от сторожа контроллера.
+    private readonly ticketGoToPage = (p: number) => {
+        if (p < 1 || p > this.pagination.snapshot().totalPages || p === this.pagination.snapshot().page) return;
+        void this.pagination.fetchPage(p);
+    };
+    private readonly ticketRefresh = (): void => void this.pagination.fetchPage(this.pagination.snapshot().page);
+    private readonly ticketSetPerPage = this.pagination.setPerPage;
+
+    private readonly setCreateFiles = (files: PendingFile[]) => this.files.setData({...this.files.getData(), create: files});
+    private readonly setReplyFiles = (files: PendingFile[]) => this.files.setData({...this.files.getData(), reply: files});
+
+    // Уборки вынесены в поля: ссылка на них должна быть стабильной.
+    private readonly disposePagination = () => this.pagination.dispose();
+    private readonly stopThreadPolling = () => this.thread.stopPolling();
+
+    protected override useEffects(): void {
+        const {selectedId} = this.ui.snapshot();
+        const {messages} = this.thread.snapshot();
+
+        this.useEffect('pagination', () => {
+            this.pagination.start();
+
+            return this.disposePagination;
+        }, []);
+
+        // Init auto-context collector on mount
+        this.useEffect('autoContext', () => { initAutoContext(); }, []);
+
+        this.useEffect('poll', () => {
+            if (selectedId === null) {
+                this.thread.stopPolling();
+
+                return;
+            }
+            this.thread.startPolling(selectedId, 15000);
+
+            return this.stopThreadPolling;
+        }, [selectedId]);
+
+        this.useEffect('scroll', () => { this.messagesEnd.current?.scrollIntoView({behavior: 'smooth'}); }, [messages]);
+    }
+
     private readonly fetchMessages = (ticketId: number) => {
-        const {thread, ui} = this.props;
-        void thread.loadMessages(ticketId).then((r: any) => {
+        void this.thread.loadMessages(ticketId).then((r: any) => {
             if (!r) return;
             // Пометить прочитанным на месте: непрочитанный значок должен
             // погаснуть сразу, а не после следующей загрузки списка.
-            ui.markRead(ticketId, r.ticket);
+            this.ui.markRead(ticketId, r.ticket);
             // D-198: открыв обращение, пользователь его прочитал — значок в
             // шапке обязан погаснуть сразу. Он жил своей жизнью на опросе раз
             // в 20 секунд, и всё это время показывал непрочитанное, которое
@@ -129,33 +102,31 @@ class SupportPageView extends AntiHookComponent<SupportViewProps> {
         });
     };
 
-
-
     private readonly selectTicket = (ticketId: number) => {
-        const {tickets, ui, setReplyFiles} = this.props;
         D('support.click', {action: 'selectTicket', ticketId});
-        const ticketFromList = findTicket(tickets, ticketId);
-        ui.update({selectedId: ticketId, showNewForm: false, replyText: '',
+        const ticketFromList = findTicket(this.pagination.snapshot().items, ticketId);
+        this.ui.patch({selectedId: ticketId, showNewForm: false, replyText: '',
             ...(ticketFromList ? {selectedTicketData: ticketFromList} : {})});
-        setReplyFiles([]);
+        this.setReplyFiles([]);
         this.fetchMessages(ticketId);
     };
 
     private readonly handleCreate = () => {
-        if (!this.props.subject.trim() || !this.props.message.trim()) return;
-        void this.props.withSending(this.createTicket);
+        const {subject, message} = this.ui.snapshot();
+        if (!subject.trim() || !message.trim()) return;
+        void this.sending.withSending(this.createTicket);
     };
 
     private readonly createTicket = async () => {
-        const {thread, ui, createFiles, setCreateFiles, ticketPage, ticketRefresh, ticketGoToPage, subject, message} = this.props;
+        const {subject, message} = this.ui.snapshot();
         try {
-            const r = await thread.createTicket(subject, message, createFiles);
+            const r = await this.thread.createTicket(subject, message, this.files.getData().create);
             if (r?.ticket) {
                 D('support.created', {ticketId: r.ticket.id});
-                ui.update({showNewForm: false, subject: '', message: ''});
-                setCreateFiles([]);
-                if (ticketPage === 1) ticketRefresh(); else ticketGoToPage(1);
-                ui.update({selectedTicketData: r.ticket, selectedId: r.ticket.id});
+                this.ui.patch({showNewForm: false, subject: '', message: ''});
+                this.setCreateFiles([]);
+                if (this.pagination.snapshot().page === 1) this.ticketRefresh(); else this.ticketGoToPage(1);
+                this.ui.patch({selectedTicketData: r.ticket, selectedId: r.ticket.id});
                 this.fetchMessages(r.ticket.id);
                 // D-211: silence at send time read as "did this go
                 // through?" — the ticket number and a measured ETA (not
@@ -172,40 +143,53 @@ class SupportPageView extends AntiHookComponent<SupportViewProps> {
     };
 
     private readonly handleReply = () => {
-        if (!this.props.replyText.trim() || !this.props.selectedId) return;
-        void this.props.withSending(this.replyToTicket);
+        const {selectedId, replyText} = this.ui.snapshot();
+        if (!replyText.trim() || !selectedId) return;
+        void this.sending.withSending(this.replyToTicket);
     };
 
     private readonly replyToTicket = async () => {
-        const {thread, selectedId, replyText, replyFiles, setReplyFiles, ui, ticketRefresh} = this.props;
+        const {selectedId, replyText} = this.ui.snapshot();
         if (!selectedId) return;
         try {
-            await thread.reply(selectedId, replyText, replyFiles);
-            ui.setReplyText('');
-            setReplyFiles([]);
+            await this.thread.reply(selectedId, replyText, this.files.getData().reply);
+            this.ui.setReplyText('');
+            this.setReplyFiles([]);
             this.fetchMessages(selectedId);
             // D-198: ответ меняет и статус обращения, и время последнего
             // события — то есть ровно то, что показывает строка слева.
             // Создание тикета список перечитывало, ответ — нет, и строка
             // держала прежний статус до перезагрузки страницы.
-            ticketRefresh();
+            this.ticketRefresh();
         } catch (err: any) {
             D('support.error', {action: 'reply', error: err});
             showToast(err?.message || t.General_Error(), 'danger');
         }
     };
 
-
-
     private readonly openNew = () => {
-        const {ui, setCreateFiles} = this.props;
-        ui.update({showNewForm: true, selectedId: null, subject: '', message: ''});
-        setCreateFiles([]);
+        this.ui.patch({showNewForm: true, selectedId: null, subject: '', message: ''});
+        this.setCreateFiles([]);
     };
 
-    private renderList() {
+    private renderList(list: {
+        sortedTickets: SupportTicket[];
+        selectedId: number | null;
+        readTicketIds: Set<number>;
+        ticketPage: number;
+        ticketTotalPages: number;
+        ticketTotal: number;
+        ticketsLoading: boolean;
+        ticketPerPage: number;
+    }) {
         const {sortedTickets, selectedId, readTicketIds, ticketPage, ticketTotalPages, ticketTotal, ticketsLoading,
-            paginationLabels, ticketPerPage, ticketGoToPage, ticketSetPerPage} = this.props;
+            ticketPerPage} = list;
+        const paginationLabels: PaginationLabels = {
+            prev: t.Pagination_Prev(),
+            next: t.Pagination_Next(),
+            of: t.Pagination_Of(),
+            items: t.Pagination_Items(),
+        };
         return (
             <PageTicketListPanel
                 tickets={sortedTickets}
@@ -219,35 +203,55 @@ class SupportPageView extends AntiHookComponent<SupportViewProps> {
                 loading={ticketsLoading}
                 labels={paginationLabels}
                 perPage={ticketPerPage}
-                onPageChange={ticketGoToPage}
-                onPageSizeChange={ticketSetPerPage}
+                onPageChange={this.ticketGoToPage}
+                onPageSizeChange={this.ticketSetPerPage}
             />
         );
     }
 
-    private renderBody(selectedTicket: SupportTicket | null) {
-        const {tickets, showNewForm, subject, message, replyText, setSubject, setMessage, setReplyText, createFiles,
-            setCreateFiles, replyFiles, setReplyFiles, sending, messages, loadingMessages, messagesEndRef, ui} = this.props;
-        return showNewForm ? <PageNewTicketForm subject={subject} onSubjectChange={setSubject} message={message} onMessageChange={setMessage} files={createFiles} onFilesChange={setCreateFiles} onSubmit={this.handleCreate} onCancel={ui.closeForm} sending={sending} /> : selectedTicket ? <PageConversation selectedTicket={selectedTicket} messages={messages} loading={loadingMessages} endRef={messagesEndRef} replyText={replyText} onReplyTextChange={setReplyText} replyFiles={replyFiles} onReplyFilesChange={setReplyFiles} onReply={this.handleReply} sending={sending} /> : <PageEmpty ticketsCount={tickets.length} />;
+    private renderBody(selectedTicket: SupportTicket | null, body: {
+        tickets: TReadonly<SupportTicket[]>;
+        showNewForm: boolean;
+        subject: string;
+        message: string;
+        replyText: string;
+        createFiles: TReadonly<PendingFile[]>;
+        replyFiles: TReadonly<PendingFile[]>;
+        sending: boolean;
+        messages: TReadonly<SupportMessage[]>;
+        loadingMessages: boolean;
+    }) {
+        const {tickets, showNewForm, subject, message, replyText, createFiles,
+            replyFiles, sending, messages, loadingMessages} = body;
+        return showNewForm ? <PageNewTicketForm subject={subject} onSubjectChange={this.ui.setSubject} message={message} onMessageChange={this.ui.setMessage} files={createFiles as PendingFile[]} onFilesChange={this.setCreateFiles} onSubmit={this.handleCreate} onCancel={this.ui.closeForm} sending={sending} /> : selectedTicket ? <PageConversation selectedTicket={selectedTicket} messages={messages as SupportMessage[]} loading={loadingMessages} endRef={this.messagesEnd} replyText={replyText} onReplyTextChange={this.ui.setReplyText} replyFiles={replyFiles as PendingFile[]} onReplyFilesChange={this.setReplyFiles} onReply={this.handleReply} sending={sending} /> : <PageEmpty ticketsCount={tickets.length} />;
     }
 
     render() {
-        const {ui, tickets, selectedId, selectedTicketData, showNewForm} = this.props;
-        const selectedTicket = selectedId ? (selectedTicketData?.id === selectedId ? selectedTicketData : findTicket(tickets, selectedId) ?? null) : null;
+        const {items, page: ticketPage, totalPages: ticketTotalPages, total: ticketTotal,
+            loading: ticketsLoading, perPage: ticketPerPage} = this.useCarburetor(this.pagination);
+        const {selectedId, selectedTicketData, readIds, showNewForm, subject, message,
+            replyText} = this.useCarburetor(this.ui);
+        const {messages, loading: loadingMessages} = this.useCarburetor(this.thread);
+        const {create: createFiles, reply: replyFiles} = this.useCarburetor(this.files);
+        const {sending} = this.useCarburetor(this.sending);
+        const readTicketIds = new Set(readIds);
+        const selectedTicket = selectedId ? (selectedTicketData?.id === selectedId ? selectedTicketData : findTicket(items, selectedId) ?? null) : null;
         return (
             <div className="comms-page">
                 <PageHeader title={t.Support_Title()} icon={PAGE_ICON} />
 
                 <div className="comms-page-layout" data-detail={Boolean(selectedTicket || showNewForm)}>
                     {/* Left: ticket list */}
-                    {this.renderList()}
+                    {this.renderList({sortedTickets: items as SupportTicket[], selectedId, readTicketIds, ticketPage,
+                        ticketTotalPages, ticketTotal, ticketsLoading, ticketPerPage})}
 
                     {/* Right: conversation or new form */}
                     <div className="comms-page-thread">
                         {(selectedTicket || showNewForm) && (
-                            <PageBackButton onBack={ui.back} />
+                            <PageBackButton onBack={this.ui.back} />
                         )}
-                        {this.renderBody(selectedTicket)}
+                        {this.renderBody(selectedTicket, {tickets: items, showNewForm, subject, message, replyText,
+                            createFiles, replyFiles, sending, messages, loadingMessages})}
                     </div>
                 </div>
 

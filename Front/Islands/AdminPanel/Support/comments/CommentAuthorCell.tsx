@@ -22,7 +22,7 @@ export const CommentAuthorCell: React.FC<{row: AdminCommentRow}> = ({row}) => {
     }
 
     return (
-        <span className="text-muted" title={t.Comment_AuthorHiddenHint()} data-test-id={`comment-author-hidden-${row.id}`}>
+        <span className="admin-comments-author-muted" title={t.Comment_AuthorHiddenHint()} data-test-id={`comment-author-hidden-${row.id}`}>
             {t.Comment_AuthorHidden()}
         </span>
     );

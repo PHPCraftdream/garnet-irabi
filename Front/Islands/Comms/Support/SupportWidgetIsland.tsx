@@ -1,16 +1,16 @@
 import * as React from 'react';
-import {AntiHookComponent} from '@react-carburetor/core';
+import {AntiHookComponent, Carburetor, type TReadonly} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
-import {useLiveCounts} from '@common/hooks/data/useLiveCounts';
-import {refreshLiveCounts} from '@common/Utils/Data/liveCounts';
+import {refreshLiveCounts, startLiveCounts, subscribeLiveCounts} from '@common/Utils/Data/liveCounts';
+import type {LiveCounts} from '@common/Utils/Data/liveCounts';
 import {D} from '@common/Support/Debug/D';
-import {useSending} from '@common/hooks/data/useSending';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import type {PendingFile} from '../../../Common/attachments/AttachmentPicker';
 import {initAutoContext} from './parts/autoContext';
-import type {SupportTicket} from './parts/supportTypes';
-import {useSupportThread} from './parts/useSupportThread';
+import type {SupportMessage, SupportTicket} from './parts/supportTypes';
+import {SupportThreadController} from './parts/SupportThreadController';
+import {SupportSending} from './parts/supportSending';
 import {SupportWidgetState} from './SupportWidgetState';
 import {WidgetFab} from './Widget/WidgetFab';
 import {WidgetPanelHeader} from './Widget/WidgetPanelHeader';
@@ -31,15 +31,7 @@ interface Props {
     imPageUrl?: string;
 }
 
-type Snapshot = ReturnType<SupportWidgetState['snapshot']>;
-
-interface ViewProps extends Pick<Props, 'ticketsUrl' | 'pageUrl' | 'imPageUrl'>, ReturnType<typeof useSending> {
-    ui: SupportWidgetState;
-    snapshot: Snapshot;
-    thread: ReturnType<typeof useSupportThread>;
-    files: PendingFile[];
-    setFiles: React.Dispatch<React.SetStateAction<PendingFile[]>>;
-}
+const selectLiveCounts = (data: {counts: LiveCounts | null}): LiveCounts | null => data.counts;
 
 function findTicket(tickets: SupportTicket[], id: number | null): SupportTicket | undefined {
     return tickets.find(ticket => ticket.id === id);
@@ -52,26 +44,61 @@ function notifyCreated(ticketId?: number, etaMinutes?: number): void {
     showToast(confirmation, 'success');
 }
 
-class SupportWidgetView extends AntiHookComponent<ViewProps> {
-    private pollTimer?: number;
+export class SupportWidgetIsland extends AntiHookComponent<Props> {
+    private readonly ui = new SupportWidgetState(this.props.unreadCount, this.props.unreadIm ?? 0);
+    private readonly thread = new SupportThreadController({messagesUrl: this.props.messagesUrl, createUrl: this.props.createUrl, replyUrl: this.props.replyUrl});
+    private readonly sending = new SupportSending();
+    private readonly files = new Carburetor<{list: PendingFile[]}>({list: []});
+    private readonly live = new Carburetor<{counts: LiveCounts | null}>({counts: null});
+    private readonly messagesEnd = React.createRef<HTMLDivElement>();
 
-    componentDidUpdate(previous: Readonly<ViewProps>): void {
-        super.componentDidUpdate(previous);
-        const {snapshot, thread} = this.props;
-        const wasListing = previous.snapshot.isOpen && previous.snapshot.view === 'list';
-        const listing = snapshot.isOpen && snapshot.view === 'list';
-        if (listing !== wasListing) {
-            window.clearInterval(this.pollTimer);
-            if (listing) this.pollTimer = window.setInterval(this.pollList, 20000);
-        }
-        if (thread.messages !== previous.thread.messages) {
-            thread.messagesEndRef.current?.scrollIntoView({behavior: 'smooth'});
-        }
-    }
+    private readonly setFiles = (files: PendingFile[]) => this.files.setData({list: files});
+    private readonly setLiveCounts = (counts: LiveCounts) => this.live.setData({counts});
 
-    componentWillUnmount(): void {
-        window.clearInterval(this.pollTimer);
-        super.componentWillUnmount();
+    // Уборки вынесены в поля: ссылки на них должны быть стабильными.
+    private readonly stopThreadPolling = () => this.thread.stopPolling();
+    private readonly applyLiveCounts = (counts: LiveCounts | null): void => {
+        if (counts) this.ui.patch({badge: counts.unreadSupport, imUnread: counts.unreadIm});
+    };
+
+    protected override useEffects(): void {
+        const {selectedTicketId, isOpen, view} = this.ui.snapshot();
+        const {messages} = this.thread.snapshot();
+        const pollEnabled = isOpen && view === 'conversation';
+        const listing = isOpen && view === 'list';
+
+        // Init auto-context collector on mount
+        this.useEffect('autoContext', () => { initAutoContext(); }, []);
+
+        this.useEffect('live', () => {
+            startLiveCounts();
+
+            return subscribeLiveCounts(this.setLiveCounts);
+        }, []);
+
+        // Значок следует за самой записью счётчиков: deps из getData() не перезапустили бы
+        // эффект, когда придёт новый опрос, и значок остался бы прежним.
+        this.useStoreEffect('liveBadge', this.live, selectLiveCounts, this.applyLiveCounts);
+
+        this.useEffect('poll', () => {
+            if (selectedTicketId === null || !pollEnabled) {
+                this.thread.stopPolling();
+
+                return;
+            }
+            this.thread.startPolling(selectedTicketId, 20000);
+
+            return this.stopThreadPolling;
+        }, [selectedTicketId, pollEnabled]);
+
+        this.useEffect('listPoll', () => {
+            if (!listing) return;
+            const id = window.setInterval(this.pollList, 20000);
+
+            return () => window.clearInterval(id);
+        }, [listing]);
+
+        this.useEffect('scroll', () => { this.messagesEnd.current?.scrollIntoView({behavior: 'smooth'}); }, [messages]);
     }
 
     private readonly pollList = () => {
@@ -79,61 +106,59 @@ class SupportWidgetView extends AntiHookComponent<ViewProps> {
     };
 
     private async fetchTickets(silent = false): Promise<void> {
-        const {ui, ticketsUrl} = this.props;
-        if (!silent) ui.update({loadingTickets: true});
+        const {ticketsUrl} = this.props;
+        if (!silent) this.ui.patch({loadingTickets: true});
         D('support.tickets', 'fetch');
         try {
             const response = await sendPost(ticketsUrl, {}) as {tickets?: SupportTicket[]};
             const tickets = response?.tickets ?? [];
             D('support.tickets', {count: tickets.length});
-            ui.update({tickets, loadingTickets: false});
+            this.ui.patch({tickets, loadingTickets: false});
         } catch (error) {
             D('support.error', {action: 'fetchTickets', error});
-            ui.update({loadingTickets: false});
+            this.ui.patch({loadingTickets: false});
             if (!silent) showToast(t.User_LoadError(), 'danger');
         }
     }
 
     private async fetchMessages(ticketId: number): Promise<void> {
-        await this.props.thread.loadMessages(ticketId);
+        await this.thread.loadMessages(ticketId);
         refreshLiveCounts();
     }
 
     private readonly toggle = () => {
-        const {ui} = this.props;
-        const {isOpen} = ui.getData();
+        const {isOpen} = this.ui.getData();
         D('support.click', isOpen ? 'close-widget' : 'open-widget');
-        if (isOpen) ui.close();
+        if (isOpen) this.ui.close();
         else {
-            ui.update({isOpen: true, view: 'list'});
+            this.ui.patch({isOpen: true, view: 'list'});
             void this.fetchTickets();
         }
     };
 
     private readonly openTicket = (ticketId: number) => {
         D('support.click', {action: 'openTicket', ticketId});
-        this.props.ui.update({selectedTicketId: ticketId, view: 'conversation', replyText: ''});
+        this.ui.patch({selectedTicketId: ticketId, view: 'conversation', replyText: ''});
         void this.fetchMessages(ticketId);
     };
 
     private readonly backFromThread = () => {
-        this.props.ui.back();
+        this.ui.back();
         void this.fetchTickets();
     };
 
     private readonly create = () => {
-        const {subject, message} = this.props.ui.getData();
-        if (subject.trim() && message.trim()) void this.props.withSending(this.createTicket);
+        const {subject, message} = this.ui.getData();
+        if (subject.trim() && message.trim()) void this.sending.withSending(this.createTicket);
     };
 
     private readonly createTicket = async () => {
-        const {ui, thread, files, setFiles} = this.props;
-        const {subject, message} = ui.getData();
+        const {subject, message} = this.ui.getData();
         try {
-            const response = await thread.createTicket(subject, message, files);
+            const response = await this.thread.createTicket(subject, message, this.files.getData().list);
             D('support.created', {source: 'widget'});
-            ui.update({subject: '', message: '', view: 'list'});
-            setFiles([]);
+            this.ui.patch({subject: '', message: '', view: 'list'});
+            this.setFiles([]);
             void this.fetchTickets();
             notifyCreated(response?.ticketId, response?.responseEtaMinutes);
         } catch (error: any) {
@@ -143,17 +168,16 @@ class SupportWidgetView extends AntiHookComponent<ViewProps> {
     };
 
     private readonly reply = () => {
-        const {replyText, selectedTicketId} = this.props.ui.getData();
-        if (replyText.trim() && selectedTicketId) void this.props.withSending(this.replyToTicket);
+        const {replyText, selectedTicketId} = this.ui.getData();
+        if (replyText.trim() && selectedTicketId) void this.sending.withSending(this.replyToTicket);
     };
 
     private readonly replyToTicket = async () => {
-        const {ui, thread} = this.props;
-        const {selectedTicketId, replyText} = ui.getData();
+        const {selectedTicketId, replyText} = this.ui.getData();
         if (!selectedTicketId) return;
         try {
-            await thread.reply(selectedTicketId, replyText, []);
-            ui.setReplyText('');
+            await this.thread.reply(selectedTicketId, replyText, []);
+            this.ui.setReplyText('');
             void this.fetchMessages(selectedTicketId);
             void this.fetchTickets(true);
         } catch (error: any) {
@@ -165,53 +189,56 @@ class SupportWidgetView extends AntiHookComponent<ViewProps> {
     private readonly screenshot = (blob: Blob, name: string) => {
         D('support.screenshot', {name, size: blob.size, source: 'widget'});
         const entry: PendingFile = {id: crypto.randomUUID(), file: blob, name, preview: URL.createObjectURL(blob)};
-        this.props.setFiles(previous => [...previous, entry]);
+        this.setFiles([...this.files.getData().list, entry]);
     };
 
-    private renderBody() {
-        const {snapshot, ui, thread, sending, files, setFiles} = this.props;
-        if (snapshot.view === 'list') {
-            return <WidgetTicketList loadingTickets={snapshot.loadingTickets} tickets={snapshot.tickets} onNew={ui.openNew} onOpen={this.openTicket} />;
+    private renderBody(body: {
+        view: 'list' | 'conversation' | 'new';
+        loadingTickets: boolean;
+        tickets: TReadonly<SupportTicket[]>;
+        selectedTicketId: number | null;
+        replyText: string;
+        subject: string;
+        message: string;
+        files: TReadonly<PendingFile[]>;
+        messages: TReadonly<SupportMessage[]>;
+        loadingMessages: boolean;
+        sending: boolean;
+    }) {
+        const {view, loadingTickets, tickets, selectedTicketId, replyText, subject, message,
+            files, messages, loadingMessages, sending} = body;
+        if (view === 'list') {
+            return <WidgetTicketList loadingTickets={loadingTickets} tickets={tickets as SupportTicket[]} onNew={this.ui.openNew} onOpen={this.openTicket} />;
         }
-        if (snapshot.view === 'conversation') {
-            return <WidgetConversation loading={thread.loading} messages={thread.messages} endRef={thread.messagesEndRef}
-                selectedTicket={findTicket(snapshot.tickets, snapshot.selectedTicketId)} replyText={snapshot.replyText}
-                onReplyTextChange={ui.setReplyText} onReply={this.reply} onBack={this.backFromThread} sending={sending} />;
+        if (view === 'conversation') {
+            return <WidgetConversation loading={loadingMessages} messages={messages as SupportMessage[]} endRef={this.messagesEnd}
+                selectedTicket={findTicket(tickets as SupportTicket[], selectedTicketId)} replyText={replyText}
+                onReplyTextChange={this.ui.setReplyText} onReply={this.reply} onBack={this.backFromThread} sending={sending} />;
         }
-        return <WidgetNewTicketForm subject={snapshot.subject} onSubjectChange={ui.setSubject} message={snapshot.message}
-            onMessageChange={ui.setMessage} files={files} onFilesChange={setFiles} onScreenshot={this.screenshot}
-            onSubmit={this.create} onBack={ui.back} sending={sending} />;
+        return <WidgetNewTicketForm subject={subject} onSubjectChange={this.ui.setSubject} message={message}
+            onMessageChange={this.ui.setMessage} files={files as PendingFile[]} onFilesChange={this.setFiles} onScreenshot={this.screenshot}
+            onSubmit={this.create} onBack={this.ui.back} sending={sending} />;
     }
 
     render() {
-        const {snapshot, ui, pageUrl, imPageUrl = '/im/'} = this.props;
+        const {isOpen, badge, imUnread, view, loadingTickets, tickets, selectedTicketId,
+            replyText, subject, message} = this.useCarburetor(this.ui);
+        const {messages, loading: loadingMessages} = this.useCarburetor(this.thread);
+        const {sending} = this.useCarburetor(this.sending);
+        const {list: files} = this.useCarburetor(this.files);
+        const {pageUrl, imPageUrl = '/im/'} = this.props;
         return (
             <>
-                <WidgetFab badge={snapshot.badge} onToggle={this.toggle} />
-                {snapshot.isOpen && (
+                <WidgetFab badge={badge} onToggle={this.toggle} />
+                {isOpen && (
                     <div data-test-id="support-widget-panel" className="support-widget-panel">
-                        <WidgetPanelHeader pageUrl={pageUrl} onClose={ui.close} />
-                        <WidgetImLink imUnread={snapshot.imUnread} imPageUrl={imPageUrl} />
-                        <div className="support-widget-body">{this.renderBody()}</div>
+                        <WidgetPanelHeader pageUrl={pageUrl} onClose={this.ui.close} />
+                        <WidgetImLink imUnread={imUnread} imPageUrl={imPageUrl} />
+                        <div className="support-widget-body">{this.renderBody({view, loadingTickets, tickets, selectedTicketId,
+                            replyText, subject, message, files, messages, loadingMessages, sending})}</div>
                     </div>
                 )}
             </>
         );
     }
-}
-
-export function SupportWidgetIsland(props: Props) {
-    const [ui] = React.useState(() => new SupportWidgetState(props.unreadCount, props.unreadIm ?? 0));
-    const snapshot = React.useSyncExternalStore(ui.subscribeSnapshot, ui.snapshot, ui.snapshot);
-    const [files, setFiles] = React.useState<PendingFile[]>([]);
-    const sending = useSending();
-    const live = useLiveCounts();
-    const thread = useSupportThread({messagesUrl: props.messagesUrl, createUrl: props.createUrl, replyUrl: props.replyUrl});
-    React.useEffect(initAutoContext, []);
-    React.useEffect(() => {
-        if (live) ui.update({badge: live.unreadSupport, imUnread: live.unreadIm});
-    }, [live, ui]);
-    thread.usePolling(snapshot.selectedTicketId, 20000, snapshot.isOpen && snapshot.view === 'conversation');
-    return <SupportWidgetView ui={ui} snapshot={snapshot} thread={thread} {...sending}
-        files={files} setFiles={setFiles} ticketsUrl={props.ticketsUrl} pageUrl={props.pageUrl} imPageUrl={props.imPageUrl} />;
 }
