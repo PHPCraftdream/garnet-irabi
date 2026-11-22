@@ -1,19 +1,13 @@
 @reference "tailwindcss";
 
-/* carburetor-disable-next-line valid-color-role */
+/* Правило требует var(--palette-…), но у этих токенов Garnet-темы нет записи в палитре: её добавление — правка общего слоя темы. */
 @theme inline reference {
-  /* carburetor-disable-next-line valid-color-role */
-  --color-tokenexpired-wash: var(--color-status-yellow-bg);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-tokenexpired-ink: var(--color-status-yellow);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-tokenmuted-wash: var(--color-status-gray-bg);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-tokenmuted-ink: var(--color-status-gray);
+  /* Роль tokenmuted-filter: эквивалент (border-subtle + text-muted) лежит в модуле фреймворка, который конфиг линта не сканирует, а valid-tone-class запрещает тону брать кирпичи чужого семейства. */
   /* carburetor-disable-next-line valid-color-role */
   --color-tokenmuted-edge: var(--color-border-subtle);
   /* carburetor-disable-next-line valid-color-role */
   --color-tokenmuted-ink-subtle: var(--color-text-muted);
+  /* Роль вкладок users: framework tone-tabnavinactive-outline выглядит эквивалентно, но его ink-hover — --color-text-secondary, а вкладке нужен --color-text-primary, поэтому переиспользование изменило бы цвет при наведении. */
   /* carburetor-disable-next-line valid-color-role */
   --color-usersidle-ink: var(--color-text-muted);
   /* carburetor-disable-next-line valid-color-role */
@@ -26,9 +20,7 @@
   --color-usersactive-ink: var(--color-accent);
 }
 
-@utility tone-tokenexpired-soft { @apply bg-tokenexpired-wash text-tokenexpired-ink; }
 @utility tone-tokenmuted-filter { @apply border-tokenmuted-edge text-tokenmuted-ink-subtle; }
-@utility tone-tokenmuted-soft { @apply bg-tokenmuted-wash text-tokenmuted-ink; }
 @utility shape-token-field { @apply mb-3; }
 @utility shape-token-label { @apply mb-1.5; }
 @utility layout-token-label { @apply block; }
@@ -51,6 +43,7 @@
 
 @utility layout-token-created-link { @apply flex gap-2 items-center; }
 
+/* Роль moneybalance: эквивалент --color-success есть только в модуле фреймворка, который конфиг линта не сканирует, а valid-tone-class запрещает тону брать кирпичи чужого семейства. */
 @theme inline reference {
   /* carburetor-disable-next-line valid-color-role */
   --color-moneybalance-ink: var(--color-success);
@@ -201,9 +194,9 @@
   .token-cell-time { @apply tone-bookmuted-plain type-token-nowrap type-token-small; }
   .token-cell-muted { @apply tone-bookmuted-plain; }
   .token-row-actions { @apply tone-gridinherit-plain layout-token-actions; }
-  .token-status { @apply tone-tokenmuted-soft layout-token-status shape-token-status type-token-status; }
+  .token-status { @apply tone-ticketstatusgray-soft layout-token-status shape-token-status type-token-status; }
   .token-status[data-token-status="active"] { @apply tone-batchavailable-soft; }
-  .token-status[data-token-status="expired"] { @apply tone-tokenexpired-soft; }
+  .token-status[data-token-status="expired"] { @apply tone-ticketstatusyellow-soft; }
   .token-status[data-token-status="exhausted"] { @apply tone-batchrestricted-soft; }
 }
 

@@ -5,7 +5,7 @@ import {PageResponse} from '@common/hooks/data/usePagination';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {translateStatus} from '../../../Common/booking/statusHelpers';
 import {AccountOption, adminPaginationLabels, buildAccountOptions} from '../Shell/adminShared';
-import {useAdminPage} from '../Shell/useAdminPage';
+import {AdminPageController} from '../Shell/AdminPageController';
 import {AdminFilterBar, FilterCell} from './AdminFilterBar';
 import {AdminSlotRow, EMPTY_FILTERS, SlotsFilters} from './bookingsTypes';
 import {AdminSlotsTable} from './AdminSlotsTable';
@@ -17,6 +17,14 @@ interface Props {
     allowedStatuses: string[];
     experts: AccountOption[];
     users: AccountOption[];
+}
+
+interface PagerState {
+    page: number;
+    perPage: number;
+    totalPages: number;
+    total: number;
+    loading: boolean;
 }
 
 function statusOption(status: string) {
@@ -61,38 +69,41 @@ class FilterStore extends Carburetor<SlotsFilters> {
     readonly reset = () => this.replace(EMPTY_FILTERS);
 }
 
-interface ViewProps extends Props {
-    filters: SlotsFilters;
-    filterStore: FilterStore;
-    pagination: ReturnType<typeof useAdminPage<AdminSlotRow, SlotsFilters>>;
-}
-
-export const AdminSlotsTab: React.FC<Props> = (props) => {
-    const storeRef = React.useRef<FilterStore | null>(null);
-    if (storeRef.current === null) storeRef.current = new FilterStore();
-    const filterStore = storeRef.current;
-    const filters = React.useSyncExternalStore(filterStore.subscribeSnapshot, filterStore.snapshot, filterStore.snapshot);
-    const {initialData, pageUrl} = props;
-    const pagination = useAdminPage<AdminSlotRow, SlotsFilters>({
-        url: pageUrl,
-        initialData,
-        filters,
+export class AdminSlotsTab extends AntiHookComponent<Props> {
+    private readonly filterStore = new FilterStore();
+    private readonly pagination = new AdminPageController<AdminSlotRow, SlotsFilters>({
+        url: this.props.pageUrl,
+        initialData: this.props.initialData,
+        filters: this.filterStore.getData(),
         buildBody,
     });
+    private unsubscribeFilters?: () => void;
 
-    return <AdminSlotsTabView {...props} filters={filters} filterStore={filterStore} pagination={pagination} />;
-};
+    componentDidMount(): void {
+        super.componentDidMount();
+        // Подписка на стор фильтров заменяет прежний эффект с debounce: срабатывает на каждую запись фильтров.
+        this.unsubscribeFilters = this.filterStore.subscribeSnapshot(this.onFiltersChanged);
+        this.pagination.start();
+    }
 
-class AdminSlotsTabView extends AntiHookComponent<ViewProps> {
-    private readonly changeSearch = (value: string) => this.props.filterStore.patch({search: value});
-    private readonly changeExpertId = (value: number) => this.props.filterStore.patch({expertId: value});
-    private readonly changeUserId = (value: number) => this.props.filterStore.patch({userId: value});
-    private readonly changeDateFrom = (value: string) => this.props.filterStore.patch({dateFrom: value});
-    private readonly changeDateTo = (value: string) => this.props.filterStore.patch({dateTo: value});
-    private readonly changeStatus = (value: string) => this.props.filterStore.patch({status: value});
+    componentWillUnmount(): void {
+        this.unsubscribeFilters?.();
+        this.unsubscribeFilters = undefined;
+        this.pagination.stop();
+        super.componentWillUnmount();
+    }
 
-    private filterCells(): FilterCell[] {
-        const {filters, experts, users, allowedStatuses} = this.props;
+    private readonly onFiltersChanged = () => this.pagination.setFilters(this.filterStore.getData());
+
+    private readonly changeSearch = (value: string) => this.filterStore.patch({search: value});
+    private readonly changeExpertId = (value: number) => this.filterStore.patch({expertId: value});
+    private readonly changeUserId = (value: number) => this.filterStore.patch({userId: value});
+    private readonly changeDateFrom = (value: string) => this.filterStore.patch({dateFrom: value});
+    private readonly changeDateTo = (value: string) => this.filterStore.patch({dateTo: value});
+    private readonly changeStatus = (value: string) => this.filterStore.patch({status: value});
+
+    private filterCells(filters: SlotsFilters): FilterCell[] {
+        const {experts, users, allowedStatuses} = this.props;
         const expertOptions = buildAccountOptions(experts);
         const userOptions = buildAccountOptions(users);
         return [
@@ -130,31 +141,34 @@ class AdminSlotsTabView extends AntiHookComponent<ViewProps> {
         ];
     }
 
-    private renderPager() {
-        const {page, perPage, totalPages, total, loading, goToPage, setPerPage} = this.props.pagination;
+    private renderPager(pager: PagerState) {
+        const {page, perPage, totalPages, total, loading} = pager;
         return (
             <Pagination
                 page={page}
                 totalPages={totalPages}
                 total={total}
                 loading={loading}
-                onPageChange={goToPage}
+                onPageChange={this.pagination.goToPage}
                 labels={adminPaginationLabels}
                 pageSize={perPage}
-                onPageSizeChange={setPerPage}
+                onPageSizeChange={this.pagination.setPerPage}
             />
         );
     }
 
     render() {
-        const {items, loading} = this.props.pagination;
-        const cells = this.filterCells();
+        const filters = this.useCarburetor(this.filterStore);
+        const pagination = this.useCarburetor(this.pagination);
+        const {loading} = pagination;
+        const items = [...pagination.items];
+        const cells = this.filterCells(filters);
 
-        const pager = this.renderPager();
+        const pager = this.renderPager(pagination);
 
         return (
             <div data-test-id="admin-slots-tab">
-                <AdminFilterBar cells={cells} loading={loading} resetTestId="admin-slots-reset" onReset={this.props.filterStore.reset} />
+                <AdminFilterBar cells={cells} loading={loading} resetTestId="admin-slots-reset" onReset={this.filterStore.reset} />
                 <div className="admin-grid-pagination-top">{pager}</div>
                 {items.length === 0 && <AdminSlotsEmpty />}
                 {items.length > 0 && <AdminSlotsTable items={items} />}
