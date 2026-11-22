@@ -1,3 +1,4 @@
+import * as React from 'react';
 import {AntiHookComponent, Carburetor, type TReadonly} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
