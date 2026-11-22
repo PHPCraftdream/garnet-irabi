@@ -118,6 +118,9 @@ export class SupportPageIsland extends AntiHookComponent<Props> {
     };
 
     private readonly createTicket = async () => {
+        // Страница запоминается до await: usePagination замыкал её по рендеру,
+        // а чтение после await перенацеливало действие на новую страницу.
+        const {page} = this.pagination.snapshot();
         const {subject, message} = this.ui.snapshot();
         try {
             const r = await this.thread.createTicket(subject, message, this.files.getData().create);
@@ -125,7 +128,7 @@ export class SupportPageIsland extends AntiHookComponent<Props> {
                 D('support.created', {ticketId: r.ticket.id});
                 this.ui.patch({showNewForm: false, subject: '', message: ''});
                 this.setCreateFiles([]);
-                if (this.pagination.snapshot().page === 1) this.ticketRefresh(); else this.ticketGoToPage(1);
+                if (page === 1) void this.pagination.fetchPage(page); else void this.pagination.fetchPage(1);
                 this.ui.patch({selectedTicketData: r.ticket, selectedId: r.ticket.id});
                 this.fetchMessages(r.ticket.id);
                 // D-211: silence at send time read as "did this go
@@ -149,6 +152,9 @@ export class SupportPageIsland extends AntiHookComponent<Props> {
     };
 
     private readonly replyToTicket = async () => {
+        // Страница запоминается до await: usePagination замыкал её по рендеру,
+        // а чтение после await перенацеливало действие на новую страницу.
+        const {page} = this.pagination.snapshot();
         const {selectedId, replyText} = this.ui.snapshot();
         if (!selectedId) return;
         try {
@@ -160,7 +166,7 @@ export class SupportPageIsland extends AntiHookComponent<Props> {
             // события — то есть ровно то, что показывает строка слева.
             // Создание тикета список перечитывало, ответ — нет, и строка
             // держала прежний статус до перезагрузки страницы.
-            this.ticketRefresh();
+            void this.pagination.fetchPage(page);
         } catch (err: any) {
             D('support.error', {action: 'reply', error: err});
             showToast(err?.message || t.General_Error(), 'danger');

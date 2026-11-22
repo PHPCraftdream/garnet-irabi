@@ -1,5 +1,8 @@
 @reference "tailwindcss";
 
+/* Локальные семейства ссылаются на семантические токены фреймворка (var(--color-border),
+   var(--color-accent), …), а не на var(--palette-…), поэтому valid-color-role гасится на
+   каждое объявление; правилам вне @layer components нужен приоритет над слоем — там valid-function-class. */
 @theme inline reference {
   /* carburetor-disable-next-line valid-color-role */
   --color-adminstatusempty-edge: var(--color-border);
@@ -136,8 +139,6 @@
   /* carburetor-disable-next-line valid-color-role */
   --color-recipientaccent-ink: var(--color-accent);
   /* carburetor-disable-next-line valid-color-role */
-  --color-widgetneutral-edge: var(--color-border-subtle);
-  /* carburetor-disable-next-line valid-color-role */
   --color-widgetim-edge: var(--color-border);
   /* carburetor-disable-next-line valid-color-role */
   --color-widgetim-wash: var(--color-bg-surface-alt);
@@ -156,7 +157,9 @@
 }
 
 @utility tone-widgetneutral-plain { @apply text-inherit; }
-@utility tone-widgetneutral-outline { @apply border-widgetneutral-edge; }
+/* Удалённый локальный алиас --color-widgetneutral-edge заменён ролью фреймворка supportrow-edge (то же значение); имя утилиты сохранено: её применяют стили других областей. */
+/* carburetor-disable-next-line valid-tone-class */
+@utility tone-widgetneutral-outline { @apply border-supportrow-edge; }
 @utility layout-widget-inline-actions { @apply flex items-center gap-2; }
 @utility layout-widget-reply-row { @apply flex gap-2; }
 @utility shape-widget-ticket-list { @apply h-full; }
@@ -544,6 +547,7 @@
 @utility layout-my-review-header { @apply flex items-center justify-between; }
 @utility layout-my-review-heading { @apply flex items-center justify-between gap-2; }
 @utility shape-my-review-header { @apply p-4 border-b; }
+/* unlayered `h3 { @apply text-lg mb-3; }` (01-base.css:76) перебивает слоёные утилиты — нужен mb-0!. */
 @utility shape-my-reviews-title { @apply mb-0!; }
 @utility shape-my-reviews-pager { @apply p-4 pb-0; }
 @utility shape-my-reviews-list { @apply divide-y; }
@@ -555,6 +559,7 @@
 @utility shape-review-status { @apply ml-2; }
 @utility type-review-body { @apply text-sm whitespace-pre-wrap break-words; }
 @utility shape-review-section { @apply mt-6; }
+/* тот же unlayered `h3 { @apply text-lg mb-3; }` (01-base.css:76), применён к h3 через .review-heading — нужен mb-4!. */
 @utility shape-review-heading { @apply mb-4!; }
 @utility shape-review-notice { @apply p-3 mb-3 border rounded-lg; }
 @utility shape-review-empty { @apply py-4; }
@@ -646,6 +651,6 @@
 /* carburetor-disable-next-line valid-function-class */
 .section-soft[data-profile-about] { @apply mb-8; }
 /* carburetor-disable-next-line valid-function-class */
-.primary-action-button[data-profile-size="compact"] { @apply shape-compact-action type-compact-action; color: var(--color-accent-text) !important; }
+.primary-action-button[data-profile-size="compact"] { @apply shape-compact-action type-compact-action; }
 /* carburetor-disable-next-line valid-function-class */
 .user-profile-avatar-disabled { background-color: var(--color-accent-subtle); color: var(--color-text-muted); }

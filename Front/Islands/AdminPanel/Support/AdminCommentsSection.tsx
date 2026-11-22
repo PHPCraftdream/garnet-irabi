@@ -16,7 +16,7 @@ import {
 import {adminPaginationLabels, buildAccountOptions} from '../Shell/adminShared';
 import {CommentsFilterState, CommentsFilters} from './comments/CommentsFilters';
 import {CommentsTable} from './comments/CommentsTable';
-import {CommentsPaginationController} from './comments/CommentsPaginationController';
+import {AdminPageController} from '../Shell/AdminPageController';
 import {ConfirmController} from '../../Comms/Comments/confirmController';
 
 export type {AdminCommentRow, CommentsAccountOption} from './comments/commentTypes';
@@ -76,7 +76,7 @@ function buildBody(filters: CommentsFilterState, page: number, perPage: number):
 
 /** Поля, которые таблица получает от пагинатора; плюс подписи фильтров из props. */
 interface CommentsTableView {
-    items: AdminCommentRow[];
+    items: readonly AdminCommentRow[];
     page: number;
     perPage: number;
     totalPages: number;
@@ -100,12 +100,13 @@ type ConfirmView = ReturnType<ConfirmController['snapshot']>;
 export class AdminCommentsSection extends AntiHookComponent<AdminCommentsSectionProps> {
     private readonly ui = new CommentsUI();
     private readonly confirm = new ConfirmController();
-    private readonly pager = new CommentsPaginationController({
+    private readonly pager = new AdminPageController<AdminCommentRow, CommentsFilterState, CommentsFetchBody>({
         url: this.props.commentsPageUrl,
         initialData: this.props.commentsPayload,
+        filters: EMPTY_FILTERS,
         buildBody,
-        debounceMs: 300,
     });
+    private unsubscribeFilters?: () => void;
 
     // Новый массив на каждом рендере перерисовывал бы CommentsFilters,
     // а `experts`/`authors` после монтирования не меняются.
@@ -116,8 +117,21 @@ export class AdminCommentsSection extends AntiHookComponent<AdminCommentsSection
         expertOptions: ReturnType<typeof buildAccountOptions>;
     } | null = null;
 
-    // Уборки вынесены в поля: ссылка на них должна быть стабильной.
-    private readonly disposePager = () => this.pager.dispose();
+    componentDidMount(): void {
+        super.componentDidMount();
+        // Подписка на стор заменяет прежний эффект с debounce: срабатывает на каждую запись фильтров.
+        this.unsubscribeFilters = this.ui.subscribeSnapshot(this.onFiltersChanged);
+        this.pager.start();
+    }
+
+    componentWillUnmount(): void {
+        this.unsubscribeFilters?.();
+        this.unsubscribeFilters = undefined;
+        this.pager.stop();
+        super.componentWillUnmount();
+    }
+
+    private readonly onFiltersChanged = () => this.pager.setFilters(this.ui.getData().filters);
 
     private accountOptions() {
         const {experts, authors} = this.props;
@@ -131,20 +145,6 @@ export class AdminCommentsSection extends AntiHookComponent<AdminCommentsSection
         };
         this.accountOptionsCache = built;
         return built;
-    }
-
-    protected override useEffects(): void {
-        // Фильтры читаются и в render(): их изменение перерисовывает компонент,
-        // поэтому эффект с зависимостью по ссылке срабатывает.
-        const {filters} = this.ui.snapshot();
-
-        this.useEffect('pager', () => {
-            this.pager.start();
-
-            return this.disposePager;
-        }, []);
-
-        this.useEffect('filters', () => { this.pager.filtersChanged(filters); }, [filters]);
     }
 
     private patchRow(id: number, patch: Partial<AdminCommentRow>): void {
@@ -276,8 +276,7 @@ export class AdminCommentsSection extends AntiHookComponent<AdminCommentsSection
         const {authorOptions, expertOptions} = this.accountOptions();
         return (
             <div data-test-id="admin-comments">
-                {/* Массив в сторе изменяемый — приведение снимает только `readonly` из useCarburetor. */}
-                {this.renderTable({items: items as AdminCommentRow[], page, perPage, totalPages, total, loading, filters,
+                {this.renderTable({items, page, perPage, totalPages, total, loading, filters,
                     authorOptions, expertOptions})}
                 {bodyModal && (
                     <LogDetailModal title={t.Comment_Body() + ' #' + bodyModal.id} onClose={this.ui.closeBody}>

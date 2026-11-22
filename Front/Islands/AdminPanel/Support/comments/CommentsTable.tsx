@@ -22,7 +22,7 @@ function CommentsTableHead() {
 }
 
 interface Props {
-    items: AdminCommentRow[];
+    items: readonly AdminCommentRow[];
     onOpenBody: (row: AdminCommentRow) => void;
     onModerate: (row: AdminCommentRow, approve: boolean) => void;
     onFlag: (row: AdminCommentRow) => void;

@@ -148,6 +148,9 @@ export class CommentsSection extends AntiHookComponent<CommentsSectionProps> {
     };
 
     private readonly create = async () => {
+        // Страница запоминается до await: usePagination замыкал её по рендеру,
+        // а чтение после await перенацеливало действие на новую страницу.
+        const page = this.pagination.snapshot().page;
         const {body} = this.ui.getData();
         const {entityType, entityId, createUrl} = this.props;
         D('comments.create', {entityType, entityId, bodyLength: body.trim().length});
@@ -163,12 +166,14 @@ export class CommentsSection extends AntiHookComponent<CommentsSectionProps> {
             // Без этой строки человек видит, что его текста нет, и делает
             // единственный доступный вывод: отправка не сработала.
             showToast(t.Comment_SentForReview(), 'success');
-            const {page} = this.pagination.snapshot();
-            if (page === 1) this.refresh(); else this.goToPage(1);
+            if (page === 1) void this.pagination.fetchPage(page); else void this.pagination.fetchPage(1);
         }
     };
 
     private readonly handleDelete = async (commentId: number) => {
+        // Страница запоминается до await: usePagination замыкал её по рендеру,
+        // а чтение после await перенацеливало действие на новую страницу.
+        const page = this.pagination.snapshot().page;
         const {deleteUrl} = this.props;
         const ok = await this.confirm.confirm(t.Comment_DeleteConfirm());
         if (!ok) return;
@@ -177,7 +182,7 @@ export class CommentsSection extends AntiHookComponent<CommentsSectionProps> {
             const r = await sendPost<any, any>(deleteUrl, {id: commentId});
             if (r?.success) {
                 D('comments.deleted', {commentId});
-                this.refresh();
+                void this.pagination.fetchPage(page);
             }
         } catch (err) {
             D('comments.error', {action: 'delete', commentId, error: err});
