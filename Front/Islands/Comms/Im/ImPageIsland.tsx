@@ -1,6 +1,5 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {useState} from 'react';
 import {fetchMessages, refreshConversations} from './ImPageRequests';
 import {sendPostFormData, ApiError} from '@common/Api/Send/sendPostFormData';
 import {D} from '@common/Support/Debug/D';
@@ -10,6 +9,7 @@ import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import type {ImConversation} from './imTypes';
 import {ImPageState} from './ImPageState';
+import type {ImPageSnapshot} from './ImPageState';
 import {PendingFile} from '../../../Common/attachments/AttachmentPicker';
 import {reportAttachmentErrors} from '../../../Common/attachments/attachmentHelpers';
 
@@ -42,44 +42,52 @@ interface Props {
     isModerator?: boolean;
 }
 
-type Snapshot = ReturnType<ImPageState['snapshot']>;
-
-interface ViewProps extends Props, ReturnType<typeof useSending> {
-    ui: ImPageState;
-    snapshot: Snapshot;
-    newFiles: PendingFile[];
-    replyFiles: PendingFile[];
-    setNewFiles: (files: PendingFile[]) => void;
-    setReplyFiles: (files: PendingFile[]) => void;
-}
+type IslandProps = Props & ReturnType<typeof useSending>;
 
 const PAGE_ICON = <MessagesSquare size={22} aria-hidden="true" />;
 
-function findConversation(conversations: ImConversation[], selectedId: number | null): ImConversation | undefined {
+function findConversation(conversations: readonly ImConversation[], selectedId: number | null): ImConversation | undefined {
     return conversations.find(conversation => conversation.id === selectedId);
 }
 
-class ImPageView extends AntiHookComponent<ViewProps> {
+class ImPageView extends AntiHookComponent<IslandProps> {
+    private readonly ui = new ImPageState(this.props.conversations);
     private readonly messagesEndRef = React.createRef<HTMLDivElement>();
     private timer?: ReturnType<typeof setInterval>;
+    private previous?: ImPageSnapshot;
+    private newFiles: PendingFile[] = [];
+    private replyFiles: PendingFile[] = [];
+
+    private readonly setNewFiles = (files: PendingFile[]) => {
+        this.newFiles = files;
+        this.forceUpdate();
+    };
+
+    private readonly setReplyFiles = (files: PendingFile[]) => {
+        this.replyFiles = files;
+        this.forceUpdate();
+    };
 
     componentDidMount(): void {
         super.componentDidMount();
+        this.previous = this.ui.getData();
         const {hash, search} = window.location;
         const id = hash.includes('to=') ? hash.split('to=')[1]?.split('&')[0] || '' : new URLSearchParams(search).get('to') || '';
         if (!id) return;
         this.handleRecipientPicked(id);
-        if (!this.props.ui.getData().selectedId) this.props.ui.setShowNewForm(true);
+        if (!this.ui.getData().selectedId) this.ui.setShowNewForm(true);
         window.history.replaceState?.(null, '', window.location.pathname);
     }
 
-    componentDidUpdate(previous: Readonly<ViewProps>): void {
-        super.componentDidUpdate(previous);
-        const {snapshot, messagesUrl} = this.props;
-        if (previous.snapshot.messages !== snapshot.messages) this.messagesEndRef.current?.scrollIntoView({behavior: 'smooth'});
-        if (previous.snapshot.selectedId !== snapshot.selectedId || previous.messagesUrl !== messagesUrl) {
+    componentDidUpdate(previousProps: Readonly<IslandProps>): void {
+        super.componentDidUpdate(previousProps);
+        const state = this.ui.getData();
+        const previous = this.previous;
+        this.previous = state;
+        if (previous && previous.messages !== state.messages) this.messagesEndRef.current?.scrollIntoView({behavior: 'smooth'});
+        if (!previous || previous.selectedId !== state.selectedId || previousProps.messagesUrl !== this.props.messagesUrl) {
             clearInterval(this.timer);
-            if (snapshot.selectedId) this.timer = setInterval(this.poll, 15000);
+            if (state.selectedId) this.timer = setInterval(this.poll, 15000);
         }
     }
 
@@ -89,30 +97,34 @@ class ImPageView extends AntiHookComponent<ViewProps> {
     }
 
     private readonly poll = () => {
-        const {ui, messagesUrl, snapshot: {selectedId}} = this.props;
-        if (selectedId && !document.hidden) void fetchMessages(ui, messagesUrl, selectedId);
+        const {messagesUrl} = this.props;
+        const {selectedId} = this.ui.getData();
+        if (selectedId && !document.hidden) void fetchMessages(this.ui, messagesUrl, selectedId);
     };
 
     private readonly back = () => {
-        this.props.ui.setSelectedId(null);
-        this.props.ui.setShowNewForm(false);
+        this.ui.setSelectedId(null);
+        this.ui.setShowNewForm(false);
     };
 
     private readonly selectConversation = (conversationId: number) => {
-        const {ui, messagesUrl, setReplyFiles} = this.props;
+        const {ui} = this;
+        const {messagesUrl} = this.props;
         const {setSelectedId, setShowNewForm, setReplyText} = ui;
         D('im.click', {action: 'selectConversation', conversationId});
         setSelectedId(conversationId);
         setShowNewForm(false);
         setReplyText('');
-        setReplyFiles([]);
+        this.setReplyFiles([]);
         void fetchMessages(ui, messagesUrl, conversationId);
     };
 
     private readonly handleSendNew = () => {
-        const {ui, sendUrl, messagesUrl, conversationsUrl, newFiles, setNewFiles, withSending} = this.props;
+        const {ui} = this;
+        const {sendUrl, messagesUrl, conversationsUrl, withSending} = this.props;
         const {recipientId, newMessage} = ui.getData();
         const {setShowNewForm, setRecipientId, setNewMessage, setSelectedId} = ui;
+        const newFiles = this.newFiles;
         const rid = parseInt(recipientId, 10);
         if (!rid || !newMessage.trim()) return;
         withSending(async () => {
@@ -134,7 +146,7 @@ class ImPageView extends AntiHookComponent<ViewProps> {
                 setShowNewForm(false);
                 setRecipientId('');
                 setNewMessage('');
-                setNewFiles([]);
+                this.setNewFiles([]);
                 void refreshConversations(ui, conversationsUrl);
                 if (r.conversation_id) {
                     setSelectedId(r.conversation_id);
@@ -150,9 +162,11 @@ class ImPageView extends AntiHookComponent<ViewProps> {
     };
 
     private readonly handleReply = () => {
-        const {ui, sendUrl, messagesUrl, conversationsUrl, replyFiles, setReplyFiles, withSending} = this.props;
+        const {ui} = this;
+        const {sendUrl, messagesUrl, conversationsUrl, withSending} = this.props;
         const {replyText, selectedId, conversations} = ui.getData();
         const {setReplyText} = ui;
+        const replyFiles = this.replyFiles;
         if (!replyText.trim() || !selectedId) return;
         const conv = conversations.find(c => c.id === selectedId);
         if (!conv) return;
@@ -172,7 +186,7 @@ class ImPageView extends AntiHookComponent<ViewProps> {
                     return;
                 }
                 setReplyText('');
-                setReplyFiles([]);
+                this.setReplyFiles([]);
                 void fetchMessages(ui, messagesUrl, selectedId!);
                 void refreshConversations(ui, conversationsUrl);
                 reportAttachmentErrors(r);
@@ -185,13 +199,13 @@ class ImPageView extends AntiHookComponent<ViewProps> {
     };
 
     private readonly handleNewMessage = () => {
-        const {ui, setNewFiles} = this.props;
+        const {ui} = this;
         const {setShowNewForm, setSelectedId, setRecipientId, setNewMessage} = ui;
         setShowNewForm(true);
         setSelectedId(null);
         setRecipientId('');
         setNewMessage('');
-        setNewFiles([]);
+        this.setNewFiles([]);
     };
 
     /**
@@ -204,7 +218,7 @@ class ImPageView extends AntiHookComponent<ViewProps> {
      * already checked for this (lines above); the picker didn't.
      */
     private readonly handleRecipientPicked = (id: string) => {
-        const {ui} = this.props;
+        const {ui} = this;
         const {conversations} = ui.getData();
         const {setRecipientId} = ui;
         const partnerId = parseInt(id, 10);
@@ -216,27 +230,27 @@ class ImPageView extends AntiHookComponent<ViewProps> {
         setRecipientId(id);
     };
 
-    private renderNew() {
-        const {ui, snapshot: {recipientId, newMessage}, newFiles, setNewFiles, sending, searchRecipientsUrl} = this.props;
-        const {setNewMessage} = ui;
+    private renderNew(state: ImPageSnapshot) {
+        const {searchRecipientsUrl, sending} = this.props;
+        const {recipientId, newMessage} = state;
         return (
             <NewMessageForm
                 searchRecipientsUrl={searchRecipientsUrl}
                 recipientId={recipientId}
                 onRecipientIdChange={this.handleRecipientPicked}
                 newMessage={newMessage}
-                onNewMessageChange={setNewMessage}
-                newFiles={newFiles}
-                onNewFilesChange={setNewFiles}
+                onNewMessageChange={this.ui.setNewMessage}
+                newFiles={this.newFiles}
+                onNewFilesChange={this.setNewFiles}
                 sending={sending}
                 onSend={this.handleSendNew}
             />
         );
     }
 
-    private renderThread(selectedConversation: ImConversation) {
-        const {ui, snapshot: {messages, loadingMessages, replyText}, replyFiles, setReplyFiles, sending, currentAccountId, isModerator = false} = this.props;
-        const {setReplyText} = ui;
+    private renderThread(state: ImPageSnapshot, selectedConversation: ImConversation) {
+        const {sending, currentAccountId, isModerator = false} = this.props;
+        const {messages, loadingMessages, replyText} = state;
         return (
             <MessageThread
                 conversation={selectedConversation}
@@ -245,9 +259,9 @@ class ImPageView extends AntiHookComponent<ViewProps> {
                 currentAccountId={currentAccountId}
                 isModerator={isModerator}
                 replyText={replyText}
-                onReplyTextChange={setReplyText}
-                replyFiles={replyFiles}
-                onReplyFilesChange={setReplyFiles}
+                onReplyTextChange={this.ui.setReplyText}
+                replyFiles={this.replyFiles}
+                onReplyFilesChange={this.setReplyFiles}
                 sending={sending}
                 onReply={this.handleReply}
                 messagesEndRef={this.messagesEndRef}
@@ -255,8 +269,8 @@ class ImPageView extends AntiHookComponent<ViewProps> {
         );
     }
 
-    private renderPanel(selectedConversation: ImConversation | undefined) {
-        const {conversations, showNewForm} = this.props.snapshot;
+    private renderPanel(state: ImPageSnapshot, selectedConversation: ImConversation | undefined) {
+        const {conversations, showNewForm} = state;
         return (
             <div className="comms-page-thread">
                 {(selectedConversation || showNewForm) && (
@@ -269,7 +283,7 @@ class ImPageView extends AntiHookComponent<ViewProps> {
                         {t.Support_BackToList()}
                     </button>
                 )}
-                {showNewForm ? this.renderNew() : selectedConversation ? this.renderThread(selectedConversation) : (
+                {showNewForm ? this.renderNew(state) : selectedConversation ? this.renderThread(state, selectedConversation) : (
                     <div className="comms-page-empty">
                         {conversations.length === 0 ? t.IM_NoConversations() : t.IM_NoMessages()}
                     </div>
@@ -279,21 +293,22 @@ class ImPageView extends AntiHookComponent<ViewProps> {
     }
 
     render() {
-        const {conversations, selectedId, showNewForm} = this.props.snapshot;
-        const selectedConversation = findConversation(conversations, selectedId);
+        // Вид из useCarburetor — TReadonly; детям нужны прежние мутабельные типы.
+        const state = this.useCarburetor(this.ui) as ImPageSnapshot;
+        const selectedConversation = findConversation(state.conversations, state.selectedId);
         return (
             <div className="comms-page">
                 <PageHeader title={t.IM_Title()} icon={PAGE_ICON} />
 
-                <div className="comms-page-layout" data-detail={Boolean(selectedConversation || showNewForm)}>
+                <div className="comms-page-layout" data-detail={Boolean(selectedConversation || state.showNewForm)}>
                     <ConversationList
-                        conversations={conversations}
-                        selectedId={selectedId}
+                        conversations={state.conversations}
+                        selectedId={state.selectedId}
                         onSelectConversation={this.selectConversation}
                         onNewMessage={this.handleNewMessage}
                     />
 
-                    {this.renderPanel(selectedConversation)}
+                    {this.renderPanel(state, selectedConversation)}
                 </div>
 
 
@@ -302,18 +317,11 @@ class ImPageView extends AntiHookComponent<ViewProps> {
     }
 }
 
-function ImPageIslandInner(props: Props) {
-    const [ui] = useState(() => new ImPageState(props.conversations));
-    const snapshot = React.useSyncExternalStore(ui.subscribeSnapshot, ui.snapshot, ui.snapshot);
-    const [newFiles, setNewFiles] = useState<PendingFile[]>([]);
-    const [replyFiles, setReplyFiles] = useState<PendingFile[]>([]);
+export const ImPageIsland: React.FC<Props> = (props) => {
     const sending = useSending();
-    return <ImPageView {...props} {...sending} ui={ui} snapshot={snapshot}
-        newFiles={newFiles} setNewFiles={setNewFiles} replyFiles={replyFiles} setReplyFiles={setReplyFiles} />;
-}
-
-export const ImPageIsland: React.FC<Props> = (props) => (
-    <IrabiPreviewProvider>
-        <ImPageIslandInner {...props} />
-    </IrabiPreviewProvider>
-);
+    return (
+        <IrabiPreviewProvider>
+            <ImPageView {...props} {...sending} />
+        </IrabiPreviewProvider>
+    );
+};

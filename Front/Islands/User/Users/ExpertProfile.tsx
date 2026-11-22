@@ -128,7 +128,7 @@ const ExpertStatCell: React.FC<{testId: string; tone: StatTone; value: number; l
 );
 
 const ExpertStats: React.FC<{expert: Expert}> = ({expert}) => (
-    <div className="booking-card-shell" data-expert-profile="stats" data-test-id="expert-stats">
+    <div className="booking-card-shell" data-test-id="expert-stats">
         <div className="expert-profile-stats-grid">
             <ExpertStatCell testId="expert-stat-conducted" tone="success" value={expert.conducted_count ?? 0} label={t.Expert_Conducted()} />
             <ExpertStatCell testId="expert-stat-upcoming" tone="accent" value={expert.upcoming_count ?? 0} label={t.Expert_Upcoming()} />

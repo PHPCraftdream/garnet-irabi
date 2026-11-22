@@ -4,7 +4,7 @@ import type {ImConversation} from '../imTypes';
 import {ConversationRow} from './ConversationRow';
 
 interface Props {
-    conversations: ImConversation[];
+    conversations: readonly ImConversation[];
     selectedId: number | null;
     onSelectConversation: (id: number) => void;
     onNewMessage: () => void;
@@ -16,9 +16,7 @@ function compareByLastMessage(left: ImConversation, right: ImConversation): numb
 
 export default function ConversationList({conversations, selectedId, onSelectConversation, onNewMessage}: Props) {
     // Сортируем копию, не меняя порядок в состоянии острова.
-    const sorted = [...conversations];
-    // oxlint-disable-next-line unicorn/no-array-sort
-    sorted.sort(compareByLastMessage);
+    const sorted = [...conversations].toSorted(compareByLastMessage);
     const rows: React.ReactNode[] = [];
     for (const conv of sorted) {
         rows.push(<ConversationRow key={conv.id} conv={conv} active={selectedId === conv.id} onSelect={onSelectConversation} />);

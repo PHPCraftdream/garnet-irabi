@@ -1,5 +1,8 @@
 @reference "tailwindcss";
 
+/* Локальные семейства expertavatar — мост к семантическим токенам Garnet-темы (var(--color-bg-surface-hover),
+   var(--color-text-muted)), а не к var(--palette-…): записи в палитре у них нет, как в admin-tokens.css и
+   support-widget.css. Тот же приём делает весь проект, поэтому valid-color-role гасится на каждое объявление. */
 @theme inline reference {
   /* carburetor-disable-next-line valid-color-role */
   --color-expertavatar-wash: var(--color-bg-surface-hover);
@@ -17,7 +20,6 @@
 @utility shape-expert-profile-avatar-image { @apply object-cover; }
 @utility effect-expert-profile-avatar-image { @apply shadow; }
 @utility layout-expert-profile-actions { @apply flex items-center gap-2; }
-@utility shape-expert-profile-stats { @apply mb-5; }
 @utility layout-expert-profile-stats { @apply grid grid-cols-2 md:grid-cols-5; }
 @utility shape-expert-profile-stat { @apply px-6 py-5; }
 @utility type-expert-profile-stat { @apply text-center; }
@@ -29,11 +31,12 @@
 @utility layout-expert-profile-header { @apply flex items-start gap-4; }
 @utility shape-expert-profile-header { @apply mb-6; }
 @utility layout-expert-profile-heading { @apply flex flex-col justify-center; }
+@utility shape-expert-profile-name { @apply mb-1; }
 @utility shape-expert-profile-heading { @apply min-w-0; }
 @utility shape-expert-profile-bio-heading { @apply mb-2; }
 @utility shape-expert-profile-bio-text { @apply mb-0; }
 @utility type-expert-profile-bio { @apply whitespace-pre-line; }
-@utility shape-expert-profile-slots-heading { @apply mt-6; }
+@utility shape-expert-profile-slots-heading { @apply mt-6 mb-4; }
 @utility layout-expert-profile-slots { @apply grid grid-cols-1 md:grid-cols-2 gap-4; }
 
 @layer components {
@@ -54,12 +57,9 @@
   .expert-profile-empty { @apply tone-supportmuted-plain; }
   .expert-profile-header { @apply tone-widgetneutral-plain layout-expert-profile-header shape-expert-profile-header; }
   .expert-profile-heading { @apply tone-widgetneutral-plain layout-expert-profile-heading shape-expert-profile-heading; }
-  .expert-profile-name { @apply tone-widgetim-plain; }
+  .expert-profile-name { @apply tone-widgetim-plain shape-expert-profile-name; }
   .expert-profile-bio-heading { @apply tone-widgetneutral-plain shape-expert-profile-bio-heading; }
   .expert-profile-bio-text { @apply tone-widgetneutral-plain shape-expert-profile-bio-text type-expert-profile-bio; }
   .expert-profile-slots-heading { @apply tone-widgetneutral-plain shape-expert-profile-slots-heading; }
   .expert-profile-slots { @apply tone-widgetneutral-plain layout-expert-profile-slots; }
 }
-
-/* carburetor-disable-next-line valid-function-class */
-.booking-card-shell[data-expert-profile="stats"] { @apply shape-expert-profile-stats; }

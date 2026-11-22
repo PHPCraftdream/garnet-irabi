@@ -7,6 +7,12 @@ interface Props {
     pageUrl: string;
 }
 
+// `.hot-click` — маркер навигации фреймворка (classClick), а не стилизация,
+// поэтому вешается на узел при каждом его монтировании.
+function attachHotClick(node: HTMLAnchorElement | null): void {
+    if (node) node.classList.add('hot-click');
+}
+
 /**
  * Floating IM badge — shows unread message count.
  * Positioned to the left of the support widget.
@@ -24,9 +30,8 @@ export class ImWidgetIsland extends AntiHookComponent<Props> {
         const {pageUrl} = this.props;
         const {badge} = this;
         return (
-            // hot-click нужен обработчику навигации, а не стилям.
-            // carburetor-disable-next-line require-function-class
-            <a className="hot-click im-page-fab"
+            <a ref={attachHotClick}
+                className="im-page-fab"
                 href={pageUrl}
                 data-test-id="im-widget-btn"
                 title="Messages"

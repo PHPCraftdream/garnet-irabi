@@ -118,15 +118,17 @@ class NotificationPrefs extends AntiHookComponent<NotificationPrefsProps> {
     render() {
         const {prefs, marketing} = this.useCarburetor(this.ui);
         return (
-            <div className="section-soft" data-registration-notif data-test-id="notif-prefs">
-                <h2 className="registration-notif-heading">{tf.NotifPrefs_Title()}</h2>
-                {this.renderPreferences(prefs)}
-                <div className="registration-marketing" data-test-id="notif-row-marketing">
-                    <label className="registration-consent-row">
-                        <input type="checkbox" checked={marketing} onChange={this.changeMarketing}
-                            data-test-id="notif-marketing-consent" className="registration-consent-check" />
-                        <span>{I18n.Consent_Marketing()}</span>
-                    </label>
+            <div className="registration-notif-section">
+                <div className="section-soft" data-test-id="notif-prefs">
+                    <h2 className="registration-notif-heading">{tf.NotifPrefs_Title()}</h2>
+                    {this.renderPreferences(prefs)}
+                    <div className="registration-marketing" data-test-id="notif-row-marketing">
+                        <label className="registration-consent-row">
+                            <input type="checkbox" checked={marketing} onChange={this.changeMarketing}
+                                data-test-id="notif-marketing-consent" className="registration-consent-check" />
+                            <span>{I18n.Consent_Marketing()}</span>
+                        </label>
+                    </div>
                 </div>
             </div>
         );
