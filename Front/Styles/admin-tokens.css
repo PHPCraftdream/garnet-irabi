@@ -1,6 +1,6 @@
 @reference "tailwindcss";
 
-/* Правило требует var(--palette-…), но у этих токенов Garnet-темы нет записи в палитре: её добавление — правка общего слоя темы. */
+/* Роли следуют за токенами темы Garnet (--color-*): у них есть ветка [data-theme="dark"], а --palette-* хранит сырые значения и зафиксировал бы светлый цвет. */
 @theme inline reference {
   /* Роль tokenmuted-filter: эквивалент (border-subtle + text-muted) лежит в модуле фреймворка, который конфиг линта не сканирует, а valid-tone-class запрещает тону брать кирпичи чужого семейства. */
   /* carburetor-disable-next-line valid-color-role */
@@ -14,10 +14,6 @@
   --color-usersidle-ink-hover: var(--color-text-primary);
   /* carburetor-disable-next-line valid-color-role */
   --color-usersidle-edge-hover: var(--color-border-strong);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-usersactive-edge: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-usersactive-ink: var(--color-accent);
 }
 
 @utility tone-tokenmuted-filter { @apply border-tokenmuted-edge text-tokenmuted-ink-subtle; }
@@ -105,13 +101,12 @@
 @utility shape-admin-users-tab-count { @apply ml-1; }
 @utility type-admin-users-login { @apply font-mono text-sm hover:underline; }
 @utility tone-usersidle-outline { @apply border-transparent text-usersidle-ink hover:text-usersidle-ink-hover hover:border-usersidle-edge-hover; }
-@utility tone-usersactive-outline { @apply border-usersactive-edge text-usersactive-ink; }
 
 @layer components {
   .admin-users-tabs { @apply tone-supportconv-outline layout-admin-users-tabs shape-admin-users-tabs; }
   .admin-users-tab-item { @apply tone-widgetneutral-plain shape-admin-users-tab-item; }
   .admin-users-tab-button { @apply tone-usersidle-outline layout-token-status shape-admin-users-tab-button type-admin-support-form-label motion-support-control; }
-  .admin-users-tab-button[aria-selected="true"] { @apply tone-usersactive-outline; }
+  .admin-users-tab-button[aria-selected="true"] { @apply tone-tabnavactive-outline; }
   .admin-users-tab-count { @apply tone-bookmuted-plain type-token-small shape-admin-users-tab-count; }
   .admin-users-login { @apply tone-bookaccent-plain type-admin-users-login; }
   .admin-user-history-title { @apply tone-bookmuted-plain shape-admin-user-history-title type-admin-user-history-title; }
@@ -215,9 +210,9 @@
 /* carburetor-disable-next-line valid-function-class */
 .admin-money-spinner { border-top-color: transparent; }
 
-/* Selected colors override the idle hover Tone regardless of layer order. */
+/* Верхняя граница панели — currentColor, как у master (border-t без цвета); тон задаёт --color-border-subtle. */
 /* carburetor-disable-next-line valid-function-class */
-.admin-users-tab-button[aria-selected="true"]:is(:hover, :focus, :active) { @apply border-accent text-accent; }
+.admin-ledger-reference { border-top-color: currentColor; }
 
 @utility type-admin-grid-external-location { @apply text-sm break-all hover:underline; }
 

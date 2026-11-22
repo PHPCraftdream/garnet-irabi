@@ -15,7 +15,7 @@
   .invite-foreground { @apply tone-widgetim-plain; }
   .invite-muted { @apply tone-bookmuted-plain; }
   .invite-contact-link { @apply tone-bookaccent-plain type-book-place-link; }
-  .invite-support { @apply tone-widgetneutral-outline shape-invite-support; }
+  .invite-support { @apply tone-supportrow-outline shape-invite-support; }
   .invite-contact-message { @apply tone-booksecondary-plain type-book-place shape-invite-contact-message; }
   .invite-contacts { @apply tone-widgetneutral-plain shape-invite-contacts type-book-place; }
   .invite-page { @apply tone-widgetneutral-plain shape-invite-page; }

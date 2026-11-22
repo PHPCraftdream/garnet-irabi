@@ -49,7 +49,9 @@
 
 @utility tone-expertcardcancelled-soft { @apply bg-expertcardcancelled-wash text-expertcardcancelled-ink; }
 @utility shape-expert-slot-card-body { @apply p-5; }
-@utility shape-expert-slot-card-title { @apply mb-2!; }
+/* ! обязателен: unlayered h5 {mb-1.5; font-size:.9375rem} (01-base.css:78) сильнее @layer components — заголовок слота рендерится как h5. */
+/* Отступ бейджа группы и остатка мест (ml-2 из master) — на прямых span-детях заголовка. */
+@utility shape-expert-slot-card-title { @apply mb-2! [&>span]:ml-2; }
 @utility type-expert-slot-card-title { @apply text-base! font-semibold; }
 @utility shape-expert-slot-card-meta { @apply mb-1; }
 @utility type-expert-slot-card-meta { @apply text-sm; }

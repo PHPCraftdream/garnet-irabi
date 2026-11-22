@@ -51,6 +51,7 @@
 @utility tone-batchexisting-soft { @apply text-batchexisting-ink bg-batchexisting-wash; }
 @utility tone-batchrowwarning-soft { @apply bg-batchrowwarning-wash; }
 @utility tone-batchremove-outlined { @apply border-batchremove-edge text-batchremove-ink bg-transparent hover:border-batchremove-edge-hover hover:text-batchremove-ink-hover hover:bg-batchremove-wash-hover; }
+/* ! обязателен: unlayered .form-control-sm {px-2; py-1; font-size: .8rem} (01-base.css:110-113) сильнее @layer components — компактный размер полей из master (.form-control-sm) сохраняется этими утилитами. */
 @utility shape-batch-compact-input { @apply px-2! py-1!; }
 @utility type-batch-compact-input { font-size: 0.8rem !important; }
 @utility layout-batch-date-input { @apply inline-block; }

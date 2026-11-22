@@ -8,7 +8,7 @@
 @utility layout-admin-booking-scroll { @apply overflow-x-auto; }
 
 @layer components {
-  .admin-booking-table-row { @apply shape-admin-booking-row tone-widgetneutral-outline; }
+  .admin-booking-table-row { @apply shape-admin-booking-row tone-supportrow-outline; }
   .admin-booking-table-cell { @apply shape-admin-booking-cell tone-filterneutral-plain; }
   .admin-booking-table-cell-nowrap { @apply shape-admin-booking-cell type-admin-booking-nowrap tone-filterneutral-plain; }
   .admin-booking-table-cell-muted-nowrap { @apply shape-admin-booking-cell type-admin-booking-nowrap tone-filterlabel-plain; }

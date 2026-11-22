@@ -1,4 +1,4 @@
-/* Роли ссылаются на цвета Garnet-темы: у них нет записей в палитре, и темовая ветка должна следовать за темой. */
+/* Роли следуют за токенами темы Garnet (--color-*): у них есть ветка [data-theme="dark"], а --palette-* хранит сырые значения и зафиксировал бы светлый цвет. */
 @theme inline reference {
   /* carburetor-disable-next-line valid-color-role */
   --color-attachment-edge: var(--color-border);
