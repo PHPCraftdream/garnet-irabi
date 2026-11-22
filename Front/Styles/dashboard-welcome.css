@@ -9,10 +9,6 @@
   /* carburetor-disable-next-line valid-color-role */
   --color-welcomeimage-edge: var(--color-border);
   /* carburetor-disable-next-line valid-color-role */
-  --color-welcometext-ink: var(--color-text-primary);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-welcomemuted-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
   --color-welcomeaccent-ink: var(--color-accent);
   /* carburetor-disable-next-line valid-color-role */
   --color-welcomeuser-wash: var(--color-status-blue-bg);
@@ -40,8 +36,6 @@
 @utility tone-welcomeneutral-clear { @apply text-inherit bg-transparent; }
 @utility tone-welcomeavatar-soft { @apply bg-welcomeavatar-wash text-welcomeavatar-ink; }
 @utility tone-welcomeimage-outline { @apply border-welcomeimage-edge; }
-@utility tone-welcometext-plain { @apply text-welcometext-ink; }
-@utility tone-welcomemuted-plain { @apply text-welcomemuted-ink; }
 @utility tone-welcomeaccent-plain { @apply text-welcomeaccent-ink; }
 @utility tone-welcomeuser-soft { @apply bg-welcomeuser-wash text-welcomeuser-ink; }
 @utility tone-welcomeexpert-soft { @apply bg-welcomeexpert-wash text-welcomeexpert-ink; }
@@ -71,7 +65,7 @@
   .welcome-avatar-button { @apply shape-welcome-avatar-button behavior-welcome-avatar-button tone-welcomeneutral-clear; }
   .welcome-avatar-image { @apply shape-welcome-avatar-image layout-welcome-avatar-image tone-welcomeimage-outline; }
   .welcome-avatar-fallback { @apply shape-welcome-avatar-fallback layout-welcome-avatar type-welcome-avatar tone-welcomeavatar-soft; }
-  .welcome-heading { @apply shape-welcome-title type-welcome-title tone-welcometext-plain; }
+  .welcome-heading { @apply shape-welcome-title type-welcome-title tone-supportprimary-plain; }
   .welcome-role {
     @apply shape-welcome-role layout-welcome-role type-welcome-role tone-welcomeuser-soft;
     &[data-role="expert"] { @apply tone-welcomeexpert-soft; }
@@ -79,6 +73,6 @@
     &[data-role="owner"] { @apply tone-welcomeowner-soft; }
     &[data-role="admin"] { @apply tone-welcomeadmin-soft; }
   }
-  .welcome-balance-label { @apply type-welcome-balance-label tone-welcomemuted-plain; }
+  .welcome-balance-label { @apply type-welcome-balance-label tone-supportmuted-plain; }
   .welcome-balance-value { @apply tone-welcomeaccent-plain; }
 }

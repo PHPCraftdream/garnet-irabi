@@ -107,17 +107,17 @@
   .admin-users-tab-item { @apply tone-widgetneutral-plain shape-admin-users-tab-item; }
   .admin-users-tab-button { @apply tone-usersidle-outline layout-token-status shape-admin-users-tab-button type-admin-support-form-label motion-support-control; }
   .admin-users-tab-button[aria-selected="true"] { @apply tone-tabnavactive-outline; }
-  .admin-users-tab-count { @apply tone-bookmuted-plain type-token-small shape-admin-users-tab-count; }
+  .admin-users-tab-count { @apply tone-supportmuted-plain type-token-small shape-admin-users-tab-count; }
   .admin-users-login { @apply tone-bookaccent-plain type-admin-users-login; }
-  .admin-user-history-title { @apply tone-bookmuted-plain shape-admin-user-history-title type-admin-user-history-title; }
+  .admin-user-history-title { @apply tone-supportmuted-plain shape-admin-user-history-title type-admin-user-history-title; }
   .admin-user-history-table { @apply tone-widgetneutral-plain shape-admin-user-history-table layout-admin-user-history-table type-book-place; }
   .admin-user-history-header-row { @apply tone-tokenmuted-filter shape-admin-user-history-row type-admin-user-history-header-row; }
   .admin-user-history-row { @apply tone-supportconv-outline shape-admin-user-history-row; }
   .admin-user-history-header-cell { @apply tone-widgetneutral-plain shape-admin-user-history-cell type-admin-user-history-header-cell; }
   .admin-user-history-cell { @apply tone-widgetneutral-plain shape-admin-user-history-cell; }
-  .admin-user-history-cell-muted { @apply tone-bookmuted-plain shape-admin-user-history-cell; }
-  .admin-user-history-cell-muted-small { @apply tone-bookmuted-plain shape-admin-user-history-cell type-token-small; }
-  .admin-user-history-cell-time { @apply tone-bookmuted-plain shape-admin-user-history-cell type-token-nowrap type-token-small; }
+  .admin-user-history-cell-muted { @apply tone-supportmuted-plain shape-admin-user-history-cell; }
+  .admin-user-history-cell-muted-small { @apply tone-supportmuted-plain shape-admin-user-history-cell type-token-small; }
+  .admin-user-history-cell-time { @apply tone-supportmuted-plain shape-admin-user-history-cell type-token-nowrap type-token-small; }
   .admin-user-history-cell-mono { @apply tone-widgetneutral-plain shape-admin-user-history-cell type-admin-user-history-mono; }
   .admin-user-history-cell-nowrap { @apply tone-gridinherit-plain shape-admin-user-history-cell type-token-nowrap; }
   .admin-user-history-cell-context { @apply tone-widgetneutral-plain shape-admin-user-history-cell type-im-recipient-text; }
@@ -133,9 +133,9 @@
   .admin-user-flag[data-tone="btn-secondary"] { @apply tone-confirmsecondary-solid; }
   .admin-user-secondary-action { @apply tone-bookdismiss-outlined layout-compact-action shape-compact-action shape-admin-user-action-offset type-compact-action behavior-compact-action effect-compact-action motion-compact-action; }
   .admin-user-clear-action { @apply tone-confirmdanger-solid layout-compact-action shape-compact-action shape-admin-user-action-offset type-compact-action behavior-compact-action effect-compact-action effect-confirm-danger motion-compact-action; }
-  .admin-user-bio { @apply tone-bookmuted-plain shape-token-hint; }
+  .admin-user-bio { @apply tone-supportmuted-plain shape-token-hint; }
   .admin-user-message-label { @apply tone-widgetneutral-plain layout-support-form-label shape-support-form-label type-admin-support-form-label; }
-  .admin-user-message-caption { @apply tone-bookmuted-plain shape-token-field type-book-place; }
+  .admin-user-message-caption { @apply tone-supportmuted-plain shape-token-field type-book-place; }
   .admin-user-message-error { @apply tone-externaldanger-plain shape-token-field type-book-place; }
   .admin-user-clear-warning { @apply tone-widgetneutral-plain shape-token-field; }
   .admin-user-clear-mismatch { @apply tone-externaldanger-plain shape-token-hint type-book-place; }
@@ -161,14 +161,14 @@
   .admin-user-count-danger { @apply tone-externaldanger-plain; }
   .admin-ledger-reference { @apply tone-supportconv-outlined shape-admin-ledger-reference layout-admin-ledger-reference type-book-place; }
   .admin-ledger-reference-status { @apply tone-expertcardcancelled-soft layout-book-summary-badge shape-book-summary-badge type-book-summary-badge; }
-  .admin-ledger-party-special { @apply tone-bookmuted-plain type-admin-ledger-party-special; }
-  .admin-ledger-party-label { @apply tone-booksecondary-plain type-book-place; }
+  .admin-ledger-party-special { @apply tone-supportmuted-plain type-admin-ledger-party-special; }
+  .admin-ledger-party-label { @apply tone-supportsecondary-plain type-book-place; }
   .admin-ledger-entry-type { @apply tone-widgetneutral-plain type-admin-ledger-entry-type; }
   .admin-money-spinner-wrap { @apply tone-widgetneutral-plain layout-admin-money-spinner-wrap; }
   .admin-money-spinner { @apply tone-moneyspinner-outline layout-admin-money-spinner shape-admin-money-spinner motion-admin-money-spinner; }
   .admin-money-modal-actions { @apply tone-widgetneutral-plain layout-book-dialog-actions shape-admin-money-modal-actions; }
   .admin-money-modal-fields { @apply tone-widgetneutral-plain shape-admin-money-modal-fields; }
-  .admin-money-field-caption { @apply tone-bookmuted-plain type-token-small shape-money-field-caption; }
+  .admin-money-field-caption { @apply tone-supportmuted-plain type-token-small shape-money-field-caption; }
   .admin-money-field-value { @apply tone-widgetim-plain type-book-place type-admin-money-field-value; }
   .admin-money-note-error { @apply tone-externaldanger-plain type-book-place; }
   .admin-money-note-hint { @apply tone-externaldanger-plain type-token-small shape-token-hint; }
@@ -177,18 +177,18 @@
   .admin-money-balance { @apply tone-moneybalance-plain type-moneybalance; }
   .admin-money-balance[data-negative="true"] { @apply tone-externaldanger-plain; }
   .token-created-link { @apply tone-gridinherit-plain layout-token-created-link shape-token-field; }
-  .token-registration-ip { @apply tone-bookmuted-plain type-token-small; }
-  .token-registration-agent { @apply tone-bookmuted-plain type-token-small type-token-agent layout-token-agent shape-token-agent; }
+  .token-registration-ip { @apply tone-supportmuted-plain type-token-small; }
+  .token-registration-agent { @apply tone-supportmuted-plain type-token-small type-token-agent layout-token-agent shape-token-agent; }
   .token-link-field { @apply tone-gridinherit-plain shape-token-link-field; }
   .token-link-actions { @apply tone-gridinherit-plain layout-token-link-actions; }
   .token-field { @apply tone-gridinherit-plain shape-token-field; }
-  .token-field-label { @apply tone-bookmuted-plain shape-token-label layout-token-label type-token-label; }
-  .token-field-hint { @apply tone-bookmuted-plain type-token-small shape-token-hint; }
+  .token-field-label { @apply tone-supportmuted-plain shape-token-label layout-token-label type-token-label; }
+  .token-field-hint { @apply tone-supportmuted-plain type-token-small shape-token-hint; }
   .token-table-scroll { @apply tone-gridinherit-plain layout-token-scroll; }
   .token-cell { @apply tone-gridinherit-plain; }
   .token-cell-nowrap { @apply tone-gridinherit-plain type-token-nowrap; }
-  .token-cell-time { @apply tone-bookmuted-plain type-token-nowrap type-token-small; }
-  .token-cell-muted { @apply tone-bookmuted-plain; }
+  .token-cell-time { @apply tone-supportmuted-plain type-token-nowrap type-token-small; }
+  .token-cell-muted { @apply tone-supportmuted-plain; }
   .token-row-actions { @apply tone-gridinherit-plain layout-token-actions; }
   .token-status { @apply tone-ticketstatusgray-soft layout-token-status shape-token-status type-token-status; }
   .token-status[data-token-status="active"] { @apply tone-batchavailable-soft; }
@@ -219,4 +219,49 @@
 @layer components {
   .admin-grid-value-time { @apply tone-widgetneutral-plain type-admin-support-history-time; }
   .admin-grid-external-location { @apply tone-bookaccent-plain type-admin-grid-external-location; }
+}
+
+/* Стеклянная тема: admin-user-message-cancel заменяет btn btn-secondary — светлая размытая заливка и текст on-surface (glass.css:189-200). */
+/* Карбюратор разрешает в селекторе только функциональный класс или класс с одним атрибутом, а стекло адресуется по body.glass-skin, поэтому правило вне слоя с узким подавлением. */
+/* carburetor-disable-next-line valid-function-class */
+.glass-skin .admin-user-message-cancel {
+  transition: box-shadow 0.18s ease, filter 0.18s ease, transform 0.12s ease;
+  border: 1px solid color-mix(in srgb, white 16%, var(--color-border));
+  background-color: color-mix(in srgb, var(--color-bg-surface) 35%, transparent) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(110%);
+  backdrop-filter: blur(8px) saturate(110%);
+  color: var(--color-on-surface) !important;
+}
+
+/* carburetor-disable-next-line valid-function-class */
+.glass-skin .admin-user-message-cancel:hover {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 32%, transparent),
+    0 6px 7px -8px color-mix(in srgb, var(--color-accent) 45%, transparent),
+    0 0 6px -6px color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
+/* Стеклянная тема: admin-user-secondary-action и admin-user-clear-action заменяют btn btn-outline-secondary/btn-danger — общая рамка-хайрлайн и свечение на hover (glass.css:178-187). */
+/* carburetor-disable-next-line valid-function-class */
+.glass-skin :is(.admin-user-secondary-action, .admin-user-clear-action) {
+  transition: box-shadow 0.18s ease, filter 0.18s ease, transform 0.12s ease;
+  border: 1px solid color-mix(in srgb, white 16%, var(--color-border));
+}
+
+/* carburetor-disable-next-line valid-function-class */
+.glass-skin :is(.admin-user-secondary-action, .admin-user-clear-action):hover {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 32%, transparent),
+    0 6px 7px -8px color-mix(in srgb, var(--color-accent) 45%, transparent),
+    0 0 6px -6px color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
+/* prefers-reduced-transparency: как в glass.css:348-361 для btn-secondary — без размытия и со сплошным фоном. */
+@media (prefers-reduced-transparency: reduce) {
+  /* carburetor-disable-next-line valid-function-class */
+  .glass-skin .admin-user-message-cancel {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: var(--color-bg-surface) !important;
+  }
 }

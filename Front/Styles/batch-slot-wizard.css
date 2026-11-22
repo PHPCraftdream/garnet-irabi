@@ -1,9 +1,7 @@
 @reference "tailwindcss";
 
-/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (slot-filters.css:3-5), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы; поэтому роли ниже остаются ссылками на --color-*. */
+/* valid-color-role ждёт var(--palette-*): часть ролей блока ссылается на цвета Garnet-темы (--color-text-secondary, --color-bg-surface-hover, --color-status-*), которые переключаются в [data-theme="dark"] — дублировать их в палитру нельзя без форка темы; часть — на фиксированные токены Tailwind (amber-50, red-300, red-600, white), сохранённые ради исходных значений из master, а не ради темы. */
 @theme inline reference {
-  /* carburetor-disable-next-line valid-color-role */
-  --color-batchsecondary-ink: var(--color-text-secondary);
   /* carburetor-disable-next-line valid-color-role */
   --color-batchexisting-ink: var(--color-text-secondary);
   /* carburetor-disable-next-line valid-color-role */
@@ -47,13 +45,12 @@
 }
 
 @utility tone-batchneutral-plain { @apply text-inherit; }
-@utility tone-batchsecondary-plain { @apply text-batchsecondary-ink; }
 @utility tone-batchexisting-soft { @apply text-batchexisting-ink bg-batchexisting-wash; }
 @utility tone-batchrowwarning-soft { @apply bg-batchrowwarning-wash; }
 @utility tone-batchremove-outlined { @apply border-batchremove-edge text-batchremove-ink bg-transparent hover:border-batchremove-edge-hover hover:text-batchremove-ink-hover hover:bg-batchremove-wash-hover; }
-/* ! обязателен: unlayered .form-control-sm {px-2; py-1; font-size: .8rem} (01-base.css:110-113) сильнее @layer components — компактный размер полей из master (.form-control-sm) сохраняется этими утилитами. */
-@utility shape-batch-compact-input { @apply px-2! py-1!; }
-@utility type-batch-compact-input { font-size: 0.8rem !important; }
+/* Компактный размер из master: классы полей лежат в @layer components и грузятся после framework-CSS (IRabi.php), поэтому перебивают px-3/py-[0.4375rem]/text-sm из custom-date-input и cdp-native-input без !important. */
+@utility shape-batch-compact-input { @apply px-2 py-1; }
+@utility type-batch-compact-input { font-size: 0.8rem; }
 @utility layout-batch-date-input { @apply inline-block; }
 @utility shape-batch-existing { @apply rounded-full px-2.5 py-0.5 mr-1 mb-1; }
 @utility type-batch-existing { @apply font-semibold leading-normal tracking-wide; font-size: 0.7rem; }
@@ -101,21 +98,21 @@
   .batch-legend-restricted { @apply shape-batch-legend layout-batch-warning type-batch-legend tone-batchrestricted-soft; }
   .batch-legend-proposed { @apply shape-batch-legend layout-batch-warning type-batch-legend tone-batchproposed-soft; }
   .batch-preview-add-row { @apply layout-batch-add-row shape-batch-form-footer tone-batchneutral-plain; }
-  .batch-preview-stats { @apply tone-slotpartmuted-plain; }
+  .batch-preview-stats { @apply tone-supportmuted-plain; }
   .batch-preview-actions { @apply layout-batch-form-footer tone-batchneutral-plain; }
   .batch-preview-warning { @apply shape-batch-warning layout-batch-warning type-batch-warning tone-slotbookwarning-soft; }
   .batch-preview-existing { @apply shape-batch-existing layout-batch-warning type-batch-existing tone-batchexisting-soft; }
-  .batch-preview-weekday { @apply shape-batch-weekday type-batch-weekday tone-slotpartmuted-plain; }
+  .batch-preview-weekday { @apply shape-batch-weekday type-batch-weekday tone-supportmuted-plain; }
   .batch-preview-row-warning { @apply tone-batchrowwarning-soft; }
   .batch-preview-date-input { @apply shape-batch-compact-input type-batch-compact-input layout-batch-date-input tone-batchneutral-plain; }
   .slot-time-input { @apply shape-batch-compact-input type-batch-compact-input tone-batchneutral-plain; }
   .slot-remove-btn { @apply tone-batchremove-outlined layout-compact-action shape-compact-action type-compact-action behavior-compact-action effect-compact-action motion-compact-action; }
-  .batch-field-label { @apply shape-batch-label layout-batch-label type-batch-label tone-batchsecondary-plain; }
+  .batch-field-label { @apply shape-batch-label layout-batch-label type-batch-label tone-supportsecondary-plain; }
   .batch-input { @apply tone-garnetfield-outlined shape-native-control shape-native-field layout-native-select type-native-select focus-native-select motion-native-select; }
   .batch-date-row { @apply layout-batch-date-row tone-batchneutral-plain; }
   .batch-params-row { @apply layout-batch-params-row tone-batchneutral-plain; }
   .batch-format-row { @apply layout-batch-format-row tone-batchneutral-plain; }
-  .batch-help { @apply shape-batch-help type-batch-help tone-slotpartmuted-plain; }
+  .batch-help { @apply shape-batch-help type-batch-help tone-supportmuted-plain; }
   .batch-form-fields { @apply shape-batch-form-fields tone-batchneutral-plain; }
   .batch-form-footer { @apply shape-batch-form-footer layout-batch-form-footer tone-batchneutral-plain; }
   .batch-preview-cell { @apply shape-batch-cell type-batch-cell tone-batchtable-border; }

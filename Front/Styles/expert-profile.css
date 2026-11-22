@@ -57,6 +57,6 @@
   .expert-profile-slots-heading { @apply tone-widgetneutral-plain shape-expert-profile-slots-heading; }
   .expert-profile-slots { @apply tone-widgetneutral-plain layout-expert-profile-slots; }
   /* master: card-text mb-2 / card-text mb-3 — разные отступы. */
-  .expert-profile-slot-cost { @apply tone-batchsecondary-plain type-expert-slot-card-meta shape-expert-profile-slot-cost; }
-  .expert-profile-slot-format { @apply tone-batchsecondary-plain type-expert-slot-card-meta shape-expert-profile-slot-format; }
+  .expert-profile-slot-cost { @apply tone-supportsecondary-plain type-expert-slot-card-meta shape-expert-profile-slot-cost; }
+  .expert-profile-slot-format { @apply tone-supportsecondary-plain type-expert-slot-card-meta shape-expert-profile-slot-format; }
 }

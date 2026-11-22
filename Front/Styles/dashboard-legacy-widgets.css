@@ -58,7 +58,7 @@
 
 @layer components {
   .user-dash-section-header { @apply tone-widgetneutral-plain layout-user-dash-section-header shape-user-dash-section-header; }
-  .user-dash-section-heading { @apply tone-booksecondary-plain type-user-dash-section-heading shape-user-dash-section-heading; }
+  .user-dash-section-heading { @apply tone-supportsecondary-plain type-user-dash-section-heading shape-user-dash-section-heading; }
   .user-dash-view-all { @apply tone-bookaccent-plain type-user-dash-view-all; }
   .user-dash-count-badge { @apply tone-userdashbadge-soft layout-user-dash-count-badge shape-user-dash-count-badge type-user-dash-count-badge; }
   .stat-tile { @apply tone-cardsurface-outlined shape-user-dash-tile type-user-dash-tile; }
@@ -66,26 +66,26 @@
   .user-dash-stat-value[data-tone="success"] { @apply tone-moneybalance-plain; }
   .user-dash-stat-value[data-tone="warning"] { @apply tone-bookwarning-plain; }
   .user-dash-stat-value[data-tone="danger"] { @apply tone-externaldanger-plain; }
-  .user-dash-stat-value[data-tone="muted"] { @apply tone-bookmuted-plain; }
-  .user-dash-stat-label { @apply tone-bookmuted-plain type-user-dash-row-small shape-user-dash-stat-label; }
+  .user-dash-stat-value[data-tone="muted"] { @apply tone-supportmuted-plain; }
+  .user-dash-stat-label { @apply tone-supportmuted-plain type-user-dash-row-small shape-user-dash-stat-label; }
   .empty-state-card { @apply tone-userdashempty-outlined shape-user-dash-empty type-user-dash-empty; }
-  .user-dash-muted { @apply tone-bookmuted-plain; }
+  .user-dash-muted { @apply tone-supportmuted-plain; }
   .user-dash-stats-card { @apply tone-cardsurface-outlined shape-user-dash-stats-card; }
   .user-dash-stats-heading { @apply tone-balanceborder-outline layout-user-dash-stats-heading shape-user-dash-stats-heading; }
   .user-dash-stats-title { @apply tone-widgetim-plain type-user-dash-stats-heading; }
   .user-dash-expert-grid { @apply tone-widgetneutral-plain layout-user-dash-expert-grid shape-user-dash-stats-grid; }
   .user-dash-moderator-grid { @apply tone-widgetneutral-plain layout-user-dash-moderator-grid shape-user-dash-stats-grid; }
-  .user-dash-stats-hint { @apply tone-bookmuted-plain shape-user-dash-stats-hint type-user-dash-row-small; }
+  .user-dash-stats-hint { @apply tone-supportmuted-plain shape-user-dash-stats-hint type-user-dash-row-small; }
   .user-dash-row-main { @apply tone-widgetneutral-plain layout-user-dash-row-main shape-user-dash-row-main; }
   .user-dash-row-title { @apply tone-widgetim-plain type-user-dash-row-title; }
-  .user-dash-row-meta { @apply tone-bookmuted-plain type-user-dash-row-meta; }
-  .user-dash-row-small { @apply tone-bookmuted-plain type-user-dash-row-small; }
-  .user-dash-meeting { @apply tone-bookmuted-plain shape-user-dash-meeting layout-user-dash-meeting type-user-dash-meeting; }
+  .user-dash-row-meta { @apply tone-supportmuted-plain type-user-dash-row-meta; }
+  .user-dash-row-small { @apply tone-supportmuted-plain type-user-dash-row-small; }
+  .user-dash-meeting { @apply tone-supportmuted-plain shape-user-dash-meeting layout-user-dash-meeting type-user-dash-meeting; }
   .user-dash-link { @apply tone-bookaccent-plain type-user-dash-link; }
-  .user-dash-empty-label { @apply tone-bookmuted-plain shape-user-dash-empty-label type-user-dash-empty-label; }
+  .user-dash-empty-label { @apply tone-supportmuted-plain shape-user-dash-empty-label type-user-dash-empty-label; }
   .user-dash-list { @apply tone-widgetneutral-plain shape-user-dash-list; }
   .user-dash-slot-aside { @apply tone-widgetneutral-plain layout-user-dash-slot-aside; }
-  .user-dash-slot-cost { @apply tone-booksecondary-plain type-user-dash-slot-cost; }
+  .user-dash-slot-cost { @apply tone-supportsecondary-plain type-user-dash-slot-cost; }
 }
 
 /* Unlayered: перебивает компонентный слой, как utility-класс в мастере. */

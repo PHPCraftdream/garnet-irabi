@@ -34,12 +34,12 @@
   .booking-form-expert { @apply tone-bookformexpert-soft shape-book-form-expert; }
   .booking-form-expert-name { @apply tone-bookneutral-plain shape-book-form-expert-name; }
   .booking-form-error { @apply tone-bookneutral-plain shape-book-form-error; }
-  .reschedule-message { @apply tone-bookmuted-plain shape-reschedule-message type-book-place; }
+  .reschedule-message { @apply tone-supportmuted-plain shape-reschedule-message type-book-place; }
   .reschedule-message[data-tone="warning"] { @apply tone-bookwarning-plain; }
   .reschedule-message[data-tone="error"] { @apply tone-externaldanger-plain; }
-  .reschedule-status { @apply tone-bookmuted-plain type-book-place; }
+  .reschedule-status { @apply tone-supportmuted-plain type-book-place; }
   .reschedule-picker { @apply tone-bookneutral-plain shape-reschedule-picker; }
-  .reschedule-legend { @apply tone-booksecondary-plain shape-reschedule-legend type-book-place; }
+  .reschedule-legend { @apply tone-supportsecondary-plain shape-reschedule-legend type-book-place; }
   .reschedule-options { @apply tone-bookneutral-plain layout-reschedule-options; }
   .reschedule-option { @apply tone-bookneutral-plain layout-reschedule-option behavior-reschedule-option; }
   .reschedule-actions { @apply tone-bookneutral-plain layout-reschedule-actions; }

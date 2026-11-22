@@ -63,7 +63,7 @@
   /* carburetor-disable-next-line valid-function-class */
   .news-feed-content > * + *, .news-feed-content-loading > * + * { border-top: 1px solid var(--color-border-subtle); }
   .news-feed-content-loading { @apply tone-bookneutral-plain effect-newsfeed-loading; }
-  .news-feed-empty { @apply shape-newsfeed-empty type-newsfeed-empty tone-bookmuted-plain; }
+  .news-feed-empty { @apply shape-newsfeed-empty type-newsfeed-empty tone-supportmuted-plain; }
   .dashboard-page { @apply tone-bookneutral-plain shape-im-page shape-dashboard-column; }
   .dashboard-bookings-grid { @apply layout-dashboard-grid tone-bookneutral-plain; }
   .dashboard-bookings-column { @apply shape-dashboard-column tone-bookneutral-plain; }
@@ -74,9 +74,9 @@
   .news-row-content { @apply layout-news-row-content shape-news-row-content tone-bookneutral-plain; }
   .news-row-message { @apply type-news-row-message tone-widgetim-plain; }
   .news-row-message-unread { @apply type-news-row-message type-news-row-unread tone-widgetim-plain; }
-  .news-row-detail { @apply shape-news-row-detail type-news-row-detail tone-bookmuted-plain; }
-  .news-group-suffix { @apply shape-news-row-detail type-news-group-suffix tone-bookmuted-plain; }
-  .news-row-time { @apply shape-news-row-time type-news-row-time tone-bookmuted-plain; }
+  .news-row-detail { @apply shape-news-row-detail type-news-row-detail tone-supportmuted-plain; }
+  .news-group-suffix { @apply shape-news-row-detail type-news-group-suffix tone-supportmuted-plain; }
+  .news-row-time { @apply shape-news-row-time type-news-row-time tone-supportmuted-plain; }
   .news-row-archived { @apply shape-news-row-archived tone-bookwarning-plain; }
   .news-row-actions { @apply layout-news-row-actions shape-news-row-actions tone-bookneutral-plain; }
 }

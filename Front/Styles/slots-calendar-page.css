@@ -3,18 +3,12 @@
 /* Garnet theme vars are the palette; copying literals would fork the theme */
 @theme inline reference {
   /* carburetor-disable-next-line valid-color-role */
-  --color-slotpagesecondary-ink: var(--color-text-secondary);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-slotpagemuted-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotpageaccent-ink: var(--color-accent);
   /* carburetor-disable-next-line valid-color-role */
   --color-slotpageaccent-ink-hover: var(--color-accent-hover);
 }
 
 @utility tone-slotpageneutral-plain { @apply text-inherit; }
-@utility tone-slotpagesecondary-plain { @apply text-slotpagesecondary-ink; }
-@utility tone-slotpagemuted-plain { @apply text-slotpagemuted-ink; }
 @utility tone-slotpageaccent-link { @apply text-slotpageaccent-ink hover:text-slotpageaccent-ink-hover; }
 @utility shape-slots-calendar-status { @apply mb-4; }
 @utility shape-slots-own-notice { @apply mb-3; }
@@ -31,8 +25,8 @@
 
 @layer components {
   .slots-calendar-status { @apply shape-slots-calendar-status tone-slotpageneutral-plain; }
-  .slots-own-notice { @apply shape-slots-own-notice type-slots-own-notice tone-slotpagesecondary-plain; }
-  .slots-no-match { @apply shape-slots-no-match type-slots-no-match tone-slotpagemuted-plain; }
+  .slots-own-notice { @apply shape-slots-own-notice type-slots-own-notice tone-supportsecondary-plain; }
+  .slots-no-match { @apply shape-slots-no-match type-slots-no-match tone-supportmuted-plain; }
   .slots-no-match-title { @apply shape-slots-no-match-title type-slots-no-match-title tone-slotpageneutral-plain; }
   .slots-reset { @apply type-slots-reset tone-slotpageaccent-link; }
 }

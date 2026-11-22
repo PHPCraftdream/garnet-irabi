@@ -7,8 +7,6 @@
 /* Garnet theme vars are the palette; copying literals would fork the theme */
 @theme inline reference {
   /* carburetor-disable-next-line valid-color-role */
-  --color-filterlabel-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
   --color-filteridle-wash: var(--color-bg-surface-hover);
   /* carburetor-disable-next-line valid-color-role */
   --color-filteridle-ink: var(--color-text-secondary);
@@ -48,7 +46,6 @@
 }
 
 @utility tone-filterneutral-plain { @apply text-inherit; }
-@utility tone-filterlabel-plain { @apply text-filterlabel-ink; }
 @utility tone-filteridle-soft { @apply border-transparent bg-filteridle-wash text-filteridle-ink hover:text-filteridle-ink-hover; }
 @utility tone-filteractive-filter { @apply border-filteractive-edge bg-filteractive-wash text-filteractive-ink shadow-filteractive-ink-subtle [&:hover]:bg-filteractive-wash-hover [&:focus]:bg-filteractive-wash-focus [&:active]:bg-filteractive-wash-active; }
 @utility tone-filterfield-field { @apply bg-filterfield-wash text-filterfield-ink border-filterfield-edge focus:border-filterfield-edge-focus focus:ring-filterfield-edge-focus/15 placeholder:text-filterfield-ink-subtle; }
@@ -81,18 +78,18 @@
 
 @layer components {
   .slot-filters-grid { @apply layout-slot-filters-grid tone-filterneutral-plain; }
-  .slot-filter-label { @apply shape-slot-filter-label layout-slot-filter-label type-slot-filter-label tone-filterlabel-plain; }
+  .slot-filter-label { @apply shape-slot-filter-label layout-slot-filter-label type-slot-filter-label tone-supportmuted-plain; }
   .slot-filter-chips { @apply layout-slot-filter-chips tone-filterneutral-plain; }
   .slot-filter-chip { @apply shape-slot-filter-chip layout-slot-filter-chip type-slot-filter-chip motion-slot-filter-chip tone-filteridle-soft; }
   .slot-filter-chip-active { @apply shape-slot-filter-chip layout-slot-filter-chip type-slot-filter-chip motion-slot-filter-chip effect-slot-filter-chip-active tone-filteractive-filter; }
   .slot-filter-price-row { @apply layout-slot-filter-price-row tone-filterneutral-plain; }
   .slot-filter-price-input { @apply shape-slot-filter-price-input layout-slot-filter-price-input type-slot-filter-price-input focus-slot-filter-price-input motion-slot-filter-price-input tone-filterfield-field; }
-  .slot-filter-price-separator { @apply type-slot-filter-price-separator tone-filterlabel-plain; }
+  .slot-filter-price-separator { @apply type-slot-filter-price-separator tone-supportmuted-plain; }
   .slot-status-filters { @apply layout-slot-status-filters tone-filterneutral-plain; }
   .admin-bookings-tabs { @apply shape-admin-bookings-tabs layout-slot-status-filters tone-filterneutral-plain; }
   .admin-bookings-pager-bottom { @apply shape-admin-bookings-pager-bottom tone-filterneutral-plain; }
-  .admin-bookings-empty { @apply tone-filterlabel-plain; }
+  .admin-bookings-empty { @apply tone-supportmuted-plain; }
   .slot-status-count { @apply shape-slot-status-count type-slot-status-count tone-filtercount-soft; }
   .slot-status-count-active { @apply shape-slot-status-count type-slot-status-count tone-filtercountactive-soft; }
-  .slot-status-mine-label { @apply shape-slot-status-mine-label type-slot-status-mine-label tone-filterlabel-plain; }
+  .slot-status-mine-label { @apply shape-slot-status-mine-label type-slot-status-mine-label tone-supportmuted-plain; }
 }

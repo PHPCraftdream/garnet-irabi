@@ -130,8 +130,6 @@
   /* carburetor-disable-next-line valid-color-role */
   --color-recipienttrigger-ink: var(--color-on-surface);
   /* carburetor-disable-next-line valid-color-role */
-  --color-recipientempty-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
   --color-recipientsearch-wash: var(--color-bg-surface-alt);
   /* carburetor-disable-next-line valid-color-role */
   --color-recipientsearch-ink: var(--color-on-surface);
@@ -158,8 +156,6 @@
 }
 
 @utility tone-widgetneutral-plain { @apply text-inherit; }
-/* Роль supportrow-edge принадлежит семейству support, поэтому и тон назван по нему (одна граница, как tone-supportconv-outline во фреймворке). */
-@utility tone-supportrow-outline { @apply border-supportrow-edge; }
 @utility layout-widget-inline-actions { @apply flex items-center gap-2; }
 @utility layout-widget-reply-row { @apply flex gap-2; }
 @utility shape-widget-ticket-list { @apply h-full; }
@@ -249,7 +245,6 @@
 @utility layout-im-recipient-option-label { @apply flex-1; }
 @utility type-im-recipient-option-label { @apply text-left text-ellipsis whitespace-nowrap; }
 @utility tone-recipienttrigger-outlined { @apply border-recipienttrigger-edge bg-recipienttrigger-wash text-recipienttrigger-ink hover:bg-recipienttrigger-wash-hover focus:ring-recipienttrigger-edge-focus; }
-@utility tone-recipientempty-plain { @apply text-recipientempty-ink; }
 @utility tone-recipientsearch-soft { @apply bg-recipientsearch-wash text-recipientsearch-ink placeholder:text-recipientsearch-ink-placeholder; }
 @utility tone-recipientaccent-soft { @apply bg-recipientaccent-wash text-recipientaccent-ink; }
 
@@ -452,7 +447,7 @@
   .comms-page-empty { @apply tone-supportmuted-plain layout-im-page-empty type-im-recipient-text; }
   .im-page-fab { @apply tone-widgetfab-soft layout-im-page-fab shape-im-page-fab effect-im-page-fab type-im-page-fab motion-support-control; }
   .im-recipient-trigger { @apply tone-recipienttrigger-outlined layout-im-recipient-trigger shape-im-recipient-trigger focus-im-recipient-trigger type-im-recipient-text; }
-  .im-recipient-trigger[data-empty="true"] { @apply tone-recipientempty-plain; }
+  .im-recipient-trigger[data-empty="true"] { @apply tone-supportmuted-plain; }
   .im-recipient-content { @apply tone-cardsurface-outlined shape-im-recipient-content effect-im-recipient-content layout-im-recipient-content; }
   .im-recipient-search-wrap { @apply tone-supportconv-outline shape-im-recipient-search-wrap; }
   .im-recipient-search-input { @apply tone-recipientsearch-soft shape-im-recipient-search focus-im-recipient-search type-im-recipient-text; }
@@ -486,7 +481,7 @@
   .conversation-time { @apply tone-supportmuted-plain type-widget-im-unread layout-conversation-time; }
   .conversation-row-content { @apply tone-widgetneutral-plain layout-conversation-content; }
   .conversation-summary { @apply tone-widgetneutral-plain layout-conversation-partner shape-conversation-partner; }
-  .support-page-ticket-row { @apply tone-supportrow-outline shape-support-page-ticket behavior-support-row motion-support-control; }
+  .support-page-ticket-row { @apply tone-supportconv-outline shape-support-page-ticket behavior-support-row motion-support-control; }
   .support-page-ticket-row[data-active="true"] { @apply tone-ticketrowactive-outlined; }
   .support-page-ticket-row[data-active="false"] { @apply tone-ticketrowidle-outlined; }
   .support-ticket-heading { @apply tone-widgetneutral-plain layout-support-ticket-heading; }
@@ -508,7 +503,7 @@
   .widget-reply-row { @apply layout-widget-reply-row tone-widgetneutral-plain; }
   .widget-header-actions { @apply layout-widget-inline-actions tone-widgetneutral-plain; }
   .widget-ticket-list { @apply shape-widget-ticket-list layout-widget-ticket-list tone-widgetneutral-plain; }
-  .widget-ticket-heading { @apply shape-widget-ticket-heading tone-supportrow-outline; }
+  .widget-ticket-heading { @apply shape-widget-ticket-heading tone-supportconv-outline; }
 }
 
 /* Unlayered integration overrides retain precedence over component layers. */
@@ -667,4 +662,26 @@
     0 0 0 1px color-mix(in srgb, var(--color-accent) 32%, transparent),
     0 6px 7px -8px color-mix(in srgb, var(--color-accent) 45%, transparent),
     0 0 6px -6px color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
+/* Стеклянная тема: profile-slot-book заменяет btn btn-primary — градиентная заливка и постоянное свечение (glass.css:214-228). */
+/* Карбюратор разрешает в селекторе только функциональный класс или класс с одним атрибутом, а стекло адресуется по body.glass-skin, поэтому правило вне слоя с узким подавлением. */
+/* carburetor-disable-next-line valid-function-class */
+.glass-skin .profile-slot-book {
+  background-image: linear-gradient(135deg, var(--color-accent), color-mix(in srgb, var(--color-status-purple) 70%, var(--color-accent)));
+  border: 1px solid color-mix(in srgb, white 22%, transparent);
+  box-shadow:
+    0 6px 7px -6px color-mix(in srgb, var(--color-accent) 55%, transparent),
+    0 0 7px -8px color-mix(in srgb, var(--color-status-purple) 50%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 28%, transparent);
+}
+
+/* carburetor-disable-next-line valid-function-class */
+.glass-skin .profile-slot-book:hover {
+  background-image: linear-gradient(135deg, var(--color-accent-hover), color-mix(in srgb, var(--color-status-purple) 78%, var(--color-accent-hover)));
+  filter: brightness(1.04);
+  box-shadow:
+    0 8px 8px -6px color-mix(in srgb, var(--color-accent) 65%, transparent),
+    0 0 10px -6px color-mix(in srgb, var(--color-status-purple) 60%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 32%, transparent);
 }

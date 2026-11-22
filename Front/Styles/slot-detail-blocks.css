@@ -5,8 +5,6 @@
   /* carburetor-disable-next-line valid-color-role */
   --color-slotaccent-wash: var(--color-accent-subtle);
   /* carburetor-disable-next-line valid-color-role */
-  --color-slotmuted-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotsurface-wash: var(--color-bg-surface-alt);
   /* carburetor-disable-next-line valid-color-role */
   --color-slotborder-edge: var(--color-border);
@@ -44,7 +42,6 @@
 
 @utility tone-slotneutral-plain { @apply text-inherit; }
 @utility tone-slotaccent-soft { @apply bg-slotaccent-wash; }
-@utility tone-slotmuted-plain { @apply text-slotmuted-ink; }
 @utility tone-slotsurface-soft { @apply bg-slotsurface-wash; }
 @utility tone-slotborder-outline { @apply border-slotborder-edge; }
 @utility tone-slotlink-plain { @apply text-slotlink-ink; }
@@ -88,12 +85,12 @@
 
 @layer components {
   .slot-detail-datetime { @apply shape-slot-detail-panel tone-slotaccent-soft; }
-  .slot-detail-label { @apply shape-slot-detail-label type-slot-detail-label tone-slotmuted-plain; }
+  .slot-detail-label { @apply shape-slot-detail-label type-slot-detail-label tone-supportmuted-plain; }
   .slot-detail-date { @apply type-slot-detail-date tone-slotneutral-plain; }
   .slot-detail-time { @apply shape-slot-detail-time type-slot-detail-time tone-slotneutral-plain; }
-  .slot-detail-duration { @apply shape-slot-detail-duration type-slot-detail-duration tone-slotmuted-plain; }
+  .slot-detail-duration { @apply shape-slot-detail-duration type-slot-detail-duration tone-supportmuted-plain; }
   .slot-detail-price-panel { @apply shape-slot-detail-compact layout-slot-detail-row tone-slotsurface-soft; }
-  .slot-detail-price-label { @apply type-slot-detail-label tone-slotmuted-plain; }
+  .slot-detail-price-label { @apply type-slot-detail-label tone-supportmuted-plain; }
   .slot-detail-price-value { @apply type-slot-detail-price tone-slotneutral-plain; }
   .slot-detail-expert-panel { @apply shape-slot-detail-expert tone-slotborder-outline; }
   .slot-detail-expert-row { @apply layout-slot-detail-row tone-slotneutral-plain; }
@@ -105,7 +102,7 @@
     &[data-format="offline"] { @apply tone-slotformatoffline-soft; }
   }
   .slot-format-place { @apply shape-slot-format-place type-slot-detail-label tone-slotneutral-plain; }
-  .slot-format-place-label { @apply tone-slotmuted-plain; }
+  .slot-format-place-label { @apply tone-supportmuted-plain; }
   .slot-chat-panel { @apply shape-slot-chat-panel layout-slot-chat-panel tone-slotborder-outline; }
   .slot-chat-heading { @apply shape-slot-chat-heading type-slot-chat-heading tone-slotpanel-outlined; }
   .slot-cancel-reason-panel { @apply shape-slot-detail-expert tone-slotpanel-outlined; }

@@ -13,15 +13,15 @@
 
 @layer components {
   .invite-foreground { @apply tone-widgetim-plain; }
-  .invite-muted { @apply tone-bookmuted-plain; }
+  .invite-muted { @apply tone-supportmuted-plain; }
   .invite-contact-link { @apply tone-bookaccent-plain type-book-place-link; }
-  .invite-support { @apply tone-supportrow-outline shape-invite-support; }
-  .invite-contact-message { @apply tone-booksecondary-plain type-book-place shape-invite-contact-message; }
+  .invite-support { @apply tone-supportconv-outline shape-invite-support; }
+  .invite-contact-message { @apply tone-supportsecondary-plain type-book-place shape-invite-contact-message; }
   .invite-contacts { @apply tone-widgetneutral-plain shape-invite-contacts type-book-place; }
   .invite-page { @apply tone-widgetneutral-plain shape-invite-page; }
   .invite-card { @apply tone-cardsurface-outlined shape-invite-card type-invite-card; }
   .invite-warning { @apply tone-bookwarning-plain shape-invite-warning type-invite-warning; }
   .invite-title { @apply tone-widgetim-plain type-invite-title; }
-  .invite-reason { @apply tone-booksecondary-plain shape-invite-copy; }
+  .invite-reason { @apply tone-supportsecondary-plain shape-invite-copy; }
   .invite-guidance { @apply tone-widgetim-plain shape-invite-copy; }
 }

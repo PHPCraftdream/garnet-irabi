@@ -1,8 +1,8 @@
 @reference "tailwindcss";
 
 @layer components {
-  .admin-email-queue-time { @apply tone-bookmuted-plain type-token-small type-token-nowrap; }
-  .admin-email-queue-muted { @apply tone-bookmuted-plain; }
+  .admin-email-queue-time { @apply tone-supportmuted-plain type-token-small type-token-nowrap; }
+  .admin-email-queue-muted { @apply tone-supportmuted-plain; }
 }
 
 @layer components {
