@@ -36,6 +36,11 @@ function findSlot(slots: Slot[], id: number | null): Slot | undefined {
     return slots.find(slot => slot.id === id);
 }
 
+// Копия слота читает каждое поле прокси в render острова — см. render().
+function copySlot(slot: Slot): Slot {
+    return {...slot};
+}
+
 function showSlotError(message: string): void {
     showToast(message, 'danger');
 }
@@ -343,8 +348,7 @@ class ExpertSlotsView extends AntiHookComponent<ViewProps> {
         );
     }
 
-    private renderCalendar(state: State) {
-        const {slots} = state;
+    private renderCalendar(slots: Slot[]) {
         return (
             <>
                 <div className="section-soft" data-expert-slots="calendar">
@@ -381,8 +385,8 @@ class ExpertSlotsView extends AntiHookComponent<ViewProps> {
         );
     }
 
-    private renderConfirmations(state: State) {
-        const {cancelBookingSlotId, slots} = state;
+    private renderConfirmations(state: State, slots: Slot[]) {
+        const {cancelBookingSlotId} = state;
         const {confirmState, handleConfirm, handleCancel, cancelSending} = this.props;
         const cancelSlotStatus = findSlot(slots, cancelBookingSlotId)?.booking_status;
         return (
@@ -414,14 +418,19 @@ class ExpertSlotsView extends AntiHookComponent<ViewProps> {
     render() {
         // Вид из useCarburetor — TReadonly; детям нужны прежние мутабельные типы.
         const state = this.useCarburetor(this.ui) as State;
+        // Дети рисуют поля слотов в своих render — их чтения библиотека записывает
+        // только владельцу (buildTrackedView.mjs). Спреад копирует слоты и читает
+        // каждое поле: остров подписывается на изменения полей, дети получают
+        // обычные объекты со свежей ссылкой.
+        const slots = state.slots.map(copySlot);
         return (
             <>
                 {this.renderHeading()}
                 {this.renderActions()}
                 {this.renderCreateModals(state)}
-                {this.renderCalendar(state)}
+                {this.renderCalendar(slots)}
                 {this.renderEditModal(state)}
-                {this.renderConfirmations(state)}
+                {this.renderConfirmations(state, slots)}
                 <BodyScrollLock locked={state.showCreateModal || state.showBatchModal} />
             </>
         );
