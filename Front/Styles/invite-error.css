@@ -1,5 +1,3 @@
-@reference "tailwindcss";
-
 @utility shape-invite-page { @apply max-w-lg mx-auto mt-12; }
 @utility shape-invite-card { @apply rounded-lg border p-8; }
 @utility type-invite-card { @apply text-center; }

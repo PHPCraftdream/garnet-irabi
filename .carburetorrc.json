@@ -1,6 +1,7 @@
 {
   "classes": {
     "css": [
+      "Front/Styles/common-roles.css",
       "Front/Styles/common-status-badge.css",
       "Front/Styles/modal-shell.css",
       "Front/Styles/expert-dashboard-bookings.css",

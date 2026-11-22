@@ -1,48 +1,5 @@
-@reference "tailwindcss";
-
 :root {
   --palette-filtercount-white: rgb(255 255 255 / 20%);
-}
-
-/* Garnet theme vars are the palette; copying literals would fork the theme */
-@theme inline reference {
-  /* carburetor-disable-next-line valid-color-role */
-  --color-filteridle-wash: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-filteridle-ink: var(--color-text-secondary);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-filteridle-ink-hover: var(--color-text-primary);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-filteractive-wash: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-filteractive-wash-hover: var(--color-accent-hover);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-filteractive-wash-focus: var(--color-accent-hover);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-filteractive-wash-active: var(--color-accent-hover);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-filteractive-ink: var(--color-accent-text);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-filteractive-edge: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-filteractive-ink-subtle: color-mix(in srgb, var(--color-accent) 35%, transparent);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-filterfield-wash: var(--color-bg-surface);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-filterfield-ink: var(--color-text-primary);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-filterfield-ink-subtle: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-filterfield-edge: var(--color-border-strong);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-filterfield-edge-focus: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-filtercount-wash: var(--color-bg-surface-alt);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-filtercount-ink: var(--color-text-muted);
-  --color-filtercountactive-wash: var(--palette-filtercount-white);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-filtercountactive-ink: var(--color-accent-text);
 }
 
 @utility tone-filterneutral-plain { @apply text-inherit; }

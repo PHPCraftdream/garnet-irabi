@@ -1,5 +1,3 @@
-@reference "tailwindcss";
-
 @utility layout-expert-bookings-grid { @apply grid grid-cols-1 md:grid-cols-2 gap-4; }
 @utility layout-booking-list-actions { @apply flex gap-2; }
 @utility shape-booking-list-actions { @apply mt-3; }

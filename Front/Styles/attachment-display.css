@@ -1,15 +1,3 @@
-/* Роли следуют за токенами темы Garnet (--color-*): у них есть ветка [data-theme="dark"], а --palette-* хранит сырые значения и зафиксировал бы светлый цвет. */
-@theme inline reference {
-  /* carburetor-disable-next-line valid-color-role */
-  --color-attachment-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-attachment-edge-hover: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-attachment-wash: var(--color-bg-surface-alt);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-attachment-ink: var(--color-text-muted);
-}
-
 @utility tone-attachment-outline { @apply border-attachment-edge hover:border-attachment-edge-hover; }
 @utility tone-attachment-image { @apply border-attachment-edge hover:border-attachment-edge-hover bg-transparent; }
 @utility tone-attachment-soft { @apply bg-attachment-wash; }

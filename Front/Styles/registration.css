@@ -1,5 +1,3 @@
-@reference "tailwindcss";
-
 @utility layout-registration-heading { @apply flex items-center justify-between gap-3; }
 @utility shape-registration-heading { @apply mb-6; }
 @utility shape-registration-panel { @apply border rounded-lg p-6; }

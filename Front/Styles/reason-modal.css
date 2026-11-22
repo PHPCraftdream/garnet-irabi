@@ -1,5 +1,3 @@
-@reference "tailwindcss";
-
 @utility shape-reason-modal-field { @apply mb-4; }
 @utility shape-reason-modal-notice { @apply mb-3; }
 

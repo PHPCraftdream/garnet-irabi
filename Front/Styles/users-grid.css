@@ -1,5 +1,3 @@
-@reference "tailwindcss";
-
 @utility shape-users-grid-table { @apply mt-3; }
 @utility layout-users-grid-info { @apply hidden; }
 @utility shape-users-grid-header { @apply mb-3; }

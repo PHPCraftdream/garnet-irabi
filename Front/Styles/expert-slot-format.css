@@ -1,17 +1,3 @@
-@reference "tailwindcss";
-
-/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (slot-filters.css:3-5), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы; поэтому роли ниже остаются ссылками на --color-*. */
-@theme inline reference {
-  /* carburetor-disable-next-line valid-color-role */
-  --color-expertcardcancelled-wash: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-expertcardcancelled-ink: var(--color-text-secondary);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-editslotnotice-wash: var(--color-bg-surface-alt);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-expertslotpending-edge: var(--color-warning);
-}
-
 @utility tone-editslotnotice-soft { @apply bg-editslotnotice-wash text-current; }
 @utility tone-expertslotpending-border { @apply border-expertslotpending-edge; }
 @utility shape-expert-slots-pending { @apply mb-4 border; }

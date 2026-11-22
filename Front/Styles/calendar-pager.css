@@ -1,15 +1,3 @@
-@reference "tailwindcss";
-
-/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (slot-filters.css:3-5), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы. */
-@theme inline reference {
-  /* carburetor-disable-next-line valid-color-role */
-  --color-calnav-wash: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-calnav-ink: var(--color-text-secondary);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-calnav-ink-hover: var(--color-text-primary);
-}
-
 @utility tone-calnavneutral-plain { @apply text-inherit; }
 @utility tone-calnav-soft { @apply bg-calnav-wash text-calnav-ink hover:text-calnav-ink-hover; }
 @utility shape-calendar-pager-week { @apply mb-4; }

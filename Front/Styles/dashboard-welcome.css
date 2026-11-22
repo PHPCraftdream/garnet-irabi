@@ -1,37 +1,3 @@
-@reference "tailwindcss";
-
-@theme inline reference {
-  /* Псевдонимы ролей темы: палитра сломала бы тёмную тему. */
-  /* carburetor-disable-next-line valid-color-role */
-  --color-welcomeavatar-wash: var(--color-accent-subtle);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-welcomeavatar-ink: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-welcomeimage-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-welcomeaccent-ink: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-welcomeuser-wash: var(--color-status-blue-bg);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-welcomeuser-ink: var(--color-status-blue);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-welcomeexpert-wash: var(--color-status-green-bg);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-welcomeexpert-ink: var(--color-status-green);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-welcomemoderator-wash: var(--color-status-purple-bg);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-welcomemoderator-ink: var(--color-status-purple);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-welcomeowner-wash: var(--color-status-yellow-bg);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-welcomeowner-ink: var(--color-status-yellow);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-welcomeadmin-wash: var(--color-status-red-bg);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-welcomeadmin-ink: var(--color-status-red);
-}
-
 @utility tone-welcomeneutral-plain { @apply text-inherit; }
 @utility tone-welcomeneutral-clear { @apply text-inherit bg-transparent; }
 @utility tone-welcomeavatar-soft { @apply bg-welcomeavatar-wash text-welcomeavatar-ink; }

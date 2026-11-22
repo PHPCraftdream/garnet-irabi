@@ -1,5 +1,3 @@
-@reference "tailwindcss";
-
 @utility layout-quick-chat { @apply flex flex-col; }
 @utility layout-quick-chat-messages { @apply overflow-y-auto; }
 @utility shape-quick-chat-messages { @apply px-3 py-2; max-height: 240px; }
