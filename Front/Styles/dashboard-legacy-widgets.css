@@ -88,7 +88,9 @@
   .user-dash-slot-cost { @apply tone-booksecondary-plain type-user-dash-slot-cost; }
 }
 
+/* Unlayered: перебивает компонентный слой, как utility-класс в мастере. */
 /* carburetor-disable-next-line valid-function-class */
 .primary-action-button[data-user-dash-compact] { @apply shape-user-dash-compact-action type-user-dash-compact-action; color: var(--color-accent-text); }
+/* Unlayered: перебивает компонентный слой, как utility-класс в мастере. */
 /* carburetor-disable-next-line valid-function-class */
 .primary-action-button[data-user-dash-compact="nowrap"] { @apply type-user-dash-compact-nowrap; }

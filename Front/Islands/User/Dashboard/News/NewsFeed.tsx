@@ -6,6 +6,7 @@ import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {NewsPagination} from './NewsPagination';
 import {useSlotBooking} from '../../SlotsCalendar/Booking/useSlotBooking';
+import {useNewsFeedReload} from './useNewsFeedReload';
 import {NewsEvent} from './newsTypes';
 import {NewsGroup, NewsGroupRow} from './NewsGroupRow';
 import {EventMessage} from './EventMessage';
@@ -96,14 +97,6 @@ interface FeedInnerProps extends Props {
     bookingModal: React.ReactNode;
 }
 
-// Реестр смонтированных лент: после брони перечитываем каждую текущую
-// страницу с её же режимом архива (аналог onBooked в мастере).
-const mountedFeeds = new Set<NewsFeedInner>();
-
-const reloadMountedFeeds = (): void => {
-    for (const feed of mountedFeeds) feed.reloadAfterBooking();
-};
-
 class NewsFeedInner extends AntiHookComponent<FeedInnerProps> {
     private readonly ui = new Carburetor<FeedState>({
         items: [], page: 1, totalPages: 1, total: 0,
@@ -114,13 +107,7 @@ class NewsFeedInner extends AntiHookComponent<FeedInnerProps> {
 
     componentDidMount(): void {
         super.componentDidMount();
-        mountedFeeds.add(this);
         void this.loadFeed(1, false);
-    }
-
-    componentWillUnmount(): void {
-        mountedFeeds.delete(this);
-        super.componentWillUnmount();
     }
 
     componentDidUpdate(previous: Readonly<FeedInnerProps>): void {
@@ -273,6 +260,7 @@ class NewsFeedInner extends AntiHookComponent<FeedInnerProps> {
 }
 
 export const NewsFeed: React.FC<Props> = props => {
-    const {openBooking, bookingModal} = useSlotBooking({onBooked: reloadMountedFeeds});
-    return <NewsFeedInner {...props} handleBookSlot={openBooking} bookingModal={bookingModal} />;
+    const {ref, onBooked} = useNewsFeedReload<NewsFeedInner>();
+    const {openBooking, bookingModal} = useSlotBooking({onBooked});
+    return <NewsFeedInner ref={ref} {...props} handleBookSlot={openBooking} bookingModal={bookingModal} />;
 };

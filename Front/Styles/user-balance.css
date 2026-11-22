@@ -84,5 +84,6 @@
   .balance-space-before { @apply tone-bookneutral-plain shape-balance-space-before; }
 }
 
+/* Unlayered: перебивает компонентный слой, как utility-класс в мастере. */
 /* carburetor-disable-next-line valid-function-class */
 .booking-card-shell[data-balance-topup] { @apply shape-balance-topup-offset; }

@@ -59,7 +59,7 @@
   .news-feed-unread { @apply layout-newsfeed-badge shape-newsfeed-badge type-newsfeed-badge tone-settingssave-outlined; }
   .news-feed-mark-all { @apply type-newsfeed-mark-all tone-bookaccent-plain; }
   .news-feed-content { @apply tone-bookneutral-plain; }
-  /* Unlayered-селектор-потомок: только так воспроизводится vendor-утилита divide-subtle. */
+  /* Разделители строк: Trait'ом divide-subtle невыразим (@apply divide-subtle линтер отвергает — «utility on no floor»), поэтому правило с селектором-потомком в @layer components. */
   /* carburetor-disable-next-line valid-function-class */
   .news-feed-content > * + *, .news-feed-content-loading > * + * { border-top: 1px solid var(--color-border-subtle); }
   .news-feed-content-loading { @apply tone-bookneutral-plain effect-newsfeed-loading; }
