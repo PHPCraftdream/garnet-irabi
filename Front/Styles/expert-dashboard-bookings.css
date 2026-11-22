@@ -4,7 +4,7 @@
 @utility layout-expert-pending-actions { @apply flex gap-2 flex-shrink-0; }
 @utility type-expert-bookings-empty { @apply font-medium; }
 
-/* valid-color-role: тема объявляет цвета как var(--color-*); слоя var(--palette-*) в приложении нет. */
+/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (slot-filters.css:3-5), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы. */
 @theme inline reference {
   /* carburetor-disable-next-line valid-color-role */
   --color-expertbookingok-wash: var(--color-success-subtle);

@@ -16,6 +16,31 @@ type FieldErrors = Partial<Record<Name, string>>;
 
 const FIELD_NAMES: Name[] = ['date', 'time', 'duration', 'cost', 'max_users', 'cancellation_penalty_percent'];
 
+function toNumber(raw: string): number {
+    // Как valueAsNumber в master: пустая строка — NaN, а не 0.
+    return raw === '' ? NaN : Number(raw);
+}
+
+/** Ошибки читаются в render владельца: подписка покрывает только прочитанные в нём пути. */
+function readErrors(errors: FieldErrors): FieldErrors {
+    return {
+        date: errors.date,
+        time: errors.time,
+        duration: errors.duration,
+        cost: errors.cost,
+        max_users: errors.max_users,
+        cancellation_penalty_percent: errors.cancellation_penalty_percent,
+    };
+}
+
+function focusFirstError(form: HTMLFormElement, errors: FieldErrors): void {
+    for (const name of FIELD_NAMES) {
+        if (!errors[name]) continue;
+        form.querySelector<HTMLElement>(`[name="${name}"]`)?.focus();
+        return;
+    }
+}
+
 interface FormState {
     errors: FieldErrors;
     serverError: string;
@@ -155,7 +180,7 @@ export class CreateSlotForm extends AntiHookComponent<Props> {
             // Как в master: у поля штрафа опции регистрации брались с этим fallback.
             const field = this.props.fieldsInfo.fields[name];
             const options = field ? getFieldRegisterOptions(field) : {valueAsNumber: true};
-            values[name] = options.valueAsNumber === true ? Number(raw) : raw;
+            values[name] = options.valueAsNumber === true ? toNumber(raw) : raw;
         }
         return values;
     }
@@ -177,7 +202,10 @@ export class CreateSlotForm extends AntiHookComponent<Props> {
         const values = this.readValues(form);
         const errors = this.validate(values);
         this.patch({submitted: true, errors});
-        if (Object.keys(errors).length) return;
+        if (Object.keys(errors).length) {
+            focusFirstError(form, errors);
+            return;
+        }
         void this.send(values);
     };
 
@@ -259,12 +287,13 @@ export class CreateSlotForm extends AntiHookComponent<Props> {
 
     render() {
         const state = this.useCarburetor(this.ui);
+        const errors = readErrors(state.errors);
         return (
             <form id="createSlotForm" noValidate onSubmit={this.handleSubmit} onChange={this.handleChange}>
                 <div className="batch-form-fields">
-                    <SlotDateTimeRow errors={state.errors} />
-                    <SlotParamsRow errors={state.errors} />
-                    {this.renderPenaltyField(state.errors)}
+                    <SlotDateTimeRow errors={errors} />
+                    <SlotParamsRow errors={errors} />
+                    {this.renderPenaltyField(errors)}
                     <SlotFormatFields
                         isOnline={state.isOnline}
                         location={state.location}
