@@ -98,5 +98,12 @@ jobs:
       - name: Set up frontend toolchain
         run: php garnet setup --skip-composer --skip-playwright
 
-      - name: oxlint + tsgo
+      # The carburetor oxlint plugin starts its native linter from inside the
+      # oxlint host; on Linux the default overcommit heuristic refuses that
+      # fork (ENOMEM) even with memory free. The plugin's own error message
+      # prescribes this step.
+      - name: Allow the oxlint plugin to start the native linter
+        run: sudo sysctl -w vm.overcommit_memory=1
+
+      - name: oxlint + carburetor-lint + tsgo
         run: npm run check
