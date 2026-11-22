@@ -14,7 +14,7 @@
 @utility type-avatar-initials-sm { @apply text-sm font-semibold; }
 @utility type-avatar-initials-lg { @apply text-2xl font-bold; }
 @utility tone-entityadmin-border { @apply border-entityadmin-edge; }
-/* Роли ссылаются на цвета Garnet-темы: у них нет записей в палитре, и темовая ветка должна следовать за темой. */
+/* Роли следуют за токенами темы Garnet (--color-*): у них есть ветка [data-theme="dark"], а --palette-* хранит сырые значения и зафиксировал бы светлый цвет. */
 @theme inline reference {
   /* carburetor-disable-next-line valid-color-role */
   --color-entityadmin-edge: var(--color-border);

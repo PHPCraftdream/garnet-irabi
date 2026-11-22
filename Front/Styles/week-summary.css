@@ -3,27 +3,21 @@
 /* Garnet theme vars are the palette; copying literals would fork the theme */
 @theme inline reference {
   /* carburetor-disable-next-line valid-color-role */
-  --color-weekmuted-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
   --color-weekempty-ink: color-mix(in srgb, var(--color-text-muted) 75%, transparent);
   /* carburetor-disable-next-line valid-color-role */
   --color-weekborder-edge: var(--color-border);
   /* carburetor-disable-next-line valid-color-role */
   --color-weekaccent-ink: var(--color-accent);
   /* carburetor-disable-next-line valid-color-role */
-  --color-weekprimary-ink: var(--color-text-primary);
-  /* carburetor-disable-next-line valid-color-role */
   --color-weekcurrent-wash: var(--color-accent);
   /* carburetor-disable-next-line valid-color-role */
   --color-weekcurrent-ink: var(--color-accent-text);
 }
 
-@utility tone-weekmuted-plain { @apply text-weekmuted-ink; }
 @utility tone-weekempty-plain { @apply text-weekempty-ink; }
 @utility tone-weekneutral-plain { @apply text-inherit; }
 @utility tone-weekborder-outline { @apply border-weekborder-edge; }
 @utility tone-weekaccent-plain { @apply text-weekaccent-ink; }
-@utility tone-weekprimary-plain { @apply text-weekprimary-ink; }
 @utility tone-weekcurrent-soft { @apply bg-weekcurrent-wash text-weekcurrent-ink; }
 @utility shape-week-slot-total { @apply mt-3; }
 @utility type-week-slot-total { @apply text-xs text-right; }
@@ -46,7 +40,7 @@
 @utility layout-week-day-content { @apply flex-1; }
 
 @layer components {
-  .week-slot-total { @apply shape-week-slot-total type-week-slot-total tone-weekmuted-plain; }
+  .week-slot-total { @apply shape-week-slot-total type-week-slot-total tone-supportmuted-plain; }
   .week-empty-notice { @apply shape-week-empty-notice layout-week-empty-notice type-week-empty-notice tone-weekempty-plain; }
   .week-calendar-grid { @apply shape-week-grid layout-week-grid tone-weekborder-outline; }
   .week-day-normal { @apply shape-week-day layout-week-day tone-weekneutral-plain; }
@@ -55,11 +49,11 @@
   .week-day-empty-past { @apply shape-week-day layout-week-day layout-week-day-empty effect-week-day-past tone-weekneutral-plain; }
   .week-day-head { @apply shape-week-day-head type-week-day-head tone-weekneutral-plain; }
   .week-day-label {
-    @apply type-week-day-label tone-weekmuted-plain;
+    @apply type-week-day-label tone-supportmuted-plain;
     &[data-today="true"] { @apply tone-weekaccent-plain; }
   }
   .week-day-number {
-    @apply shape-week-day-number layout-week-day-number type-week-day-number tone-weekprimary-plain;
+    @apply shape-week-day-number layout-week-day-number type-week-day-number tone-supportprimary-plain;
     &[data-today="true"] { @apply tone-weekcurrent-soft; }
   }
   .week-day-content { @apply shape-week-day-content layout-week-day-content tone-weekneutral-plain; }

@@ -24,7 +24,7 @@ const SlotCardTitle: React.FC<{slot: SlotLike}> = ({slot}) => (
     <h5 className="expert-slot-card-title">
         {formatTs(slot.start_at)}
         {(slot.max_users ?? 1) > 1 && (
-            <span className="expert-profile-slot-group" data-test-id={`slot-group-badge-${slot.id}`}>
+            <span className="slot-group-badge" data-test-id={`slot-group-badge-${slot.id}`}>
                 {t.Slot_GroupBadge([slot.max_users ?? 1])}
             </span>
         )}

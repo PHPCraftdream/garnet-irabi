@@ -27,7 +27,7 @@
   .registration-notif-section { @apply tone-sectioninherit-plain shape-registration-notif-section; }
   .registration-notif-heading { @apply tone-widgetim-plain shape-registration-notif-title; }
   .registration-notif-row { @apply tone-widgetneutral-plain layout-registration-notif-row shape-registration-notif-row; }
-  .registration-notif-label { @apply tone-batchsecondary-plain layout-batch-label shape-registration-notif-label type-batch-label; }
+  .registration-notif-label { @apply tone-supportsecondary-plain layout-batch-label shape-registration-notif-label type-batch-label; }
   .registration-notif-select { @apply tone-garnetfield-outlined shape-registration-notif-select shape-native-select layout-native-select type-native-select behavior-native-select focus-native-select motion-native-select; }
   .registration-marketing { @apply tone-widgetneutral-plain shape-registration-marketing; }
 }

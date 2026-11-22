@@ -8,13 +8,10 @@
   --color-calnav-ink: var(--color-text-secondary);
   /* carburetor-disable-next-line valid-color-role */
   --color-calnav-ink-hover: var(--color-text-primary);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-calnavtitle-ink: var(--color-text-primary);
 }
 
 @utility tone-calnavneutral-plain { @apply text-inherit; }
 @utility tone-calnav-soft { @apply bg-calnav-wash text-calnav-ink hover:text-calnav-ink-hover; }
-@utility tone-calnavtitle-plain { @apply text-calnavtitle-ink; }
 @utility shape-calendar-pager-week { @apply mb-4; }
 @utility shape-calendar-pager-expert { @apply mb-2; }
 @utility layout-calendar-pager { @apply grid grid-cols-3 items-center gap-3; }
@@ -36,7 +33,7 @@
   .calendar-pager-next { @apply shape-calendar-pager-side layout-calendar-pager-side layout-calendar-pager-next tone-calnavneutral-plain; }
   .calendar-pager-center { @apply shape-calendar-pager-side layout-calendar-pager-center tone-calnavneutral-plain; }
   .calendar-pager-range { @apply layout-calendar-pager-range tone-calnavneutral-plain; }
-  .calendar-week-title { @apply type-calendar-pager-title type-calendar-week-title tone-calnavtitle-plain; }
-  .calendar-expert-title { @apply type-calendar-pager-title tone-calnavtitle-plain; }
+  .calendar-week-title { @apply type-calendar-pager-title type-calendar-week-title tone-supportprimary-plain; }
+  .calendar-expert-title { @apply type-calendar-pager-title tone-supportprimary-plain; }
   .calendar-pager-arrow { @apply shape-calendar-pager-arrow layout-calendar-pager-arrow motion-calendar-pager-arrow tone-calnav-soft; }
 }

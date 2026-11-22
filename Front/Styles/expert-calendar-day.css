@@ -7,8 +7,6 @@
   /* carburetor-disable-next-line valid-color-role */
   --color-expertdayaccent-ink: var(--color-accent);
   /* carburetor-disable-next-line valid-color-role */
-  --color-expertdaymuted-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
   --color-expertedit-ink: var(--color-accent);
   /* carburetor-disable-next-line valid-color-role */
   --color-expertedit-wash-hover: var(--color-accent-subtle);
@@ -22,7 +20,6 @@
 
 @utility tone-expertday-soft { @apply bg-expertday-wash; }
 @utility tone-expertdayaccent-plain { @apply text-expertdayaccent-ink; }
-@utility tone-expertdaymuted-plain { @apply text-expertdaymuted-ink; }
 @utility tone-expertedit-soft { @apply text-expertedit-ink hover:bg-expertedit-wash-hover; }
 @utility tone-expertdanger-soft { @apply text-expertdanger-ink hover:bg-expertdanger-wash-hover; }
 @utility tone-expertweek-outline { @apply border-expertweek-edge; }
@@ -56,16 +53,16 @@
 @layer components {
   .expert-calendar-day { @apply shape-expert-calendar-day layout-expert-calendar-day motion-expert-calendar-day tone-filterneutral-plain; }
   .expert-calendar-day-highlight { @apply shape-expert-calendar-day layout-expert-calendar-day motion-expert-calendar-day tone-expertday-soft; }
-  .expert-day-title { @apply tone-expertdaymuted-plain; }
+  .expert-day-title { @apply tone-supportmuted-plain; }
   .expert-day-current-title { @apply type-expert-day-current-title tone-expertdayaccent-plain; }
   .expert-day-slots { @apply shape-expert-day-slots layout-expert-day-slots tone-filterneutral-plain; }
-  .expert-day-empty { @apply shape-expert-day-empty type-expert-day-empty tone-expertdaymuted-plain; }
+  .expert-day-empty { @apply shape-expert-day-empty type-expert-day-empty tone-supportmuted-plain; }
   .expert-slot-time { @apply type-expert-slot-time tone-filterneutral-plain; }
-  .expert-slot-details { @apply tone-expertdaymuted-plain; }
+  .expert-slot-details { @apply tone-supportmuted-plain; }
   .expert-slot-user-row { @apply shape-expert-slot-user-row type-expert-slot-user-row tone-filterneutral-plain; }
-  .expert-slot-user-label { @apply tone-expertdaymuted-plain; }
+  .expert-slot-user-label { @apply tone-supportmuted-plain; }
   .expert-slot-user-link { @apply type-expert-slot-user-link tone-expertdayaccent-plain; }
-  .expert-slot-cost-hint { @apply shape-expert-slot-cost-hint type-expert-slot-cost-hint tone-expertdaymuted-plain; }
+  .expert-slot-cost-hint { @apply shape-expert-slot-cost-hint type-expert-slot-cost-hint tone-supportmuted-plain; }
   .expert-slot-grab { @apply behavior-expert-slot-grab tone-filterneutral-plain; }
   .expert-slot-dragging { @apply effect-expert-slot-dragging tone-filterneutral-plain; }
   .expert-slot-grab-dragging { @apply behavior-expert-slot-grab effect-expert-slot-dragging tone-filterneutral-plain; }
@@ -85,6 +82,6 @@
   .expert-slot-edit-action { @apply tone-expertedit-soft; }
   .expert-slot-danger-action { @apply tone-expertdanger-soft; }
   .expert-calendar { @apply shape-expert-calendar tone-filterneutral-plain; }
-  .expert-calendar-hint { @apply type-expert-calendar-hint tone-expertdaymuted-plain; }
+  .expert-calendar-hint { @apply type-expert-calendar-hint tone-supportmuted-plain; }
   .expert-calendar-week { @apply shape-expert-calendar-week layout-expert-calendar-week tone-expertweek-outline; }
 }

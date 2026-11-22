@@ -21,9 +21,9 @@
 @layer components {
   .expert-bookings-grid { @apply tone-bookneutral-plain layout-expert-bookings-grid; }
   .booking-list-card-title { @apply tone-widgetim-plain shape-booking-list-title type-booking-list-title; }
-  .booking-list-card-meta { @apply tone-booksecondary-plain shape-booking-list-meta type-booking-list-meta; }
+  .booking-list-card-meta { @apply tone-supportsecondary-plain shape-booking-list-meta type-booking-list-meta; }
   .booking-list-actions { @apply tone-bookneutral-plain layout-booking-list-actions shape-booking-list-actions; }
-  .booking-list-empty { @apply tone-bookmuted-plain; }
+  .booking-list-empty { @apply tone-supportmuted-plain; }
   .bookings-view-switch { @apply tone-bookneutral-plain layout-bookings-view-switch shape-bookings-view-switch; }
   .bookings-view-button { @apply tone-bookneutral-plain layout-compact-action shape-book-view-button type-compact-action behavior-compact-action effect-compact-action motion-compact-action; }
   .bookings-view-button[data-tone="active"] { @apply tone-settingssave-outlined; }

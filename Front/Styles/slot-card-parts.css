@@ -3,8 +3,6 @@
 /* Garnet theme vars are the palette; copying literals would fork the theme */
 @theme inline reference {
   /* carburetor-disable-next-line valid-color-role */
-  --color-slotpartmuted-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
   --color-slotpartlink-ink: var(--color-accent);
   /* carburetor-disable-next-line valid-color-role */
   --color-slotpartpanel-edge: var(--color-accent);
@@ -57,7 +55,6 @@
 }
 
 @utility tone-slotpartneutral-plain { @apply text-inherit; }
-@utility tone-slotpartmuted-plain { @apply text-slotpartmuted-ink; }
 @utility tone-slotpartlink-plain { @apply text-slotpartlink-ink; }
 @utility tone-slotpartpanel-outlined { @apply border-slotpartpanel-edge bg-slotpartpanel-wash; }
 @utility tone-slotbookinfo-soft { @apply bg-slotbookinfo-wash text-slotbookinfo-ink; }
@@ -109,24 +106,24 @@
 @utility effect-slot-book-action { @apply slot-card-hover:shadow-md; }
 
 @layer components {
-  .slot-meta-group { @apply shape-slot-meta-group layout-slot-meta type-slot-meta tone-slotpartmuted-plain; }
-  .slot-meta-single { @apply shape-slot-meta-single layout-slot-meta type-slot-meta tone-slotpartmuted-plain; }
+  .slot-meta-group { @apply shape-slot-meta-group layout-slot-meta type-slot-meta tone-supportmuted-plain; }
+  .slot-meta-single { @apply shape-slot-meta-single layout-slot-meta type-slot-meta tone-supportmuted-plain; }
   .slot-meta-format { @apply layout-slot-meta-format tone-slotpartneutral-plain; }
   .slot-meta-duration { @apply type-slot-meta-duration tone-slotpartneutral-plain; }
   .slot-tooltip-panel { @apply shape-slot-tooltip-panel type-slot-tooltip-panel behavior-slot-tooltip-panel effect-slot-tooltip-panel tone-slotpartpanel-outlined; }
   .slot-tooltip-heading { @apply shape-slot-tooltip-heading type-slot-tooltip-heading tone-slotpartneutral-plain; }
   .slot-tooltip-row { @apply shape-slot-tooltip-row tone-slotpartneutral-plain; }
-  .slot-tooltip-label { @apply tone-slotpartmuted-plain; }
+  .slot-tooltip-label { @apply tone-supportmuted-plain; }
   .slot-tooltip-expert-link { @apply type-slot-tooltip-expert-link behavior-slot-tooltip-expert-link tone-slotpartlink-plain; }
-  .slot-tooltip-seats-left { @apply shape-slot-tooltip-seats-left tone-slotpartmuted-plain; }
+  .slot-tooltip-seats-left { @apply shape-slot-tooltip-seats-left tone-supportmuted-plain; }
   .slot-card-heading { @apply shape-slot-card-heading layout-slot-card-heading tone-slotpartneutral-plain; }
   .slot-card-time { @apply type-slot-card-time tone-slotpartneutral-plain; }
-  .slot-card-dash { @apply shape-slot-card-dash tone-slotpartmuted-plain; }
+  .slot-card-dash { @apply shape-slot-card-dash tone-supportmuted-plain; }
   .slot-card-price { @apply type-slot-card-price tone-slotpartlink-plain; }
   .slot-card-expert { @apply shape-slot-card-expert layout-slot-card-expert type-slot-card-expert tone-slotpartneutral-plain; }
   .slot-group-block { @apply shape-slot-group-block tone-slotpartneutral-plain; }
   .slot-group-badge { @apply shape-slot-group-badge layout-slot-group-badge type-slot-group-badge tone-slotaction-badge; }
-  .slot-group-seats { @apply shape-slot-group-seats type-slot-group-seats tone-slotpartmuted-plain; }
+  .slot-group-seats { @apply shape-slot-group-seats type-slot-group-seats tone-supportmuted-plain; }
   .slot-booked-action {
     @apply shape-slot-card-action type-slot-card-action behavior-slot-card-action effect-slot-booked-action motion-slot-booked-action tone-slotpartneutral-plain;
     &[data-status="status-muted"] { @apply tone-slotbookmuted-soft; }

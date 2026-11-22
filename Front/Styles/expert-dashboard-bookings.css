@@ -23,5 +23,5 @@
   .expert-bookings-count-warning { @apply tone-ticketstatusyellow-soft layout-user-dash-count-badge shape-user-dash-count-badge type-user-dash-count-badge shape-expert-bookings-count; }
   .expert-booking-person { @apply tone-bookneutral-plain layout-expert-booking-person; }
   .expert-pending-actions { @apply tone-bookneutral-plain layout-expert-pending-actions; }
-  .expert-bookings-empty-label { @apply tone-bookmuted-plain type-expert-bookings-empty; }
+  .expert-bookings-empty-label { @apply tone-supportmuted-plain type-expert-bookings-empty; }
 }

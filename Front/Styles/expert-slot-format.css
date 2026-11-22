@@ -49,7 +49,9 @@
 
 @utility tone-expertcardcancelled-soft { @apply bg-expertcardcancelled-wash text-expertcardcancelled-ink; }
 @utility shape-expert-slot-card-body { @apply p-5; }
-@utility shape-expert-slot-card-title { @apply mb-2!; }
+/* ! обязателен: unlayered h5 {mb-1.5; font-size:.9375rem} (01-base.css:78) сильнее @layer components — заголовок слота рендерится как h5. */
+/* Отступ бейджа группы и остатка мест (ml-2 из master) — на прямых span-детях заголовка. */
+@utility shape-expert-slot-card-title { @apply mb-2! [&>span]:ml-2; }
 @utility type-expert-slot-card-title { @apply text-base! font-semibold; }
 @utility shape-expert-slot-card-meta { @apply mb-1; }
 @utility type-expert-slot-card-meta { @apply text-sm; }
@@ -59,7 +61,7 @@
 @layer components {
   .expert-slot-card-body { @apply tone-batchneutral-plain shape-expert-slot-card-body; }
   .expert-slot-card-title { @apply tone-batchtitle-plain shape-expert-slot-card-title type-expert-slot-card-title; }
-  .expert-slot-card-meta { @apply tone-batchsecondary-plain shape-expert-slot-card-meta type-expert-slot-card-meta; }
+  .expert-slot-card-meta { @apply tone-supportsecondary-plain shape-expert-slot-card-meta type-expert-slot-card-meta; }
   .expert-slot-card-actions { @apply tone-batchneutral-plain layout-expert-slot-card-actions shape-expert-slot-card-actions; }
   .expert-slot-card-status { @apply tone-slotbookmuted-soft shape-batch-legend layout-batch-warning type-batch-legend; }
   .expert-slot-card-status[data-slot-state="free"] { @apply tone-batchavailable-soft; }
@@ -79,7 +81,7 @@
   .invalid-feedback[data-slot-error="server"] { @apply tone-externaldanger-plain shape-create-slot-error type-create-slot-error; }
   .expert-slots-list-heading { @apply tone-batchneutral-plain shape-expert-slots-list-heading; }
   .expert-slots-list-grid { @apply tone-batchneutral-plain layout-expert-slots-list-grid; }
-  .expert-slots-list-empty { @apply tone-slotpartmuted-plain; }
+  .expert-slots-list-empty { @apply tone-supportmuted-plain; }
   .edit-slot-locked { @apply tone-editslotnotice-soft shape-edit-slot-notice type-create-slot-error; }
   .create-slot-dates { @apply tone-batchneutral-plain layout-batch-date-row; }
   .create-slot-params { @apply tone-batchneutral-plain layout-create-slot-params; }
@@ -91,14 +93,14 @@
   .expert-slot-modal-body { @apply tone-batchneutral-plain layout-expert-slot-modal-body shape-expert-slot-modal-body; }
   .expert-slot-modal-title { @apply tone-batchtitle-plain type-expert-slot-modal-title; }
   .expert-slot-modal-close { @apply tone-batchclose-plain type-expert-slot-modal-close; }
-  .slot-format-label { @apply tone-batchsecondary-plain shape-slot-format-label layout-slot-format-label type-slot-format-label; }
-  .slot-format-label-edit { @apply tone-batchsecondary-plain shape-slot-format-label layout-slot-format-label type-slot-format-edit-label; }
+  .slot-format-label { @apply tone-supportsecondary-plain shape-slot-format-label layout-slot-format-label type-slot-format-label; }
+  .slot-format-label-edit { @apply tone-supportsecondary-plain shape-slot-format-label layout-slot-format-label type-slot-format-edit-label; }
   .slot-format-options { @apply tone-batchneutral-plain layout-slot-format-options; }
   .slot-format-option { @apply tone-batchneutral-plain layout-slot-format-option behavior-slot-format-option; }
   .slot-format-radio { @apply tone-bookaccent-field; }
   .slot-format-option-text { @apply tone-batchneutral-plain type-slot-format-option; }
   .slot-format-location { @apply tone-garnetfield-outlined shape-native-control shape-native-field layout-native-select type-native-select focus-native-select motion-native-select; }
-  .slot-format-hint { @apply tone-slotpartmuted-plain shape-slot-format-hint type-slot-format-hint; }
+  .slot-format-hint { @apply tone-supportmuted-plain shape-slot-format-hint type-slot-format-hint; }
 }
 
 /* Unlayered integration overrides retain precedence. */

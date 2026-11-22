@@ -3,10 +3,6 @@
 @theme inline reference {
   /* Псевдонимы ролей темы: палитра сломала бы тёмную тему. */
   /* carburetor-disable-next-line valid-color-role */
-  --color-booksecondary-ink: var(--color-text-secondary);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-bookmuted-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
   --color-bookaccent-ink: var(--color-accent);
   /* carburetor-disable-next-line valid-color-role */
   --color-booksurface-wash: var(--color-bg-surface-alt);
@@ -16,8 +12,6 @@
   --color-bookrefund-ink: var(--color-accent);
   /* carburetor-disable-next-line valid-color-role */
   --color-bookwarning-ink: var(--color-warning);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-bookprimary-ink: var(--color-text-primary);
   /* carburetor-disable-next-line valid-color-role */
   --color-booksummary-wash: var(--color-accent-subtle);
   /* carburetor-disable-next-line valid-color-role */
@@ -45,9 +39,6 @@
 }
 
 @utility tone-bookneutral-plain { @apply text-inherit; }
-@utility tone-bookprimary-plain { @apply text-bookprimary-ink; }
-@utility tone-booksecondary-plain { @apply text-booksecondary-ink; }
-@utility tone-bookmuted-plain { @apply text-bookmuted-ink; }
 @utility tone-bookaccent-plain { @apply text-bookaccent-ink; }
 @utility tone-booksurface-soft { @apply bg-booksurface-wash; }
 @utility tone-bookrefund-soft { @apply bg-bookrefund-wash text-bookrefund-ink; }
@@ -117,7 +108,7 @@
 
 @layer components {
   .booking-extra-picker { @apply tone-bookneutral-plain shape-book-extra-picker; }
-  .booking-extra-title { @apply tone-booksecondary-plain type-book-summary-cost shape-book-extra-title; }
+  .booking-extra-title { @apply tone-supportsecondary-plain type-book-summary-cost shape-book-extra-title; }
   .booking-extra-list { @apply tone-bookneutral-plain shape-book-extra-list layout-book-extra-list; }
   .booking-extra-option { @apply tone-bookneutral-plain type-book-place layout-book-extra-option shape-book-extra-option behavior-book-extra-option; }
   .booking-extra-option[data-selected="true"] { @apply tone-booksummary-soft; }
@@ -130,52 +121,52 @@
   .booking-dialog-title { @apply tone-booktitle-plain type-book-dialog-title; }
   .booking-dialog-close { @apply tone-bookclose-plain type-book-dialog-close; }
   .booking-dialog-total { @apply tone-bookcancel-border layout-book-dialog-total shape-book-dialog-total; }
-  .booking-dialog-total-label { @apply tone-booksecondary-plain type-book-place; }
+  .booking-dialog-total-label { @apply tone-supportsecondary-plain type-book-place; }
   .booking-dialog-amount { @apply tone-bookneutral-plain type-book-dialog-amount; }
-  .booking-dialog-count { @apply tone-bookmuted-plain shape-book-dialog-count type-book-summary-note; }
-  .booking-summary-balance { @apply tone-bookmuted-plain type-book-summary-note; }
+  .booking-dialog-count { @apply tone-supportmuted-plain shape-book-dialog-count type-book-summary-note; }
+  .booking-summary-balance { @apply tone-supportmuted-plain type-book-summary-note; }
   .booking-dialog-error { @apply tone-externaldanger-plain type-book-place shape-book-dialog-error; }
   .booking-dialog-error-funds { @apply tone-externaldanger-plain type-book-place shape-book-dialog-error layout-book-dialog-funds; }
   .booking-dialog-error-shake { @apply tone-externaldanger-plain type-book-place shape-book-dialog-error layout-book-dialog-funds motion-book-dialog-shake; }
   .booking-dialog-actions { @apply tone-bookneutral-plain layout-book-dialog-actions; }
   .booking-cancel-dismiss-regular { @apply tone-bookdismiss-outlined layout-compact-action shape-confirm-button type-confirm-button behavior-compact-action effect-compact-action motion-compact-action; }
   .booking-cancel-panel { @apply tone-bookcancel-outlined shape-book-cancel-panel; }
-  .booking-cancel-money-muted { @apply tone-bookmuted-plain type-book-summary-note; }
+  .booking-cancel-money-muted { @apply tone-supportmuted-plain type-book-summary-note; }
   .booking-cancel-money-warning { @apply tone-bookwarning-plain type-book-summary-note; }
   .booking-cancel-money { @apply tone-bookneutral-plain shape-book-refund-details; }
   .booking-cancel-title { @apply tone-bookneutral-plain type-book-summary-cost; }
   .booking-cancel-error { @apply tone-externaldanger-plain type-book-place; }
-  .booking-cancel-label { @apply tone-booksecondary-plain type-book-place shape-book-cancel-label layout-book-cancel-label; }
+  .booking-cancel-label { @apply tone-supportsecondary-plain type-book-place shape-book-cancel-label layout-book-cancel-label; }
   .booking-cancel-input { @apply tone-garnetfield-outlined shape-native-control shape-native-field layout-native-select type-native-select focus-native-select motion-native-select; }
   .booking-cancel-actions { @apply tone-bookneutral-plain layout-book-cancel-actions; }
   .booking-cancel-dismiss { @apply tone-bookdismiss-outlined layout-compact-action shape-compact-action type-compact-action behavior-compact-action effect-compact-action motion-compact-action; }
   .booking-summary-slot { @apply tone-booksummary-soft shape-book-summary-panel; }
   .booking-summary-time { @apply tone-bookneutral-plain type-book-summary-time; }
-  .booking-summary-expert { @apply tone-booksecondary-plain type-book-place; }
+  .booking-summary-expert { @apply tone-supportsecondary-plain type-book-place; }
   .booking-summary-format { @apply tone-bookneutral-plain type-book-place shape-book-cancel-reason; }
   .booking-summary-group { @apply tone-bookneutral-plain shape-book-cancel-reason; }
   .booking-summary-badge { @apply tone-bookneutral-plain layout-book-summary-badge shape-book-summary-badge type-book-summary-badge; }
   .booking-summary-cost { @apply tone-bookneutral-plain type-book-summary-cost shape-book-cancel-reason; }
   .booking-summary-penalty { @apply tone-bookwarning-plain type-book-summary-note shape-book-cancel-reason; }
-  .booking-summary-refund { @apply tone-bookmuted-plain type-book-summary-note shape-book-cancel-reason; }
-  .booking-place-line { @apply shape-book-place type-book-place tone-booksecondary-plain; }
-  .booking-place-label { @apply type-book-place tone-bookmuted-plain; }
-  .booking-party-line { @apply shape-book-place type-book-place tone-booksecondary-plain; }
-  .booking-party-label { @apply type-book-place tone-bookmuted-plain; }
-  .booking-cost-line { @apply shape-book-place type-book-place tone-booksecondary-plain; }
-  .booking-cost-label { @apply type-book-place tone-bookmuted-plain; }
-  .booking-group-badge-line { @apply shape-book-place type-book-place tone-booksecondary-plain; }
+  .booking-summary-refund { @apply tone-supportmuted-plain type-book-summary-note shape-book-cancel-reason; }
+  .booking-place-line { @apply shape-book-place type-book-place tone-supportsecondary-plain; }
+  .booking-place-label { @apply type-book-place tone-supportmuted-plain; }
+  .booking-party-line { @apply shape-book-place type-book-place tone-supportsecondary-plain; }
+  .booking-party-label { @apply type-book-place tone-supportmuted-plain; }
+  .booking-cost-line { @apply shape-book-place type-book-place tone-supportsecondary-plain; }
+  .booking-cost-label { @apply type-book-place tone-supportmuted-plain; }
+  .booking-group-badge-line { @apply shape-book-place type-book-place tone-supportsecondary-plain; }
   .booking-place-link { @apply type-book-place-link tone-bookaccent-plain; }
   .booking-cancel-cause { @apply shape-book-cancel-cause type-book-cancel-cause tone-booksurface-soft; }
-  .booking-cancel-reason { @apply shape-book-cancel-reason tone-bookmuted-plain; }
+  .booking-cancel-reason { @apply shape-book-cancel-reason tone-supportmuted-plain; }
   .booking-refund-info { @apply shape-book-refund-info type-book-refund-info tone-bookrefund-soft; }
   .booking-penalty-info { @apply shape-book-refund-info shape-book-refund-details type-book-refund-info tone-bookrefund-soft; }
   .booking-penalty-amount { @apply tone-bookwarning-plain; }
-  .booking-refund-amount { @apply tone-bookmuted-plain; }
+  .booking-refund-amount { @apply tone-supportmuted-plain; }
   .booking-card-body { @apply shape-book-card-body tone-bookneutral-plain; }
   .booking-card-header { @apply shape-book-card-header layout-book-card-header tone-bookneutral-plain; }
-  .booking-card-title { @apply shape-book-card-title type-book-card-title tone-bookprimary-plain; }
-  .booking-created-line { @apply shape-book-place type-book-place tone-booksecondary-plain; }
+  .booking-card-title { @apply shape-book-card-title type-book-card-title tone-supportprimary-plain; }
+  .booking-created-line { @apply shape-book-place type-book-place tone-supportsecondary-plain; }
 }
 
 /* Unlayered glass border and transition override the component Tone and motion. */

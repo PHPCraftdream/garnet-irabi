@@ -1,13 +1,9 @@
 @reference "tailwindcss";
 
-/* Роли ссылаются на цвета Garnet-темы: у них нет записей в палитре, и темовая ветка должна следовать за темой. */
+/* Роли следуют за токенами темы Garnet (--color-*): у них есть ветка [data-theme="dark"], а --palette-* хранит сырые значения и зафиксировал бы светлый цвет. */
 @theme inline reference {
   /* carburetor-disable-next-line valid-color-role */
-  --color-externalmuted-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
   --color-externaldanger-ink: var(--color-danger);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-externalheading-ink: var(--color-text-secondary);
   /* carburetor-disable-next-line valid-color-role */
   --color-externalprimary-fill: var(--color-accent);
   /* carburetor-disable-next-line valid-color-role */
@@ -17,12 +13,10 @@
 }
 
 @utility tone-externalneutral-plain { @apply text-inherit; }
-@utility tone-externalmuted-plain { @apply text-externalmuted-ink; }
 @utility tone-externaldanger-plain { @apply text-externaldanger-ink; }
 @utility shape-external-page { @apply mx-auto w-full max-w-4xl mt-6 space-y-4; }
 @utility shape-external-heading { @apply mb-3; }
 @utility type-external-heading { @apply text-base font-semibold; }
-@utility tone-externalheading-plain { @apply text-externalheading-ink; }
 @utility tone-externalprimary-solid { @apply border-transparent bg-externalprimary-fill text-externalprimary-on-fill [&:hover]:bg-externalprimary-fill-hover; }
 @utility layout-external-button { @apply inline-flex items-center justify-center gap-1.5; }
 @utility shape-external-button { @apply rounded border px-2 py-1; }
@@ -43,13 +37,13 @@
 
 @layer components {
   .external-page { @apply shape-external-page tone-externalneutral-plain; }
-  .external-heading { @apply shape-external-heading type-external-heading tone-externalheading-plain; }
+  .external-heading { @apply shape-external-heading type-external-heading tone-supportsecondary-plain; }
   .external-primary-action { @apply tone-externalprimary-solid layout-external-button shape-external-button type-external-button behavior-external-button effect-external-button motion-external-button effect-primary-action-shadow; }
   .external-secondary-action { @apply tone-confirmsecondary-solid layout-external-button shape-external-button type-external-button behavior-external-button effect-external-button motion-external-button; }
   .external-invalid { @apply tone-externaldanger-plain; }
-  .external-description { @apply tone-externalmuted-plain; }
+  .external-description { @apply tone-supportmuted-plain; }
   .external-details { @apply shape-external-details type-external-details tone-externalneutral-plain; }
-  .external-term { @apply layout-external-inline tone-externalmuted-plain; }
+  .external-term { @apply layout-external-inline tone-supportmuted-plain; }
   .external-host { @apply layout-external-inline type-external-host tone-externalneutral-plain; }
   .external-url { @apply layout-external-inline type-external-url tone-externalneutral-plain; }
   .external-actions { @apply layout-external-actions tone-externalneutral-plain; }
