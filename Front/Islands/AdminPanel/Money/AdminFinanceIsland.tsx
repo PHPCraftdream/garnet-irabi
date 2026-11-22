@@ -3,7 +3,7 @@ import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {LedgerEntry, AccountBalanceRow, GridConfig, PageResponse} from '../Shell/types';
 import {LedgerSection} from './LedgerSection';
 import {BalancesSection} from './BalancesSection';
-import {UserDetailContext} from '../Users/UserDetailContext';
+import {UserDetailContext, UserDetailContextValue} from '../Users/UserDetailContext';
 import {UserDetailTab} from '../Users/UserDetailTab';
 import {useUserTabs} from '../Shell/useUserTabs';
 import {ADMIN_URLS} from '../Shell/adminShared';
@@ -53,10 +53,11 @@ function writeTabToUrl(tab: FinanceTabId): void {
 
 const FINANCE_ICON = <Banknote size={22} aria-hidden="true" />;
 
-type ViewProps = Props & ReturnType<typeof useUserTabs> & {userDetail: React.ContextType<typeof UserDetailContext>};
+type ViewProps = Props & ReturnType<typeof useUserTabs>;
 
 class AdminFinanceView extends AntiHookComponent<ViewProps> {
     private readonly ui = new Carburetor({activeMainTab: this.props.initialTab});
+    private detailCache?: {openUser: ViewProps['openUser']; value: UserDetailContextValue};
 
     componentDidMount(): void {
         super.componentDidMount();
@@ -72,6 +73,12 @@ class AdminFinanceView extends AntiHookComponent<ViewProps> {
     componentWillUnmount(): void {
         window.removeEventListener('popstate', this.onPop);
         super.componentWillUnmount();
+    }
+
+    private detailValue(): UserDetailContextValue {
+        const {openUser} = this.props;
+        if (this.detailCache?.openUser !== openUser) this.detailCache = {openUser, value: {openUser}};
+        return this.detailCache.value;
     }
 
     private readonly onPop = () => {
@@ -121,7 +128,8 @@ class AdminFinanceView extends AntiHookComponent<ViewProps> {
 
     render() {
         const {activeMainTab} = this.useCarburetor(this.ui);
-        const {activeUserTabId, userTabs, userDetail} = this.props;
+        const {activeUserTabId, userTabs} = this.props;
+        const userDetail = this.detailValue();
         const activeId = activeUserTabId ?? activeMainTab;
         const tabs: TabDef[] = [
             {id: 'finance', label: t.Admin_FinanceTab_Finance(), closeable: false},
@@ -141,8 +149,5 @@ class AdminFinanceView extends AntiHookComponent<ViewProps> {
 }
 
 export function AdminFinanceIsland(props: Props) {
-    const userTabs = useUserTabs();
-    const {openUser} = userTabs;
-    const userDetail = React.useMemo(() => ({openUser}), [openUser]);
-    return <AdminFinanceView {...props} {...userTabs} userDetail={userDetail} />;
+    return <AdminFinanceView {...props} {...useUserTabs()} />;
 }
