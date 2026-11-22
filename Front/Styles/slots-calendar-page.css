@@ -1,13 +1,3 @@
-@reference "tailwindcss";
-
-/* Garnet theme vars are the palette; copying literals would fork the theme */
-@theme inline reference {
-  /* carburetor-disable-next-line valid-color-role */
-  --color-slotpageaccent-ink: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-slotpageaccent-ink-hover: var(--color-accent-hover);
-}
-
 @utility tone-slotpageneutral-plain { @apply text-inherit; }
 @utility tone-slotpageaccent-link { @apply text-slotpageaccent-ink hover:text-slotpageaccent-ink-hover; }
 @utility shape-slots-calendar-status { @apply mb-4; }

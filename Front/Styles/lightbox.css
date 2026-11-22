@@ -1,18 +1,8 @@
-@reference "tailwindcss";
-
 :root {
   --palette-lightbox-backdrop: rgb(0 0 0 / 80%);
   --palette-lightbox-overlay: rgb(255 255 255 / 10%);
   --palette-lightbox-overlay-hover: rgb(255 255 255 / 20%);
   --palette-lightbox-white: #fff;
-}
-
-@theme inline reference {
-  --color-*: initial;
-  --color-lightbox-fill: var(--palette-lightbox-backdrop);
-  --color-lightbox-wash: var(--palette-lightbox-overlay);
-  --color-lightbox-wash-hover: var(--palette-lightbox-overlay-hover);
-  --color-lightbox-ink: var(--palette-lightbox-white);
 }
 
 @utility tone-neutral-plain { @apply text-inherit; }

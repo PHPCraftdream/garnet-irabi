@@ -1,21 +1,3 @@
-@reference "tailwindcss";
-
-@theme inline reference {
-  /* Псевдонимы ролей темы: палитра сломала бы тёмную тему. */
-  /* carburetor-disable-next-line valid-color-role */
-  --color-userbalance-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-userbalance-wash: var(--color-accent-subtle);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-balanceborder-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-balancecard-wash: var(--color-bg-surface);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-balancecard-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-balancerow-wash-hover: var(--color-bg-surface-hover);
-}
-
 @utility shape-balance-topup-offset { @apply mb-6; }
 @utility tone-userbalance-outlined { @apply bg-userbalance-wash border-userbalance-edge; }
 @utility tone-balancecard-outlined { @apply bg-balancecard-wash border-balancecard-edge; }

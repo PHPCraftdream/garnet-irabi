@@ -1,5 +1,3 @@
-@reference "tailwindcss";
-
 @utility layout-entity-person-group { @apply inline-flex items-center gap-1.5; }
 @utility shape-entity-person-admin { @apply px-1 py-0.5 rounded border; }
 @utility type-entity-person-admin { @apply text-[10px] no-underline; }
@@ -14,17 +12,6 @@
 @utility type-avatar-initials-sm { @apply text-sm font-semibold; }
 @utility type-avatar-initials-lg { @apply text-2xl font-bold; }
 @utility tone-entityadmin-border { @apply border-entityadmin-edge; }
-/* Роли следуют за токенами темы Garnet (--color-*): у них есть ветка [data-theme="dark"], а --palette-* хранит сырые значения и зафиксировал бы светлый цвет. */
-@theme inline reference {
-  /* carburetor-disable-next-line valid-color-role */
-  --color-entityadmin-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-entityadmin-edge-hover: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-entityadmin-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-entityadmin-ink-hover: var(--color-accent);
-}
 
 @utility tone-entityadmin-outline { @apply border-entityadmin-edge text-entityadmin-ink hover:border-entityadmin-edge-hover hover:text-entityadmin-ink-hover; }
 

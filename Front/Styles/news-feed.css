@@ -1,17 +1,3 @@
-@reference "tailwindcss";
-
-@theme inline reference {
-  /* Псевдонимы ролей темы: палитра сломала бы тёмную тему. */
-  /* carburetor-disable-next-line valid-color-role */
-  --color-newsarchiveidle-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-newsarchiveidle-ink-hover: var(--color-text-primary);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-newsarchiveidle-wash-hover: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-newsarchiveidle-edge: var(--color-border);
-}
-
 @utility layout-news-row { @apply flex items-start gap-3; }
 @utility shape-news-row { @apply px-4 py-3; }
 @utility motion-news-row { @apply transition-colors; }

@@ -1,27 +1,3 @@
-@reference "tailwindcss";
-
-/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (slot-filters.css:3-5), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы. */
-@theme inline reference {
-  /* carburetor-disable-next-line valid-color-role */
-  --color-expertfilter-edge: var(--color-border);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-expertfilter-ink: var(--color-text-secondary);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-expertfilter-wash-hover: var(--color-bg-surface-hover);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-expertactive-edge: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-expertactive-ink: var(--color-accent-text);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-expertactive-wash: var(--color-accent);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-expertactive-wash-hover: var(--color-accent-hover);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-expertactive-wash-focus: var(--color-accent-hover);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-expertactive-wash-active: var(--color-accent-hover);
-}
-
 @utility tone-expertfilter-outlined { @apply border-expertfilter-edge text-expertfilter-ink hover:bg-expertfilter-wash-hover; }
 @utility tone-expertactive-outlined { @apply border-expertactive-edge bg-expertactive-wash text-expertactive-ink [&:hover]:bg-expertactive-wash-hover [&:focus]:bg-expertactive-wash-focus [&:active]:bg-expertactive-wash-active; }
 @utility shape-expert-calendar-filters { @apply mb-2; }

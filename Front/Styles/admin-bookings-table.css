@@ -1,5 +1,3 @@
-@reference "tailwindcss";
-
 @utility shape-admin-booking-row { @apply border-b; }
 @utility shape-admin-booking-cell { @apply p-3; }
 @utility type-admin-booking-nowrap { @apply whitespace-nowrap; }

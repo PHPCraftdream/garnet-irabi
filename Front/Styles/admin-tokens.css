@@ -1,21 +1,3 @@
-@reference "tailwindcss";
-
-/* Роли следуют за токенами темы Garnet (--color-*): у них есть ветка [data-theme="dark"], а --palette-* хранит сырые значения и зафиксировал бы светлый цвет. */
-@theme inline reference {
-  /* Роль tokenmuted-filter: эквивалент (border-subtle + text-muted) лежит в модуле фреймворка, который конфиг линта не сканирует, а valid-tone-class запрещает тону брать кирпичи чужого семейства. */
-  /* carburetor-disable-next-line valid-color-role */
-  --color-tokenmuted-edge: var(--color-border-subtle);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-tokenmuted-ink-subtle: var(--color-text-muted);
-  /* Роль вкладок users: framework tone-tabnavinactive-outline выглядит эквивалентно, но его ink-hover — --color-text-secondary, а вкладке нужен --color-text-primary, поэтому переиспользование изменило бы цвет при наведении. */
-  /* carburetor-disable-next-line valid-color-role */
-  --color-usersidle-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-usersidle-ink-hover: var(--color-text-primary);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-usersidle-edge-hover: var(--color-border-strong);
-}
-
 @utility tone-tokenmuted-filter { @apply border-tokenmuted-edge text-tokenmuted-ink-subtle; }
 @utility shape-token-field { @apply mb-3; }
 @utility shape-token-label { @apply mb-1.5; }
@@ -39,12 +21,6 @@
 @utility type-token-agent { @apply text-ellipsis whitespace-nowrap; }
 
 @utility layout-token-created-link { @apply flex gap-2 items-center; }
-
-/* Роль moneybalance: эквивалент --color-success есть только в модуле фреймворка, который конфиг линта не сканирует, а valid-tone-class запрещает тону брать кирпичи чужого семейства. */
-@theme inline reference {
-  /* carburetor-disable-next-line valid-color-role */
-  --color-moneybalance-ink: var(--color-success);
-}
 
 @utility tone-moneybalance-plain { @apply text-moneybalance-ink; }
 @utility type-moneybalance { @apply font-medium; }

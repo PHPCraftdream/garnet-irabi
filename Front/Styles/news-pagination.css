@@ -1,11 +1,3 @@
-@reference "tailwindcss";
-
-@theme inline reference {
-  /* Псевдоним роли темы: палитра сломала бы тёмную тему. */
-  /* carburetor-disable-next-line valid-color-role */
-  --color-newsneutral-edge: var(--color-border);
-}
-
 @utility tone-newsneutral-plain { @apply text-inherit; }
 @utility tone-newsneutral-outline { @apply border-newsneutral-edge; }
 @utility shape-news-pagination-top { @apply px-4 pt-3; }

@@ -1,5 +1,3 @@
-@reference "tailwindcss";
-
 @utility layout-expert-profile-avatar { @apply flex items-center justify-center shrink-0; }
 @utility shape-expert-profile-avatar { @apply w-24 h-24 md:w-32 md:h-32 rounded-lg; }
 @utility type-expert-profile-initials { @apply data-[variant=initials]:text-2xl data-[variant=initials]:font-semibold; }

@@ -1,5 +1,3 @@
-@reference "tailwindcss";
-
 @utility layout-booking-card-action-row { @apply flex items-center gap-2 flex-wrap; }
 @utility shape-booking-card-action-row { @apply mt-3; }
 @utility shape-booking-card-action-hint { @apply mt-2 mb-0; }
