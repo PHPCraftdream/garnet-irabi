@@ -1,6 +1,8 @@
 # Проектные инструкции — IRabi
 
-- Перед КАЖДЫМ пушем в этот репозиторий сам прогоняешь локальные проверки качества (`npm run check` — oxlint + tsgo, `composer ci` — cs-fixer + phpstan + build) и пушишь только при их зелёном результате. Не полагайся на удалённый CI как на первую линию проверки — GitHub Actions обрезает список аннотаций/warning'ов (видно не более ~10 на джоб) и может создать ложное ощущение, что всё чисто.
+- Фронт без React-хуков: компоненты — классы `AntiHookComponent` и контроллеры `Carburetor` из `@react-carburetor/core`, `className` — только функциональные классы из стилей секции `classes` в `.carburetorrc.json`. Правила `no-react-hooks-in-components` и `require-function-class` включены как error глобально; хуки и директивы `carburetor-disable`/`oxlint-disable` не добавляй, а чини причину. Нужен хук-подобный сценарий — смотри образцы в `vendor/phpcraftdream/garnet-framework/Bundle/Front/Common`.
+
+- Перед КАЖДЫМ пушем в этот репозиторий сам прогоняешь локальные проверки качества (`npm run check` — oxlint + carburetor-lint + tsgo, `composer ci` — cs-fixer + phpstan + build) и пушишь только при их зелёном результате. Не полагайся на удалённый CI как на первую линию проверки — GitHub Actions обрезает список аннотаций/warning'ов (видно не более ~10 на джоб) и может создать ложное ощущение, что всё чисто.
 
 - После `composer update phpcraftdream/garnet-framework` сразу выполняй
   `npm install` в ТРЁХ каталогах внутри `vendor/phpcraftdream/garnet-framework`:
