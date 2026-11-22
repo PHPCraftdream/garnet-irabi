@@ -1,14 +1,7 @@
 @reference "tailwindcss";
 
+/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (slot-filters.css:3-5), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы; поэтому роли ниже остаются ссылками на --color-*. */
 @theme inline reference {
-  /* carburetor-disable-next-line valid-color-role */
-  --color-expertcardbooked-wash: var(--color-status-yellow-bg);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-expertcardbooked-ink: var(--color-status-yellow);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-expertcardmuted-wash: var(--color-status-gray-bg);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-expertcardmuted-ink: var(--color-status-gray);
   /* carburetor-disable-next-line valid-color-role */
   --color-expertcardcancelled-wash: var(--color-bg-surface-hover);
   /* carburetor-disable-next-line valid-color-role */
@@ -16,12 +9,10 @@
   /* carburetor-disable-next-line valid-color-role */
   --color-editslotnotice-wash: var(--color-bg-surface-alt);
   /* carburetor-disable-next-line valid-color-role */
-  --color-editslotnotice-ink: currentColor;
-  /* carburetor-disable-next-line valid-color-role */
   --color-expertslotpending-edge: var(--color-warning);
 }
 
-@utility tone-editslotnotice-soft { @apply bg-editslotnotice-wash text-editslotnotice-ink; }
+@utility tone-editslotnotice-soft { @apply bg-editslotnotice-wash text-current; }
 @utility tone-expertslotpending-border { @apply border-expertslotpending-edge; }
 @utility shape-expert-slots-pending { @apply mb-4 border; }
 @utility shape-expert-slots-calendar { @apply space-y-5; }
@@ -56,8 +47,6 @@
 @utility shape-create-slot-error { @apply mb-3; }
 @utility type-create-slot-error { @apply text-sm; }
 
-@utility tone-expertcardbooked-soft { @apply bg-expertcardbooked-wash text-expertcardbooked-ink; }
-@utility tone-expertcardmuted-soft { @apply bg-expertcardmuted-wash text-expertcardmuted-ink; }
 @utility tone-expertcardcancelled-soft { @apply bg-expertcardcancelled-wash text-expertcardcancelled-ink; }
 @utility shape-expert-slot-card-body { @apply p-5; }
 @utility shape-expert-slot-card-title { @apply mb-2!; }
@@ -72,12 +61,13 @@
   .expert-slot-card-title { @apply tone-batchtitle-plain shape-expert-slot-card-title type-expert-slot-card-title; }
   .expert-slot-card-meta { @apply tone-batchsecondary-plain shape-expert-slot-card-meta type-expert-slot-card-meta; }
   .expert-slot-card-actions { @apply tone-batchneutral-plain layout-expert-slot-card-actions shape-expert-slot-card-actions; }
-  .expert-slot-card-status { @apply tone-expertcardmuted-soft shape-batch-legend layout-batch-warning type-batch-legend; }
+  .expert-slot-card-status { @apply tone-slotbookmuted-soft shape-batch-legend layout-batch-warning type-batch-legend; }
   .expert-slot-card-status[data-slot-state="free"] { @apply tone-batchavailable-soft; }
-  .expert-slot-card-status[data-slot-state="booked"] { @apply tone-expertcardbooked-soft; }
+  .expert-slot-card-status[data-slot-state="booked"] { @apply tone-slotbookwarning-soft; }
   .expert-slot-card-status[data-slot-state="completed"] { @apply tone-batchproposed-soft; }
   .expert-slot-card-status[data-slot-state="cancelled"] { @apply tone-expertcardcancelled-soft; }
 
+  /* valid-function-class: правила адресуют legacy-селекторы по классам и атрибутам (section-soft, .invalid-feedback, .booking-card-shell, .btn-outline-warning-full), которых нет в списке функциональных классов конфигурации, и unlayered-перекрытие кнопки фреймворка. */
   /* carburetor-disable-next-line valid-function-class */
   .section-soft[data-expert-slots="pending"] { @apply tone-expertslotpending-border shape-expert-slots-pending type-create-slot-error; }
   /* carburetor-disable-next-line valid-function-class */
@@ -89,7 +79,7 @@
   .invalid-feedback[data-slot-error="server"] { @apply tone-externaldanger-plain shape-create-slot-error type-create-slot-error; }
   .expert-slots-list-heading { @apply tone-batchneutral-plain shape-expert-slots-list-heading; }
   .expert-slots-list-grid { @apply tone-batchneutral-plain layout-expert-slots-list-grid; }
-  .expert-slots-list-empty { @apply tone-batchmuted-plain; }
+  .expert-slots-list-empty { @apply tone-slotpartmuted-plain; }
   .edit-slot-locked { @apply tone-editslotnotice-soft shape-edit-slot-notice type-create-slot-error; }
   .create-slot-dates { @apply tone-batchneutral-plain layout-batch-date-row; }
   .create-slot-params { @apply tone-batchneutral-plain layout-create-slot-params; }
@@ -108,7 +98,7 @@
   .slot-format-radio { @apply tone-bookaccent-field; }
   .slot-format-option-text { @apply tone-batchneutral-plain type-slot-format-option; }
   .slot-format-location { @apply tone-garnetfield-outlined shape-native-control shape-native-field layout-native-select type-native-select focus-native-select motion-native-select; }
-  .slot-format-hint { @apply tone-batchmuted-plain shape-slot-format-hint type-slot-format-hint; }
+  .slot-format-hint { @apply tone-slotpartmuted-plain shape-slot-format-hint type-slot-format-hint; }
 }
 
 /* Unlayered integration overrides retain precedence. */

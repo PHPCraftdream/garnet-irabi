@@ -1,14 +1,9 @@
 @reference "tailwindcss";
 
+/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (slot-filters.css:3-5), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы; поэтому роли ниже остаются ссылками на --color-*. */
 @theme inline reference {
   /* carburetor-disable-next-line valid-color-role */
   --color-batchsecondary-ink: var(--color-text-secondary);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-batchmuted-ink: var(--color-text-muted);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-batchwarning-ink: var(--color-status-yellow);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-batchwarning-wash: var(--color-status-yellow-bg);
   /* carburetor-disable-next-line valid-color-role */
   --color-batchexisting-ink: var(--color-text-secondary);
   /* carburetor-disable-next-line valid-color-role */
@@ -23,8 +18,6 @@
   --color-batchremove-ink: var(--color-red-600);
   /* carburetor-disable-next-line valid-color-role */
   --color-batchremove-ink-hover: var(--color-white);
-  /* carburetor-disable-next-line valid-color-role */
-  --color-batchremove-wash: transparent;
   /* carburetor-disable-next-line valid-color-role */
   --color-batchremove-wash-hover: var(--color-red-600);
   /* carburetor-disable-next-line valid-color-role */
@@ -55,11 +48,9 @@
 
 @utility tone-batchneutral-plain { @apply text-inherit; }
 @utility tone-batchsecondary-plain { @apply text-batchsecondary-ink; }
-@utility tone-batchmuted-plain { @apply text-batchmuted-ink; }
-@utility tone-batchwarning-soft { @apply text-batchwarning-ink bg-batchwarning-wash; }
 @utility tone-batchexisting-soft { @apply text-batchexisting-ink bg-batchexisting-wash; }
 @utility tone-batchrowwarning-soft { @apply bg-batchrowwarning-wash; }
-@utility tone-batchremove-outlined { @apply border-batchremove-edge text-batchremove-ink bg-batchremove-wash hover:border-batchremove-edge-hover hover:text-batchremove-ink-hover hover:bg-batchremove-wash-hover; }
+@utility tone-batchremove-outlined { @apply border-batchremove-edge text-batchremove-ink bg-transparent hover:border-batchremove-edge-hover hover:text-batchremove-ink-hover hover:bg-batchremove-wash-hover; }
 @utility shape-batch-compact-input { @apply px-2! py-1!; }
 @utility type-batch-compact-input { font-size: 0.8rem !important; }
 @utility layout-batch-date-input { @apply inline-block; }
@@ -109,11 +100,11 @@
   .batch-legend-restricted { @apply shape-batch-legend layout-batch-warning type-batch-legend tone-batchrestricted-soft; }
   .batch-legend-proposed { @apply shape-batch-legend layout-batch-warning type-batch-legend tone-batchproposed-soft; }
   .batch-preview-add-row { @apply layout-batch-add-row shape-batch-form-footer tone-batchneutral-plain; }
-  .batch-preview-stats { @apply tone-batchmuted-plain; }
+  .batch-preview-stats { @apply tone-slotpartmuted-plain; }
   .batch-preview-actions { @apply layout-batch-form-footer tone-batchneutral-plain; }
-  .batch-preview-warning { @apply shape-batch-warning layout-batch-warning type-batch-warning tone-batchwarning-soft; }
+  .batch-preview-warning { @apply shape-batch-warning layout-batch-warning type-batch-warning tone-slotbookwarning-soft; }
   .batch-preview-existing { @apply shape-batch-existing layout-batch-warning type-batch-existing tone-batchexisting-soft; }
-  .batch-preview-weekday { @apply shape-batch-weekday type-batch-weekday tone-batchmuted-plain; }
+  .batch-preview-weekday { @apply shape-batch-weekday type-batch-weekday tone-slotpartmuted-plain; }
   .batch-preview-row-warning { @apply tone-batchrowwarning-soft; }
   .batch-preview-date-input { @apply shape-batch-compact-input type-batch-compact-input layout-batch-date-input tone-batchneutral-plain; }
   .slot-time-input { @apply shape-batch-compact-input type-batch-compact-input tone-batchneutral-plain; }
@@ -123,7 +114,7 @@
   .batch-date-row { @apply layout-batch-date-row tone-batchneutral-plain; }
   .batch-params-row { @apply layout-batch-params-row tone-batchneutral-plain; }
   .batch-format-row { @apply layout-batch-format-row tone-batchneutral-plain; }
-  .batch-help { @apply shape-batch-help type-batch-help tone-batchmuted-plain; }
+  .batch-help { @apply shape-batch-help type-batch-help tone-slotpartmuted-plain; }
   .batch-form-fields { @apply shape-batch-form-fields tone-batchneutral-plain; }
   .batch-form-footer { @apply shape-batch-form-footer layout-batch-form-footer tone-batchneutral-plain; }
   .batch-preview-cell { @apply shape-batch-cell type-batch-cell tone-batchtable-border; }
@@ -131,5 +122,6 @@
 }
 
 /* Сохраняет приоритет над стилями общей кнопки. */
+/* valid-function-class: селектор по legacy-классу .compact-outline-action, которого нет в списке функциональных классов конфигурации, и unlayered-перекрытие кнопки фреймворка. */
 /* carburetor-disable-next-line valid-function-class */
 .batch-preview-add-row .compact-outline-action { @apply shape-confirm-button shape-batch-add-button type-confirm-button; }

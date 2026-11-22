@@ -1,5 +1,6 @@
 @reference "tailwindcss";
 
+/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (slot-filters.css:3-5), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы. */
 @theme inline reference {
   /* carburetor-disable-next-line valid-color-role */
   --color-expertday-wash: var(--color-accent-subtle);
