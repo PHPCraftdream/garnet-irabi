@@ -1,13 +1,14 @@
 import * as React from 'react';
-import {useEffect, useMemo} from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {AdminUser, GridConfig, UserTab} from './types';
 import {UsersSection} from '../Users/UsersSection';
 import {AdminCommentsSection, AdminCommentRow, CommentsAccountOption} from '../Support/AdminCommentsSection';
 import {AdminTokensSection} from '../System/AdminTokensSection';
 import {UserDetailContext} from '../Users/UserDetailContext';
+import type {UserDetailContextValue} from '../Users/UserDetailContext';
 import {UserDetailTab} from '../Users/UserDetailTab';
-import {useUserTabs} from './useUserTabs';
+import {UserTabsStore} from './UserTabsStore';
+import type {UserInternalTab} from './UserTabsStore';
 import {ADMIN_URLS} from './adminShared';
 import {TabNav, TabDef} from '@common/Components/Layout/Navigation/TabNav';
 import {PageResponse} from '@common/hooks/data/usePagination';
@@ -77,10 +78,8 @@ function writeTabToUrl(tab: StaticTabId): void {
     window.history.pushState(null, '', url.toString());
 }
 
-type UserTabs = ReturnType<typeof useUserTabs>;
-
 interface PanelProps extends Props {
-    tabs: UserTabs;
+    tabs: UserTabsStore;
 }
 
 class AdminPanel extends AntiHookComponent<PanelProps> {
@@ -99,22 +98,20 @@ class AdminPanel extends AntiHookComponent<PanelProps> {
     private readonly onPop = () => this.ui.setData({staticTab: readTabFromUrl() ?? 'users'});
 
     private readonly handleSelect = (id: string) => {
-        const {userTabs, setActiveUserTabId} = this.props.tabs;
         if (isStaticTab(id)) {
-            setActiveUserTabId(null);
+            this.props.tabs.setActiveId(null);
             this.ui.setData({staticTab: id});
             writeTabToUrl(id);
-        } else if (userTabs.find(ut => ut.id === id)) {
-            setActiveUserTabId(id);
+        } else if (this.props.tabs.getData().tabs.some(ut => ut.id === id)) {
+            this.props.tabs.setActiveId(id);
         }
     };
 
     private readonly handleClose = (id: string) => {
-        const {userTabs, closeUser} = this.props.tabs;
-        if (userTabs.find(ut => ut.id === id)) closeUser(id);
+        if (this.props.tabs.getData().tabs.some(ut => ut.id === id)) this.props.tabs.closeUser(id);
     };
 
-    private renderContent(activeId: string, userTabs: UserTabs["userTabs"]) {
+    private renderContent(activeId: string, userTabs: readonly UserInternalTab[]) {
         const {
             usersPageUrl,
             usersInitialData,
@@ -147,7 +144,7 @@ class AdminPanel extends AntiHookComponent<PanelProps> {
         const showUsers = activeId === 'users';
         const showComments = activeId === 'comments';
         const showTokens = activeId === 'tokens';
-        let activeUserTab: UserTabs['userTabs'][number] | undefined;
+        let activeUserTab: UserInternalTab | undefined;
         for (const tab of userTabs) {
             if (tab.id === activeId) {
                 activeUserTab = tab;
@@ -208,7 +205,7 @@ class AdminPanel extends AntiHookComponent<PanelProps> {
 
     render() {
         const {staticTab} = this.useCarburetor(this.ui);
-        const {userTabs, activeUserTabId} = this.props.tabs;
+        const {tabs: userTabs, activeId: activeUserTabId} = this.useCarburetor(this.props.tabs);
 
         const activeId: string = activeUserTabId ?? staticTab;
 
@@ -236,21 +233,25 @@ class AdminPanel extends AntiHookComponent<PanelProps> {
     }
 }
 
-export const AdminPanelIsland: React.FC<Props> = (props) => {
-    const tabs = useUserTabs();
-    const {openUser} = tabs;
-    const context = useMemo(() => ({openUser}), [openUser]);
+export class AdminPanelIsland extends AntiHookComponent<Props> {
+    private readonly userTabs = new UserTabsStore();
+    private readonly contextValue: UserDetailContextValue = {openUser: this.userTabs.openUser};
 
-    useEffect(() => {
+    componentDidMount(): void {
+        super.componentDidMount();
         const hash = window.location.hash;
-        if (hash.includes('user=')) {
-            const userId = parseInt(hash.split('user=')[1]?.split('&')[0] || '0', 10);
-            if (userId > 0) {
-                openUser(userId, `#${userId}`);
-                window.history.replaceState(null, '', window.location.pathname + window.location.search);
-            }
-        }
-    }, [openUser]);
+        if (!hash.includes('user=')) return;
+        const userId = parseInt(hash.split('user=')[1]?.split('&')[0] || '0', 10);
+        if (!(userId > 0)) return;
+        this.userTabs.openUser(userId, `#${userId}`);
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
 
-    return <UserDetailContext.Provider value={context}><AdminPanel {...props} tabs={tabs} /></UserDetailContext.Provider>;
-};
+    render() {
+        return (
+            <UserDetailContext.Provider value={this.contextValue}>
+                <AdminPanel {...this.props} tabs={this.userTabs} />
+            </UserDetailContext.Provider>
+        );
+    }
+}

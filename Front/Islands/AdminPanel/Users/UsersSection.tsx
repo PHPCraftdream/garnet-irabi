@@ -1,12 +1,11 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
-import {useMemo, useRef, useState} from 'react';
 import {AdminUser, GridConfig, PageResponse, UserTab} from '../Shell/types';
 import {AdminGrid, AdminGridHandle} from '../Grid/AdminGrid';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {formatTs} from '@common/Utils/Time/DateUtils';
-import {useOpenUser} from './UserDetailContext';
+import {UserDetailContext, type UserDetailContextValue} from './UserDetailContext';
 import {flag, roleFlagLabel} from './usersFlags';
 import {FlagBtn, type FlagButtonTone} from './FlagBtn';
 
@@ -249,10 +248,11 @@ function renderTabButtons(activeTab: UserTab, counts: TabCounts, onSelect: (tab:
 
 class UsersListActions {
     constructor(private readonly ui: UsersListState, private readonly gridRef: React.RefObject<AdminGridHandle<AdminUser>>,
-        private readonly tabCountsUrl?: string, private readonly setFlagUrl?: string, private readonly setUserTypeUrl?: string) {}
+        private readonly readProps: () => Props) {}
 
     private async refreshTabCounts(): Promise<void> {
-        const {tabCountsUrl, ui} = this;
+        const {tabCountsUrl} = this.readProps();
+        const {ui} = this;
         if (!tabCountsUrl) return;
         try {
             const resp = await sendPost<{}, TabCounts>(tabCountsUrl, {});
@@ -264,7 +264,8 @@ class UsersListActions {
     }
 
     readonly setFlag = async (userId: number, flagName: FlagKey, value: 0 | 1) => {
-        const {setFlagUrl, ui, gridRef} = this;
+        const {setFlagUrl} = this.readProps();
+        const {ui, gridRef} = this;
         const {activeTab} = ui.getData();
         if (!setFlagUrl || ui.getData().pending[userId]) return;
         ui.setPending(userId, true);
@@ -284,7 +285,8 @@ class UsersListActions {
     };
 
     readonly setUserType = async (userId: number, nextType: 'user' | 'expert') => {
-        const {setUserTypeUrl, ui, gridRef} = this;
+        const {setUserTypeUrl} = this.readProps();
+        const {ui, gridRef} = this;
         const {activeTab} = ui.getData();
         if (!setUserTypeUrl || ui.getData().pending[userId]) return;
         ui.setPending(userId, true);
@@ -303,39 +305,52 @@ class UsersListActions {
     };
 }
 
-export const UsersSection: React.FC<Props> = ({
-    pageUrl, initialData, tabCountsUrl, initialTabCounts, setFlagUrl, setUserTypeUrl, config,
-}) => {
-    const [ui] = useState(() => new UsersListState(initialTabCounts));
-    const {activeTab, tabCounts, pending} = React.useSyncExternalStore(ui.subscribeSnapshot, ui.snapshot, ui.snapshot);
-    const {setActiveTab} = ui;
-    const gridRef = useRef<AdminGridHandle<AdminUser>>(null);
-    const openUser = useOpenUser();
+export class UsersSection extends AntiHookComponent<Props> {
+    static contextType = UserDetailContext;
+    declare context: UserDetailContextValue;
 
-    const extraParams = useMemo(() => ({tab: activeTab}), [activeTab]);
+    private readonly ui = new UsersListState(this.props.initialTabCounts);
+    private readonly gridRef = React.createRef<AdminGridHandle<AdminUser>>();
+    private readonly actions = new UsersListActions(this.ui, this.gridRef, () => this.props);
 
-    const gridConfig = useMemo(() => {
-        if (activeTab === 'experts' || activeTab === 'all') return config;
-        return {
-            ...config,
-            columns: config.columns.filter(isVisibleColumn),
-        };
-    }, [config, activeTab]);
+    private extraParams?: {tab: UserTab; value: {tab: UserTab}};
+    private gridConfig?: {config: GridConfig; tab: UserTab; value: GridConfig};
 
-    const {setFlag, setUserType} = useMemo(
-        () => new UsersListActions(ui, gridRef, tabCountsUrl, setFlagUrl, setUserTypeUrl),
-        [ui, gridRef, tabCountsUrl, setFlagUrl, setUserTypeUrl],
-    );
-    const tabButtons = renderTabButtons(activeTab, tabCounts, setActiveTab);
+    private readonly renderLogin = (row: AdminUser) => <UserLoginCell row={row} onOpen={this.context.openUser} />;
 
-    return (
-        <div>
+    private paramsFor(tab: UserTab): {tab: UserTab} {
+        const cached = this.extraParams;
+        if (cached?.tab === tab) return cached.value;
+        const value = {tab};
+        this.extraParams = {tab, value};
+        return value;
+    }
+
+    private configFor(tab: UserTab): GridConfig {
+        const {config} = this.props;
+        if (tab === 'experts' || tab === 'all') return config;
+        const cached = this.gridConfig;
+        if (cached?.config === config && cached.tab === tab) return cached.value;
+        const value = {...config, columns: config.columns.filter(isVisibleColumn)};
+        this.gridConfig = {config, tab, value};
+        return value;
+    }
+
+    private renderTabs(activeTab: UserTab, tabCounts: TabCounts) {
+        return (
             <ul className="admin-users-tabs">
-                {tabButtons}
+                {renderTabButtons(activeTab, tabCounts, this.ui.setActiveTab)}
             </ul>
+        );
+    }
 
+    private renderGrid(activeTab: UserTab, pending: Record<number, boolean>) {
+        const {pageUrl, initialData, setUserTypeUrl} = this.props;
+        const extraParams = this.paramsFor(activeTab);
+        const gridConfig = this.configFor(activeTab);
+        return (
             <AdminGrid
-                ref={gridRef}
+                ref={this.gridRef}
                 pageUrl={pageUrl}
                 initialData={initialData}
                 extraParams={extraParams}
@@ -344,16 +359,26 @@ export const UsersSection: React.FC<Props> = ({
                 emptyMessage={t.Admin_NoUsers()}
                 renders={{
                     id:    renderUserId,
-                    login: r => <UserLoginCell row={r} onOpen={openUser} />,
-                    type: r => <UserTypeCell row={r} canChange={!!setUserTypeUrl} pending={!!pending[r.id]} onToggle={() => setUserType(r.id, r.type === 'expert' ? 'user' : 'expert')} />,
+                    login: this.renderLogin,
+                    type: r => <UserTypeCell row={r} canChange={!!setUserTypeUrl} pending={!!pending[r.id]} onToggle={() => this.actions.setUserType(r.id, r.type === 'expert' ? 'user' : 'expert')} />,
                     last_online_time: renderLastOnline,
-                    IS_APPROVED: r => <UserFlagCell row={r} def={flagDefs.IS_APPROVED} pending={!!pending[r.id]} onSetFlag={setFlag} />,
-                    IS_DISABLED: r => <UserFlagCell row={r} def={flagDefs.IS_DISABLED} pending={!!pending[r.id]} onSetFlag={setFlag} />,
-                    IS_MODERATOR: r => <UserFlagCell row={r} def={flagDefs.IS_MODERATOR} pending={!!pending[r.id]} onSetFlag={setFlag} />,
-                    IS_OWNER: r => <UserFlagCell row={r} def={flagDefs.IS_OWNER} pending={!!pending[r.id]} onSetFlag={setFlag} />,
-                    IS_ADMIN: r => <UserFlagCell row={r} def={flagDefs.IS_ADMIN} pending={!!pending[r.id]} onSetFlag={setFlag} />,
+                    IS_APPROVED: r => <UserFlagCell row={r} def={flagDefs.IS_APPROVED} pending={!!pending[r.id]} onSetFlag={this.actions.setFlag} />,
+                    IS_DISABLED: r => <UserFlagCell row={r} def={flagDefs.IS_DISABLED} pending={!!pending[r.id]} onSetFlag={this.actions.setFlag} />,
+                    IS_MODERATOR: r => <UserFlagCell row={r} def={flagDefs.IS_MODERATOR} pending={!!pending[r.id]} onSetFlag={this.actions.setFlag} />,
+                    IS_OWNER: r => <UserFlagCell row={r} def={flagDefs.IS_OWNER} pending={!!pending[r.id]} onSetFlag={this.actions.setFlag} />,
+                    IS_ADMIN: r => <UserFlagCell row={r} def={flagDefs.IS_ADMIN} pending={!!pending[r.id]} onSetFlag={this.actions.setFlag} />,
                 }}
             />
-        </div>
-    );
-};
+        );
+    }
+
+    render() {
+        const {activeTab, tabCounts, pending} = this.useCarburetor(this.ui);
+        return (
+            <div>
+                {this.renderTabs(activeTab, tabCounts)}
+                {this.renderGrid(activeTab, pending)}
+            </div>
+        );
+    }
+}
