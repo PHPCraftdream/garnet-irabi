@@ -11,7 +11,7 @@ interface PanelHeaderProps {
 export const WidgetPanelHeader: React.FC<PanelHeaderProps> = ({pageUrl, onClose}) => (
     <div className="support-widget-header">
         <span className="support-widget-title">{t.Support_Widget_Title()}</span>
-        <div className="flex items-center gap-2">
+        <div className="widget-header-actions">
             <a href={pageUrl} className="support-widget-link">{t.Support_ViewAll()}</a>
             <button type="button" className="support-widget-close" title={t.Action_Close()} onClick={onClose}>
                 &times;

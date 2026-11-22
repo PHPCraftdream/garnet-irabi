@@ -65,6 +65,14 @@ export interface BookingGroupData {
     sortKey: number;
 }
 
+function compareBookings(a: Booking, b: Booking): number {
+    return b.created_at - a.created_at;
+}
+
+function compareGroups(a: BookingGroupData, b: BookingGroupData): number {
+    return b.sortKey - a.sortKey;
+}
+
 /**
  * Свести брони в группы по занятию.
  *
@@ -94,9 +102,9 @@ export function groupBookings(bookings: Booking[], slots: Record<number, SlotInf
 
     const arr = Array.from(map.values());
     for (const g of arr) {
-        g.bookings.sort((a, c) => c.created_at - a.created_at);
+        g.bookings.sort(compareBookings);
     }
-    arr.sort((a, c) => c.sortKey - a.sortKey);
+    arr.sort(compareGroups);
 
     return arr;
 }

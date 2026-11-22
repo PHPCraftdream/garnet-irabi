@@ -1,0 +1,254 @@
+{
+  "classes": {
+    "css": [
+      "Front/Styles/common-status-badge.css",
+      "Front/Styles/modal-shell.css",
+      "Front/Styles/expert-dashboard-bookings.css",
+      "Front/Styles/news-feed.css",
+      "Front/Styles/dashboard-legacy-widgets.css",
+      "Front/Styles/booking-lists.css",
+      "Front/Styles/quick-chat.css",
+      "Front/Styles/user-balance.css",
+      "Front/Styles/booking-actions.css",
+      "Front/Styles/booking-forms.css",
+      "Front/Styles/reason-modal.css",
+      "Front/Styles/invite-error.css",
+      "Front/Styles/admin-dashboard.css",
+      "Front/Styles/admin-email-queue.css",
+      "Front/Styles/users-grid.css",
+      "Front/Styles/expert-profile.css",
+      "Front/Styles/registration.css",
+      "Front/Styles/admin-tokens.css",
+      "Front/Styles/lightbox.css",
+      "Front/Styles/attachment-row.css",
+      "Front/Styles/attachment-display.css",
+      "Front/Styles/attachment-preview.css",
+      "Front/Styles/attachment-tile.css",
+      "Front/Styles/screenshot-progress.css",
+      "Front/Styles/support-widget.css",
+      "Front/Styles/news-message.css",
+      "Front/Styles/news-pagination.css",
+      "Front/Styles/dashboard-notifications.css",
+      "Front/Styles/slot-detail-blocks.css",
+      "Front/Styles/booking-info.css",
+      "Front/Styles/week-summary.css",
+      "Front/Styles/dashboard-welcome.css",
+      "Front/Styles/slot-card-parts.css",
+      "Front/Styles/slot-filters.css",
+      "Front/Styles/batch-slot-wizard.css",
+      "Front/Styles/expert-slot-format.css",
+      "Front/Styles/external-page.css",
+      "Front/Styles/admin-bookings-table.css",
+      "Front/Styles/slots-calendar-page.css",
+      "Front/Styles/calendar-pager.css",
+      "Front/Styles/calendar-counts.css",
+      "Front/Styles/expert-calendar-filter.css",
+      "Front/Styles/expert-calendar-day.css",
+      "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/theme.css",
+      "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-attachment.css",
+      "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-support.css",
+      "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-native-select.css",
+      "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-tab-helpers.css",
+      "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-system-settings-visual.css",
+      "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-primary-action.css",
+      "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-feedback.css",
+      "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-admin-grid-visual.css",
+      "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-confirm-modal.css",
+      "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-admin-filter.css",
+      "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-cards.css",
+      "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-compact-action.css",
+      "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-compact-success.css",
+      "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-time-slot.css",
+      "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-section.css",
+      "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-foreground-modal.css",
+      "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-warning-button.css"
+    ],
+    "families": ["adminstatusemptyhover", "recipientoption", "widgetfab", "adminattachmenticon", "adminattachmentrow", "widgethistory", "ticketrowactive", "ticketrowidle", "entityadmin", "expertbookingok", "userdashbadge", "userdashempty", "userbalance", "balancecard", "balancerow", "balanceborder", "bookformexpert", "admindashboardactor", "admindashboardrow", "admindashboardtile", "expertavatar", "userprofileadmin", "usersidle", "usersactive", "adminuserphoto", "moneyspinner", "moneybalance", "adminsupportdismiss", "adminticketrole", "adminstatusactive", "adminstatusempty", "admininternal", "adminhistory", "ticketstatusblue", "ticketstatuscyan", "ticketstatusyellow", "ticketstatusorange", "ticketstatusred", "ticketstatuspurple", "ticketstatusgreen", "ticketstatusgray", "imback", "recipienttrigger", "recipientempty", "recipientsearch", "recipientaccent", "tokenexpired", "tokenmuted", "neutral", "accent", "danger", "success", "warning", "lightbox", "attachment", "pick", "pickdanger", "pickneutral", "garnetattachment", "widgetneutral", "widgetim", "widgetmessage", "widgetown", "newsaccent", "supportinherit", "supportmuted", "supportaccent", "supportsoft", "supportrow", "supportbadge", "supportpanel", "supportprimary", "supportsecondary", "supportlink", "supportconv", "garnetfield", "confirmfooter", "confirmsecondary", "confirmdanger", "fbinherit", "fbmuted", "fbinfo", "fbwarn", "fbdanger", "fbsuccess", "fbactive", "fbbrowser", "fbcheck", "fbdiff", "gridinherit", "gridheader", "gridsortactive", "gridsortidle", "gridborder", "gridrow", "gridtext", "newsneutral", "dashneutral", "dashwarn", "dashaccent", "slotneutral", "slotaccent", "slotmuted", "slotsurface", "slotborder", "slotlink", "slotformatonline", "slotformatoffline", "slotpanel", "slotstatusdanger", "slotstatusinfo", "slotclose", "slothead", "booksecondary", "bookmuted", "bookaccent", "booksurface", "bookrefund", "bookwarning", "weekmuted", "weekempty", "weekneutral", "weekborder", "weekaccent", "weekprimary", "weekcurrent", "bookneutral", "bookprimary", "booksummary", "bookcancel", "bookdismiss", "booktitle", "bookclose", "cardsurface", "welcomeneutral", "welcomeavatar", "welcomeimage", "welcometext", "welcomemuted", "welcomeaccent", "welcomeuser", "welcomeexpert", "welcomemoderator", "welcomeowner", "welcomeadmin", "compactaction", "slotpartneutral", "slotpartmuted", "slotpartlink", "slotpartpanel", "slotbookinfo", "slotbooksuccess", "slotbookdanger", "slotbookwarning", "slotbooknotice", "slotbookspecial", "slotbookactive", "slotbookmuted", "slotaction", "timeslotsurface", "sectioninherit", "settingsinherit", "settingsmuted", "settingssecondary", "settingsrefresh", "settingsprimary", "settingsfield", "settingspanel", "settingssave", "settingssuccess", "settingserror", "tabcrumb", "tabaction", "tabclose", "tabcurrent", "tabinherit", "tabbar", "tabnavinactive", "tabnavactive", "batchneutral", "batchsecondary", "batchmuted", "batchwarning", "batchexisting", "batchrowwarning", "batchremove", "batchavailable", "batchrestricted", "batchproposed", "batchtable", "batchtitle", "batchclose", "editslotnotice", "expertslotpending", "expertcardbooked", "expertcardmuted", "expertcardcancelled", "fgbackdrop", "fgwarning", "externalheading", "externalprimary", "externalsecondary", "externalneutral", "externalmuted", "externaldanger", "slotpageneutral", "slotpagesecondary", "slotpagemuted", "slotpageaccent", "filterneutral", "filterlabel", "filteridle", "filteractive", "filterfield", "filtercount", "filtercountactive", "calnavneutral", "calnav", "calnavtitle", "pagerinherit", "pagerfree", "pagerpending", "pagerbooked", "pagercompleted", "expertfilter", "expertactive", "expertday", "expertdayaccent", "expertdaymuted", "expertedit", "expertdanger", "compactsuccess", "expertweek", "newsarchiveidle"],
+    "states": ["hover", "active", "focus", "placeholder"],
+    "deliveries": {"solid": ["fill", "on-fill"], "soft": ["wash", "ink"], "outline": ["edge", "ink"], "plain": ["ink"], "subtle": ["ink-subtle"], "caption": ["wash", "ink"], "image": ["edge"], "border": ["edge"], "outlined": ["edge", "ink", "wash"], "link": ["ink"], "clear": ["ink"], "badge": ["fill", "on-fill"], "filter": ["edge", "wash", "ink", "ink-subtle"], "field": ["edge", "wash", "ink", "ink-subtle"]}
+  },
+  "rules": {
+    "require-function-class": "off"
+  },
+  "overrides": [
+    {"files":["Front/Common/people/EntityLinks.tsx","Front/Common/people/AdminUserDualLink.tsx","Front/Common/people/EntityLink.tsx","Front/Common/people/UserLink.tsx","Front/Common/booking/StatusBadge.tsx"],"rules":{"require-function-class":"error"}},
+    {"files":["Front/Common/Components/ModalShell.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/AdminPanel/Grid/gridRenders.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/Expert/ExpertDashboard/BookingPerson.tsx","Front/Islands/Expert/ExpertDashboard/PendingBookingRow.tsx","Front/Islands/Expert/ExpertDashboard/ExpertPendingBookings.tsx","Front/Islands/Expert/ExpertDashboard/ExpertConfirmedBookings.tsx"],"rules":{"require-function-class":"error"}},
+    {"files":["Front/Islands/User/Dashboard/DashboardIsland.tsx","Front/Islands/User/Dashboard/News/NewsFeed.tsx","Front/Islands/User/Dashboard/News/NewsGroupRow.tsx"],"rules":{"require-function-class":"error"}},
+    {"files":["Front/Islands/User/Dashboard/Widgets/ExpertStats.tsx","Front/Islands/User/Dashboard/Widgets/ModeratorStats.tsx","Front/Islands/User/Dashboard/Widgets/UpcomingBookings.tsx","Front/Islands/User/Dashboard/Widgets/RecommendedSlots.tsx","Front/Islands/User/Dashboard/Widgets/ExpertUpcomingSlots.tsx"],"rules":{"require-function-class":"error"}},
+    {"files":["Front/Islands/User/Bookings/ExpertBookings.tsx","Front/Islands/User/Bookings/BookingsTab.tsx"],"rules":{"require-function-class":"error"}},
+    {"files":["Front/Common/people/QuickChat.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/User/Bookings/BalanceIsland.tsx"],"rules":{"require-function-class":"error"}},
+    {"files":["Front/Islands/User/Bookings/card/BookingCardActions.tsx","Front/Islands/User/Bookings/card/BookingsFilterTabs.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/User/Bookings/BookingForm.tsx","Front/Islands/User/Bookings/RescheduleModal.tsx"],"rules":{"require-function-class":"error"}},
+    {"files":["Front/Common/Components/ReasonModal.tsx"],"rules":{"require-function-class":"error"}},
+    {"files":["Front/Islands/User/InviteError/InviteErrorIsland.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/AdminPanel/Shell/AdminDashboard/AdminDashboardIsland.tsx","Front/Islands/AdminPanel/Shell/AdminDashboard/AdminApprovalsWidget.tsx","Front/Islands/AdminPanel/Shell/AdminDashboard/AdminPlatformStats.tsx","Front/Islands/AdminPanel/Shell/AdminDashboard/AdminSupportWidget.tsx","Front/Islands/AdminPanel/Shell/AdminDashboard/AdminRecentActivity.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/AdminPanel/System/EmailQueue/EmailQueueIsland.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/User/Users/UsersGrid.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/User/Users/ExpertProfile.tsx"],"rules":{"require-function-class":"error"}},
+    {"files":["Front/Islands/User/Users/RegistrationForm.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/User/Users/UserProfileIsland.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/User/Users/MyReviews.tsx"],"rules":{"require-function-class":"error"}},
+    {"files":["Front/Islands/User/Users/ExpertSlotCard.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/Comms/Comments/CommentsSection.tsx"],"rules":{"require-function-class":"error"}},
+    {"files":["Front/Islands/Comms/Comments/CommentCard.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/AdminPanel/Users/UsersSection.tsx"],"rules":{"require-function-class":"error"}},
+    {"files":["Front/Islands/AdminPanel/Users/FlagBtn.tsx","Front/Islands/AdminPanel/Users/userDetail/Header/UserHeaderActions.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/AdminPanel/Users/userDetail/Modals/ClearUserModal.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/AdminPanel/Users/userDetail/Modals/WriteToUserModal.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/AdminPanel/Users/UserDetailPanel.tsx"],"rules":{"require-function-class":"error"}},
+    {"files":["Front/Islands/AdminPanel/Users/userDetail/DetailTable.tsx", "Front/Islands/AdminPanel/Users/UserDetailTab.tsx", "Front/Islands/AdminPanel/Users/userDetail/PersonCell.tsx","Front/Islands/AdminPanel/Users/userDetail/Header/SectionTitle.tsx","Front/Islands/AdminPanel/Users/userDetail/sections/BookingsSection.tsx","Front/Islands/AdminPanel/Users/userDetail/sections/CancellationsSection.tsx","Front/Islands/AdminPanel/Users/userDetail/sections/LedgerSection.tsx","Front/Islands/AdminPanel/Users/userDetail/sections/SlotsSection.tsx","Front/Islands/AdminPanel/Users/userDetail/sections/TicketsSection.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/AdminPanel/Users/userDetail/Header/UserHeader.tsx","Front/Islands/AdminPanel/Users/userDetail/Header/UserHeaderMeta.tsx","Front/Islands/AdminPanel/Users/userDetail/Header/UserHeaderCounters.tsx","Front/Islands/AdminPanel/Users/userDetail/Header/UserHeaderBadges.tsx", "Front/Islands/AdminPanel/Users/userDetail/Header/UserAvatar.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/AdminPanel/Money/AdminFinanceIsland.tsx"],"rules":{"require-function-class":"error"}},
+    {"files":["Front/Islands/AdminPanel/Money/LedgerSection.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/AdminPanel/Money/BalanceAdjustModal.tsx"],"rules":{"require-function-class":"error"}},
+    {"files":["Front/Islands/AdminPanel/Money/BalancesSection.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/AdminPanel/Support/AdminCommentsSection.tsx"],"rules":{"require-function-class":"error"}},
+    {"files":["Front/Islands/AdminPanel/Support/comments/CommentsTable.tsx","Front/Islands/AdminPanel/Support/comments/CommentsFilters.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/AdminPanel/Support/comments/CommentTableRow.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/AdminPanel/Support/SupportTicket/TicketContext.tsx", "Front/Islands/AdminPanel/Support/SupportTicket/TicketClientContext.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/AdminPanel/Support/AdminSupportIsland.tsx"],"rules":{"require-function-class":"error"}},
+    {"files":["Front/Islands/AdminPanel/Support/SupportTicketTab.tsx"],"rules":{"require-function-class":"error"}},
+    {"files":["Front/Islands/AdminPanel/Support/SupportTicket/timeline/SupportMessageBubble.tsx","Front/Islands/AdminPanel/Support/SupportTicket/timeline/AssignmentHistory.tsx", "Front/Islands/AdminPanel/Support/SupportTicket/TicketTimeline.tsx", "Front/Islands/AdminPanel/Support/SupportTicket/Forms/TicketReplyForm.tsx", "Front/Islands/AdminPanel/Support/SupportTicket/Forms/TicketInternalForm.tsx", "Front/Islands/AdminPanel/Support/SupportTicket/Forms/SupportStatusBar.tsx", "Front/Islands/AdminPanel/Support/SupportTicket/Forms/SupportTicketFilters.tsx", "Front/Islands/AdminPanel/Support/SupportTicket/TicketHeader.tsx", "Front/Islands/AdminPanel/Support/SupportTicket/Attachments/AttachmentRow.tsx", "Front/Islands/AdminPanel/Support/SupportTicket/Attachments/TicketAttachments.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/Comms/Support/SupportPageIsland.tsx", "Front/Islands/Comms/Support/SupportWidgetIsland.tsx"],"rules":{"require-function-class":"error"}},
+    {"files":["Front/Islands/Comms/Support/Page/PageConversation.tsx","Front/Islands/Comms/Support/Page/PageTicketListPanel.tsx", "Front/Islands/Comms/Support/Page/PageBackButton.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/Comms/Support/parts/render/SupportMessageList.tsx"],"rules":{"no-react-hooks-in-components":"error"}},
+    {"files":["Front/Islands/Comms/Support/Page/PageNewTicketForm.tsx","Front/Islands/Comms/Support/Page/PageEmpty.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {
+      "files": ["Front/Islands/Comms/Support/parts/supportRenders.tsx"],
+      "rules": {"require-function-class": "error", "no-react-hooks-in-components": "error"}
+    },
+    {"files":["Front/Islands/Comms/Im/ImPageIsland.tsx"],"rules":{"require-function-class":"error"}},
+    {"files":["Front/Islands/Comms/Im/ImWidgetIsland.tsx"],"rules":{"require-function-class":"error","no-react-hooks-in-components":"error"}},
+    {
+      "files": ["Front/Islands/Comms/Im/Components/ConversationRow.tsx","Front/Islands/Comms/Im/Components/MessageBubble.tsx", "Front/Islands/Comms/Im/Components/MessageThread.tsx", "Front/Islands/Comms/Im/Components/ConversationList.tsx", "Front/Islands/Comms/Im/Components/NewMessageForm.tsx", "Front/Islands/Comms/Im/Components/RecipientCombobox.tsx", "Front/Islands/Comms/Im/Components/Recipient/RecipientDropdown.tsx"],
+      "rules": {"require-function-class": "error", "no-react-hooks-in-components": "error"}
+    },
+    {
+      "files": ["Front/Islands/Comms/Support/parts/SupportTicketRow.tsx","Front/Islands/Comms/Support/parts/SupportBubble.tsx"],
+      "rules": {"require-function-class": "error", "no-react-hooks-in-components": "error"}
+    },
+    {
+      "files": ["Front/Islands/Comms/Support/Widget/WidgetImLink.tsx"],
+      "rules": {"require-function-class": "error", "no-react-hooks-in-components": "error"}
+    },
+    {
+      "files": ["Front/Islands/AdminPanel/System/AdminTokensSection.tsx"],
+      "rules": {"require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Islands/AdminPanel/System/tokens/TokenField.tsx", "Front/Islands/AdminPanel/System/tokens/Modals/LinkModal.tsx", "Front/Islands/AdminPanel/System/tokens/Modals/RegistrationsModal.tsx", "Front/Islands/AdminPanel/System/tokens/Modals/CreateTokenModal.tsx", "Front/Islands/AdminPanel/System/tokens/Modals/EditTokenModal.tsx","Front/Islands/AdminPanel/System/tokens/TokenFilters.tsx","Front/Islands/AdminPanel/System/tokens/TokenTable.tsx","Front/Islands/AdminPanel/System/tokens/TokenTableRow.tsx"],
+      "rules": {"require-function-class":"error","no-react-hooks-in-components":"error"}
+    },
+    {
+      "files": ["Front/Islands/User/SlotsCalendar/Booking/BookingModal.tsx", "Front/Islands/User/SlotsCalendar/SlotsCalendarIsland.tsx"],
+      "rules": {"require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Islands/User/SlotsCalendar/Booking/BookingSlotSummary.tsx", "Front/Islands/User/SlotsCalendar/Slot/ExtraSlotPicker.tsx", "Front/Islands/User/SlotsCalendar/Booking/SlotCancelForm.tsx"],
+      "rules": {"require-function-class": "error", "no-react-hooks-in-components": "error"}
+    },
+    {
+      "files": ["Front/Islands/Expert/ExpertSlots/components/Slot/CreateSlotForm.tsx", "Front/Islands/Expert/ExpertSlots/ExpertSlotsIsland.tsx"],
+      "rules": {"require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Islands/Expert/ExpertSlots/components/Batch/BatchPreviewRow.tsx", "Front/Islands/Expert/ExpertSlots/components/Batch/BatchPreviewSection.tsx", "Front/Islands/Expert/ExpertSlots/components/Batch/BatchPreviewTable.tsx", "Front/Islands/Expert/ExpertSlots/components/Batch/BatchSlotModal.tsx", "Front/Islands/Expert/ExpertSlots/components/Slot/CreateSlotModal.tsx", "Front/Islands/Expert/ExpertSlots/components/Slot/ExpertSlotModalShell.tsx", "Front/Islands/Expert/ExpertSlots/components/Slot/EditSlotModal.tsx", "Front/Islands/Expert/ExpertSlots/components/Slot/SlotsList.tsx", "Front/Islands/Expert/ExpertSlots/components/Slot/SlotCard.tsx", "Front/Islands/Expert/ExpertSlots/components/Slot/SlotFormatFields.tsx"],
+      "rules": {"no-react-hooks-in-components": "error", "require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Islands/Expert/ExpertSlots/components/Batch/BatchSlotWizard.tsx"],
+      "rules": {"require-function-class": "error", "no-react-hooks-in-components": "error" }
+    },
+    {
+      "files": ["Front/Islands/Expert/ExpertSlots/components/Batch/BatchPreviewWarnings.tsx"],
+      "rules": {"no-react-hooks-in-components": "error", "require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Islands/AdminPanel/Bookings/AdminSlotsTab.tsx", "Front/Islands/AdminPanel/Bookings/AdminBookingsTab.tsx", "Front/Islands/AdminPanel/Bookings/AdminCancellationsTab.tsx"],
+      "rules": {"require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Islands/AdminPanel/Bookings/AdminSlotsTable.tsx", "Front/Islands/AdminPanel/Bookings/AdminBookingsTable.tsx", "Front/Islands/AdminPanel/Bookings/AdminCancellationsTable.tsx"],
+      "rules": {"no-react-hooks-in-components": "error", "require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Islands/AdminPanel/Bookings/AdminSlotsEmpty.tsx"],
+      "rules": {"no-react-hooks-in-components": "error", "require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Islands/Comms/Support/SupportWidgetIsland.tsx"],
+      "rules": {"require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Islands/Comms/Support/Widget/WidgetNewTicketForm.tsx", "Front/Islands/Comms/Support/Widget/WidgetConversation.tsx"],
+      "rules": {"no-react-hooks-in-components": "error", "require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Islands/AdminPanel/Bookings/AdminFilterBar.tsx"],
+      "rules": {"no-react-hooks-in-components": "error", "require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Islands/Comms/Support/Widget/WidgetFab.tsx"],
+      "rules": {"require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Islands/AdminPanel/Bookings/AdminBookingsTabNav.tsx"],
+      "rules": {"no-react-hooks-in-components": "error", "require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Islands/Comms/Support/Widget/WidgetFab.tsx", "Front/Islands/Comms/Support/Widget/WidgetImLink.tsx"],
+      "rules": {"no-react-hooks-in-components": "error"}
+    },
+    {
+      "files": ["Front/Islands/User/SlotsCalendar/OwnSlotsHiddenNotice.tsx", "Front/Islands/User/SlotsCalendar/SlotsNoMatch.tsx"],
+      "rules": {"no-react-hooks-in-components": "error", "require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Islands/User/SlotsCalendar/SlotsCalendarIsland.tsx", "Front/Islands/User/SlotsCalendar/Slot/SlotDetailModal.tsx"],
+      "rules": {"require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Islands/Expert/ExpertSlots/components/ExpertCalendar.tsx", "Front/Islands/Expert/ExpertSlots/components/calendar/ExpertCalendarWeeks.tsx"],
+      "rules": {"no-react-hooks-in-components": "error", "require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Islands/Expert/ExpertSlots/components/calendar/CalendarSlotCell/index.tsx"],
+      "rules": {"no-react-hooks-in-components": "error", "require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Islands/Expert/ExpertSlots/components/calendar/CalendarSlotCell/CalendarSlot*.tsx"],
+      "rules": {"no-react-hooks-in-components": "error", "require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Islands/Expert/ExpertSlots/components/calendar/CalendarDayColumn/*.tsx"],
+      "rules": {"no-react-hooks-in-components": "error", "require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Islands/Expert/ExpertSlots/components/calendar/CalendarStatusFilter.tsx"],
+      "rules": {"no-react-hooks-in-components": "error", "require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Common/booking/CalendarPagerCounts.tsx"],
+      "rules": {"no-react-hooks-in-components": "error", "require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Islands/User/SlotsCalendar/Slot/SlotCard/index.tsx"],
+      "rules": {"no-react-hooks-in-components": "error", "require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Islands/User/Dashboard/Widgets/WelcomeCard.tsx"],
+      "rules": {"no-react-hooks-in-components": "error", "require-function-class": "error"}
+    },
+    {
+      "files": ["Front/Common/media/ImageLightbox.tsx", "Front/Common/attachments/AttachmentAddRow.tsx", "Front/Common/attachments/AttachmentDisplay.tsx", "Front/Common/attachments/AttachmentLightbox.tsx", "Front/Common/attachments/AttachmentTile.tsx", "Front/Common/attachments/AttachmentPicker.tsx", "Front/Common/attachments/AttachmentAddButton.tsx", "Front/Common/media/ScreenshotButton.tsx", "Front/Islands/Comms/Support/Widget/controls/WidgetAttachmentTools.tsx", "Front/Islands/User/Dashboard/News/EventMessage.tsx", "Front/Islands/User/Dashboard/News/PersonLink.tsx", "Front/Islands/User/Dashboard/News/NewsSlotLink.tsx", "Front/Islands/User/Dashboard/News/NewsPagination.tsx", "Front/Islands/Comms/Support/Widget/WidgetPanelHeader.tsx", "Front/Islands/Comms/Support/Widget/WidgetTicketList.tsx", "Front/Islands/User/Dashboard/Widgets/NotificationsWidget.tsx", "Front/Islands/User/SlotsCalendar/Slot/Blocks/SlotDateTimeBlock.tsx", "Front/Islands/User/SlotsCalendar/Slot/Blocks/SlotPriceBlock.tsx", "Front/Islands/User/SlotsCalendar/Slot/Blocks/SlotExpertBlock.tsx", "Front/Islands/User/SlotsCalendar/Slot/Blocks/SlotFormatBlock.tsx", "Front/Islands/User/SlotsCalendar/Slot/Blocks/QuickChatSection.tsx", "Front/Islands/User/SlotsCalendar/Slot/Blocks/CancelReasonNotice.tsx", "Front/Islands/User/SlotsCalendar/Slot/Blocks/SlotModalHeader.tsx", "Front/Islands/User/Bookings/card/details/BookingPlaceLine.tsx", "Front/Islands/User/Bookings/card/details/BookingParty.tsx", "Front/Islands/User/Bookings/card/details/BookingCostLine.tsx", "Front/Islands/User/Bookings/card/details/BookingStatus.tsx", "Front/Islands/User/Bookings/card/details/BookingGroupBadge.tsx", "Front/Islands/User/Bookings/card/cancel/BookingCancelCause.tsx", "Front/Islands/User/Bookings/card/cancel/CancelRefundDetails.tsx", "Front/Islands/User/Bookings/card/BookingGroup.tsx", "Front/Islands/User/Bookings/card/BookingCard.tsx", "Front/Islands/User/SlotsCalendar/Week/WeekSlotCount.tsx", "Front/Islands/User/SlotsCalendar/Week/WeekEmptyNotice.tsx", "Front/Islands/User/SlotsCalendar/Week/WeekGrid.tsx", "Front/Islands/User/SlotsCalendar/Week/DayColumn.tsx", "Front/Islands/User/SlotsCalendar/Slot/SlotCard/SlotCardMeta.tsx", "Front/Islands/User/SlotsCalendar/Slot/SlotCard/SlotTooltip.tsx", "Front/Islands/User/SlotsCalendar/Slot/Filters/ExpertFilterField.tsx", "Front/Islands/User/SlotsCalendar/Slot/Filters/FilterChipGroup.tsx", "Front/Islands/User/SlotsCalendar/Slot/SlotsFilters.tsx", "Front/Islands/User/SlotsCalendar/Slot/Filters/PriceRangeFilterField.tsx", "Front/Islands/User/SlotsCalendar/Slot/SlotsStatusFilter.tsx", "Front/Islands/User/SlotsCalendar/Week/WeekNavigation.tsx", "Front/Islands/Expert/ExpertSlots/components/calendar/CalendarPager.tsx"],
+      "rules": {"no-react-hooks-in-components": "error"}
+    },
+    {
+      "files": ["Front/Carburetor/**/*.tsx", "Front/Common/media/ImageLightbox.tsx", "Front/Common/attachments/AttachmentAddRow.tsx", "Front/Common/attachments/AttachmentDisplay.tsx", "Front/Common/attachments/AttachmentLightbox.tsx", "Front/Common/attachments/AttachmentTile.tsx", "Front/Common/attachments/AttachmentPicker.tsx", "Front/Common/attachments/AttachmentAddButton.tsx", "Front/Common/media/ScreenshotButton.tsx", "Front/Islands/Comms/Support/Widget/controls/WidgetAttachmentTools.tsx", "Front/Islands/User/Dashboard/News/EventMessage.tsx", "Front/Islands/User/Dashboard/News/PersonLink.tsx", "Front/Islands/User/Dashboard/News/NewsSlotLink.tsx", "Front/Islands/User/Dashboard/News/NewsPagination.tsx", "Front/Islands/Comms/Support/Widget/WidgetPanelHeader.tsx", "Front/Islands/Comms/Support/Widget/WidgetTicketList.tsx", "Front/Islands/User/Dashboard/Widgets/NotificationsWidget.tsx", "Front/Islands/User/SlotsCalendar/Slot/Blocks/SlotDateTimeBlock.tsx", "Front/Islands/User/SlotsCalendar/Slot/Blocks/SlotPriceBlock.tsx", "Front/Islands/User/SlotsCalendar/Slot/Blocks/SlotExpertBlock.tsx", "Front/Islands/User/SlotsCalendar/Slot/Blocks/SlotFormatBlock.tsx", "Front/Islands/User/SlotsCalendar/Slot/Blocks/QuickChatSection.tsx", "Front/Islands/User/SlotsCalendar/Slot/Blocks/CancelReasonNotice.tsx", "Front/Islands/User/SlotsCalendar/Slot/Blocks/SlotModalHeader.tsx", "Front/Islands/User/Bookings/card/details/BookingPlaceLine.tsx", "Front/Islands/User/Bookings/card/details/BookingParty.tsx", "Front/Islands/User/Bookings/card/details/BookingCostLine.tsx", "Front/Islands/User/Bookings/card/details/BookingStatus.tsx", "Front/Islands/User/Bookings/card/details/BookingGroupBadge.tsx", "Front/Islands/User/Bookings/card/cancel/BookingCancelCause.tsx", "Front/Islands/User/Bookings/card/cancel/CancelRefundDetails.tsx", "Front/Islands/User/Bookings/card/BookingGroup.tsx", "Front/Islands/User/Bookings/card/BookingCard.tsx", "Front/Islands/User/SlotsCalendar/Week/WeekSlotCount.tsx", "Front/Islands/User/SlotsCalendar/Week/WeekEmptyNotice.tsx", "Front/Islands/User/SlotsCalendar/Week/WeekGrid.tsx", "Front/Islands/User/SlotsCalendar/Week/DayColumn.tsx", "Front/Islands/User/SlotsCalendar/Slot/SlotCard/SlotCardMeta.tsx", "Front/Islands/User/SlotsCalendar/Slot/SlotCard/SlotTooltip.tsx", "Front/Islands/User/SlotsCalendar/Slot/Filters/ExpertFilterField.tsx", "Front/Islands/User/SlotsCalendar/Slot/Filters/FilterChipGroup.tsx", "Front/Islands/User/SlotsCalendar/Slot/SlotsFilters.tsx", "Front/Islands/User/SlotsCalendar/Slot/Filters/PriceRangeFilterField.tsx", "Front/Islands/User/SlotsCalendar/Slot/SlotsStatusFilter.tsx", "Front/Islands/User/SlotsCalendar/Week/WeekNavigation.tsx", "Front/Islands/Expert/ExpertSlots/components/calendar/CalendarPager.tsx"],
+      "rules": {"require-function-class": "error"}
+    }
+  ]
+}

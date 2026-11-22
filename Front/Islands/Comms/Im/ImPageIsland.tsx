@@ -1,13 +1,15 @@
 import * as React from 'react';
-import {useState, useEffect, useRef} from 'react';
-import {sendPost} from '@common/Api/Send/sendPost';
+import {AntiHookComponent} from '@react-carburetor/core';
+import {useState} from 'react';
+import {fetchMessages, refreshConversations} from './ImPageRequests';
 import {sendPostFormData, ApiError} from '@common/Api/Send/sendPostFormData';
 import {D} from '@common/Support/Debug/D';
 import {useSending} from '@common/hooks/data/useSending';
 
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {ImConversation, ImMessage} from './imTypes';
+import type {ImConversation} from './imTypes';
+import {ImPageState} from './ImPageState';
 import {PendingFile} from '../../../Common/attachments/AttachmentPicker';
 import {reportAttachmentErrors} from '../../../Common/attachments/attachmentHelpers';
 
@@ -40,107 +42,77 @@ interface Props {
     isModerator?: boolean;
 }
 
-const ImPageIslandInner: React.FC<Props> = ({
-    conversations: initialConversations,
-    messagesUrl,
-    sendUrl,
-    conversationsUrl,
-    downloadUrl: _downloadUrl,
-    searchRecipientsUrl,
-    currentAccountId,
-    isModerator = false,
-}) => {
-    const [conversations, setConversations] = useState<ImConversation[]>(initialConversations);
-    const [selectedId, setSelectedId]       = useState<number | null>(null);
-    const [messages, setMessages]           = useState<ImMessage[]>([]);
-    const [loadingMessages, setLoadingMessages] = useState(false);
-    const [showNewForm, setShowNewForm]     = useState(false);
-    const [recipientId, setRecipientId]     = useState('');
-    const [newMessage, setNewMessage]       = useState('');
-    const [replyText, setReplyText]         = useState('');
-    const [newFiles, setNewFiles]           = useState<PendingFile[]>([]);
-    const [replyFiles, setReplyFiles]       = useState<PendingFile[]>([]);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
-    const {sending, withSending} = useSending();
-    
+type Snapshot = ReturnType<ImPageState['snapshot']>;
 
-    const fetchMessages = (conversationId: number) => {
-        setLoadingMessages(true);
-        D('im.messages', {conversationId});
-        sendPost(messagesUrl, {conversation_id: conversationId}).then((r: any) => {
-            setMessages(r?.messages ?? []);
-            D('im.messages.loaded', {conversationId, count: r?.messages?.length ?? 0});
-            setConversations(prev => prev.map(c => c.id === conversationId ? {...c, unread_count: 0} : c));
-            setLoadingMessages(false);
-        }).catch((err) => {
-            D('im.error', {action: 'fetchMessages', conversationId, error: err});
-            setLoadingMessages(false);
-            showToast(t.User_LoadError(), 'danger');
-        });
+interface ViewProps extends Props, ReturnType<typeof useSending> {
+    ui: ImPageState;
+    snapshot: Snapshot;
+    newFiles: PendingFile[];
+    replyFiles: PendingFile[];
+    setNewFiles: (files: PendingFile[]) => void;
+    setReplyFiles: (files: PendingFile[]) => void;
+}
+
+const PAGE_ICON = <MessagesSquare size={22} aria-hidden="true" />;
+
+function findConversation(conversations: ImConversation[], selectedId: number | null): ImConversation | undefined {
+    return conversations.find(conversation => conversation.id === selectedId);
+}
+
+class ImPageView extends AntiHookComponent<ViewProps> {
+    private readonly messagesEndRef = React.createRef<HTMLDivElement>();
+    private timer?: ReturnType<typeof setInterval>;
+
+    componentDidMount(): void {
+        super.componentDidMount();
+        const {hash, search} = window.location;
+        const id = hash.includes('to=') ? hash.split('to=')[1]?.split('&')[0] || '' : new URLSearchParams(search).get('to') || '';
+        if (!id) return;
+        this.handleRecipientPicked(id);
+        if (!this.props.ui.getData().selectedId) this.props.ui.setShowNewForm(true);
+        window.history.replaceState?.(null, '', window.location.pathname);
+    }
+
+    componentDidUpdate(previous: Readonly<ViewProps>): void {
+        super.componentDidUpdate(previous);
+        const {snapshot, messagesUrl} = this.props;
+        if (previous.snapshot.messages !== snapshot.messages) this.messagesEndRef.current?.scrollIntoView({behavior: 'smooth'});
+        if (previous.snapshot.selectedId !== snapshot.selectedId || previous.messagesUrl !== messagesUrl) {
+            clearInterval(this.timer);
+            if (snapshot.selectedId) this.timer = setInterval(this.poll, 15000);
+        }
+    }
+
+    componentWillUnmount(): void {
+        clearInterval(this.timer);
+        super.componentWillUnmount();
+    }
+
+    private readonly poll = () => {
+        const {ui, messagesUrl, snapshot: {selectedId}} = this.props;
+        if (selectedId && !document.hidden) void fetchMessages(ui, messagesUrl, selectedId);
     };
 
-    const refreshConversations = () => {
-        D('im.refreshConversations');
-        sendPost(conversationsUrl, {}).then((r: any) => {
-            if (r?.conversations) {
-                setConversations(r.conversations);
-                D('im.conversations.loaded', {count: r.conversations.length});
-            }
-        }).catch((err) => {
-            D('im.error', {action: 'refreshConversations', error: err});
-            showToast(t.User_LoadError(), 'danger');
-        });
+    private readonly back = () => {
+        this.props.ui.setSelectedId(null);
+        this.props.ui.setShowNewForm(false);
     };
 
-    // On mount: check hash #to={id} or query ?to={id} — auto-open new message to that recipient
-    useEffect(() => {
-        const hash = window.location.hash; // #to=16
-        const search = window.location.search; // ?to=16
-        let toId = '';
-        if (hash.includes('to=')) {
-            toId = hash.split('to=')[1]?.split('&')[0] || '';
-        } else if (search.includes('to=')) {
-            toId = new URLSearchParams(search).get('to') || '';
-        }
-        if (toId) {
-            // Check if we already have a conversation with this person
-            const existing = conversations.find(c => c.partner_id === parseInt(toId, 10));
-            if (existing) {
-                selectConversation(existing.id);
-            } else {
-                setShowNewForm(true);
-                setRecipientId(toId);
-            }
-            // Clean up URL hash
-            if (window.history.replaceState) {
-                window.history.replaceState(null, '', window.location.pathname);
-            }
-        }
-    }, []);
-
-    useEffect(() => {
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({behavior: 'smooth'});
-        }
-    }, [messages]);
-
-    // Auto-refresh: poll messages every 15 seconds when a conversation is selected
-    useEffect(() => {
-        if (!selectedId) return;
-        const interval = setInterval(() => { if (!document.hidden) fetchMessages(selectedId); }, 15000);
-        return () => clearInterval(interval);
-    }, [selectedId]);
-
-    const selectConversation = (conversationId: number) => {
+    private readonly selectConversation = (conversationId: number) => {
+        const {ui, messagesUrl, setReplyFiles} = this.props;
+        const {setSelectedId, setShowNewForm, setReplyText} = ui;
         D('im.click', {action: 'selectConversation', conversationId});
         setSelectedId(conversationId);
         setShowNewForm(false);
         setReplyText('');
         setReplyFiles([]);
-        fetchMessages(conversationId);
+        void fetchMessages(ui, messagesUrl, conversationId);
     };
 
-    const handleSendNew = () => {
+    private readonly handleSendNew = () => {
+        const {ui, sendUrl, messagesUrl, conversationsUrl, newFiles, setNewFiles, withSending} = this.props;
+        const {recipientId, newMessage} = ui.getData();
+        const {setShowNewForm, setRecipientId, setNewMessage, setSelectedId} = ui;
         const rid = parseInt(recipientId, 10);
         if (!rid || !newMessage.trim()) return;
         withSending(async () => {
@@ -163,10 +135,10 @@ const ImPageIslandInner: React.FC<Props> = ({
                 setRecipientId('');
                 setNewMessage('');
                 setNewFiles([]);
-                refreshConversations();
+                void refreshConversations(ui, conversationsUrl);
                 if (r.conversation_id) {
                     setSelectedId(r.conversation_id);
-                    fetchMessages(r.conversation_id);
+                    void fetchMessages(ui, messagesUrl, r.conversation_id);
                 }
                 reportAttachmentErrors(r);
             } catch (err: unknown) {
@@ -177,7 +149,10 @@ const ImPageIslandInner: React.FC<Props> = ({
         });
     };
 
-    const handleReply = () => {
+    private readonly handleReply = () => {
+        const {ui, sendUrl, messagesUrl, conversationsUrl, replyFiles, setReplyFiles, withSending} = this.props;
+        const {replyText, selectedId, conversations} = ui.getData();
+        const {setReplyText} = ui;
         if (!replyText.trim() || !selectedId) return;
         const conv = conversations.find(c => c.id === selectedId);
         if (!conv) return;
@@ -198,8 +173,8 @@ const ImPageIslandInner: React.FC<Props> = ({
                 }
                 setReplyText('');
                 setReplyFiles([]);
-                fetchMessages(selectedId!);
-                refreshConversations();
+                void fetchMessages(ui, messagesUrl, selectedId!);
+                void refreshConversations(ui, conversationsUrl);
                 reportAttachmentErrors(r);
             } catch (err: unknown) {
                 const msg = getSendErrorMessage(err);
@@ -209,7 +184,9 @@ const ImPageIslandInner: React.FC<Props> = ({
         });
     };
 
-    const handleNewMessage = () => {
+    private readonly handleNewMessage = () => {
+        const {ui, setNewFiles} = this.props;
+        const {setShowNewForm, setSelectedId, setRecipientId, setNewMessage} = ui;
         setShowNewForm(true);
         setSelectedId(null);
         setRecipientId('');
@@ -226,80 +203,114 @@ const ImPageIslandInner: React.FC<Props> = ({
      * list) and this form gave no hint it existed. The `#to=` deep-link path
      * already checked for this (lines above); the picker didn't.
      */
-    const handleRecipientPicked = (id: string) => {
+    private readonly handleRecipientPicked = (id: string) => {
+        const {ui} = this.props;
+        const {conversations} = ui.getData();
+        const {setRecipientId} = ui;
         const partnerId = parseInt(id, 10);
         const existing = conversations.find(c => c.partner_id === partnerId);
         if (existing) {
-            selectConversation(existing.id);
+            this.selectConversation(existing.id);
             return;
         }
         setRecipientId(id);
     };
 
-    const selectedConversation = conversations.find(c => c.id === selectedId);
+    private renderNew() {
+        const {ui, snapshot: {recipientId, newMessage}, newFiles, setNewFiles, sending, searchRecipientsUrl} = this.props;
+        const {setNewMessage} = ui;
+        return (
+            <NewMessageForm
+                searchRecipientsUrl={searchRecipientsUrl}
+                recipientId={recipientId}
+                onRecipientIdChange={this.handleRecipientPicked}
+                newMessage={newMessage}
+                onNewMessageChange={setNewMessage}
+                newFiles={newFiles}
+                onNewFilesChange={setNewFiles}
+                sending={sending}
+                onSend={this.handleSendNew}
+            />
+        );
+    }
 
-    return (
-        <div className="page-narrow">
-            <PageHeader title={t.IM_Title()} icon={<MessagesSquare size={22} aria-hidden="true" />} />
+    private renderThread(selectedConversation: ImConversation) {
+        const {ui, snapshot: {messages, loadingMessages, replyText}, replyFiles, setReplyFiles, sending, currentAccountId, isModerator = false} = this.props;
+        const {setReplyText} = ui;
+        return (
+            <MessageThread
+                conversation={selectedConversation}
+                messages={messages}
+                loadingMessages={loadingMessages}
+                currentAccountId={currentAccountId}
+                isModerator={isModerator}
+                replyText={replyText}
+                onReplyTextChange={setReplyText}
+                replyFiles={replyFiles}
+                onReplyFilesChange={setReplyFiles}
+                sending={sending}
+                onReply={this.handleReply}
+                messagesEndRef={this.messagesEndRef}
+            />
+        );
+    }
 
-            <div className={`support-layout ${(selectedConversation || showNewForm) ? 'support-layout-detail' : ''}`}>
-                <ConversationList
-                    conversations={conversations}
-                    selectedId={selectedId}
-                    onSelectConversation={selectConversation}
-                    onNewMessage={handleNewMessage}
-                />
-
-                <div className="support-thread-panel">
-                    {(selectedConversation || showNewForm) && (
-                        <button
-                            type="button"
-                            className="support-back-btn"
-                            onClick={() => { setSelectedId(null); setShowNewForm(false); }}
-                        >
-                            <ChevronLeft size={16} aria-hidden="true" />
-                            {t.Support_BackToList()}
-                        </button>
-                    )}
-                    {showNewForm ? (
-                        <NewMessageForm
-                            searchRecipientsUrl={searchRecipientsUrl}
-                            recipientId={recipientId}
-                            onRecipientIdChange={handleRecipientPicked}
-                            newMessage={newMessage}
-                            onNewMessageChange={setNewMessage}
-                            newFiles={newFiles}
-                            onNewFilesChange={setNewFiles}
-                            sending={sending}
-                            onSend={handleSendNew}
-                        />
-                    ) : selectedConversation ? (
-                        <MessageThread
-                            conversation={selectedConversation}
-                            messages={messages}
-                            loadingMessages={loadingMessages}
-                            currentAccountId={currentAccountId}
-                            isModerator={isModerator}
-                            replyText={replyText}
-                            onReplyTextChange={setReplyText}
-                            replyFiles={replyFiles}
-                            onReplyFilesChange={setReplyFiles}
-                            sending={sending}
-                            onReply={handleReply}
-                            messagesEndRef={messagesEndRef}
-                        />
-                    ) : (
-                        <div className="support-empty-flex">
-                            {conversations.length === 0 ? t.IM_NoConversations() : t.IM_NoMessages()}
-                        </div>
-                    )}
-                </div>
+    private renderPanel(selectedConversation: ImConversation | undefined) {
+        const {conversations, showNewForm} = this.props.snapshot;
+        return (
+            <div className="comms-page-thread">
+                {(selectedConversation || showNewForm) && (
+                    <button
+                        type="button"
+                        className="comms-page-back"
+                        onClick={this.back}
+                    >
+                        <ChevronLeft size={16} aria-hidden="true" />
+                        {t.Support_BackToList()}
+                    </button>
+                )}
+                {showNewForm ? this.renderNew() : selectedConversation ? this.renderThread(selectedConversation) : (
+                    <div className="comms-page-empty">
+                        {conversations.length === 0 ? t.IM_NoConversations() : t.IM_NoMessages()}
+                    </div>
+                )}
             </div>
+        );
+    }
 
-            
-        </div>
-    );
-};
+    render() {
+        const {conversations, selectedId, showNewForm} = this.props.snapshot;
+        const selectedConversation = findConversation(conversations, selectedId);
+        return (
+            <div className="comms-page">
+                <PageHeader title={t.IM_Title()} icon={PAGE_ICON} />
+
+                <div className="comms-page-layout" data-detail={Boolean(selectedConversation || showNewForm)}>
+                    <ConversationList
+                        conversations={conversations}
+                        selectedId={selectedId}
+                        onSelectConversation={this.selectConversation}
+                        onNewMessage={this.handleNewMessage}
+                    />
+
+                    {this.renderPanel(selectedConversation)}
+                </div>
+
+
+            </div>
+        );
+    }
+}
+
+function ImPageIslandInner(props: Props) {
+    const [ui] = useState(() => new ImPageState(props.conversations));
+    const snapshot = React.useSyncExternalStore(ui.subscribeSnapshot, ui.snapshot, ui.snapshot);
+    const [newFiles, setNewFiles] = useState<PendingFile[]>([]);
+    const [replyFiles, setReplyFiles] = useState<PendingFile[]>([]);
+    const sending = useSending();
+    return <ImPageView {...props} {...sending} ui={ui} snapshot={snapshot}
+        newFiles={newFiles} setNewFiles={setNewFiles} replyFiles={replyFiles} setReplyFiles={setReplyFiles} />;
+}
 
 export const ImPageIsland: React.FC<Props> = (props) => (
     <IrabiPreviewProvider>

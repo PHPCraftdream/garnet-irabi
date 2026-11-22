@@ -10,7 +10,7 @@ interface AttachmentAddButtonProps {
 export const AttachmentAddButton: React.FC<AttachmentAddButtonProps> = ({count, maxFiles, onPick}) => (
     <button
         type="button"
-        className="btn btn-outline-secondary text-sm flex items-center gap-1"
+        className="attachment-add-button"
         onClick={onPick}
         data-test-id="attachment-btn"
         title={t.A11y_AttachFiles()}

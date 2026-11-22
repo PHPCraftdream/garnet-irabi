@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {useState, useEffect} from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import SendButton from '@common/Components/Controls/SendButton';
 import {useBodyScrollLock} from '@common/hooks/ui/useBodyScrollLock';
 import {sendPost} from '@common/Api/Send/sendPost';
@@ -37,27 +37,30 @@ export interface RescheduleModalProps {
  * окно не повторяет эти правила на клиенте, только показывает и отправляет
  * выбор.
  */
-export const RescheduleModal: React.FC<RescheduleModalProps> = ({
-    open,
-    bookingId,
-    sending,
-    error,
-    onSubmit,
-    onClose,
-}) => {
-    const [loading, setLoading] = useState(false);
-    const [options, setOptions] = useState<SlotOption[]>([]);
-    const [loadError, setLoadError] = useState('');
-    const [selectedId, setSelectedId] = useState<number | null>(null);
+interface RescheduleState {
+    loading: boolean;
+    options: SlotOption[];
+    loadError: string;
+    selectedId: number | null;
+}
 
-    useBodyScrollLock(open);
+class RescheduleModalView extends AntiHookComponent<RescheduleModalProps> {
+    private readonly ui = new Carburetor<RescheduleState>({loading: false, options: [], loadError: '', selectedId: null});
 
-    useEffect(() => {
+    componentDidMount() {
+        super.componentDidMount();
+        this.loadOptions();
+    }
+
+    componentDidUpdate(previous: RescheduleModalProps) {
+        super.componentDidUpdate(previous);
+        if (previous.open !== this.props.open || previous.bookingId !== this.props.bookingId) this.loadOptions();
+    }
+
+    private readonly loadOptions = () => {
+        const {open, bookingId} = this.props;
         if (!open || !bookingId) return;
-        setOptions([]);
-        setSelectedId(null);
-        setLoadError('');
-        setLoading(true);
+        this.ui.setData({options: [], selectedId: null, loadError: '', loading: true});
         (async () => {
             try {
                 const res = await sendPost<{}, OptionsResponse>(
@@ -66,34 +69,49 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
                 );
                 const data = ('data' in res && res.data) ? res.data : (res as unknown as OptionsResponse);
                 if (data?.error) {
-                    setLoadError(data.error);
+                    this.patch({loadError: data.error});
                     return;
                 }
-                setOptions(data?.options ?? []);
+                this.patch({options: data?.options ?? []});
             } catch {
-                setLoadError(t.General_Error());
+                this.patch({loadError: t.General_Error()});
             } finally {
-                setLoading(false);
+                this.patch({loading: false});
             }
         })();
-    }, [open, bookingId]);
+    };
 
-    if (!open) return null;
+    private readonly submit = () => {
+        const {selectedId} = this.ui.getData();
+        if (selectedId !== null) this.props.onSubmit(selectedId);
+    };
 
-    const shownError = loadError || error;
+    private readonly options = this.connectSelection(this.ui, state => state.options);
 
-    return (
-        <ModalShell title={t.Reschedule_Title()} testId="reschedule-modal" onClose={onClose}>
-            <p className="mb-3 text-sm text-muted" data-test-id="reschedule-modal-free">{t.Reschedule_Free()}</p>
-            <p className="mb-3 text-sm text-warning" data-test-id="reschedule-modal-reconfirm">{t.Reschedule_NeedsReconfirm()}</p>
+    private readonly patch = (patch: Partial<RescheduleState>) => this.ui.setData({...this.ui.getData(), ...patch});
+    private readonly select = (selectedId: number) => this.patch({selectedId});
 
-            <RescheduleStatus shownError={shownError} loading={loading} optionsCount={options.length} loadError={loadError} />
+    render() {
+        const {open, sending, error, onClose} = this.props;
+        const {loading, loadError, selectedId} = this.useCarburetor(this.ui);
+        const options = this.options();
+        if (!open) return null;
+        const shownError = loadError || error;
+        return (
+            <ModalShell title={t.Reschedule_Title()} testId="reschedule-modal" onClose={onClose}>
+                <p className="reschedule-message" data-test-id="reschedule-modal-free">{t.Reschedule_Free()}</p>
+                <p className="reschedule-message" data-tone="warning" data-test-id="reschedule-modal-reconfirm">{t.Reschedule_NeedsReconfirm()}</p>
+                <RescheduleStatus shownError={shownError} loading={loading} optionsCount={options.length} loadError={loadError} />
+                {!loading && options.length > 0 && <RescheduleSlotPicker options={options} selectedId={selectedId} onSelect={this.select} />}
+                <RescheduleActions sending={sending} selectedId={selectedId} onSubmit={this.submit} onClose={onClose} />
+            </ModalShell>
+        );
+    }
+}
 
-            {!loading && options.length > 0 && <RescheduleSlotPicker options={options} selectedId={selectedId} onSelect={setSelectedId} />}
-
-            <RescheduleActions sending={sending} selectedId={selectedId} onSubmit={onSubmit} onClose={onClose} />
-        </ModalShell>
-    );
+export const RescheduleModal: React.FC<RescheduleModalProps> = (props) => {
+    useBodyScrollLock(props.open);
+    return <RescheduleModalView {...props} />;
 };
 
 interface RescheduleStatusProps {
@@ -106,60 +124,68 @@ interface RescheduleStatusProps {
 const RescheduleStatus: React.FC<RescheduleStatusProps> = ({shownError, loading, optionsCount, loadError}) => (
     <>
         {shownError && (
-            <div className="mb-3 text-sm text-danger" data-test-id="reschedule-modal-error">{shownError}</div>
+            <div className="reschedule-message" data-tone="error" data-test-id="reschedule-modal-error">{shownError}</div>
         )}
 
         {loading && (
-            <p className="text-sm text-muted" data-test-id="reschedule-modal-loading">{t.User_Loading()}</p>
+            <p className="reschedule-status" data-test-id="reschedule-modal-loading">{t.User_Loading()}</p>
         )}
 
         {!loading && optionsCount === 0 && !loadError && (
-            <p className="text-sm text-muted" data-test-id="reschedule-modal-empty">{t.Reschedule_NoSlots()}</p>
+            <p className="reschedule-status" data-test-id="reschedule-modal-empty">{t.Reschedule_NoSlots()}</p>
         )}
     </>
 );
 
+interface RescheduleOptionProps {
+    option: SlotOption;
+    checked: boolean;
+    onSelect: (id: number) => void;
+}
+
+class RescheduleOption extends AntiHookComponent<RescheduleOptionProps> {
+    private readonly select = () => this.props.onSelect(this.props.option.id);
+
+    render() {
+        const {option, checked} = this.props;
+        return (
+            <label className="reschedule-option" data-test-id={`reschedule-option-${option.id}`}>
+                <input type="radio" name="reschedule-target-slot" checked={checked} onChange={this.select} />
+                <span>{formatTs(option.start_at)}</span>
+            </label>
+        );
+    }
+}
+
 interface RescheduleSlotPickerProps {
-    options: SlotOption[];
+    options: readonly SlotOption[];
     selectedId: number | null;
     onSelect: (id: number) => void;
 }
 
-const RescheduleSlotPicker: React.FC<RescheduleSlotPickerProps> = ({options, selectedId, onSelect}) => (
-    <fieldset className="mb-4" data-test-id="reschedule-modal-options">
-        <legend className="text-sm text-secondary mb-1">{t.Reschedule_PickSlot()}</legend>
-        <div className="flex flex-col gap-2">
-            {options.map(opt => (
-                <label
-                    key={opt.id}
-                    className="flex items-center gap-2 cursor-pointer"
-                    data-test-id={`reschedule-option-${opt.id}`}
-                >
-                    <input
-                        type="radio"
-                        name="reschedule-target-slot"
-                        checked={selectedId === opt.id}
-                        onChange={() => onSelect(opt.id)}
-                    />
-                    <span>{formatTs(opt.start_at)}</span>
-                </label>
-            ))}
-        </div>
-    </fieldset>
-);
+function RescheduleSlotPicker({options, selectedId, onSelect}: RescheduleSlotPickerProps) {
+    const rows: React.ReactNode[] = [];
+    for (const option of options) rows.push(<RescheduleOption key={option.id} option={option} checked={selectedId === option.id} onSelect={onSelect} />);
+    return (
+        <fieldset className="reschedule-picker" data-test-id="reschedule-modal-options">
+            <legend className="reschedule-legend">{t.Reschedule_PickSlot()}</legend>
+            <div className="reschedule-options">{rows}</div>
+        </fieldset>
+    );
+}
 
 interface RescheduleActionsProps {
     sending: boolean;
     selectedId: number | null;
-    onSubmit: (slotId: number) => void;
+    onSubmit: () => void;
     onClose: () => void;
 }
 
 const RescheduleActions: React.FC<RescheduleActionsProps> = ({sending, selectedId, onSubmit, onClose}) => (
-    <div className="flex gap-2 justify-end">
+    <div className="reschedule-actions">
         <button
             type="button"
-            className="btn btn-secondary"
+            className="reschedule-dismiss"
             onClick={onClose}
             disabled={sending}
             data-test-id="reschedule-modal-dismiss"
@@ -167,7 +193,7 @@ const RescheduleActions: React.FC<RescheduleActionsProps> = ({sending, selectedI
             {t.Batch_Cancel()}
         </button>
         <SendButton
-            onClick={() => selectedId !== null && onSubmit(selectedId)}
+            onClick={onSubmit}
             sending={sending}
             disabled={selectedId === null}
             label={t.Reschedule_Submit()}

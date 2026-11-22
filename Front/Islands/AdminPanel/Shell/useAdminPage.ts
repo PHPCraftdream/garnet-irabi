@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {PageResponse} from '@common/hooks/data/usePagination';
@@ -29,6 +30,50 @@ interface Result<TRow> {
     setItems: React.Dispatch<React.SetStateAction<TRow[]>>;
 }
 
+interface AdminPageState<TRow> {
+    items: TRow[];
+    page: number;
+    totalPages: number;
+    total: number;
+    loading: boolean;
+    loadedOnce: boolean;
+}
+
+class AdminPageStore<TRow> extends Carburetor<AdminPageState<TRow>> {
+    constructor(initialData: PageResponse<TRow> | null) {
+        super({
+            items: initialData?.items ?? [],
+            page: initialData?.page ?? 1,
+            totalPages: initialData?.totalPages ?? 1,
+            total: initialData?.total ?? 0,
+            loading: false,
+            loadedOnce: initialData !== null,
+        });
+    }
+
+    readonly snapshot = () => this.getData();
+    readonly subscribeSnapshot = (listener: () => void) => {
+        const id = this.subscribe(listener);
+        return () => this.unsubscribe(id);
+    };
+
+    readonly update = (changes: Partial<AdminPageState<TRow>>) => {
+        const previous = this.getData();
+        const version = this.getVersion();
+        this.setData({...previous, ...changes});
+        if (this.getData() !== previous && this.getVersion() === version) {
+            this.markAllChanged();
+            this.emitUpdate();
+        }
+    };
+
+    readonly setItems: React.Dispatch<React.SetStateAction<TRow[]>> = (value) => {
+        const previous = this.snapshot().items;
+        const items = typeof value === 'function' ? value(previous) : value;
+        if (!Object.is(items, previous)) this.update({items});
+    };
+}
+
 /**
  * Страница списка в админке: загрузка, фильтры с задержкой, пагинация.
  *
@@ -49,12 +94,11 @@ export function useAdminPage<TRow, TFilters, TBody extends object = Record<strin
     // одинаково во всей админке, а не только там, где рендерится AdminGrid.
     const [perPage, setStoredPerPage] = usePageSize();
 
-    const [items, setItems] = React.useState<TRow[]>(initialData?.items ?? []);
-    const [page, setPage] = React.useState<number>(initialData?.page ?? 1);
-    const [totalPages, setTotalPages] = React.useState<number>(initialData?.totalPages ?? 1);
-    const [total, setTotal] = React.useState<number>(initialData?.total ?? 0);
-    const [loading, setLoading] = React.useState(false);
-    const [loadedOnce, setLoadedOnce] = React.useState(initialData !== null);
+    const [store] = React.useState(() => new AdminPageStore<TRow>(initialData));
+    const {items, page, totalPages, total, loading, loadedOnce} = React.useSyncExternalStore(
+        store.subscribeSnapshot, store.snapshot, store.snapshot,
+    );
+    const setItems = store.setItems;
 
     // Свежие фильтры и сборщик тела — через ref, иначе `fetchPage` замкнётся
     // на значениях того рендера, в котором был создан.
@@ -64,22 +108,24 @@ export function useAdminPage<TRow, TFilters, TBody extends object = Record<strin
     buildRef.current = buildBody;
 
     const fetchPage = React.useCallback(async (targetPage: number, targetPerPage: number = perPage) => {
-        setLoading(true);
+        store.update({loading: true});
         try {
             const body = buildRef.current(filtersRef.current, targetPage, targetPerPage);
             const resp = await sendPost<TBody, PageResponse<TRow>>(url, body);
             const data = ('data' in resp && resp.data) ? resp.data : (resp as unknown as PageResponse<TRow>);
-            setItems(data.items);
-            setPage(data.page);
-            setTotalPages(data.totalPages);
-            setTotal(data.total);
-            setLoadedOnce(true);
+            store.update({
+                items: data.items,
+                page: data.page,
+                totalPages: data.totalPages,
+                total: data.total,
+                loadedOnce: true,
+            });
         } catch {
             showToast(t.User_LoadError(), 'danger');
         } finally {
-            setLoading(false);
+            store.update({loading: false});
         }
-    }, [url, perPage]);
+    }, [url, perPage, store]);
 
     React.useEffect(() => {
         if (initialData === null && !loadedOnce) {

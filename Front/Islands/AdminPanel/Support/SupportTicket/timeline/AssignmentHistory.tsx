@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 import {AssignmentLogEntry} from '../../../../Comms/Support/parts/supportTypes';
 import {AdminUserLink} from '../../../../../Common/people/EntityLinks';
@@ -12,18 +13,22 @@ const Party: React.FC<{id?: number | null; name?: string | null}> = ({id, name})
 };
 
 const HistoryRow: React.FC<{entry: AssignmentLogEntry}> = ({entry}) => (
-    <tr className="hover:bg-surface-hover">
+    <tr className="admin-support-history-row">
         <td>
             {entry.actor_id > 0 ? <AdminUserLink id={entry.actor_id} name={entry.actor_name} /> : entry.actor_name}
         </td>
-        <td className="text-muted"><Party id={entry.from_id} name={entry.from_name} /></td>
-        <td className="text-muted"><Party id={entry.to_id} name={entry.to_name} /></td>
-        <td className="text-muted text-xs whitespace-nowrap">{formatTs(entry.created_at)}</td>
+        <td className="admin-support-history-party"><Party id={entry.from_id} name={entry.from_name} /></td>
+        <td className="admin-support-history-party"><Party id={entry.to_id} name={entry.to_name} /></td>
+        <td className="admin-support-history-time">{formatTs(entry.created_at)}</td>
     </tr>
 );
 
+function renderRow(entry: AssignmentLogEntry) {
+    return <HistoryRow key={entry.id} entry={entry} />;
+}
+
 const HistoryTable: React.FC<{entries: AssignmentLogEntry[]}> = ({entries}) => (
-    <div className="mt-2 rounded border border-default overflow-hidden" data-test-id="support-assignment-history">
+    <div className="admin-support-history-box" data-test-id="support-assignment-history">
         <table className="admin-table">
             <thead>
                 <tr>
@@ -34,7 +39,7 @@ const HistoryTable: React.FC<{entries: AssignmentLogEntry[]}> = ({entries}) => (
                 </tr>
             </thead>
             <tbody>
-                {entries.map(entry => <HistoryRow key={entry.id} entry={entry} />)}
+                {entries.map(renderRow)}
             </tbody>
         </table>
     </div>
@@ -44,23 +49,29 @@ const HistoryTable: React.FC<{entries: AssignmentLogEntry[]}> = ({entries}) => (
  * Кому передавали обращение. Свёрнута по умолчанию: интересна редко, а места
  * занимает столько же, сколько сама переписка.
  */
-export const AssignmentHistory: React.FC<{entries: AssignmentLogEntry[]}> = ({entries}) => {
-    const [open, setOpen] = React.useState(false);
+export class AssignmentHistory extends AntiHookComponent<{entries: AssignmentLogEntry[]}> {
+    private readonly ui = new Carburetor({open: false});
+    private readonly toggle = () => this.ui.setData({open: !this.ui.getData().open});
 
-    if (entries.length === 0) return null;
+    render() {
+        const {entries} = this.props;
+        const {open} = this.useCarburetor(this.ui);
+        if (entries.length === 0) return null;
 
-    return (
-        <div className="mt-4">
-            <button
-                type="button"
-                className="text-sm text-muted hover:text-secondary flex items-center gap-1"
-                onClick={() => setOpen(!open)}
-                data-test-id="support-assignment-history-toggle"
-            >
-                <span className="text-xs select-none">{open ? '\u25BE' : '\u25B8'}</span>
-                {t.Support_AssignmentHistory()} ({entries.length})
-            </button>
-            {open && <HistoryTable entries={entries} />}
-        </div>
-    );
-};
+        return (
+            <div className="admin-support-history">
+                <button
+                    type="button"
+                    className="admin-support-history-toggle"
+                    onClick={this.toggle}
+                    aria-expanded={open}
+                    data-test-id="support-assignment-history-toggle"
+                >
+                    <span className="admin-support-history-chevron">{open ? '\u25BE' : '\u25B8'}</span>
+                    {t.Support_AssignmentHistory()} ({entries.length})
+                </button>
+                {open && <HistoryTable entries={entries} />}
+            </div>
+        );
+    }
+}

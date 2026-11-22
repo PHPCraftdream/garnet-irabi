@@ -14,9 +14,9 @@ interface Props {
  * каждого поля — и каждое такое повторение добавляло уровень вложенности.
  */
 export const TokenField: React.FC<Props> = ({id, label, hint, children}) => (
-    <div className="mb-3">
-        <label htmlFor={id} className="label-mini mb-1">{label}</label>
+    <div className="token-field">
+        <label htmlFor={id} className="token-field-label">{label}</label>
         {children}
-        {hint && <p className="text-xs text-muted mt-1">{hint}</p>}
+        {hint && <p className="token-field-hint">{hint}</p>}
     </div>
 );

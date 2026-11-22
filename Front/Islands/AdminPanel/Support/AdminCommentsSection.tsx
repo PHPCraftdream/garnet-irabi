@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import Pagination from '@common/Components/Layout/Paging/Pagination';
@@ -42,6 +43,42 @@ const EMPTY_FILTERS: CommentsFilterState = {
     hiddenOnly: false,
 };
 
+class CommentsUI extends Carburetor<{filters: CommentsFilterState; bodyModal: AdminCommentRow | null}> {
+    constructor() {
+        super({filters: EMPTY_FILTERS, bodyModal: null});
+    }
+
+    readonly snapshot = () => this.getData();
+    readonly subscribeSnapshot = (listener: () => void) => {
+        const id = this.subscribe(listener);
+        return () => this.unsubscribe(id);
+    };
+
+    private update(patch: Partial<ReturnType<CommentsUI['snapshot']>>): void {
+        const before = this.getData();
+        const version = this.getVersion();
+        this.setData({...before, ...patch});
+        if (this.getData() !== before && this.getVersion() === version) {
+            this.markAllChanged();
+            this.emitUpdate();
+        }
+    }
+
+    readonly changeFilters = (patch: Partial<CommentsFilterState>) => this.update({filters: {...this.getData().filters, ...patch}});
+    readonly resetFilters = () => this.update({filters: EMPTY_FILTERS});
+    readonly openBody = (bodyModal: AdminCommentRow) => this.update({bodyModal});
+    readonly closeBody = () => this.update({bodyModal: null});
+}
+
+function createCommentsUI(): CommentsUI {
+    return new CommentsUI();
+}
+
+function buildBody(filters: CommentsFilterState, page: number, perPage: number): CommentsFetchBody {
+    return {page, perPage, author_id: filters.authorId, expert_id: filters.expertId,
+        date_from: filters.dateFrom, date_to: filters.dateTo, search: filters.search, hidden_only: filters.hiddenOnly ? '1' : '0'};
+}
+
 /**
  * Отзывы в админке: фильтры, таблица и три решения по каждому отзыву.
  *
@@ -50,22 +87,11 @@ const EMPTY_FILTERS: CommentsFilterState = {
  * задеть, поправляя вёрстку таблицы.
  */
 export const AdminCommentsSection: React.FC<AdminCommentsSectionProps> = (props) => {
-    const {commentsPayload, commentsPageUrl, hideUrl, unhideUrl, approveUrl, rejectUrl, flagUrl, experts, authors} = props;
+    const {commentsPayload, commentsPageUrl, experts, authors} = props;
 
-    const [filters, setFilters] = React.useState<CommentsFilterState>(EMPTY_FILTERS);
-    const [bodyModal, setBodyModal] = React.useState<AdminCommentRow | null>(null);
+    const [ui] = React.useState(createCommentsUI);
+    const {filters, bodyModal} = React.useSyncExternalStore(ui.subscribeSnapshot, ui.snapshot, ui.snapshot);
     const {confirmState, confirm, handleConfirm, handleCancel} = useConfirm();
-
-    const buildBody = React.useCallback((f: CommentsFilterState, page: number, perPage: number): CommentsFetchBody => ({
-        page,
-        perPage,
-        author_id: f.authorId,
-        expert_id: f.expertId,
-        date_from: f.dateFrom,
-        date_to: f.dateTo,
-        search: f.search,
-        hidden_only: f.hiddenOnly ? '1' : '0',
-    }), []);
 
     const {items, page, perPage, totalPages, total, loading, goToPage, setPerPage, setItems} =
         useAdminPage<AdminCommentRow, CommentsFilterState, CommentsFetchBody>({
@@ -78,10 +104,41 @@ export const AdminCommentsSection: React.FC<AdminCommentsSectionProps> = (props)
     const expertOptions = React.useMemo(() => buildAccountOptions(experts), [experts]);
     const authorOptions = React.useMemo(() => buildAccountOptions(authors), [authors]);
 
-    const patchRow = (id: number, patch: Partial<AdminCommentRow>) =>
-        setItems(prev => prev.map(it => it.id === id ? {...it, ...patch} : it));
+    return <AdminCommentsView {...{hideUrl: props.hideUrl, unhideUrl: props.unhideUrl, approveUrl: props.approveUrl,
+        rejectUrl: props.rejectUrl, flagUrl: props.flagUrl, ui, filters, bodyModal, confirm, confirmState, handleConfirm, handleCancel,
+        page, totalPages, total, loading, goToPage, perPage, setPerPage, setItems, items, authorOptions, expertOptions}} />;
+};
 
-    const toggleHidden = React.useCallback(async (row: AdminCommentRow, hide: boolean) => {
+interface AdminCommentsViewProps extends Pick<AdminCommentsSectionProps, 'hideUrl' | 'unhideUrl' | 'approveUrl' | 'rejectUrl' | 'flagUrl'>, ReturnType<typeof useConfirm> {
+    ui: CommentsUI;
+    filters: CommentsFilterState;
+    bodyModal: AdminCommentRow | null;
+    page: number;
+    totalPages: number;
+    total: number;
+    loading: boolean;
+    goToPage: (page: number) => void;
+    perPage: number;
+    setPerPage: (perPage: number) => void;
+    setItems: React.Dispatch<React.SetStateAction<AdminCommentRow[]>>;
+    items: AdminCommentRow[];
+    authorOptions: ReturnType<typeof buildAccountOptions>;
+    expertOptions: ReturnType<typeof buildAccountOptions>;
+}
+
+class AdminCommentsView extends AntiHookComponent<AdminCommentsViewProps> {
+    private patchRow(id: number, patch: Partial<AdminCommentRow>): void {
+        this.props.setItems(previous => {
+            const index = previous.findIndex(row => row.id === id);
+            if (index < 0) return previous;
+            const items = previous.slice();
+            items[index] = {...items[index], ...patch};
+            return items;
+        });
+    }
+
+    private readonly toggleHidden = async (row: AdminCommentRow, hide: boolean) => {
+        const {confirm, hideUrl, unhideUrl} = this.props;
         const ok = await confirm(hide ? t.Comment_HideConfirm() : t.Comment_UnhideConfirm(), {
             confirmLabel: hide ? t.Comment_Hide() : t.Comment_Unhide(),
             variant: hide ? 'danger' : 'success',
@@ -94,11 +151,11 @@ export const AdminCommentsSection: React.FC<AdminCommentsSectionProps> = (props)
                 showToast(t.General_Error(), 'danger');
                 return;
             }
-            patchRow(row.id, {is_hidden: data.is_hidden});
+            this.patchRow(row.id, {is_hidden: data.is_hidden});
         } catch {
             showToast(t.General_Error(), 'danger');
         }
-    }, [confirm, hideUrl, unhideUrl]);
+    };
 
     /**
      * Решение по непроверенному отзыву.
@@ -107,7 +164,8 @@ export const AdminCommentsSection: React.FC<AdminCommentsSectionProps> = (props)
      * никогда, а скрытый — видели и он пропал. Смешивать их нельзя, иначе из
      * списка не понять, что уже разобрано.
      */
-    const setModeration = React.useCallback(async (row: AdminCommentRow, approve: boolean) => {
+    private readonly setModeration = async (row: AdminCommentRow, approve: boolean) => {
+        const {confirm, approveUrl, rejectUrl} = this.props;
         const ok = await confirm(approve ? t.Comment_ApproveConfirm() : t.Comment_RejectConfirm(), {
             confirmLabel: approve ? t.Comment_Approve() : t.Comment_Reject(),
             variant: approve ? 'success' : 'danger',
@@ -120,18 +178,19 @@ export const AdminCommentsSection: React.FC<AdminCommentsSectionProps> = (props)
                 showToast(t.General_Error(), 'danger');
                 return;
             }
-            patchRow(row.id, {moderation_status: data.moderation_status});
+            this.patchRow(row.id, {moderation_status: data.moderation_status});
         } catch {
             showToast(t.General_Error(), 'danger');
         }
-    }, [confirm, approveUrl, rejectUrl]);
+    };
 
     /**
      * Пометить отзыв как опасный — единственное действие во всей системе,
      * которое снимает анонимность автора. Поэтому подтверждение говорит об
      * этом прямо и отдельно предупреждает: не помечать отзыв за резкость.
      */
-    const flagComment = React.useCallback(async (row: AdminCommentRow) => {
+    private readonly flagComment = async (row: AdminCommentRow) => {
+        const {confirm, flagUrl} = this.props;
         const ok = await confirm(t.Comment_FlagConfirm(), {confirmLabel: t.Comment_Flag(), variant: 'danger'});
         if (!ok) return;
         try {
@@ -141,59 +200,70 @@ export const AdminCommentsSection: React.FC<AdminCommentsSectionProps> = (props)
                 showToast(t.General_Error(), 'danger');
                 return;
             }
-            patchRow(row.id, {moderation_status: data.moderation_status});
+            this.patchRow(row.id, {moderation_status: data.moderation_status});
         } catch {
             showToast(t.General_Error(), 'danger');
         }
-    }, [confirm, flagUrl]);
+    };
 
-    const pager = (
-        <Pagination
-            page={page}
-            totalPages={totalPages}
-            total={total}
-            loading={loading}
-            onPageChange={goToPage}
-            labels={adminPaginationLabels}
-            pageSize={perPage}
-            onPageSizeChange={setPerPage}
-        />
-    );
 
-    return (
-        <div data-test-id="admin-comments">
+    private renderTable() {
+        const {page, totalPages, total, loading, goToPage, perPage, setPerPage, ui, filters,
+            items, authorOptions, expertOptions} = this.props;
+        const pager = (
+            <Pagination
+                page={page}
+                totalPages={totalPages}
+                total={total}
+                loading={loading}
+                onPageChange={goToPage}
+                labels={adminPaginationLabels}
+                pageSize={perPage}
+                onPageSizeChange={setPerPage}
+            />
+        );
+
+        return (
             <div data-test-id="admin-comments-tab">
                 <CommentsFilters
                     state={filters}
                     authorOptions={authorOptions}
                     expertOptions={expertOptions}
                     loading={loading}
-                    onChange={patch => setFilters(prev => ({...prev, ...patch}))}
-                    onReset={() => setFilters(EMPTY_FILTERS)}
+                    onChange={ui.changeFilters}
+                    onReset={ui.resetFilters}
                 />
-                <div className="mb-3">{pager}</div>
-                {items.length === 0 && <p className="text-muted">{t.Comment_NoComments()}</p>}
+                <div className="admin-comments-pager-top">{pager}</div>
+                {items.length === 0 && <p className="token-cell-muted">{t.Comment_NoComments()}</p>}
                 {items.length > 0 && (
                     <CommentsTable
                         items={items}
-                        onOpenBody={setBodyModal}
-                        onModerate={(row, approve) => void setModeration(row, approve)}
-                        onFlag={row => void flagComment(row)}
-                        onToggleHidden={(row, hide) => void toggleHidden(row, hide)}
+                        onOpenBody={ui.openBody}
+                        onModerate={this.setModeration}
+                        onFlag={this.flagComment}
+                        onToggleHidden={this.toggleHidden}
                     />
                 )}
-                <div className="mt-3">{pager}</div>
+                <div className="admin-comments-pager-bottom">{pager}</div>
             </div>
+        );
+    }
 
-            {bodyModal && (
-                <LogDetailModal title={t.Comment_Body() + ' #' + bodyModal.id} onClose={() => setBodyModal(null)}>
-                    <div className="whitespace-pre-wrap" data-test-id="comment-body-modal-content">
-                        {bodyModal.body}
-                    </div>
-                </LogDetailModal>
-            )}
+    render() {
+        const {ui, bodyModal, confirmState, handleConfirm, handleCancel} = this.props;
+        return (
+            <div data-test-id="admin-comments">
+                {this.renderTable()}
+                {bodyModal && (
+                    <LogDetailModal title={t.Comment_Body() + ' #' + bodyModal.id} onClose={ui.closeBody}>
+                        <div className="admin-comments-body" data-test-id="comment-body-modal-content">
+                            {bodyModal.body}
+                        </div>
+                    </LogDetailModal>
+                )}
 
-            <ConfirmModal state={confirmState} onConfirm={handleConfirm} onCancel={handleCancel} />
-        </div>
-    );
-};
+                <ConfirmModal state={confirmState} onConfirm={handleConfirm} onCancel={handleCancel} />
+            </div>
+        );
+    }
+}

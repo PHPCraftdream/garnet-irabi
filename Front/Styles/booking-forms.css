@@ -1,0 +1,47 @@
+@reference "tailwindcss";
+
+@theme inline reference {
+  /* carburetor-disable-next-line valid-color-role */
+  --color-bookformexpert-wash: var(--color-bg-surface-hover);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-bookformexpert-ink: currentColor;
+}
+
+@utility tone-bookformexpert-soft { @apply bg-bookformexpert-wash text-bookformexpert-ink; }
+@utility shape-book-form-container { @apply max-w-lg mx-auto; }
+@utility shape-book-form-card { @apply rounded-lg border; }
+@utility shape-book-form-body { @apply p-5; }
+@utility shape-book-form-title { @apply mb-2!; }
+@utility type-book-form-title { @apply text-base! font-semibold; }
+@utility shape-book-form-details { @apply mb-4 space-y-2; }
+@utility shape-book-form-expert { @apply mb-3 p-3 rounded; }
+@utility shape-book-form-expert-name { @apply mb-0; }
+@utility shape-book-form-error { @apply mb-3; }
+@utility shape-reschedule-message { @apply mb-3; }
+@utility shape-reschedule-picker { @apply mb-4; }
+@utility shape-reschedule-legend { @apply mb-1; }
+@utility layout-reschedule-options { @apply flex flex-col gap-2; }
+@utility layout-reschedule-option { @apply flex items-center gap-2; }
+@utility behavior-reschedule-option { @apply cursor-pointer; }
+@utility layout-reschedule-actions { @apply flex gap-2 justify-end; }
+
+@layer components {
+  .booking-form-container { @apply tone-bookneutral-plain shape-book-form-container; }
+  .booking-form-card { @apply tone-cardsurface-outlined shape-book-form-card layout-booking-card effect-booking-card; }
+  .booking-form-body { @apply tone-bookneutral-plain shape-book-form-body; }
+  .booking-form-title { @apply tone-widgetim-plain shape-book-form-title type-book-form-title; }
+  .booking-form-details { @apply tone-bookneutral-plain shape-book-form-details; }
+  .booking-form-expert { @apply tone-bookformexpert-soft shape-book-form-expert; }
+  .booking-form-expert-name { @apply tone-bookneutral-plain shape-book-form-expert-name; }
+  .booking-form-error { @apply tone-bookneutral-plain shape-book-form-error; }
+  .reschedule-message { @apply tone-bookmuted-plain shape-reschedule-message type-book-place; }
+  .reschedule-message[data-tone="warning"] { @apply tone-bookwarning-plain; }
+  .reschedule-message[data-tone="error"] { @apply tone-externaldanger-plain; }
+  .reschedule-status { @apply tone-bookmuted-plain type-book-place; }
+  .reschedule-picker { @apply tone-bookneutral-plain shape-reschedule-picker; }
+  .reschedule-legend { @apply tone-booksecondary-plain shape-reschedule-legend type-book-place; }
+  .reschedule-options { @apply tone-bookneutral-plain layout-reschedule-options; }
+  .reschedule-option { @apply tone-bookneutral-plain layout-reschedule-option behavior-reschedule-option; }
+  .reschedule-actions { @apply tone-bookneutral-plain layout-reschedule-actions; }
+  .reschedule-dismiss { @apply tone-confirmsecondary-solid layout-compact-action shape-confirm-button type-confirm-button behavior-compact-action effect-compact-action motion-compact-action; }
+}

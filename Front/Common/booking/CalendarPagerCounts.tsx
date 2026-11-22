@@ -1,12 +1,13 @@
 import * as React from 'react';
 
+export type PagerCountKind = 'free' | 'pending' | 'booked' | 'mine' | 'completed';
+
 /** One coloured count chip in a calendar pager (e.g. "3 Свободные"). */
 export interface PagerCountItem {
     key: string;
     count: number;
     label: string;
-    /** colour modifier class, e.g. 'cal-nav-badge--free' */
-    cls: string;
+    kind: PagerCountKind;
 }
 
 /**
@@ -24,22 +25,39 @@ export interface PagerCountItem {
  * ближайшей неделе). Остальные виды не убираем — они всё ещё говорят,
  * есть ли смысл листать вообще, — просто приглушаем.
  */
-export const CalendarPagerCounts: React.FC<{items: PagerCountItem[]; side: 'prev' | 'next' | 'now'; activeKey?: string}> = ({items, side, activeKey}) => {
-    const shown = items.filter(i => i.count > 0);
-    if (!shown.length) return null;
-    return (
-        <span className="cal-nav-counts" data-test-id={`week-${side}-counts`}>
-            {shown.map(i => (
-                <span
-                    key={i.key}
-                    className={`cal-nav-badge ${i.cls}${activeKey && i.key !== activeKey ? ' cal-nav-badge--dim' : ''}`}
-                    title={i.label}
-                    data-test-id={`week-${side}-count-${i.key}`}
-                >
-                    <span className="cal-nav-badge-num">{i.count}</span>
-                    <span className="cal-nav-badge-label">{i.label}</span>
-                </span>
-            ))}
-        </span>
-    );
-};
+interface Props {
+    items: PagerCountItem[];
+    side: 'prev' | 'next' | 'now';
+    activeKey?: string;
+}
+
+const hasCount = (item: PagerCountItem) => item.count > 0;
+
+export class CalendarPagerCounts extends React.Component<Props> {
+    private readonly renderCount = (item: PagerCountItem) => {
+        const {side, activeKey} = this.props;
+        const dim = !!activeKey && item.key !== activeKey;
+        return (
+            <span
+                key={item.key}
+                className={dim ? 'calendar-count-chip-dim' : 'calendar-count-chip'}
+                data-kind={item.kind}
+                title={item.label}
+                data-test-id={`week-${side}-count-${item.key}`}
+            >
+                <span className="calendar-count-number">{item.count}</span>
+                <span className="calendar-count-label">{item.label}</span>
+            </span>
+        );
+    };
+
+    public render() {
+        const shown = this.props.items.filter(hasCount);
+        if (!shown.length) return null;
+        return (
+            <span className="calendar-counts" data-test-id={`week-${this.props.side}-counts`}>
+                {shown.map(this.renderCount)}
+            </span>
+        );
+    }
+}

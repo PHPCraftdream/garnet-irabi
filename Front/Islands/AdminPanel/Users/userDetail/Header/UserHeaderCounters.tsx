@@ -24,11 +24,11 @@ export const UserHeaderCounters: React.FC<CountersProps> = ({
     if (!expertCancelCount && !userCancelCount && !expertDeclineCount && !userDeclineCount) return null;
 
     return (
-        <div className="admin-user-meta">
-            {expertDeclineCount > 0 && <span className="text-warning">{t.User_ExpertDeclines()}: {expertDeclineCount}</span>}
-            {expertCancelCount > 0 && <span className="text-danger">{t.User_ExpertCancellations()}: {expertCancelCount}</span>}
-            {userDeclineCount > 0 && <span className="text-warning">{t.User_UserDeclines()}: {userDeclineCount}</span>}
-            {userCancelCount > 0 && <span className="text-danger">{t.User_UserCancellations()}: {userCancelCount}</span>}
+        <div className="admin-ticket-meta">
+            {expertDeclineCount > 0 && <span className="admin-user-count-warning">{t.User_ExpertDeclines()}: {expertDeclineCount}</span>}
+            {expertCancelCount > 0 && <span className="admin-user-count-danger">{t.User_ExpertCancellations()}: {expertCancelCount}</span>}
+            {userDeclineCount > 0 && <span className="admin-user-count-warning">{t.User_UserDeclines()}: {userDeclineCount}</span>}
+            {userCancelCount > 0 && <span className="admin-user-count-danger">{t.User_UserCancellations()}: {userCancelCount}</span>}
         </div>
     );
 };

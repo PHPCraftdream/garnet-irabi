@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {Portal} from '@common/Components/Layout/Portal';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {Slot} from '../../types';
+import type {Slot} from '../../types';
+import {ExpertSlotModalShell} from '../Slot/ExpertSlotModalShell';
 import {BatchSlotWizard} from './BatchSlotWizard';
 
 interface Props {
@@ -13,40 +13,17 @@ interface Props {
     defaultPenaltyPercent: number;
 }
 
-export const BatchSlotModal: React.FC<Props> = ({open, onClose, onSuccess, onError, onConfirm, defaultPenaltyPercent}) => {
+export function BatchSlotModal({open, onClose, onSuccess, onError, onConfirm, defaultPenaltyPercent}: Props) {
     if (!open) return null;
-
     return (
-        <Portal>
-            <div
-                className="fg-modal-overlay"
-                onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-                data-test-id="batch-slot-modal"
-            >
-                <div className="fg-modal-card-flush fg-modal-card-3xl">
-                    <div className="fg-modal-flush-header">
-                        <h3 className="fg-modal-title">{t.Batch_Title()}</h3>
-                        <button
-                            type="button"
-                            className="fg-modal-close-x"
-                            onClick={onClose}
-                            title={t.Action_Close()}
-                            data-test-id="batch-slot-modal-close"
-                        >
-                            &times;
-                        </button>
-                    </div>
-                    <div className="fg-modal-flush-body">
-                        <BatchSlotWizard
-                            onSuccess={onSuccess}
-                            onError={onError}
-                            onConfirm={onConfirm}
-                            onCancel={onClose}
-                            defaultPenaltyPercent={defaultPenaltyPercent}
-                        />
-                    </div>
-                </div>
-            </div>
-        </Portal>
+        <ExpertSlotModalShell title={t.Batch_Title()} testId="batch-slot-modal" size="batch" onClose={onClose}>
+            <BatchSlotWizard
+                onSuccess={onSuccess}
+                onError={onError}
+                onConfirm={onConfirm}
+                onCancel={onClose}
+                defaultPenaltyPercent={defaultPenaltyPercent}
+            />
+        </ExpertSlotModalShell>
     );
-};
+}

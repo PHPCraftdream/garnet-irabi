@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {useEffect, useState} from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {LedgerEntry, AccountBalanceRow, GridConfig, PageResponse} from '../Shell/types';
 import {LedgerSection} from './LedgerSection';
 import {BalancesSection} from './BalancesSection';
@@ -35,8 +35,6 @@ interface Props {
 
 type FinanceTabId = 'finance' | 'balances';
 
-const FINANCE_TAB_IDS: ReadonlyArray<FinanceTabId> = ['finance', 'balances'];
-
 function readTabFromUrl(): FinanceTabId | null {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
@@ -53,106 +51,98 @@ function writeTabToUrl(tab: FinanceTabId): void {
     window.history.pushState(null, '', url.toString());
 }
 
-export const AdminFinanceIsland: React.FC<Props> = ({
-    ledgerPageUrl, ledgerInitialData, ledgerInitialFilterOptions,
-    balancesPageUrl, balancesInitialData, balancesInitialAccountOptions,
-    ledgerGridConfig, balancesGridConfig, userDetailUrl, adjustUrl, canAdjust, initialTab,
-}) => {
-    const [activeMainTab, setActiveMainTab] = useState<FinanceTabId>(initialTab);
+const FINANCE_ICON = <Banknote size={22} aria-hidden="true" />;
 
-    const {userTabs, activeUserTabId, setActiveUserTabId, openUser, closeUser} = useUserTabs();
+type ViewProps = Props & ReturnType<typeof useUserTabs> & {userDetail: React.ContextType<typeof UserDetailContext>};
 
-    // React to back/forward navigation
-    useEffect(() => {
-        const onPop = () => {
-            const tab = readTabFromUrl();
-            if (tab) setActiveMainTab(tab);
-        };
-        window.addEventListener('popstate', onPop);
-        return () => window.removeEventListener('popstate', onPop);
-    }, []);
+class AdminFinanceView extends AntiHookComponent<ViewProps> {
+    private readonly ui = new Carburetor({activeMainTab: this.props.initialTab});
 
-    // Open user tab from #user={id}
-    useEffect(() => {
-        const hash = window.location.hash;
-        if (hash.includes('user=')) {
-            const userId = parseInt(hash.split('user=')[1]?.split('&')[0] || '0', 10);
-            if (userId > 0) {
-                openUser(userId, `#${userId}`);
-                window.history.replaceState(null, '', window.location.pathname + window.location.search);
-            }
-        }
-    }, [openUser]);
+    componentDidMount(): void {
+        super.componentDidMount();
+        window.addEventListener('popstate', this.onPop);
+        this.openDeepLink();
+    }
 
-    const effectiveActiveId: string = activeUserTabId ?? activeMainTab;
+    componentDidUpdate(previous: Readonly<ViewProps>): void {
+        super.componentDidUpdate(previous);
+        if (previous.openUser !== this.props.openUser) this.openDeepLink();
+    }
 
-    const mainTabs: TabDef[] = [
-        {id: 'finance', label: t.Admin_FinanceTab_Finance(), closeable: false},
-        {id: 'balances', label: t.Admin_FinanceTab_Balances(), closeable: false},
-    ];
+    componentWillUnmount(): void {
+        window.removeEventListener('popstate', this.onPop);
+        super.componentWillUnmount();
+    }
 
-    const allTabs: TabDef[] = [...mainTabs, ...userTabs];
+    private readonly onPop = () => {
+        const tab = readTabFromUrl();
+        if (tab) this.ui.setData({activeMainTab: tab});
+    };
 
-    const handleSelect = (id: string) => {
-        if (FINANCE_TAB_IDS.includes(id as FinanceTabId)) {
-            const tab = id as FinanceTabId;
-            setActiveUserTabId(null);
-            setActiveMainTab(tab);
+    private openDeepLink(): void {
+        const {hash, pathname, search} = window.location;
+        if (!hash.includes('user=')) return;
+        const id = parseInt(hash.split('user=')[1]?.split('&')[0] || '0', 10);
+        if (id <= 0 || !Number.isFinite(id)) return;
+        this.props.openUser(id, '#' + id);
+        window.history.replaceState(null, '', pathname + search);
+    }
+
+    private hasUserTab(id: string): boolean {
+        for (const tab of this.props.userTabs) if (tab.id === id) return true;
+        return false;
+    }
+
+    private readonly select = (id: string) => {
+        if (id === 'finance' || id === 'balances') {
+            const tab = id;
+            this.props.setActiveUserTabId(null);
+            this.ui.setData({activeMainTab: tab});
             writeTabToUrl(tab);
-            return;
-        }
-        if (userTabs.find(ut => ut.id === id)) {
-            setActiveUserTabId(id);
-        }
+        } else if (this.hasUserTab(id)) this.props.setActiveUserTabId(id);
     };
 
-    const handleClose = (id: string) => {
-        if (userTabs.find(ut => ut.id === id)) {
-            closeUser(id);
-        }
+    private readonly close = (id: string) => {
+        if (this.hasUserTab(id)) this.props.closeUser(id);
     };
 
-    const showFinance = effectiveActiveId === 'finance';
-    const showBalances = effectiveActiveId === 'balances';
-    const activeUserTab = userTabs.find(ut => ut.id === effectiveActiveId);
+    private renderSection(id: string) {
+        const p = this.props;
+        if (id === 'finance') return <LedgerSection pageUrl={p.ledgerPageUrl} initialData={p.ledgerInitialData}
+            initialFilterOptions={p.ledgerInitialFilterOptions} config={p.ledgerGridConfig} />;
+        if (id === 'balances') return <BalancesSection pageUrl={p.balancesPageUrl} initialData={p.balancesInitialData}
+            initialAccountOptions={p.balancesInitialAccountOptions} config={p.balancesGridConfig} adjustUrl={p.adjustUrl} canAdjust={p.canAdjust} />;
+        for (const tab of p.userTabs) {
+            if (tab.id === id) return <UserDetailTab accountId={tab.tabKind.accountId} detailUrl={p.userDetailUrl || ADMIN_URLS.detailUrl}
+                setFlagUrl={ADMIN_URLS.setFlagUrl} createTicketUrl={ADMIN_URLS.createTicketUrl} />;
+        }
+        return null;
+    }
 
-    return (
-        <UserDetailContext.Provider value={{openUser}}>
-            <PageHeader title={t.Admin_Finance()} icon={<Banknote size={22} aria-hidden="true" />} />
-            <div className="section-soft">
-            <TabNav
-                tabs={allTabs}
-                activeId={effectiveActiveId}
-                onSelect={handleSelect}
-                onClose={handleClose}
-            />
-            {showFinance && (
-                <LedgerSection
-                    pageUrl={ledgerPageUrl}
-                    initialData={ledgerInitialData}
-                    initialFilterOptions={ledgerInitialFilterOptions}
-                    config={ledgerGridConfig}
-                />
-            )}
-            {showBalances && (
-                <BalancesSection
-                    pageUrl={balancesPageUrl}
-                    initialData={balancesInitialData}
-                    initialAccountOptions={balancesInitialAccountOptions}
-                    config={balancesGridConfig}
-                    adjustUrl={adjustUrl}
-                    canAdjust={canAdjust}
-                />
-            )}
-            {activeUserTab && (
-                <UserDetailTab
-                    accountId={activeUserTab.tabKind.accountId}
-                    detailUrl={userDetailUrl || ADMIN_URLS.detailUrl}
-                    setFlagUrl={ADMIN_URLS.setFlagUrl}
-                    createTicketUrl={ADMIN_URLS.createTicketUrl}
-                />
-            )}
-            </div>
-        </UserDetailContext.Provider>
-    );
-};
+    render() {
+        const {activeMainTab} = this.useCarburetor(this.ui);
+        const {activeUserTabId, userTabs, userDetail} = this.props;
+        const activeId = activeUserTabId ?? activeMainTab;
+        const tabs: TabDef[] = [
+            {id: 'finance', label: t.Admin_FinanceTab_Finance(), closeable: false},
+            {id: 'balances', label: t.Admin_FinanceTab_Balances(), closeable: false},
+            ...userTabs,
+        ];
+        return (
+            <UserDetailContext.Provider value={userDetail}>
+                <PageHeader title={t.Admin_Finance()} icon={FINANCE_ICON} />
+                <div className="section-soft">
+                    <TabNav tabs={tabs} activeId={activeId} onSelect={this.select} onClose={this.close} />
+                    {this.renderSection(activeId)}
+                </div>
+            </UserDetailContext.Provider>
+        );
+    }
+}
+
+export function AdminFinanceIsland(props: Props) {
+    const userTabs = useUserTabs();
+    const {openUser} = userTabs;
+    const userDetail = React.useMemo(() => ({openUser}), [openUser]);
+    return <AdminFinanceView {...props} {...userTabs} userDetail={userDetail} />;
+}

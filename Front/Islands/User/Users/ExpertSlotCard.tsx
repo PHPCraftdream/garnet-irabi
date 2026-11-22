@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {translateStatus} from '../../../Common/booking/statusHelpers';
@@ -20,10 +21,10 @@ interface Props {
 }
 
 const SlotCardTitle: React.FC<{slot: SlotLike}> = ({slot}) => (
-    <h5 className="card-title">
+    <h5 className="expert-slot-card-title">
         {formatTs(slot.start_at)}
         {(slot.max_users ?? 1) > 1 && (
-            <span className="badge text-bg-primary ml-2" data-test-id={`slot-group-badge-${slot.id}`}>
+            <span className="profile-slot-group" data-test-id={`slot-group-badge-${slot.id}`}>
                 {t.Slot_GroupBadge([slot.max_users ?? 1])}
             </span>
         )}
@@ -32,41 +33,50 @@ const SlotCardTitle: React.FC<{slot: SlotLike}> = ({slot}) => (
             вовсе. Четвёртый экран подряд, где признак слота решала
             показать сама витрина. */}
         {slotSeatsLeftLine(slot) && (
-            <span className="text-muted text-xs ml-2" data-test-id={`slot-seats-left-${slot.id}`}>
+            <span className="profile-slot-seats" data-test-id={`slot-seats-left-${slot.id}`}>
                 {slotSeatsLeftLine(slot)}
             </span>
         )}
     </h5>
 );
 
-const SlotBookingAction: React.FC<{slot: SlotLike; isOwnProfile: boolean; canBook: boolean; onBook: Props['onBook']}> = ({slot, isOwnProfile, canBook, onBook}) => (
-    <>
-        {/* Забронировать себя нельзя — на своей же странице вместо
-            кнопки стоит пояснение, а не молчание. */}
-        {isOwnProfile && (
-            <span className="text-xs text-muted" data-test-id={`slot-own-${slot.id}`}>{t.Slot_OwnSlot()}</span>
-        )}
-        {/* D-187: на групповом слоте status остаётся 'free', пока есть
-            свободные места, даже если ЭТОТ человек уже записан —
-            страница не знала об этом и предлагала забронировать
-            снова тому, у кого уже есть подтверждённая заявка. */}
-        {!isOwnProfile && slot.booking_status && (
-            <span className="text-xs text-muted" data-test-id={`slot-already-booked-${slot.id}`}>
-                {translateStatus(slot.booking_status)}
-            </span>
-        )}
-        {!isOwnProfile && !slot.booking_status && canBook && (
-            <button
-                type="button"
-                onClick={() => onBook(slot.id)}
-                className="btn btn-primary btn-sm"
-                data-test-id={`slot-book-${slot.id}`}
-            >
-                {t.Slot_Book()}
-            </button>
-        )}
-    </>
-);
+type ActionProps = Pick<Props, 'slot' | 'isOwnProfile' | 'canBook' | 'onBook'>;
+
+class SlotBookingAction extends AntiHookComponent<ActionProps> {
+    private readonly book = () => this.props.onBook(this.props.slot.id);
+
+    render() {
+        const {slot, isOwnProfile, canBook} = this.props;
+        return (
+            <>
+                {/* Забронировать себя нельзя — на своей же странице вместо
+                    кнопки стоит пояснение, а не молчание. */}
+                {isOwnProfile && (
+                    <span className="support-ticket-time" data-test-id={`slot-own-${slot.id}`}>{t.Slot_OwnSlot()}</span>
+                )}
+                {/* D-187: на групповом слоте status остаётся 'free', пока есть
+                    свободные места, даже если ЭТОТ человек уже записан —
+                    страница не знала об этом и предлагала забронировать
+                    снова тому, у кого уже есть подтверждённая заявка. */}
+                {!isOwnProfile && slot.booking_status && (
+                    <span className="support-ticket-time" data-test-id={`slot-already-booked-${slot.id}`}>
+                        {translateStatus(slot.booking_status)}
+                    </span>
+                )}
+                {!isOwnProfile && !slot.booking_status && canBook && (
+                    <button
+                        type="button"
+                        onClick={this.book}
+                        className="profile-slot-book"
+                        data-test-id={`slot-book-${slot.id}`}
+                    >
+                        {t.Slot_Book()}
+                    </button>
+                )}
+            </>
+        );
+    }
+}
 
 /**
  * Занятие на публичной странице преподавателя.
@@ -76,11 +86,11 @@ const SlotBookingAction: React.FC<{slot: SlotLike; isOwnProfile: boolean; canBoo
  */
 export const ExpertSlotCard: React.FC<Props> = ({slot, isOwnProfile, canBook, onBook}) => (
     <div data-test-id={`slot-card-${slot.id}`}>
-        <div className="card">
-            <div className="card-body">
+        <div className="booking-card-shell">
+            <div className="expert-slot-card-body">
                 <SlotCardTitle slot={slot} />
-                <p className="card-text mb-2"><strong>{t.Slot_Cost()}:</strong> {slot.cost} &#8381;</p>
-                <p className="card-text mb-3"><strong>{t.Slot_Type()}:</strong> {slotFormatLine(slot)}</p>
+                <p className="expert-slot-card-meta"><strong>{t.Slot_Cost()}:</strong> {slot.cost} &#8381;</p>
+                <p className="expert-slot-card-meta"><strong>{t.Slot_Type()}:</strong> {slotFormatLine(slot)}</p>
                 <SlotBookingAction slot={slot} isOwnProfile={isOwnProfile} canBook={canBook} onBook={onBook} />
             </div>
         </div>

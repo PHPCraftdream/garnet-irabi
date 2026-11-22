@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {BookingCounts, StatusFilter} from './bookingCardTypes';
 
@@ -19,6 +20,27 @@ interface Props {
     onTogglePast: () => void;
 }
 
+class FilterTab extends AntiHookComponent<{tab: typeof TABS[number]; count: number; selected: boolean; onStatusChange: (s: StatusFilter) => void}> {
+    private readonly select = () => this.props.onStatusChange(this.props.tab.key);
+
+    render() {
+        const {tab, count, selected} = this.props;
+        return (
+            <button
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                className={selected ? 'slot-filter-chip-active' : 'slot-filter-chip'}
+                onClick={this.select}
+                data-test-id={tab.testId}
+            >
+                {tab.label()}
+                <span className={selected ? 'slot-status-count-active' : 'slot-status-count'}>{count}</span>
+            </button>
+        );
+    }
+}
+
 /**
  * Фильтры списка броней.
  *
@@ -32,36 +54,30 @@ export const BookingsFilterTabs: React.FC<Props> = ({
     showPast,
     onStatusChange,
     onTogglePast,
-}) => (
-    <div className="section-soft mb-4">
-        {title && <h2 className="mb-3 text-xl">{title}</h2>}
-        <div className="flex flex-wrap items-center gap-2 mb-0" role="tablist" data-test-id="bookings-filters">
-            {TABS.filter(tab => tab.key === 'all' || counts[tab.key] > 0).map(tab => (
-                <button
-                    key={tab.key}
-                    type="button"
-                    role="tab"
-                    aria-selected={statusFilter === tab.key}
-                    className={`chip ${statusFilter === tab.key ? 'chip-active' : ''}`}
-                    onClick={() => onStatusChange(tab.key)}
-                    data-test-id={tab.testId}
-                >
-                    {tab.label()}
-                    <span className="chip-count">{counts[tab.key]}</span>
-                </button>
-            ))}
+}) => {
+    const tabs: React.ReactNode[] = [];
+    for (const tab of TABS) {
+        if (tab.key !== 'all' && counts[tab.key] <= 0) continue;
+        tabs.push(<FilterTab key={tab.key} tab={tab} count={counts[tab.key]} selected={statusFilter === tab.key} onStatusChange={onStatusChange} />);
+    }
+    return (
+    <div className="section-soft" data-bookings-filters>
+        {title && <h2>{title}</h2>}
+        <div className="booking-card-filter-row" role="tablist" data-test-id="bookings-filters">
+            {tabs}
             {(showPast || counts.past > 0) && (
                 <button
                     type="button"
-                    className={`chip ${showPast ? 'chip-active' : ''} ml-auto`}
+                    className={showPast ? 'slot-filter-chip-active' : 'slot-filter-chip'} data-bookings-past
                     onClick={onTogglePast}
                     data-test-id="bookings-toggle-past"
                     aria-pressed={showPast}
                 >
                     {showPast ? t.Bookings_HidePast() : t.Bookings_ShowPast()}
-                    {!showPast && counts.past > 0 && <span className="chip-count">{counts.past}</span>}
+                    {!showPast && counts.past > 0 && <span className="slot-status-count">{counts.past}</span>}
                 </button>
             )}
         </div>
     </div>
-);
+    );
+};

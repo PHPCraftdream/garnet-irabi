@@ -1,6 +1,5 @@
 import * as React from 'react';
-import {useRef, useState} from 'react';
-import {useBodyScrollLock} from '@common/hooks/ui/useBodyScrollLock';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {AttachmentAddRow} from './AttachmentAddRow';
@@ -20,6 +19,16 @@ interface Props {
     onChange: (files: PendingFile[]) => void;
     maxFiles?: number;
     accept?: string;
+}
+
+interface PickerSelectionData {
+    index: number | null;
+}
+
+class PickerSelection extends Carburetor<PickerSelectionData> {
+    public readonly setIndex = (index: number | null): void => {
+        this.setData({index});
+    };
 }
 
 /**
@@ -53,48 +62,77 @@ function refusalFor(file: File): string | null {
     return null;
 }
 
+const addPreviewIndex = (file: PendingFile, index: number) => ({...file, index});
+const hasPreview = (file: PendingFile) => !!file.preview;
+
 interface AttachmentThumbsProps {
     files: PendingFile[];
     onOpen: (index: number) => void;
     onRemove: (index: number) => void;
 }
 
-const AttachmentThumbs: React.FC<AttachmentThumbsProps> = ({files, onOpen, onRemove}) => (
-    <div className="common-pick-grid">
-        {files.map((f, i) => (
-            <AttachmentTile key={f.id} file={f} index={i} onOpen={onOpen} onRemove={onRemove} />
-        ))}
-    </div>
-);
+class AttachmentThumbs extends React.Component<AttachmentThumbsProps> {
+    private readonly renderTile = (file: PendingFile, index: number) => (
+        <AttachmentTile key={file.id} file={file} index={index} onOpen={this.props.onOpen} onRemove={this.props.onRemove} />
+    );
 
-export default function AttachmentPicker({files, onChange, maxFiles = MAX_ATTACHMENTS, accept}: Props) {
-    const inputRef = useRef<HTMLInputElement>(null);
-    const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-    useBodyScrollLock(lightboxIndex !== null);
+    public render() {
+        return <div className="pick-file-grid">{this.props.files.map(this.renderTile)}</div>;
+    }
+}
 
-    const addFiles = (newFiles: FileList | File[]) => {
+export default class AttachmentPicker extends AntiHookComponent<Props> {
+    private readonly inputRef = React.createRef<HTMLInputElement>();
+    private readonly selection = new PickerSelection({index: null});
+    private unlockBody: (() => void) | undefined;
+
+    public componentDidMount(): void {
+        super.componentDidMount();
+        this.syncBodyLock();
+    }
+
+    public componentDidUpdate(previousProps: Readonly<Props>): void {
+        super.componentDidUpdate(previousProps);
+        this.syncBodyLock();
+    }
+
+    public componentWillUnmount(): void {
+        this.unlockBody?.();
+        this.unlockBody = undefined;
+        super.componentWillUnmount();
+    }
+
+    private syncBodyLock(): void {
+        const locked = this.selection.getData().index !== null;
+        if (locked && !this.unlockBody) {
+            const previousOverflow = document.body.style.overflow;
+            document.body.style.overflow = 'hidden';
+            this.unlockBody = () => { document.body.style.overflow = previousOverflow; };
+        } else if (!locked && this.unlockBody) {
+            this.unlockBody();
+            this.unlockBody = undefined;
+        }
+    }
+
+    private readonly addFiles = (newFiles: FileList | File[]) => {
+        const {files, onChange} = this.props;
+        const maxFiles = this.props.maxFiles === undefined ? MAX_ATTACHMENTS : this.props.maxFiles;
         const picked = Array.from(newFiles);
         const remaining = maxFiles - files.length;
         const pending: PendingFile[] = [];
-
         const overflow: string[] = [];
 
         for (const file of picked) {
             const refusal = refusalFor(file);
-
             if (refusal !== null) {
                 showToast(refusal, 'danger');
-
                 continue;
             }
-
             if (pending.length >= remaining) {
                 overflow.push(file.name);
-
                 continue;
             }
-
-            const entry: PendingFile = { id: crypto.randomUUID(), file, name: file.name };
+            const entry: PendingFile = {id: crypto.randomUUID(), file, name: file.name};
             if (file.type.startsWith('image/')) {
                 entry.preview = URL.createObjectURL(file);
             }
@@ -102,57 +140,61 @@ export default function AttachmentPicker({files, onChange, maxFiles = MAX_ATTACH
         }
 
         if (overflow.length > 0) {
-            // Naming them matters once there is more than one: "the rest were
-            // skipped" leaves the sender guessing which of the six went.
             showToast(t.Attach_TooMany([maxFiles, overflow.join(', ')]), 'warning');
         }
-
-        if (inputRef.current) inputRef.current.value = '';
+        if (this.inputRef.current) this.inputRef.current.value = '';
         if (pending.length === 0) return;
-
         onChange([...files, ...pending]);
     };
 
-    const remove = (index: number) => {
+    private readonly remove = (index: number) => {
+        const {files, onChange} = this.props;
+        const lightboxIndex = this.selection.getData().index;
         const next = [...files];
         const removed = next.splice(index, 1);
-        for (const f of removed) {
-            if (f.preview) URL.revokeObjectURL(f.preview);
+        for (const file of removed) {
+            if (file.preview) URL.revokeObjectURL(file.preview);
         }
         onChange(next);
-        if (lightboxIndex === index) setLightboxIndex(null);
+        if (lightboxIndex === index) this.selection.setIndex(null);
     };
 
-    // Images with previews for lightbox navigation
-    const previewFiles = files.map((f, i) => ({...f, index: i})).filter(f => f.preview);
+    private readonly openPicker = () => this.inputRef.current?.click();
+    private readonly closeLightbox = () => this.selection.setIndex(null);
+    private readonly removeCurrent = () => {
+        const index = this.selection.getData().index;
+        if (index !== null) this.remove(index);
+    };
 
-    return (
-        <div>
-            {/* Thumbnails */}
-            {files.length > 0 && <AttachmentThumbs files={files} onOpen={setLightboxIndex} onRemove={remove} />}
+    public render() {
+        const {files, accept} = this.props;
+        const maxFiles = this.props.maxFiles === undefined ? MAX_ATTACHMENTS : this.props.maxFiles;
+        const {index} = this.useCarburetor(this.selection);
+        const previewFiles = files.map(addPreviewIndex).filter(hasPreview);
 
-            {/* Add button */}
-            {files.length < maxFiles && (
-                <AttachmentAddRow
-                    inputRef={inputRef}
-                    accept={accept}
-                    onFiles={addFiles}
-                    count={files.length}
-                    maxFiles={maxFiles}
-                    onPick={() => inputRef.current?.click()}
-                    hint={t.Attach_Hint([maxFiles, MAX_FILE_SIZE_MB])}
+        return (
+            <div>
+                {files.length > 0 && <AttachmentThumbs files={files} onOpen={this.selection.setIndex} onRemove={this.remove} />}
+                {files.length < maxFiles && (
+                    <AttachmentAddRow
+                        inputRef={this.inputRef}
+                        accept={accept}
+                        onFiles={this.addFiles}
+                        count={files.length}
+                        maxFiles={maxFiles}
+                        onPick={this.openPicker}
+                        hint={t.Attach_Hint([maxFiles, MAX_FILE_SIZE_MB])}
+                    />
+                )}
+                <AttachmentLightbox
+                    current={index !== null ? files[index] : null}
+                    previewFiles={previewFiles}
+                    currentIndex={index ?? -1}
+                    onNavigate={this.selection.setIndex}
+                    onRemove={this.removeCurrent}
+                    onClose={this.closeLightbox}
                 />
-            )}
-
-            {/* Lightbox */}
-            <AttachmentLightbox
-                current={lightboxIndex !== null ? files[lightboxIndex] : null}
-                previewFiles={previewFiles}
-                currentIndex={lightboxIndex ?? -1}
-                onNavigate={setLightboxIndex}
-                onRemove={() => { if (lightboxIndex !== null) remove(lightboxIndex); }}
-                onClose={() => setLightboxIndex(null)}
-            />
-        </div>
-    );
+            </div>
+        );
+    }
 }

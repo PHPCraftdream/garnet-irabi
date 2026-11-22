@@ -1,0 +1,36 @@
+@reference "tailwindcss";
+
+@theme inline reference {
+  /* carburetor-disable-next-line valid-color-role */
+  --color-expertfilter-edge: var(--color-border);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-expertfilter-ink: var(--color-text-secondary);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-expertfilter-wash-hover: var(--color-bg-surface-hover);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-expertactive-edge: var(--color-accent);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-expertactive-ink: var(--color-accent-text);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-expertactive-wash: var(--color-accent);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-expertactive-wash-hover: var(--color-accent-hover);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-expertactive-wash-focus: var(--color-accent-hover);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-expertactive-wash-active: var(--color-accent-hover);
+}
+
+@utility tone-expertfilter-outlined { @apply border-expertfilter-edge text-expertfilter-ink hover:bg-expertfilter-wash-hover; }
+@utility tone-expertactive-outlined { @apply border-expertactive-edge bg-expertactive-wash text-expertactive-ink [&:hover]:bg-expertactive-wash-hover [&:focus]:bg-expertactive-wash-focus [&:active]:bg-expertactive-wash-active; }
+@utility shape-expert-calendar-filters { @apply mb-2; }
+@utility layout-expert-calendar-filters { @apply flex gap-1; }
+@utility shape-expert-calendar-status { @apply px-2.5 py-1 rounded border; }
+@utility type-expert-calendar-status { @apply text-xs; }
+@utility motion-expert-calendar-status { @apply transition-colors; }
+
+@layer components {
+  .expert-calendar-filters { @apply shape-expert-calendar-filters layout-expert-calendar-filters tone-filterneutral-plain; }
+  .expert-calendar-status-button { @apply shape-expert-calendar-status type-expert-calendar-status motion-expert-calendar-status tone-expertfilter-outlined; }
+  .expert-calendar-status-active { @apply shape-expert-calendar-status type-expert-calendar-status motion-expert-calendar-status tone-expertactive-outlined; }
+}

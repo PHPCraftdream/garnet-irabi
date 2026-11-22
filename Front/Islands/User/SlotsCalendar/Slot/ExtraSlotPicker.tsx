@@ -1,26 +1,32 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {formatDateShort, formatTime} from '@common/Utils/Time/DateUtils';
-import {SlotItem} from '../types';
+import type {SlotItem} from '../types';
 
-const slotEnd = (s: SlotItem): number => s.end_at || (s.start_at + (s.duration_min || 60) * 60);
+interface OptionProps {
+    slot: SlotItem;
+    checked: boolean;
+    onToggle: (id: number) => void;
+}
 
-const ExtraSlotOption: React.FC<{slot: SlotItem; checked: boolean; onToggle: (id: number) => void}> = ({
-    slot,
-    checked,
-    onToggle,
-}) => (
-    <label
-        className={`flex items-center gap-2 p-2 rounded cursor-pointer text-sm ${checked ? 'bg-accent-subtle' : 'hover:bg-surface-hover'}`}
-        data-test-id={`booking-extra-slot-${slot.id}`}
-    >
-        <input type="checkbox" checked={checked} onChange={() => onToggle(slot.id)} className="accent-theme" />
-        <span className="flex-1">
-            {formatDateShort(slot.start_at)}, {formatTime(slot.start_at)} — {formatTime(slotEnd(slot))}
-        </span>
-        <span className="font-medium">{slot.cost} &#8381;</span>
-    </label>
-);
+class ExtraSlotOption extends AntiHookComponent<OptionProps> {
+    private readonly toggle = () => this.props.onToggle(this.props.slot.id);
+
+    render() {
+        const {slot, checked} = this.props;
+        const end = slot.end_at || (slot.start_at + (slot.duration_min || 60) * 60);
+        return (
+            <label className="booking-extra-option" data-selected={checked} data-test-id={`booking-extra-slot-${slot.id}`}>
+                <input type="checkbox" checked={checked} onChange={this.toggle} className="booking-extra-check" />
+                <span className="booking-extra-time">
+                    {formatDateShort(slot.start_at)}, {formatTime(slot.start_at)} — {formatTime(end)}
+                </span>
+                <span className="booking-extra-price">{slot.cost} &#8381;</span>
+            </label>
+        );
+    }
+}
 
 interface Props {
     slots: SlotItem[];
@@ -28,23 +34,16 @@ interface Props {
     onToggle: (id: number) => void;
 }
 
-/**
- * Другие занятия того же преподавателя — чтобы записаться сразу на несколько.
- *
- * Показывается только когда есть из чего выбирать: пустой блок с заголовком
- * «Другие занятия» обещает то, чего нет.
- */
-export const ExtraSlotPicker: React.FC<Props> = ({slots, selected, onToggle}) => {
+export function ExtraSlotPicker({slots, selected, onToggle}: Props) {
     if (slots.length === 0) return null;
-
+    const options: React.ReactNode[] = [];
+    for (const slot of slots) {
+        options.push(<ExtraSlotOption key={slot.id} slot={slot} checked={selected.has(slot.id)} onToggle={onToggle} />);
+    }
     return (
-        <div className="mb-4">
-            <div className="text-sm font-medium text-secondary mb-2">{t.Booking_OtherSlots()}:</div>
-            <div className="space-y-1 max-h-48 overflow-y-auto">
-                {slots.map(s => (
-                    <ExtraSlotOption key={s.id} slot={s} checked={selected.has(s.id)} onToggle={onToggle} />
-                ))}
-            </div>
+        <div className="booking-extra-picker">
+            <div className="booking-extra-title">{t.Booking_OtherSlots()}:</div>
+            <div className="booking-extra-list">{options}</div>
         </div>
     );
-};
+}

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {ImConversation} from '../imTypes';
+import type {ImConversation} from '../imTypes';
 import {ConversationRow} from './ConversationRow';
 
 interface Props {
@@ -10,32 +10,30 @@ interface Props {
     onNewMessage: () => void;
 }
 
-/** Список диалогов, свежие сверху. */
+function compareByLastMessage(left: ImConversation, right: ImConversation): number {
+    return right.last_message_at - left.last_message_at;
+}
+
 export default function ConversationList({conversations, selectedId, onSelectConversation, onNewMessage}: Props) {
-    const sorted = [...conversations].sort((a, b) => b.last_message_at - a.last_message_at);
+    // Сортируем копию, не меняя порядок в состоянии острова.
+    const sorted = [...conversations];
+    // oxlint-disable-next-line unicorn/no-array-sort
+    sorted.sort(compareByLastMessage);
+    const rows: React.ReactNode[] = [];
+    for (const conv of sorted) {
+        rows.push(<ConversationRow key={conv.id} conv={conv} active={selectedId === conv.id} onSelect={onSelectConversation} />);
+    }
 
     return (
-        <div className="support-list-panel" data-test-id="im-conversation-list">
-            <div className="im-list-header">
-                <button
-                    type="button"
-                    data-test-id="im-new-message-btn"
-                    className="support-new-btn"
-                    onClick={onNewMessage}
-                >
+        <div className="im-conversation-list" data-test-id="im-conversation-list">
+            <div className="im-conversation-list-header">
+                <button type="button" data-test-id="im-new-message-btn" className="im-conversation-create" onClick={onNewMessage}>
                     + {t.IM_NewMessage()}
                 </button>
             </div>
             <div className="support-list-scroll">
-                {sorted.length === 0 && <div className="support-empty">{t.IM_NoConversations()}</div>}
-                {sorted.map(conv => (
-                    <ConversationRow
-                        key={conv.id}
-                        conv={conv}
-                        active={selectedId === conv.id}
-                        onSelect={onSelectConversation}
-                    />
-                ))}
+                {rows.length === 0 && <div className="support-empty">{t.IM_NoConversations()}</div>}
+                {rows}
             </div>
         </div>
     );

@@ -32,27 +32,29 @@ const MeetingLine: React.FC<{booking: BookingItem}> = ({booking}) => {
     const isUrl = /^https?:\/\//i.test(booking.location);
 
     return (
-        <div className="text-xs text-muted mt-0.5 truncate">
+        <div className="user-dash-meeting">
             {isUrl
-                ? <ExternalLink href={booking.location} className="text-accent hover:underline">{booking.location}</ExternalLink>
+                ? <ExternalLink href={booking.location} className="user-dash-link">{booking.location}</ExternalLink>
                 : booking.location}
         </div>
     );
 };
 
+const stopPropagation = (event: React.MouseEvent) => event.stopPropagation();
+
 const BookingRow: React.FC<{booking: BookingItem}> = ({booking}) => (
-    <div className="booking-row" data-test-id={`upcoming-booking-${booking.id}`}>
-        <div className="min-w-0 flex-1">
-            <div className="text-sm font-medium text-on-surface">{booking.label}</div>
-            <div className="text-sm text-muted">
+    <div data-test-id={`upcoming-booking-${booking.id}`}>
+        <div className="user-dash-row-main">
+            <div className="user-dash-row-title">{booking.label}</div>
+            <div className="user-dash-row-meta">
                 {booking.expert_id > 0
                     ? (
                         <UserLink
                             id={booking.expert_id}
                             name={booking.expert_name}
                             isExpert
-                            className="text-accent hover:underline"
-                            onClick={e => e.stopPropagation()}
+                            className="user-dash-link"
+                            onClick={stopPropagation}
                         />
                     )
                     : booking.expert_name}
@@ -65,23 +67,25 @@ const BookingRow: React.FC<{booking: BookingItem}> = ({booking}) => (
 );
 
 /** Ближайшие занятия ученика. */
+function renderRow(b: BookingItem) { return <BookingRow key={b.id} booking={b} />; }
+
 export const UpcomingBookings: React.FC<{bookings: BookingItem[]}> = ({bookings}) => (
     <div data-test-id="upcoming-bookings">
-        <div className="section-header-row">
-            <h2 className="section-heading mb-0">{t.Dash_Upcoming()}</h2>
+        <div className="user-dash-section-header">
+            <h2 className="user-dash-section-heading">{t.Dash_Upcoming()}</h2>
             {bookings.length > 0 && (
-                <a href={appUrl('/bookings')} className="view-all-link">{t.Dash_ViewAll()}</a>
+                <a href={appUrl('/bookings')} className="user-dash-view-all">{t.Dash_ViewAll()}</a>
             )}
         </div>
         {bookings.length === 0 && (
-            <div className="empty-state-card">
-                <p className="text-muted mb-1 font-medium">{t.Dash_StartLearning()}</p>
-                <a href={appUrl('/slots')} className="btn btn-primary btn-sm">{t.Menu_BrowseSlots()}</a>
+            <div className="empty-state-card" data-user-dash-empty>
+                <p className="user-dash-empty-label">{t.Dash_StartLearning()}</p>
+                <a href={appUrl('/slots')} className="primary-action-button" data-user-dash-compact="true">{t.Menu_BrowseSlots()}</a>
             </div>
         )}
         {bookings.length > 0 && (
-            <div className="space-y-2">
-                {bookings.map(b => <BookingRow key={b.id} booking={b} />)}
+            <div className="user-dash-list">
+                {bookings.map(renderRow)}
             </div>
         )}
     </div>

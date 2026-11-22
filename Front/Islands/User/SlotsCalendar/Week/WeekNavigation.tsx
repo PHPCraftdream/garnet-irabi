@@ -44,13 +44,11 @@ export const WeekNavigation: React.FC<WeekNavigationProps> = ({weekStartUnix, we
     const nowSec = Math.floor(Date.now() / 1000);
     const isCurrentWeek = nowSec >= weekStartUnix && nowSec < weekEndUnix;
 
-    const navBtn = "btn-icon-round";
-
     return (
-        <div className="grid grid-cols-3 items-center gap-3 mb-4" data-test-id="week-navigation">
-            <div className="flex items-center gap-2 min-w-0">
+        <div className="calendar-week-pager" data-test-id="week-navigation">
+            <div className="calendar-pager-side">
                 <button
-                    className={navBtn}
+                    className="calendar-pager-arrow"
                     onClick={onPrev}
                     title={t.Slots_PrevWeek()}
                     aria-label={t.Slots_PrevWeek()}
@@ -61,15 +59,15 @@ export const WeekNavigation: React.FC<WeekNavigationProps> = ({weekStartUnix, we
                 {prevCounts && <CalendarPagerCounts items={prevCounts} side="prev" />}
             </div>
 
-            <div className="flex flex-col items-center gap-1 min-w-0">
+            <div className="calendar-pager-center">
                 {weekCounts && <CalendarPagerCounts items={weekCounts} side="now" />}
-                <div className="flex items-center gap-2 flex-wrap justify-center">
-                    <span className="text-sm font-semibold text-on-surface first-letter:uppercase">
+                <div className="calendar-pager-range">
+                    <span className="calendar-week-title">
                         {formatRange(weekStartUnix, weekEndUnix)}
                     </span>
                     {!isCurrentWeek && (
                         <button
-                            className="chip"
+                            className="slot-filter-chip"
                             onClick={onToday}
                             title={t.Slots_Today()}
                             data-test-id="week-today"
@@ -80,10 +78,10 @@ export const WeekNavigation: React.FC<WeekNavigationProps> = ({weekStartUnix, we
                 </div>
             </div>
 
-            <div className="flex items-center gap-2 min-w-0 justify-end">
+            <div className="calendar-pager-next">
                 {nextCounts && <CalendarPagerCounts items={nextCounts} side="next" />}
                 <button
-                    className={navBtn}
+                    className="calendar-pager-arrow"
                     onClick={onNext}
                     title={t.Slots_NextWeek()}
                     aria-label={t.Slots_NextWeek()}

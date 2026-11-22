@@ -13,13 +13,13 @@ const COLUMNS = [
     () => t.Comment_Actions(),
 ];
 
-const CommentsTableHead: React.FC = () => (
-    <thead>
-        <tr className="border-b border-subtle">
-            {COLUMNS.map((label, i) => <th key={i} className="text-left p-3">{label()}</th>)}
-        </tr>
-    </thead>
-);
+function renderHeading(label: () => string, index: number) {
+    return <th key={index} className="admin-grid-heading">{label()}</th>;
+}
+
+function CommentsTableHead() {
+    return <thead><tr>{COLUMNS.map(renderHeading)}</tr></thead>;
+}
 
 interface Props {
     items: AdminCommentRow[];
@@ -29,15 +29,17 @@ interface Props {
     onToggleHidden: (row: AdminCommentRow, hide: boolean) => void;
 }
 
-export const CommentsTable: React.FC<Props> = ({items, ...handlers}) => (
-    <div className="card">
-        <div className="overflow-x-auto">
-            <table className="admin-table">
-                <CommentsTableHead />
-                <tbody>
-                    {items.map(row => <CommentTableRow key={row.id} row={row} {...handlers} />)}
-                </tbody>
-            </table>
+export function CommentsTable({items, ...handlers}: Props) {
+    const rows: React.ReactNode[] = [];
+    for (const row of items) rows.push(<CommentTableRow key={row.id} row={row} {...handlers} />);
+    return (
+        <div className="booking-card-shell">
+            <div className="token-table-scroll">
+                <table className="admin-table">
+                    <CommentsTableHead />
+                    <tbody>{rows}</tbody>
+                </table>
+            </div>
         </div>
-    </div>
-);
+    );
+}

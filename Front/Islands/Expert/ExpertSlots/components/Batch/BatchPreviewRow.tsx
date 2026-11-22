@@ -1,8 +1,10 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {DateInput} from '@common/Components/ui/DateInput';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 import {DurationSelect} from '@common/Components/Controls/DurationSelect';
 import {ExistingItem, ProposedSlot} from '../../types';
+import {BatchPreviewWarnings} from './BatchPreviewWarnings';
 
 export interface RowWarnings {
     existingOverlap: boolean;
@@ -11,35 +13,13 @@ export interface RowWarnings {
     pastDate: boolean;
 }
 
-/**
- * Значки предупреждений.
- *
- * Их четыре, и они разные: пересечение с уже созданным занятием, пересечение с
- * другой строкой этой же партии, дата вне выбранного периода и дата в прошлом.
- * Один общий значок «что-то не так» заставлял бы гадать, что именно.
- */
-const Warnings: React.FC<RowWarnings> = ({existingOverlap, proposedOverlap, outOfRange, pastDate}) => (
-    <>
-        {existingOverlap && <span className="badge status-warning mr-1" title={t.Batch_Overlap()}>&#9888;</span>}
-        {proposedOverlap && <span className="badge status-warning mr-1" title={t.Batch_ProposedOverlap()}>&#9888;</span>}
-        {outOfRange && <span className="badge status-warning mr-1" title={t.Batch_DateOutOfRange()}>&#9888;</span>}
-        {pastDate && <span className="badge status-warning mr-1" title={t.Batch_PastDate()}>&#9888;</span>}
-    </>
-);
-
-const DayItems: React.FC<{items: ExistingItem[]; format: (item: ExistingItem) => string}> = ({items, format}) => (
-    <>
-        {items.map(item => (
-            <span
-                key={`${item.time}-${item.duration_min}`}
-                className="badge bg-secondary mr-1 mb-1"
-                style={{fontSize: '0.7rem'}}
-            >
-                {format(item)}
-            </span>
-        ))}
-    </>
-);
+function DayItems({items, format}: {items: ExistingItem[]; format: (item: ExistingItem) => string}) {
+    const badges: React.ReactNode[] = [];
+    for (const item of items) {
+        badges.push(<span key={`${item.time}-${item.duration_min}`} className="batch-preview-existing">{format(item)}</span>);
+    }
+    return <>{badges}</>;
+}
 
 interface Props {
     slot: ProposedSlot;
@@ -58,66 +38,91 @@ interface Props {
 }
 
 /** Одна предлагаемая строка в партии создаваемых занятий. */
-export const BatchPreviewRow: React.FC<Props> = ({
-    slot,
-    index,
-    weekday,
-    hebrewDate,
-    startDate,
-    endDate,
-    dayItems,
-    warnings,
-    formatExistingItem,
-    onDateChange,
-    onTimeChange,
-    onDurationChange,
-    onRemove,
-}) => {
-    const hasWarning = warnings.existingOverlap || warnings.proposedOverlap || warnings.outOfRange || warnings.pastDate;
+export class BatchPreviewRow extends AntiHookComponent<Props> {
+    private readonly changeDate = (event: React.ChangeEvent<HTMLInputElement>) => {
+        this.props.onDateChange(this.props.index, event.target.value);
+    };
 
-    return (
-        <tr data-index={index} className={hasWarning ? 'table-warning' : ''}>
-            <td>
-                <span className="text-muted text-xs mr-1">{weekday}</span>
+    private readonly changeTime = (event: React.ChangeEvent<HTMLInputElement>) => {
+        this.props.onTimeChange(this.props.index, event.target.value);
+    };
+
+    private readonly changeDuration = (value: number) => {
+        this.props.onDurationChange(this.props.index, value);
+    };
+
+    private readonly remove = () => this.props.onRemove(this.props.index);
+
+    private renderDate() {
+        const {slot, index, weekday, startDate, endDate} = this.props;
+        return (
+            <td className="batch-preview-cell">
+                <span className="batch-preview-weekday">{weekday}</span>
                 <DateInput
-                    className="form-control-sm inline-block"
+                    className="batch-preview-date-input"
                     value={slot.date}
                     min={startDate}
                     max={endDate}
                     data-index={index}
-                    onChange={e => onDateChange(index, e.target.value)}
+                    onChange={this.changeDate}
                 />
             </td>
-            <td>{hebrewDate}</td>
-            <td>
+        );
+    }
+
+    private renderTime() {
+        const {slot, index} = this.props;
+        return (
+            <td className="batch-preview-cell">
                 <DateInput
                     type="time"
-                    className="form-control-sm slot-time-input"
+                    className="slot-time-input"
                     value={slot.time}
                     data-index={index}
-                    onChange={e => onTimeChange(index, e.target.value)}
+                    onChange={this.changeTime}
                 />
             </td>
-            <td>
+        );
+    }
+
+    private renderDuration() {
+        const {slot} = this.props;
+        return (
+            <td className="batch-preview-cell">
                 <DurationSelect
                     value={slot.duration}
-                    onChange={v => onDurationChange(index, v)}
-                    className="form-select form-select-sm slot-duration-select"
+                    onChange={this.changeDuration}
+                    variant="compact"
+                    data-test-id="slot-duration-select"
                 />
             </td>
-            <td><DayItems items={dayItems} format={formatExistingItem} /></td>
-            <td>
-                <Warnings {...warnings} />
-                <button
-                    type="button"
-                    className="btn btn-sm btn-outline-danger slot-remove-btn"
-                    title={t.Action_Remove()}
-                    data-index={index}
-                    onClick={() => onRemove(index)}
-                >
-                    &times;
-                </button>
-            </td>
-        </tr>
-    );
-};
+        );
+    }
+
+    render() {
+        const {index, hebrewDate, dayItems, warnings, formatExistingItem} = this.props;
+        const hasWarning = warnings.existingOverlap || warnings.proposedOverlap || warnings.outOfRange || warnings.pastDate;
+
+        return (
+            <tr data-index={index} className={hasWarning ? 'batch-preview-row-warning' : undefined}>
+                {this.renderDate()}
+                <td className="batch-preview-cell">{hebrewDate}</td>
+                {this.renderTime()}
+                {this.renderDuration()}
+                <td className="batch-preview-cell"><DayItems items={dayItems} format={formatExistingItem} /></td>
+                <td className="batch-preview-cell">
+                    <BatchPreviewWarnings {...warnings} />
+                    <button
+                        type="button"
+                        className="slot-remove-btn"
+                        title={t.Action_Remove()}
+                        data-index={index}
+                        onClick={this.remove}
+                    >
+                        &times;
+                    </button>
+                </td>
+            </tr>
+        );
+    }
+}

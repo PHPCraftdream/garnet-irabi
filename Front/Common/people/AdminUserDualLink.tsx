@@ -19,18 +19,21 @@ export const AdminUserDualLink: React.FC<{
     dataTestId?: string;
 }> = ({id, name, className = '', dataTestId}) => {
     if (!id || id <= 0) {
+        // Совместимость с переданным классом ссылки.
+        // carburetor-disable-next-line require-function-class
         return <span className={className}>{name || '—'}</span>;
     }
     return (
-        <span className={`common-entity-link ${className}`}>
+        // carburetor-disable-next-line require-function-class
+        <span className={`entity-person-group ${className}`}>
             <a
                 href={appUrl(`/user/id~${id}`)}
-                className="common-link"
+                className="entity-person-link"
                 data-test-id={dataTestId}
             >{name || `#${id}`}</a>
             <a
                 href={appUrl(`/admin/#user=${id}`)}
-                className="common-link-admin-tag"
+                className="entity-person-admin"
                 title={t.Admin_PublicProfile()}
                 aria-label={t.Admin_Users()}
             >

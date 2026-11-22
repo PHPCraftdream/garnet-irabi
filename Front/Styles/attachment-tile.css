@@ -1,0 +1,31 @@
+@custom-variant pick-tile-hover {
+  @media (hover: hover) {
+    &:is(:where(.pick-file-tile):hover *, :where(.group):hover *) { @slot; }
+  }
+}
+
+@utility tone-attachment-border { @apply border-attachment-edge; }
+@utility tone-attachment-caption { @apply bg-attachment-wash text-attachment-ink; }
+@utility tone-pickdanger-caption { @apply bg-pickdanger-wash text-pickdanger-ink; }
+@utility shape-pick-grid { @apply mb-2; }
+@utility layout-pick-grid { @apply flex flex-wrap gap-2; }
+@utility shape-pick-tile { @apply border rounded; }
+@utility layout-pick-tile { @apply relative overflow-hidden; }
+@utility behavior-pick-tile { @apply cursor-pointer; }
+@utility shape-pick-tile-image { @apply w-full h-full object-cover; }
+@utility shape-pick-tile-fallback { @apply w-full h-full p-1; }
+@utility layout-pick-tile-fallback { @apply flex items-center justify-center; }
+@utility type-pick-tile-fallback { @apply text-xs text-center; }
+@utility shape-pick-tile-remove { @apply rounded-bl px-1.5 py-0.5; }
+@utility layout-pick-tile-remove { @apply absolute top-0 right-0; }
+@utility type-pick-tile-remove { @apply text-xs; }
+@utility effect-pick-tile-remove { @apply opacity-0 pick-tile-hover:opacity-100; }
+@utility motion-pick-tile-remove { @apply transition-opacity; }
+
+@layer components {
+  .pick-file-grid { @apply shape-pick-grid layout-pick-grid tone-neutral-plain; }
+  .pick-file-tile { @apply shape-pick-tile layout-pick-tile behavior-pick-tile tone-attachment-border; }
+  .pick-tile-image { @apply shape-pick-tile-image tone-neutral-plain; }
+  .pick-tile-fallback { @apply shape-pick-tile-fallback layout-pick-tile-fallback type-pick-tile-fallback tone-attachment-caption; }
+  .pick-tile-remove { @apply shape-pick-tile-remove layout-pick-tile-remove type-pick-tile-remove effect-pick-tile-remove motion-pick-tile-remove tone-pickdanger-caption; }
+}

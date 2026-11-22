@@ -1,7 +1,8 @@
 import * as React from 'react';
-import {useMemo} from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {ProposedSlot, ExistingItem} from '../../types';
 import {BatchPreviewRow} from './BatchPreviewRow';
+import {findExistingOverlap, findProposedOverlap, isDateInPast} from './BatchSlotsState';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 import {IGarnetWindow} from '@common/Support/Models';
 
@@ -55,12 +56,10 @@ function formatHebrewDate(dateStr: string): string {
 }
 
 interface Props {
-    slots: ProposedSlot[];
+    slots: readonly ProposedSlot[];
+    existingSlots: readonly ExistingItem[];
     startDate: string;
     endDate: string;
-    hasOverlap: (date: string, time: string, duration: number) => boolean;
-    hasProposedOverlap: (date: string, time: string, duration: number, excludeIndex: number) => boolean;
-    getDayItems: (date: string) => ExistingItem[];
     onDateChange: (index: number, date: string) => void;
     onTimeChange: (index: number, time: string) => void;
     onDurationChange: (index: number, duration: number) => void;
@@ -71,65 +70,84 @@ function formatExistingItem(item: ExistingItem): string {
     return `${item.time} ${t.Slot_Label()} (${item.duration_min} ${t.Slot_Duration_Min()})`;
 }
 
-function isDateInPast(date: string, time: string): boolean {
-    const now = new Date();
-    const slotDate = new Date(date + 'T' + (time || '00:00'));
-    return slotDate < now;
-}
-
 function isDateInRange(date: string, startDate: string, endDate: string): boolean {
     if (!startDate || !endDate || !date) return true;
     return date >= startDate && date <= endDate;
 }
 
-export const BatchPreviewTable: React.FC<Props> = ({slots, startDate, endDate, hasOverlap, hasProposedOverlap, getDayItems, onDateChange, onTimeChange, onDurationChange, onRemove}) => {
-    const hebrewDates = useMemo(() => {
-        const map: Record<string, string> = {};
-        for (const s of slots) {
-            if (s.date && !map[s.date]) {
-                map[s.date] = formatHebrewDate(s.date);
-            }
-        }
-        return map;
-    }, [slots]);
+function dayItemsForDate(slots: readonly ExistingItem[], date: string): ExistingItem[] {
+    return slots.filter(slot => slot.date === date);
+}
 
-    return (
-        <table id="proposedTable" className="table table-sm table-bordered mb-3">
-            <thead>
-                <tr>
-                    <th>{t.Slot_Date()}</th>
-                    <th>{t.Batch_HebrewDate()}</th>
-                    <th>{t.Slot_Time()}</th>
-                    <th>{t.Slot_Duration()}</th>
-                    <th>{t.Slots_Calendar()}</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody id="proposedBody">
-                {slots.map((s, i) => (
-                    <BatchPreviewRow
-                        key={s.id}
-                        slot={s}
-                        index={i}
-                        weekday={getWeekdayName(s.date)}
-                        hebrewDate={hebrewDates[s.date] || ''}
-                        startDate={startDate}
-                        endDate={endDate}
-                        dayItems={getDayItems(s.date)}
-                        warnings={{
-                            existingOverlap: hasOverlap(s.date, s.time, s.duration),
-                            proposedOverlap: hasProposedOverlap(s.date, s.time, s.duration, i),
-                            outOfRange: !isDateInRange(s.date, startDate, endDate),
-                            pastDate: isDateInPast(s.date, s.time),
-                        }}
-                        formatExistingItem={formatExistingItem}
-                        onDateChange={onDateChange}
-                        onTimeChange={onTimeChange}
-                        onDurationChange={onDurationChange}
-                        onRemove={onRemove}
-                    />
-                ))}
-            </tbody>
-        </table>
-    );
-};
+export class BatchPreviewTable extends AntiHookComponent<Props> {
+    private cachedSlots?: readonly ProposedSlot[];
+    private hebrewDates: Record<string, string> = {};
+
+    shouldComponentUpdate(nextProps: Readonly<Props>, nextState: typeof this.state): boolean {
+        // Сохраняем пересчёт предупреждений при рендере родителя.
+        return super.shouldComponentUpdate(nextProps, nextState) || this.props !== nextProps;
+    }
+
+    private getHebrewDates(slots: readonly ProposedSlot[]): Record<string, string> {
+        if (slots === this.cachedSlots) return this.hebrewDates;
+        const dates: Record<string, string> = {};
+        for (const {date} of slots) {
+            if (date && !dates[date]) dates[date] = formatHebrewDate(date);
+        }
+        this.cachedSlots = slots;
+        this.hebrewDates = dates;
+        return dates;
+    }
+
+    private renderRows() {
+        const rows: React.ReactNode[] = [];
+        const {slots, existingSlots, startDate, endDate} = this.props;
+        const {onDateChange, onTimeChange, onDurationChange, onRemove} = this.props;
+        const hebrewDates = this.getHebrewDates(slots);
+        for (const [index, slot] of slots.entries()) {
+            const {date, time, duration} = slot;
+            rows.push(
+                <BatchPreviewRow
+                    key={slot.id}
+                    slot={slot}
+                    index={index}
+                    weekday={getWeekdayName(date)}
+                    hebrewDate={hebrewDates[date] || ''}
+                    startDate={startDate}
+                    endDate={endDate}
+                    dayItems={dayItemsForDate(existingSlots, date)}
+                    warnings={{
+                        existingOverlap: findExistingOverlap(existingSlots, date, time, duration),
+                        proposedOverlap: findProposedOverlap(slots, date, time, duration, index),
+                        outOfRange: !isDateInRange(date, startDate, endDate),
+                        pastDate: isDateInPast(date, time),
+                    }}
+                    formatExistingItem={formatExistingItem}
+                    onDateChange={onDateChange}
+                    onTimeChange={onTimeChange}
+                    onDurationChange={onDurationChange}
+                    onRemove={onRemove}
+                />
+            );
+        }
+        return rows;
+    }
+
+    render() {
+        return (
+            <table id="proposedTable" className="batch-preview-table">
+                <thead>
+                    <tr>
+                        <th className="batch-preview-heading">{t.Slot_Date()}</th>
+                        <th className="batch-preview-heading">{t.Batch_HebrewDate()}</th>
+                        <th className="batch-preview-heading">{t.Slot_Time()}</th>
+                        <th className="batch-preview-heading">{t.Slot_Duration()}</th>
+                        <th className="batch-preview-heading">{t.Slots_Calendar()}</th>
+                        <th className="batch-preview-heading"></th>
+                    </tr>
+                </thead>
+                <tbody id="proposedBody">{this.renderRows()}</tbody>
+            </table>
+        );
+    }
+}

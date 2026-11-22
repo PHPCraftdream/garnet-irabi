@@ -1,0 +1,10 @@
+@reference "tailwindcss";
+
+@utility shape-reason-modal-field { @apply mb-4; }
+@utility shape-reason-modal-notice { @apply mb-3; }
+
+@layer components {
+  .reason-modal-field { @apply tone-bookneutral-plain shape-reason-modal-field; }
+  .reason-modal-notice { @apply tone-bookwarning-plain type-book-place shape-reason-modal-notice; }
+  .reason-modal-notice[data-tone="error"] { @apply tone-externaldanger-plain; }
+}

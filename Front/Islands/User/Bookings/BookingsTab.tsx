@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {D} from '@common/Support/Debug/D';
 import {useSending} from '@common/hooks/data/useSending';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
@@ -7,7 +8,6 @@ import {PageResponse} from '@common/hooks/data/usePagination';
 import Pagination from '@common/Components/Layout/Paging/Pagination';
 import {appUrl} from '@common/Utils/Url/appUrl';
 import {refreshLiveCounts} from '@common/Utils/Data/liveCounts';
-import {DEFAULT_PAGE_SIZE} from '@common/Utils/Data/pagination';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {
     actionImpact,
@@ -31,16 +31,10 @@ import {
     groupBookings,
 } from './card/bookingCardTypes';
 import {BookingGroup} from './card/BookingGroup';
+import {BookingsNavigation, BookingsStateStore, type BookingsState} from './bookingsTabState';
 import {BookingsFilterTabs} from './card/BookingsFilterTabs';
 
 export type {SlotInfo, ExpertInfo, UserInfo, BookingCounts, BookingsViewAs} from './card/bookingCardTypes';
-
-interface BookingsPageResponse extends PageResponse<Booking> {
-    slots: Record<number, SlotInfo>;
-    experts: Record<number, ExpertInfo>;
-    users?: Record<number, UserInfo>;
-    counts?: BookingCounts;
-}
 
 export interface BookingsTabProps {
     bookingsPagination: PageResponse<Booking>;
@@ -74,6 +68,294 @@ const paginationLabels = {
  * Разметка живёт в `card/`. Здесь — загрузка страницы, два окна с причиной и
  * три действия над бронью.
  */
+function findBooking(bookings: Booking[], id: number | null): Booking | undefined {
+    return bookings.find(booking => booking.id === id);
+}
+
+type WithSending = ReturnType<typeof useSending>['withSending'];
+interface ViewProps {
+    state: BookingsState;
+    store: BookingsStateStore;
+    navigation: BookingsNavigation;
+    currentTitle: BookingsTabProps['title'];
+    canSwitchView: boolean;
+    isModerator: boolean;
+    confirmUrl: string;
+    rejectUrl: string;
+    cancelSending: boolean;
+    rejectSending: boolean;
+    rescheduleSending: boolean;
+    withCancelSending: WithSending;
+    withRejectSending: WithSending;
+    withRescheduleSending: WithSending;
+}
+
+class BookingsView extends AntiHookComponent<ViewProps> {
+    /** Состояние брони по её номеру — для окон, которым дана только ссылка. */
+    private statusOf(bookingId: number | null): string | undefined {
+        return findBooking(this.props.state.bookings, bookingId)?.status;
+    }
+
+    /**
+     * После действия страница перечитывается целиком, а не правится на месте.
+     *
+     * Дописанная вручную строка — это догадка о том, что стало на сервере, и
+     * она была неполной: причина отмены, роль отменившего и счётчики вкладок
+     * оставались прежними, и человек видел голое «Отменён» до перезагрузки
+     * (нашёл user-2). Заодно обновляется цифра в шапке: она попала на страницу
+     * один раз при рендере, а деньги только что вернулись.
+     */
+    private async refreshAfterAction(): Promise<void> {
+        const {navigation, state: {page}} = this.props;
+        await navigation.fetchPage(page);
+        refreshLiveCounts();
+    }
+
+    private readonly handleCancelSubmit = (reason: string) => {
+        const {store, withCancelSending, state: {cancelBookingId}} = this.props;
+        const cancelStatus = this.statusOf(cancelBookingId);
+        withCancelSending(async () => {
+            D('booking.cancel', {bookingId: cancelBookingId, reason});
+            try {
+                const res = await sendPost<{reason: string}, {error?: string}>(
+                    appUrl(`/bookings/id~${cancelBookingId}/~cancel`),
+                    {reason},
+                );
+                const data = ('data' in res && res.data) ? res.data : (res as unknown as {error?: string});
+                if (data?.error) {
+                    showToast(data.error, 'danger');
+                    return;
+                }
+                showToast(actionSuccessToast('user', cancelStatus), 'success');
+                store.setCancelBookingId(null);
+                await this.refreshAfterAction();
+            } catch (err) {
+                D('booking.error', {action: 'cancel', bookingId: cancelBookingId, error: err});
+                showToast(t.General_Error(), 'danger');
+            }
+        });
+    };
+
+    private readonly handleRejectSubmit = (reason: string) => {
+        const {store, rejectUrl, withRejectSending, state: {rejectBookingId}} = this.props;
+        const rejectStatus = this.statusOf(rejectBookingId);
+        withRejectSending(async () => {
+            try {
+                const csrf = (window as any).__GARNET_CSRF__ ?? '';
+                const res = await sendPost<{booking_id: number | null; reason: string; CSRF_TOKEN: string}, {error?: string}>(
+                    rejectUrl,
+                    {booking_id: rejectBookingId, reason, CSRF_TOKEN: csrf},
+                );
+                const data = ('data' in res && res.data) ? res.data : (res as unknown as {error?: string});
+                if (data?.error) {
+                    showToast(data.error, 'danger');
+                    return;
+                }
+                showToast(actionSuccessToast('expert', rejectStatus), 'success');
+                store.setRejectBookingId(null);
+                await this.refreshAfterAction();
+            } catch (err) {
+                D('booking.error', {action: 'reject', bookingId: rejectBookingId, error: err});
+                showToast(t.General_Error(), 'danger');
+            }
+        });
+    };
+
+    private readonly handleRescheduleSubmit = (slotId: number) => {
+        const {store, withRescheduleSending, state: {rescheduleBookingId}} = this.props;
+        const bookingId = rescheduleBookingId;
+        store.setRescheduleError(undefined);
+        withRescheduleSending(async () => {
+            try {
+                const res = await sendPost<{slot_id: number}, {error?: string; message?: string}>(
+                    appUrl(`/bookings/id~${bookingId}/~reschedule`),
+                    {slot_id: slotId},
+                );
+                const data = ('data' in res && res.data) ? res.data : (res as unknown as {error?: string; message?: string});
+                if (data?.error) {
+                    store.setRescheduleError(data.error);
+                    return;
+                }
+                showToast(data?.message || t.Reschedule_Success(), 'success');
+                store.setRescheduleBookingId(null);
+                await this.refreshAfterAction();
+            } catch (err) {
+                D('booking.error', {action: 'reschedule', bookingId, error: err});
+                showToast(t.General_Error(), 'danger');
+            }
+        });
+    };
+
+    private readonly handleConfirm = async (bookingId: number) => {
+        const {store, confirmUrl} = this.props;
+        if (store.getData().confirmingId !== null) return;
+        store.setConfirmingId(bookingId);
+        try {
+            const csrf = (window as any).__GARNET_CSRF__ ?? '';
+            const res = await sendPost<{booking_id: number; CSRF_TOKEN: string}, {error?: string}>(
+                confirmUrl,
+                {booking_id: bookingId, CSRF_TOKEN: csrf},
+            );
+            const data = ('data' in res && res.data) ? res.data : (res as unknown as {error?: string});
+            if (data?.error) {
+                showToast(data.error, 'danger');
+                return;
+            }
+            showToast(t.Booking_ConfirmSuccess(), 'success');
+            await this.refreshAfterAction();
+        } catch (err) {
+            D('booking.error', {action: 'confirm', bookingId, error: err});
+            showToast(t.General_Error(), 'danger');
+        } finally {
+            store.setConfirmingId(null);
+        }
+    };
+
+    private readonly viewExpert = () => this.props.navigation.handleViewChange('expert');
+    private readonly viewUser = () => this.props.navigation.handleViewChange('user');
+
+    private readonly renderGroup = (group: ReturnType<typeof groupBookings>[number]) => {
+        const {store, isModerator, state: {slots, experts, users, viewAs, confirmingId}} = this.props;
+        return (
+            <BookingGroup
+                key={group.key}
+                group={group}
+                slots={slots}
+                experts={experts}
+                users={users}
+                viewAs={viewAs}
+                isModerator={isModerator}
+                onCancelOpen={store.setCancelBookingId}
+                onConfirm={this.handleConfirm}
+                onReject={store.setRejectBookingId}
+                onRescheduleOpen={store.setRescheduleBookingId}
+                confirmingId={confirmingId}
+            />
+        );
+    };
+
+    private renderGroups() {
+        const {bookings, slots} = this.props.state;
+        const groups = groupBookings(bookings, slots);
+        return (
+            <div className="bookings-groups">
+                {bookings.length === 0 && <p className="booking-list-empty">{t.Booking_UserNoBookings()}</p>}
+                {groups.map(this.renderGroup)}
+            </div>
+        );
+    }
+
+    private renderModals() {
+        const {store, cancelSending, rejectSending, rescheduleSending,
+            state: {bookings, slots, cancelBookingId, rejectBookingId, rescheduleBookingId, rescheduleError}} = this.props;
+        return (
+            <>
+                <ReasonModal
+                    open={cancelBookingId !== null}
+                    title={actionTitle('user', this.statusOf(cancelBookingId))}
+                    impact={actionImpact('user', this.statusOf(cancelBookingId))}
+                    details={<CancelRefundDetails booking={findBooking(bookings, cancelBookingId)} slots={slots} />}
+                    reasonLabel={actionReasonLabel('user', this.statusOf(cancelBookingId))}
+                    reasonPlaceholder={actionReasonPlaceholder('user', this.statusOf(cancelBookingId))}
+                    requiredMessage={t.User_Cancel_ReasonRequired()}
+                    submitLabel={actionSubmitLabel('user', this.statusOf(cancelBookingId))}
+                    sending={cancelSending}
+                    testId="user-cancel-modal"
+                    onSubmit={this.handleCancelSubmit}
+                    onClose={store.closeCancel}
+                />
+
+                <ReasonModal
+                    open={rejectBookingId !== null}
+                    title={actionTitle('expert', this.statusOf(rejectBookingId))}
+                    impact={actionImpact('expert', this.statusOf(rejectBookingId))}
+                    reasonLabel={actionReasonLabel('expert', this.statusOf(rejectBookingId))}
+                    reasonPlaceholder={actionReasonPlaceholder('expert', this.statusOf(rejectBookingId))}
+                    requiredMessage={t.Booking_RejectReasonRequired()}
+                    submitLabel={actionSubmitLabel('expert', this.statusOf(rejectBookingId))}
+                    sending={rejectSending}
+                    testId="expert-reject-modal"
+                    onSubmit={this.handleRejectSubmit}
+                    onClose={store.closeReject}
+                />
+
+                <RescheduleModal
+                    open={rescheduleBookingId !== null}
+                    bookingId={rescheduleBookingId}
+                    sending={rescheduleSending}
+                    error={rescheduleError}
+                    onSubmit={this.handleRescheduleSubmit}
+                    onClose={store.closeReschedule}
+                />
+            </>
+        );
+    }
+
+    private renderViewSwitch() {
+        const {canSwitchView, state: {viewAs}} = this.props;
+        if (!canSwitchView) return null;
+        return (
+            <div className="bookings-view-switch" data-test-id="bookings-view-switch">
+                <button
+                    type="button"
+                    className="bookings-view-button" data-tone={viewAs === 'expert' ? 'active' : 'neutral'}
+                    aria-pressed={viewAs === 'expert'}
+                    data-test-id="bookings-view-expert"
+                    onClick={this.viewExpert}
+                >
+                    {t.Bookings_IncomingTitle()}
+                </button>
+                <button
+                    type="button"
+                    className="bookings-view-button" data-tone={viewAs === 'user' ? 'active' : 'neutral'}
+                    aria-pressed={viewAs === 'user'}
+                    data-test-id="bookings-view-user"
+                    onClick={this.viewUser}
+                >
+                    {t.Bookings_Title()}
+                </button>
+            </div>
+        );
+    }
+
+    render() {
+        const {currentTitle, navigation, state: {page, totalPages, total, pageLoading, counts, statusFilter, showPast}} = this.props;
+        const {handlePageChange, handleStatusChange, handleTogglePast} = navigation;
+        const pager = (
+            <Pagination
+                page={page}
+                totalPages={totalPages}
+                total={total}
+                loading={pageLoading}
+                onPageChange={handlePageChange}
+                labels={paginationLabels}
+            />
+        );
+        return (
+            <div data-test-id="bookings-tab">
+                {this.renderViewSwitch()}
+
+                <BookingsFilterTabs
+                    title={currentTitle}
+                    counts={counts}
+                    statusFilter={statusFilter}
+                    showPast={showPast}
+                    onStatusChange={handleStatusChange}
+                    onTogglePast={handleTogglePast}
+                />
+
+                <div className="bookings-pager-top">{pager}</div>
+
+                {this.renderGroups()}
+
+                <div className="bookings-pager-bottom">{pager}</div>
+
+                {this.renderModals()}
+            </div>
+        );
+    }
+}
+
 const BookingsTab: React.FC<BookingsTabProps> = ({
     bookingsPagination,
     bookingsPageUrl,
@@ -90,102 +372,28 @@ const BookingsTab: React.FC<BookingsTabProps> = ({
     initialShowPast = false,
     initialCounts,
 }) => {
-    const [bookings, setBookings] = React.useState<Booking[]>(bookingsPagination.items);
-    const [page, setPage] = React.useState(bookingsPagination.page);
-    const [totalPages, setTotalPages] = React.useState(bookingsPagination.totalPages);
-    const [total, setTotal] = React.useState(bookingsPagination.total);
-    const [pageLoading, setPageLoading] = React.useState(false);
-    const [slots, setSlots] = React.useState<Record<number, SlotInfo>>(initialSlots);
-    const [experts, setExperts] = React.useState<Record<number, ExpertInfo>>(initialExperts);
-    const [users, setUsers] = React.useState<Record<number, UserInfo>>(initialUsers || {});
-    // D-184: сторона, с которой человек смотрит раздел. Преподаватель может
-    // переключаться между своими занятиями и входящими заявками; у остальных
-    // сторона одна и переключателя нет.
-    const [viewAs, setViewAs] = React.useState<BookingsViewAs>(initialViewAs);
-    const [statusFilter, setStatusFilter] = React.useState<StatusFilter>(initialStatus);
-    const [showPast, setShowPast] = React.useState<boolean>(initialShowPast);
-    const [counts, setCounts] = React.useState<BookingCounts>(initialCounts || {
-        all: bookingsPagination.total, pending: 0, confirmed: 0, cancelled: 0, completed: 0, past: 0,
-    });
-
-    // Окна отмены и отказа: снаружи остаётся только «какая бронь открыта».
-    // Текст причины, его проверка, Escape и блокировка прокрутки живут внутри
-    // ReasonModal — раньше каждое окно несло свою копию всего этого.
-    const [cancelBookingId, setCancelBookingId] = React.useState<number | null>(null);
+    const storeRef = React.useRef<BookingsStateStore | null>(null);
+    if (!storeRef.current) {
+        storeRef.current = new BookingsStateStore({
+            bookings: bookingsPagination.items, page: bookingsPagination.page,
+            totalPages: bookingsPagination.totalPages, total: bookingsPagination.total,
+            pageLoading: false, slots: initialSlots, experts: initialExperts, users: initialUsers || {},
+            viewAs: initialViewAs, statusFilter: initialStatus, showPast: initialShowPast,
+            counts: initialCounts || {all: bookingsPagination.total, pending: 0, confirmed: 0, cancelled: 0, completed: 0, past: 0},
+            cancelBookingId: null, rejectBookingId: null, rescheduleBookingId: null,
+            rescheduleError: undefined, confirmingId: null,
+        });
+    }
+    const store = storeRef.current;
+    const state = React.useSyncExternalStore(store.subscribeReact, store.snapshot, store.snapshot);
+    const {viewAs} = state;
     const {sending: cancelSending, withSending: withCancelSending} = useSending();
-
-    const [rejectBookingId, setRejectBookingId] = React.useState<number | null>(null);
     const {sending: rejectSending, withSending: withRejectSending} = useSending();
-
-    const [rescheduleBookingId, setRescheduleBookingId] = React.useState<number | null>(null);
-    const [rescheduleError, setRescheduleError] = React.useState<string | undefined>(undefined);
     const {sending: rescheduleSending, withSending: withRescheduleSending} = useSending();
 
-    const [confirmingId, setConfirmingId] = React.useState<number | null>(null);
-
-    const fetchPage = React.useCallback(async (
-        targetPage: number,
-        opts: {status?: StatusFilter; showPast?: boolean; view?: BookingsViewAs} = {},
-    ) => {
-        const status = opts.status ?? statusFilter;
-        const past = opts.showPast ?? showPast;
-        // Вид передаётся явно: при переключении стороны состояние ещё не
-        // применилось, а сервер должен отдать список уже новой стороны.
-        const view = opts.view ?? viewAs;
-        setPageLoading(true);
-        try {
-            const resp = await sendPost<
-                {page: number; perPage: number; status: string; showPast: boolean; view: BookingsViewAs},
-                BookingsPageResponse
-            >(bookingsPageUrl, {
-                page: targetPage,
-                perPage: DEFAULT_PAGE_SIZE,
-                status: status === 'all' ? '' : status,
-                showPast: past,
-                view,
-            });
-            const data = ('data' in resp && resp.data) ? resp.data : resp as unknown as BookingsPageResponse;
-            setBookings(data.items);
-            setPage(data.page);
-            setTotalPages(data.totalPages);
-            setTotal(data.total);
-            setSlots(data.slots || {});
-            setExperts(data.experts || {});
-            setUsers(data.users || {});
-            if (data.counts) setCounts(data.counts);
-        } catch {
-            showToast(t.User_LoadError(), 'danger');
-        } finally {
-            setPageLoading(false);
-        }
-    }, [bookingsPageUrl, statusFilter, showPast, viewAs]);
-
-    const handlePageChange = React.useCallback((p: number) => {
-        if (p < 1 || p > totalPages || (p === page && !pageLoading)) return;
-        fetchPage(p);
-    }, [fetchPage, totalPages, page, pageLoading]);
-
-    const handleStatusChange = React.useCallback((s: StatusFilter) => {
-        if (s === statusFilter) return;
-        setStatusFilter(s);
-        fetchPage(1, {status: s});
-    }, [statusFilter, fetchPage]);
-
-    const handleViewChange = React.useCallback((next: BookingsViewAs) => {
-        if (next === viewAs) return;
-        setViewAs(next);
-        // Фильтр по статусу и «показать прошедшие» осмысленны на обеих
-        // сторонах, поэтому сохраняются; страница сбрасывается на первую —
-        // списки разной длины, и третья страница входящих ничего не значит
-        // для своих занятий.
-        fetchPage(1, {view: next});
-    }, [viewAs, fetchPage]);
-
-    const handleTogglePast = React.useCallback(() => {
-        const next = !showPast;
-        setShowPast(next);
-        fetchPage(1, {showPast: next});
-    }, [showPast, fetchPage]);
+    const navigation = React.useMemo(
+        () => new BookingsNavigation(store, bookingsPageUrl), [store, bookingsPageUrl],
+    );
 
     // Заголовок приходит с сервера для первой отрисовки, но после переключения
     // стороны он обязан меняться вместе с содержимым — иначе «Входящие брони»
@@ -194,234 +402,9 @@ const BookingsTab: React.FC<BookingsTabProps> = ({
         ? (viewAs === 'expert' ? t.Bookings_IncomingTitle() : t.Bookings_Title())
         : title;
 
-    const groups = React.useMemo(() => groupBookings(bookings, slots), [bookings, slots]);
+    return <BookingsView {...{state, store, navigation, currentTitle, canSwitchView, isModerator, confirmUrl, rejectUrl,
+        cancelSending, rejectSending, rescheduleSending, withCancelSending, withRejectSending, withRescheduleSending}} />;
 
-    /** Состояние брони по её номеру — для окон, которым дана только ссылка. */
-    const statusOf = (bookingId: number | null): string | undefined =>
-        bookings.find(b => b.id === bookingId)?.status;
-
-    /**
-     * После действия страница перечитывается целиком, а не правится на месте.
-     *
-     * Дописанная вручную строка — это догадка о том, что стало на сервере, и
-     * она была неполной: причина отмены, роль отменившего и счётчики вкладок
-     * оставались прежними, и человек видел голое «Отменён» до перезагрузки
-     * (нашёл user-2). Заодно обновляется цифра в шапке: она попала на страницу
-     * один раз при рендере, а деньги только что вернулись.
-     */
-    const refreshAfterAction = async () => {
-        await fetchPage(page);
-        refreshLiveCounts();
-    };
-
-    const handleCancelSubmit = (reason: string) => {
-        const cancelStatus = statusOf(cancelBookingId);
-        withCancelSending(async () => {
-            D('booking.cancel', {bookingId: cancelBookingId, reason});
-            try {
-                const res = await sendPost<{reason: string}, {error?: string}>(
-                    appUrl(`/bookings/id~${cancelBookingId}/~cancel`),
-                    {reason},
-                );
-                const data = ('data' in res && res.data) ? res.data : (res as unknown as {error?: string});
-                if (data?.error) {
-                    showToast(data.error, 'danger');
-                    return;
-                }
-                showToast(actionSuccessToast('user', cancelStatus), 'success');
-                setCancelBookingId(null);
-                await refreshAfterAction();
-            } catch (err) {
-                D('booking.error', {action: 'cancel', bookingId: cancelBookingId, error: err});
-                showToast(t.General_Error(), 'danger');
-            }
-        });
-    };
-
-    const handleRejectSubmit = (reason: string) => {
-        const rejectStatus = statusOf(rejectBookingId);
-        withRejectSending(async () => {
-            try {
-                const csrf = (window as any).__GARNET_CSRF__ ?? '';
-                const res = await sendPost<{booking_id: number | null; reason: string; CSRF_TOKEN: string}, {error?: string}>(
-                    rejectUrl,
-                    {booking_id: rejectBookingId, reason, CSRF_TOKEN: csrf},
-                );
-                const data = ('data' in res && res.data) ? res.data : (res as unknown as {error?: string});
-                if (data?.error) {
-                    showToast(data.error, 'danger');
-                    return;
-                }
-                showToast(actionSuccessToast('expert', rejectStatus), 'success');
-                setRejectBookingId(null);
-                await refreshAfterAction();
-            } catch (err) {
-                D('booking.error', {action: 'reject', bookingId: rejectBookingId, error: err});
-                showToast(t.General_Error(), 'danger');
-            }
-        });
-    };
-
-    const handleRescheduleSubmit = (slotId: number) => {
-        const bookingId = rescheduleBookingId;
-        setRescheduleError(undefined);
-        withRescheduleSending(async () => {
-            try {
-                const res = await sendPost<{slot_id: number}, {error?: string; message?: string}>(
-                    appUrl(`/bookings/id~${bookingId}/~reschedule`),
-                    {slot_id: slotId},
-                );
-                const data = ('data' in res && res.data) ? res.data : (res as unknown as {error?: string; message?: string});
-                if (data?.error) {
-                    setRescheduleError(data.error);
-                    return;
-                }
-                showToast(data?.message || t.Reschedule_Success(), 'success');
-                setRescheduleBookingId(null);
-                await refreshAfterAction();
-            } catch (err) {
-                D('booking.error', {action: 'reschedule', bookingId, error: err});
-                showToast(t.General_Error(), 'danger');
-            }
-        });
-    };
-
-    const handleConfirm = async (bookingId: number) => {
-        if (confirmingId !== null) return;
-        setConfirmingId(bookingId);
-        try {
-            const csrf = (window as any).__GARNET_CSRF__ ?? '';
-            const res = await sendPost<{booking_id: number; CSRF_TOKEN: string}, {error?: string}>(
-                confirmUrl,
-                {booking_id: bookingId, CSRF_TOKEN: csrf},
-            );
-            const data = ('data' in res && res.data) ? res.data : (res as unknown as {error?: string});
-            if (data?.error) {
-                showToast(data.error, 'danger');
-                return;
-            }
-            showToast(t.Booking_ConfirmSuccess(), 'success');
-            await refreshAfterAction();
-        } catch (err) {
-            D('booking.error', {action: 'confirm', bookingId, error: err});
-            showToast(t.General_Error(), 'danger');
-        } finally {
-            setConfirmingId(null);
-        }
-    };
-
-    const pager = (
-        <Pagination
-            page={page}
-            totalPages={totalPages}
-            total={total}
-            loading={pageLoading}
-            onPageChange={handlePageChange}
-            labels={paginationLabels}
-        />
-    );
-
-    return (
-        <div data-test-id="bookings-tab">
-            {canSwitchView && (
-                // D-184: преподаватель учится и сам — обе стороны должны быть
-                // достижимы. Раньше раздел просто подменялся ролью, и свои
-                // занятия исчезали из навигации вместе с возможностью их
-                // отменить.
-                <div className="flex gap-2 mb-4" data-test-id="bookings-view-switch">
-                    <button
-                        type="button"
-                        className={`btn btn-sm ${viewAs === 'expert' ? 'btn-primary' : 'btn-outline'}`}
-                        aria-pressed={viewAs === 'expert'}
-                        data-test-id="bookings-view-expert"
-                        onClick={() => handleViewChange('expert')}
-                    >
-                        {t.Bookings_IncomingTitle()}
-                    </button>
-                    <button
-                        type="button"
-                        className={`btn btn-sm ${viewAs === 'user' ? 'btn-primary' : 'btn-outline'}`}
-                        aria-pressed={viewAs === 'user'}
-                        data-test-id="bookings-view-user"
-                        onClick={() => handleViewChange('user')}
-                    >
-                        {t.Bookings_Title()}
-                    </button>
-                </div>
-            )}
-
-            <BookingsFilterTabs
-                title={currentTitle}
-                counts={counts}
-                statusFilter={statusFilter}
-                showPast={showPast}
-                onStatusChange={handleStatusChange}
-                onTogglePast={handleTogglePast}
-            />
-
-            <div className="mb-4">{pager}</div>
-
-            <div className="flex flex-col gap-3">
-                {bookings.length === 0 && <p className="text-muted">{t.Booking_UserNoBookings()}</p>}
-                {groups.map(group => (
-                    <BookingGroup
-                        key={group.key}
-                        group={group}
-                        slots={slots}
-                        experts={experts}
-                        users={users}
-                        viewAs={viewAs}
-                        isModerator={isModerator}
-                        onCancelOpen={setCancelBookingId}
-                        onConfirm={handleConfirm}
-                        onReject={setRejectBookingId}
-                        onRescheduleOpen={setRescheduleBookingId}
-                        confirmingId={confirmingId}
-                    />
-                ))}
-            </div>
-
-            <div className="mt-4">{pager}</div>
-
-            <ReasonModal
-                open={cancelBookingId !== null}
-                title={actionTitle('user', statusOf(cancelBookingId))}
-                impact={actionImpact('user', statusOf(cancelBookingId))}
-                details={<CancelRefundDetails booking={bookings.find(b => b.id === cancelBookingId)} slots={slots} />}
-                reasonLabel={actionReasonLabel('user', statusOf(cancelBookingId))}
-                reasonPlaceholder={actionReasonPlaceholder('user', statusOf(cancelBookingId))}
-                requiredMessage={t.User_Cancel_ReasonRequired()}
-                submitLabel={actionSubmitLabel('user', statusOf(cancelBookingId))}
-                sending={cancelSending}
-                testId="user-cancel-modal"
-                onSubmit={handleCancelSubmit}
-                onClose={() => setCancelBookingId(null)}
-            />
-
-            <ReasonModal
-                open={rejectBookingId !== null}
-                title={actionTitle('expert', statusOf(rejectBookingId))}
-                impact={actionImpact('expert', statusOf(rejectBookingId))}
-                reasonLabel={actionReasonLabel('expert', statusOf(rejectBookingId))}
-                reasonPlaceholder={actionReasonPlaceholder('expert', statusOf(rejectBookingId))}
-                requiredMessage={t.Booking_RejectReasonRequired()}
-                submitLabel={actionSubmitLabel('expert', statusOf(rejectBookingId))}
-                sending={rejectSending}
-                testId="expert-reject-modal"
-                onSubmit={handleRejectSubmit}
-                onClose={() => setRejectBookingId(null)}
-            />
-
-            <RescheduleModal
-                open={rescheduleBookingId !== null}
-                bookingId={rescheduleBookingId}
-                sending={rescheduleSending}
-                error={rescheduleError}
-                onSubmit={handleRescheduleSubmit}
-                onClose={() => { setRescheduleBookingId(null); setRescheduleError(undefined); }}
-            />
-        </div>
-    );
 };
 
 export default BookingsTab;

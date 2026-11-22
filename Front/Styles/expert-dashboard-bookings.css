@@ -1,0 +1,25 @@
+@reference "tailwindcss";
+
+@utility layout-expert-booking-person { @apply flex items-center gap-3; }
+@utility layout-expert-pending-actions { @apply flex gap-2 flex-shrink-0; }
+@utility type-expert-bookings-empty { @apply font-medium; }
+
+@theme inline reference {
+  /* carburetor-disable-next-line valid-color-role */
+  --color-expertbookingok-wash: var(--color-success-subtle);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-expertbookingok-ink: var(--color-success);
+}
+
+@utility tone-expertbookingok-soft { @apply bg-expertbookingok-wash text-expertbookingok-ink; }
+@utility shape-expert-booking-avatar { @apply w-9 h-9 rounded-full; }
+@utility shape-expert-bookings-count { @apply ms-2; }
+
+@layer components {
+  .expert-booking-avatar { @apply tone-recipientaccent-soft shape-expert-booking-avatar layout-im-recipient-avatar type-user-dash-row-title; }
+  .expert-bookings-count-success { @apply tone-expertbookingok-soft layout-user-dash-count-badge shape-user-dash-count-badge type-user-dash-count-badge shape-expert-bookings-count; }
+  .expert-bookings-count-warning { @apply tone-ticketstatusyellow-soft layout-user-dash-count-badge shape-user-dash-count-badge type-user-dash-count-badge shape-expert-bookings-count; }
+  .expert-booking-person { @apply tone-bookneutral-plain layout-expert-booking-person; }
+  .expert-pending-actions { @apply tone-bookneutral-plain layout-expert-pending-actions; }
+  .expert-bookings-empty-label { @apply tone-bookmuted-plain type-expert-bookings-empty; }
+}

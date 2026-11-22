@@ -1,15 +1,15 @@
 import * as React from 'react';
-
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import AttachmentPicker, {PendingFile} from '../../../../Common/attachments/AttachmentPicker';
+import {AntiHookComponent} from '@react-carburetor/core';
 import SendButton from '@common/Components/Controls/SendButton';
-import {useCtrlEnter, CTRL_ENTER_HINT} from '@common/hooks/ui/useCtrlEnter';
+import {CTRL_ENTER_HINT} from '@common/hooks/ui/useCtrlEnter';
+import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import AttachmentPicker, {type PendingFile} from '../../../../Common/attachments/AttachmentPicker';
 
-interface NewFormProps {
+interface Props {
     subject: string;
-    onSubjectChange: (v: string) => void;
+    onSubjectChange: (value: string) => void;
     message: string;
-    onMessageChange: (v: string) => void;
+    onMessageChange: (value: string) => void;
     files: PendingFile[];
     onFilesChange: (files: PendingFile[]) => void;
     onSubmit: () => void;
@@ -17,49 +17,60 @@ interface NewFormProps {
     sending: boolean;
 }
 
-/** Форма нового обращения. */
-export const PageNewTicketForm: React.FC<NewFormProps> = ({subject, onSubjectChange, message, onMessageChange, files, onFilesChange, onSubmit, onCancel, sending}) => (
-    <div className="p-6 flex flex-col gap-4">
-        <h3 className="text-lg font-semibold text-on-surface">{t.Support_NewTicket()}</h3>
-        <div>
-            <label className="text-sm text-secondary mb-1 block">{t.Support_Subject()}</label>
-            <input
-                type="text"
-                data-test-id="support-subject-input"
-                className="form-control"
-                value={subject}
-                onChange={e => onSubjectChange(e.target.value)}
-                placeholder={t.Support_Subject()}
-            />
-        </div>
-        <div>
-            <label className="text-sm text-secondary mb-1 block">{t.Support_Message()}</label>
-            <textarea
-                data-test-id="support-message-input"
-                className="form-control"
-                rows={6}
-                value={message}
-                onChange={e => onMessageChange(e.target.value)}
-                placeholder={t.Support_Message() + CTRL_ENTER_HINT}
-                onKeyDown={useCtrlEnter(onSubmit, sending || !subject.trim() || !message.trim())}
-            />
-        </div>
-        <div className="support-thread-actions">
-            <AttachmentPicker files={files} onChange={onFilesChange} />
-            <SendButton
-                onClick={onSubmit}
-                disabled={!subject.trim() || !message.trim()}
-                sending={sending}
-                label={t.Support_Send()}
-                testId="support-send-btn"
-            />
-            <button
-                type="button"
-                className="btn btn-outline-secondary"
-                onClick={onCancel}
-            >
-                {t.Support_BackToList()}
-            </button>
-        </div>
-    </div>
-);
+export class PageNewTicketForm extends AntiHookComponent<Props> {
+    private readonly changeSubject = (event: React.ChangeEvent<HTMLInputElement>) => this.props.onSubjectChange(event.target.value);
+    private readonly changeMessage = (event: React.ChangeEvent<HTMLTextAreaElement>) => this.props.onMessageChange(event.target.value);
+
+    private canSend(): boolean {
+        return Boolean(this.props.subject.trim() && this.props.message.trim());
+    }
+
+    private readonly submitOnShortcut = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !this.props.sending && this.canSend()) {
+            event.preventDefault();
+            this.props.onSubmit();
+        }
+    };
+
+    private renderFields() {
+        const {subject, message} = this.props;
+        return (
+            <>
+                <div>
+                    <label className="support-form-label">{t.Support_Subject()}</label>
+                    <input type="text" data-test-id="support-subject-input" className="support-form-control"
+                        value={subject} onChange={this.changeSubject} placeholder={t.Support_Subject()} />
+                </div>
+                <div>
+                    <label className="support-form-label">{t.Support_Message()}</label>
+                    <textarea data-test-id="support-message-input" className="support-form-control" rows={6}
+                        value={message} onChange={this.changeMessage} placeholder={t.Support_Message() + CTRL_ENTER_HINT}
+                        onKeyDown={this.submitOnShortcut} />
+                </div>
+            </>
+        );
+    }
+
+    private renderActions() {
+        const {files, onFilesChange, onSubmit, sending, onCancel} = this.props;
+        return (
+            <div className="im-thread-actions">
+                <AttachmentPicker files={files} onChange={onFilesChange} />
+                <SendButton onClick={onSubmit} disabled={!this.canSend()} sending={sending} label={t.Support_Send()} testId="support-send-btn" />
+                <button type="button" className="booking-cancel-dismiss-regular" data-booking-action="regular" onClick={onCancel}>
+                    {t.Support_BackToList()}
+                </button>
+            </div>
+        );
+    }
+
+    render() {
+        return (
+            <div className="im-new-form">
+                <h3 className="im-new-title">{t.Support_NewTicket()}</h3>
+                {this.renderFields()}
+                {this.renderActions()}
+            </div>
+        );
+    }
+}

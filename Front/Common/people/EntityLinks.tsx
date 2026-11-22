@@ -1,13 +1,15 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {UserDetailContext} from '../../Islands/AdminPanel/Users/UserDetailContext';
 import {appUrl} from '@common/Utils/Url/appUrl';
 
 /** Admin user link — opens user detail tab via context, falls back to href navigation */
-export const AdminUserLink: React.FC<{id: number; name: string; role?: string; className?: string; dataTestId?: string}> = ({id, name, role, className = '', dataTestId}) => {
-    const {openUser} = React.useContext(UserDetailContext);
-    if (!id) return <span className={className}>{name || '—'}</span>;
+type LinkProps = {id: number; name: string; role?: string; className?: string; dataTestId?: string};
+type ContextValue = React.ContextType<typeof UserDetailContext>['openUser'];
 
-    const handleClick = (e: React.MouseEvent) => {
+class LinkView extends AntiHookComponent<LinkProps & {openUser: ContextValue}> {
+    private readonly handleClick = (e: React.MouseEvent) => {
+        const {openUser, id, name} = this.props;
         e.stopPropagation();
         // Allow modifier-clicks (Cmd/Ctrl/Shift/Alt or middle-click) to fall
         // through to native navigation — opens /admin/#user=X in a new tab.
@@ -16,15 +18,30 @@ export const AdminUserLink: React.FC<{id: number; name: string; role?: string; c
         openUser(id, name || `#${id}`);
     };
 
-    return (
-        <span className={`common-entity-link ${className}`}>
-            <a
-                href={appUrl(`/admin/#user=${id}`)}
-                className="common-link"
-                onClick={handleClick}
-                data-test-id={dataTestId}
-            >{name || `#${id}`}</a>
-            {role && <span className="common-role-tag">{role}</span>}
-        </span>
-    );
-};
+    render() {
+        const {id, name, role, className = '', dataTestId} = this.props;
+        // Совместимость с переданным классом ссылки.
+        // carburetor-disable-next-line require-function-class
+        if (!id) return <span className={className}>{name || '—'}</span>;
+
+
+
+        return (
+            // carburetor-disable-next-line require-function-class
+            <span className={`entity-person-group ${className}`}>
+                <a
+                    href={appUrl(`/admin/#user=${id}`)}
+                    className="entity-person-link"
+                    onClick={this.handleClick}
+                    data-test-id={dataTestId}
+                >{name || `#${id}`}</a>
+                {role && <span className="entity-person-role">{role}</span>}
+            </span>
+        );
+    }
+}
+
+export function AdminUserLink(props: LinkProps) {
+    const {openUser} = React.useContext(UserDetailContext);
+    return <LinkView {...props} openUser={openUser} />;
+}

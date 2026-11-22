@@ -1,0 +1,97 @@
+@reference "tailwindcss";
+
+:root {
+  --palette-filtercount-white: rgb(255 255 255 / 20%);
+}
+
+@theme inline reference {
+  /* carburetor-disable-next-line valid-color-role */
+  --color-filterlabel-ink: var(--color-text-muted);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-filteridle-wash: var(--color-bg-surface-hover);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-filteridle-ink: var(--color-text-secondary);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-filteridle-ink-hover: var(--color-text-primary);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-filteractive-wash: var(--color-accent);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-filteractive-wash-hover: var(--color-accent-hover);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-filteractive-wash-focus: var(--color-accent-hover);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-filteractive-wash-active: var(--color-accent-hover);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-filteractive-ink: var(--color-accent-text);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-filteractive-edge: var(--color-accent);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-filteractive-ink-subtle: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-filterfield-wash: var(--color-bg-surface);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-filterfield-ink: var(--color-text-primary);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-filterfield-ink-subtle: var(--color-text-muted);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-filterfield-edge: var(--color-border-strong);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-filterfield-edge-focus: var(--color-accent);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-filtercount-wash: var(--color-bg-surface-alt);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-filtercount-ink: var(--color-text-muted);
+  --color-filtercountactive-wash: var(--palette-filtercount-white);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-filtercountactive-ink: var(--color-accent-text);
+}
+
+@utility tone-filterneutral-plain { @apply text-inherit; }
+@utility tone-filterlabel-plain { @apply text-filterlabel-ink; }
+@utility tone-filteridle-soft { @apply border-transparent bg-filteridle-wash text-filteridle-ink hover:text-filteridle-ink-hover; }
+@utility tone-filteractive-filter { @apply border-filteractive-edge bg-filteractive-wash text-filteractive-ink shadow-filteractive-ink-subtle [&:hover]:bg-filteractive-wash-hover [&:focus]:bg-filteractive-wash-focus [&:active]:bg-filteractive-wash-active; }
+@utility tone-filterfield-field { @apply bg-filterfield-wash text-filterfield-ink border-filterfield-edge focus:border-filterfield-edge-focus focus:ring-filterfield-edge-focus/15 placeholder:text-filterfield-ink-subtle; }
+@utility tone-filtercount-soft { @apply bg-filtercount-wash text-filtercount-ink; }
+@utility tone-filtercountactive-soft { @apply bg-filtercountactive-wash text-filtercountactive-ink; }
+@utility layout-slot-filters-grid { @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4; }
+@utility shape-slot-filter-label { @apply mb-1.5; }
+@utility layout-slot-filter-label { @apply block; }
+@utility type-slot-filter-label { @apply text-[11px] font-semibold uppercase tracking-wider; }
+@utility layout-slot-filter-chips { @apply flex flex-wrap gap-1; }
+@utility shape-slot-filter-chip { @apply px-3 py-1.5 rounded-full border; }
+@utility layout-slot-filter-chip { @apply inline-flex items-center gap-1.5; }
+@utility type-slot-filter-chip { @apply text-xs font-medium; }
+@utility motion-slot-filter-chip { @apply transition-all; }
+@utility effect-slot-filter-chip-active { box-shadow: 0 2px 8px -2px var(--tw-shadow-color); }
+@utility layout-slot-filter-price-row { @apply flex gap-1 items-center; }
+@utility shape-slot-filter-price-input { @apply w-full px-3 rounded-md border; padding-top: 0.4375rem; padding-bottom: 0.4375rem; }
+@utility layout-slot-filter-price-input { @apply block; }
+@utility type-slot-filter-price-input { @apply text-sm leading-normal; }
+@utility focus-slot-filter-price-input { @apply focus:outline-none focus:ring-3; }
+@utility motion-slot-filter-price-input { transition: border-color 0.15s, box-shadow 0.15s; }
+@utility type-slot-filter-price-separator { @apply text-xs; }
+@utility layout-slot-status-filters { @apply flex flex-wrap items-center gap-2; }
+@utility shape-admin-bookings-tabs { @apply mb-4; }
+@utility shape-admin-bookings-pager-bottom { @apply mt-3; }
+@utility shape-slot-status-count { @apply px-1.5 py-px rounded-full; }
+@utility type-slot-status-count { @apply tabular-nums text-[10px]; }
+@utility shape-slot-status-mine-label { @apply ml-2; }
+@utility type-slot-status-mine-label { @apply text-sm; }
+
+@layer components {
+  .slot-filters-grid { @apply layout-slot-filters-grid tone-filterneutral-plain; }
+  .slot-filter-label { @apply shape-slot-filter-label layout-slot-filter-label type-slot-filter-label tone-filterlabel-plain; }
+  .slot-filter-chips { @apply layout-slot-filter-chips tone-filterneutral-plain; }
+  .slot-filter-chip { @apply shape-slot-filter-chip layout-slot-filter-chip type-slot-filter-chip motion-slot-filter-chip tone-filteridle-soft; }
+  .slot-filter-chip-active { @apply shape-slot-filter-chip layout-slot-filter-chip type-slot-filter-chip motion-slot-filter-chip effect-slot-filter-chip-active tone-filteractive-filter; }
+  .slot-filter-price-row { @apply layout-slot-filter-price-row tone-filterneutral-plain; }
+  .slot-filter-price-input { @apply shape-slot-filter-price-input layout-slot-filter-price-input type-slot-filter-price-input focus-slot-filter-price-input motion-slot-filter-price-input tone-filterfield-field; }
+  .slot-filter-price-separator { @apply type-slot-filter-price-separator tone-filterlabel-plain; }
+  .slot-status-filters { @apply layout-slot-status-filters tone-filterneutral-plain; }
+  .admin-bookings-tabs { @apply shape-admin-bookings-tabs layout-slot-status-filters tone-filterneutral-plain; }
+  .admin-bookings-pager-bottom { @apply shape-admin-bookings-pager-bottom tone-filterneutral-plain; }
+  .admin-bookings-empty { @apply tone-filterlabel-plain; }
+  .slot-status-count { @apply shape-slot-status-count type-slot-status-count tone-filtercount-soft; }
+  .slot-status-count-active { @apply shape-slot-status-count type-slot-status-count tone-filtercountactive-soft; }
+  .slot-status-mine-label { @apply shape-slot-status-mine-label type-slot-status-mine-label tone-filterlabel-plain; }
+}

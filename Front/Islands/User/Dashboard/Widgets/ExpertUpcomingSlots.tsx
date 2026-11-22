@@ -21,33 +21,33 @@ interface ExpertSlotRowProps {
 }
 
 const ExpertSlotRow: React.FC<ExpertSlotRowProps> = ({slot}) => (
-    <div className="booking-row">
+    <div>
         <div>
-            <div className="text-sm font-medium text-on-surface">{slot.label}</div>
-            <div className="text-xs text-muted">
+            <div className="user-dash-row-title">{slot.label}</div>
+            <div className="user-dash-row-small">
                 {formatTs(slot.start_at)}
-                <span className="text-muted"> &middot; {slot.duration_min} {t.Slot_Duration_Min()}</span>
+                <span className="user-dash-muted"> &middot; {slot.duration_min} {t.Slot_Duration_Min()}</span>
             </div>
         </div>
-        <span className="count-badge-accent">
+        <span className="user-dash-count-badge">
             {slot.booked_count}/{slot.max_users} {t.Dash_Booked()}
         </span>
     </div>
 );
+
+function renderRow(slot: ExpertUpcomingSlotsProps['slots'][number]) { return <ExpertSlotRow key={slot.id} slot={slot} />; }
 
 export const ExpertUpcomingSlots: React.FC<ExpertUpcomingSlotsProps> = ({slots}) => {
     if (slots.length === 0) return null;
 
     return (
         <div data-test-id="expert-slots">
-            <div className="section-header-row">
-                <h2 className="section-heading mb-0">{t.Dash_ExpertSlots()}</h2>
-                <a href={appUrl('/expert/~slots')} className="view-all-link">{t.Dash_ViewAll()}</a>
+            <div className="user-dash-section-header">
+                <h2 className="user-dash-section-heading">{t.Dash_ExpertSlots()}</h2>
+                <a href={appUrl('/expert/~slots')} className="user-dash-view-all">{t.Dash_ViewAll()}</a>
             </div>
-            <div className="space-y-2">
-                {slots.map(slot => (
-                    <ExpertSlotRow key={slot.id} slot={slot} />
-                ))}
+            <div className="user-dash-list">
+                {slots.map(renderRow)}
             </div>
         </div>
     );

@@ -34,9 +34,9 @@ export const BookingCancelCause: React.FC<{booking: Booking; viewAs: BookingsVie
     const reason = (booking.cancel_reason ?? '').trim();
 
     return (
-        <div className="text-sm p-2 mb-2 rounded-lg bg-surface-alt" data-test-id={`booking-cancel-cause-${booking.id}`}>
+        <div className="booking-cancel-cause" data-test-id={`booking-cancel-cause-${booking.id}`}>
             <div>{who}</div>
-            {reason && <div className="text-muted mt-1">{t.Booking_CancelReason()}: {reason}</div>}
+            {reason && <div className="booking-cancel-reason">{t.Booking_CancelReason()}: {reason}</div>}
         </div>
     );
 };

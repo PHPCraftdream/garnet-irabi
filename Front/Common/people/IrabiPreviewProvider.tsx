@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {PreviewProvider} from '@common/Components/UserPreviewModal/PreviewProvider';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import QuickChat from './QuickChat';
@@ -15,9 +16,8 @@ interface Props {
  * resolved (prop or window.__GARNET_ACCOUNT_ID__), the modal also renders
  * a QuickChat with the previewed user.
  */
-export const IrabiPreviewProvider: React.FC<Props> = ({children, currentAccountId: propAccountId}) => {
-    const currentAccountId = propAccountId ?? (window as unknown as {__GARNET_ACCOUNT_ID__?: number}).__GARNET_ACCOUNT_ID__ ?? 0;
-    const labels = React.useMemo(() => ({
+export class IrabiPreviewProvider extends AntiHookComponent<Props> {
+    private readonly labels = {
         title: t.Preview_UserTitle(),
         loading: t.Preview_Loading(),
         openProfile: t.Preview_OpenProfile(),
@@ -33,19 +33,21 @@ export const IrabiPreviewProvider: React.FC<Props> = ({children, currentAccountI
         roleUser: t.Preview_RoleUser(),
         close: t.Action_Close(),
         loadError: t.User_LoadError(),
-    }), []);
+    };
 
-    const extraSection = React.useMemo(() => {
-        if (!currentAccountId) return undefined;
-        return (userId: number) => (
-            <QuickChat
-                partnerId={userId}
-                quickChatUrl="/im/~quickChat"
-                sendUrl="/im/~send"
-                currentAccountId={currentAccountId}
-            />
+    private currentAccountId(): number {
+        return this.props.currentAccountId ?? (window as unknown as {__GARNET_ACCOUNT_ID__?: number}).__GARNET_ACCOUNT_ID__ ?? 0;
+    }
+
+    private readonly renderChat = (userId: number) => (
+        <QuickChat partnerId={userId} quickChatUrl="/im/~quickChat" sendUrl="/im/~send" currentAccountId={this.currentAccountId()} />
+    );
+
+    render() {
+        return (
+            <PreviewProvider labels={this.labels} extraSection={this.currentAccountId() ? this.renderChat : undefined}>
+                {this.props.children}
+            </PreviewProvider>
         );
-    }, [currentAccountId]);
-
-    return <PreviewProvider labels={labels} extraSection={extraSection}>{children}</PreviewProvider>;
-};
+    }
+}

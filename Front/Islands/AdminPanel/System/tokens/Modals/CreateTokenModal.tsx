@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
-import {useSending} from '@common/hooks/data/useSending';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {LogDetailModal} from '@common/Components/Admin/AdminLog/LogDetailModal';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 import {TokenRow, TTL_OPTIONS} from '../tokenTypes';
@@ -16,18 +16,18 @@ interface CreatedProps {
 /** Готовая ссылка сразу после создания — её нужно куда-то унести. */
 const CreatedLink: React.FC<CreatedProps> = ({url, onCopy, onClose}) => (
     <div data-test-id="token-created-result">
-        <label className="label-mini mb-1">{t.Admin_Tokens_Link()}</label>
-        <div className="flex gap-2 items-center mb-3">
-            <input type="text" className="form-control" readOnly value={url} data-test-id="token-created-url" />
+        <label className="token-field-label">{t.Admin_Tokens_Link()}</label>
+        <div className="token-created-link">
+            <input type="text" className="admin-filter-field" readOnly value={url} data-test-id="token-created-url" />
             {/*
               * Кнопка называет действие, а не столбец: раньше здесь стояло
               * слово «Ссылка», и было непонятно, копирует она или открывает.
               */}
-            <button type="button" className="btn btn-primary" onClick={onCopy} data-test-id="token-created-copy">
+            <button type="button" className="primary-action-button" onClick={onCopy} data-test-id="token-created-copy">
                 {t.Admin_Tokens_CopyLink()}
             </button>
         </div>
-        <button type="button" className="btn btn-secondary" onClick={onClose}>{t.Action_Close()}</button>
+        <button type="button" className="confirm-modal-cancel" onClick={onClose}>{t.Action_Close()}</button>
     </div>
 );
 
@@ -37,61 +37,73 @@ interface Props {
     onClose: () => void;
 }
 
-export const CreateTokenModal: React.FC<Props> = ({createUrl, onCreated, onClose}) => {
-    const [label, setLabel] = React.useState('');
-    const [maxUses, setMaxUses] = React.useState(1);
-    // Неделя, а не «без срока»: приглашение выписывают конкретному человеку,
-    // и забытая бессрочная ссылка остаётся действующим входом в систему
-    // навсегда. Кому нужна вечная — выберет её осознанно, одним кликом.
-    const [ttl, setTtl] = React.useState(604800);
-    const [accountType, setAccountType] = React.useState<'user' | 'expert'>('user');
-    const [createdToken, setCreatedToken] = React.useState<TokenRow | null>(null);
-    const {sending, withSending} = useSending();
+function renderTtlOption(option: (typeof TTL_OPTIONS)[number]) {
+    return <option key={option.value} value={option.value}>{option.label()}</option>;
+}
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        void withSending(async () => {
-            try {
-                const resp = await sendPost<
-                    {label: string; max_uses: number; ttl: number; account_type: string},
-                    {success: boolean; token: TokenRow}
-                >(createUrl, {label, max_uses: maxUses, ttl, account_type: accountType});
-                const data = ('data' in resp && resp.data) ? resp.data : (resp as unknown as {success: boolean; token: TokenRow});
-                if (data?.success && data.token) {
-                    setCreatedToken(data.token);
-                    onCreated(data.token);
-                    return;
-                }
-                showToast(t.General_Error(), 'danger');
-            } catch {
-                showToast(t.General_Error(), 'danger');
-            }
-        });
-    };
+function copied(): void {
+    showToast(t.Admin_Tokens_Copied(), 'success');
+}
 
-    const handleCopyCreated = () => {
-        if (!createdToken) return;
-        void navigator.clipboard.writeText(createdToken.url).then(() => showToast(t.Admin_Tokens_Copied(), 'success'));
-    };
+function initialForm() {
+    return {label: '', maxUses: 1, ttl: 604800, accountType: 'user' as 'user' | 'expert', createdToken: null as TokenRow | null, sending: false};
+}
 
-    if (createdToken) {
-        return (
-            <LogDetailModal title={t.Admin_Tokens_CreateTitle()} onClose={onClose}>
-                <CreatedLink url={createdToken.url} onCopy={handleCopyCreated} onClose={onClose} />
-            </LogDetailModal>
-        );
+type Form = ReturnType<typeof initialForm>;
+
+export class CreateTokenModal extends AntiHookComponent<Props> {
+    private readonly form = new Carburetor(initialForm());
+
+    private update(patch: Partial<Form>): void {
+        this.form.setData({...this.form.getData(), ...patch});
     }
 
-    return (
-        <LogDetailModal title={t.Admin_Tokens_CreateTitle()} onClose={onClose}>
-            <form onSubmit={handleSubmit} data-test-id="token-create-form">
+    private readonly changeLabel = (event: React.ChangeEvent<HTMLInputElement>) => this.update({label: event.target.value});
+    private readonly changeMaxUses = (event: React.ChangeEvent<HTMLInputElement>) => this.update({maxUses: Math.max(1, parseInt(event.target.value, 10) || 1)});
+    private readonly changeTtl = (event: React.ChangeEvent<HTMLSelectElement>) => this.update({ttl: Number(event.target.value)});
+    private readonly changeAccountType = (event: React.ChangeEvent<HTMLSelectElement>) => this.update({accountType: event.target.value as 'user' | 'expert'});
+
+    private readonly submit = async (event: React.FormEvent) => {
+        event.preventDefault();
+        const {sending, label, maxUses, ttl, accountType} = this.form.getData();
+        if (sending) return;
+        const {createUrl, onCreated} = this.props;
+        this.update({sending: true});
+        try {
+            const resp = await sendPost<
+                {label: string; max_uses: number; ttl: number; account_type: string},
+                {success: boolean; token: TokenRow}
+            >(createUrl, {label, max_uses: maxUses, ttl, account_type: accountType});
+            const data = ('data' in resp && resp.data) ? resp.data : (resp as unknown as {success: boolean; token: TokenRow});
+            if (data?.success && data.token) {
+                this.update({createdToken: data.token});
+                onCreated(data.token);
+                return;
+            }
+            showToast(t.General_Error(), 'danger');
+        } catch {
+            showToast(t.General_Error(), 'danger');
+
+        } finally {
+            this.update({sending: false});
+        }
+    };
+
+    private readonly copyCreated = () => {
+        const token = this.form.getData().createdToken;
+        if (token) void navigator.clipboard.writeText(token.url).then(copied);
+    };
+
+    private renderFields({label, maxUses, ttl, accountType}: Form) {
+        return (
+            <>
                 <TokenField id="token-label" label={t.Admin_Tokens_Label()}>
                     <input
                         id="token-label"
                         type="text"
-                        className="form-control"
+                        className="admin-filter-field"
                         value={label}
-                        onChange={e => setLabel(e.target.value)}
+                        onChange={this.changeLabel}
                         placeholder={t.Admin_Tokens_LabelPlaceholder()}
                         data-test-id="token-label-input"
                     />
@@ -99,9 +111,9 @@ export const CreateTokenModal: React.FC<Props> = ({createUrl, onCreated, onClose
                 <TokenField id="token-account-type" label={t.Admin_Tokens_AccountType()}>
                     <select
                         id="token-account-type"
-                        className="form-control"
+                        className="admin-filter-field"
                         value={accountType}
-                        onChange={e => setAccountType(e.target.value as 'user' | 'expert')}
+                        onChange={this.changeAccountType}
                         data-test-id="token-account-type-select"
                     >
                         <option value="user">{t.Admin_Tokens_AccountTypeUser()}</option>
@@ -111,34 +123,54 @@ export const CreateTokenModal: React.FC<Props> = ({createUrl, onCreated, onClose
                 <TokenField id="token-ttl" label={t.Admin_Tokens_TTL()}>
                     <select
                         id="token-ttl"
-                        className="form-control"
+                        className="admin-filter-field"
                         value={ttl}
-                        onChange={e => setTtl(Number(e.target.value))}
+                        onChange={this.changeTtl}
                         data-test-id="token-ttl-select"
                     >
-                        {TTL_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label()}</option>)}
+                        {TTL_OPTIONS.map(renderTtlOption)}
                     </select>
                 </TokenField>
                 <TokenField id="token-max-uses" label={t.Admin_Tokens_MaxUses()}>
                     <input
                         id="token-max-uses"
                         type="number"
-                        className="form-control"
+                        className="admin-filter-field"
                         value={maxUses}
-                        onChange={e => setMaxUses(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                        onChange={this.changeMaxUses}
                         min={1}
                         data-test-id="token-max-uses-input"
                     />
                 </TokenField>
-                <div className="flex gap-2">
-                    <button type="submit" className="btn btn-primary" disabled={sending} data-test-id="token-create-submit">
-                        {t.Admin_Tokens_Create()}
-                    </button>
-                    <button type="button" className="btn btn-secondary" onClick={onClose} disabled={sending}>
-                        {t.Action_Cancel()}
-                    </button>
-                </div>
-            </form>
-        </LogDetailModal>
-    );
-};
+            </>
+        );
+    }
+
+    render() {
+        const {onClose} = this.props;
+        const state = this.useCarburetor(this.form);
+        const {sending, createdToken} = state;
+        if (createdToken) {
+            return (
+                <LogDetailModal title={t.Admin_Tokens_CreateTitle()} onClose={onClose}>
+                    <CreatedLink url={createdToken.url} onCopy={this.copyCreated} onClose={onClose} />
+                </LogDetailModal>
+            );
+        }
+        return (
+            <LogDetailModal title={t.Admin_Tokens_CreateTitle()} onClose={onClose}>
+                <form onSubmit={this.submit} data-test-id="token-create-form">
+                    {this.renderFields(state)}
+                    <div className="token-link-actions">
+                        <button type="submit" className="primary-action-button" disabled={sending} data-test-id="token-create-submit">
+                            {t.Admin_Tokens_Create()}
+                        </button>
+                        <button type="button" className="confirm-modal-cancel" onClick={onClose} disabled={sending}>
+                            {t.Action_Cancel()}
+                        </button>
+                    </div>
+                </form>
+            </LogDetailModal>
+        );
+    }
+}

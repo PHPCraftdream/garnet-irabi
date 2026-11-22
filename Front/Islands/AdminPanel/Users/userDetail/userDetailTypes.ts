@@ -106,32 +106,32 @@ export interface UserDetailData {
     userCancellations: UserCancellationRow[];
 }
 
-export const BOOKING_STATUS_CLS: Record<string, string> = {
-    pending:   'status-warning',
-    confirmed: 'bg-success',
-    completed: 'status-info',
-    cancelled: 'bg-secondary',
+export const BOOKING_STATUS_TONE: Record<string, string> = {
+    pending:   'warning',
+    confirmed: 'success',
+    completed: 'info',
+    cancelled: 'secondary',
 };
 
-export const SLOT_STATUS_CLS: Record<string, string> = {
-    free:      'status-muted',
-    booked:    'bg-primary',
-    completed: 'status-info',
-    cancelled: 'bg-secondary',
+export const SLOT_STATUS_TONE: Record<string, string> = {
+    free:      'muted',
+    booked:    'info',
+    completed: 'info',
+    cancelled: 'secondary',
 };
 
-export const TICKET_STATUS_CLS: Record<string, string> = {
-    open:             'status-warning',
-    investigation:    'status-info',
-    in_progress:      'bg-primary',
-    waiting_user:     'status-warning',
-    waiting_support:  'status-warning',
-    escalated:        'bg-danger',
-    on_hold:          'bg-secondary',
-    deferred:         'bg-secondary',
-    low_priority:     'bg-secondary',
-    resolved:         'bg-success',
-    rejected:         'bg-secondary',
+export const TICKET_STATUS_TONE: Record<string, string> = {
+    open:             'warning',
+    investigation:    'info',
+    in_progress:      'info',
+    waiting_user:     'warning',
+    waiting_support:  'warning',
+    escalated:        'danger',
+    on_hold:          'secondary',
+    deferred:         'secondary',
+    low_priority:     'secondary',
+    resolved:         'success',
+    rejected:         'secondary',
 };
 
 export function ticketStatusLabel(status: string): string {

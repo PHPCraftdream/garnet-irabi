@@ -1,9 +1,11 @@
 import * as React from 'react';
 
+export type FlagButtonTone = 'btn-outline-danger' | 'btn-outline-primary' | 'btn-outline-secondary' | 'btn-success' | 'btn-secondary';
+
 export function FlagBtn({label, active, cls, disabled, onClick, testId, title}: {
     label: string;
     active: boolean;
-    cls: [string, string]; // [active class, inactive class]
+    cls: [FlagButtonTone, FlagButtonTone]; // [активное состояние, неактивное состояние]
     disabled: boolean;
     onClick: () => void;
     testId?: string;
@@ -14,7 +16,8 @@ export function FlagBtn({label, active, cls, disabled, onClick, testId, title}: 
             type="button"
             data-test-id={testId}
             title={title}
-            className={`btn btn-sm ${active ? cls[0] : cls[1]}`}
+            className={(active ? cls[0] : cls[1]) === 'btn-success' ? 'admin-user-flag-success' : 'admin-user-flag'}
+            data-tone={active ? cls[0] : cls[1]}
             disabled={disabled}
             onClick={onClick}
         >

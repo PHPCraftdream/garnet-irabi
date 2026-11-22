@@ -11,52 +11,42 @@ interface SlotsFiltersProps {
     onChange: (filters: FiltersState) => void;
 }
 
-export const SlotsFilters: React.FC<SlotsFiltersProps> = ({filters, experts, onChange}) => {
-    const updateFilter = <K extends keyof FiltersState>(key: K, value: FiltersState[K]) => {
-        onChange({...filters, [key]: value});
-    };
+export class SlotsFilters extends React.Component<SlotsFiltersProps> {
+    private updateFilter<K extends keyof FiltersState>(key: K, value: FiltersState[K]): void {
+        this.props.onChange({...this.props.filters, [key]: value});
+    }
 
-    const _toggleExpert = (id: string) => {
-        const next = new Set(filters.expertIds);
-        if (next.has(id)) {
-            next.delete(id);
-        } else {
-            next.add(id);
-        }
-        updateFilter('expertIds', next);
-    };
+    private readonly changeExperts = (ids: Set<string>) => this.updateFilter('expertIds', ids);
+    private readonly changePrice = (key: 'priceMin' | 'priceMax', value: string) => this.updateFilter(key, value);
+    private readonly changeTime = (value: TimeOfDay) => this.updateFilter('timeOfDay', value);
+    private readonly changeType = (value: SlotType) => this.updateFilter('slotType', value);
+    private readonly changeOnline = (value: OnlineFilter) => this.updateFilter('onlineFilter', value);
 
-    return (
-        <div data-test-id="slots-filters">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                {/* Expert filter */}
-                <div>
-                    <ExpertFilterField experts={experts} expertIds={filters.expertIds} onChange={ids => updateFilter('expertIds', ids)} />
-                </div>
-
-                {/* Price range */}
-                <div>
-                    <PriceRangeFilterField priceMin={filters.priceMin} priceMax={filters.priceMax} onChange={(key, value) => updateFilter(key, value)} />
-                </div>
-
-                {/* Time of day */}
-                <div>
-                    <label className="label-mini">{t.Slot_Time()}</label>
-                    <FilterChipGroup options={[['all', t.Admin_Tab_All()], ['morning', t.Slots_Morning()], ['day', t.Slots_Day()], ['evening', t.Slots_Evening()]] as [TimeOfDay, string][]} value={filters.timeOfDay} onChange={val => updateFilter('timeOfDay', val)} testIdPrefix="filter-time" />
-                </div>
-
-                {/* Slot type */}
-                <div>
-                    <label className="label-mini">{t.Slot_Type()}</label>
-                    <FilterChipGroup options={[['all', t.Admin_Tab_All()], ['individual', t.Slots_Individual()], ['group', t.Slots_Group()]] as [SlotType, string][]} value={filters.slotType} onChange={val => updateFilter('slotType', val)} testIdPrefix="filter-type" />
-                </div>
-
-                {/* Online/Offline */}
-                <div>
-                    <label className="label-mini">{t.Slots_Online()} / {t.Slots_Offline()}</label>
-                    <FilterChipGroup options={[['all', t.Admin_Tab_All()], ['online', t.Slots_Online()], ['offline', t.Slots_Offline()]] as [OnlineFilter, string][]} value={filters.onlineFilter} onChange={val => updateFilter('onlineFilter', val)} testIdPrefix="filter-online" />
+    public render() {
+        const {filters, experts} = this.props;
+        return (
+            <div data-test-id="slots-filters">
+                <div className="slot-filters-grid">
+                    <div>
+                        <ExpertFilterField experts={experts} expertIds={filters.expertIds} onChange={this.changeExperts} />
+                    </div>
+                    <div>
+                        <PriceRangeFilterField priceMin={filters.priceMin} priceMax={filters.priceMax} onChange={this.changePrice} />
+                    </div>
+                    <div>
+                        <label className="slot-filter-label">{t.Slot_Time()}</label>
+                        <FilterChipGroup options={[['all', t.Admin_Tab_All()], ['morning', t.Slots_Morning()], ['day', t.Slots_Day()], ['evening', t.Slots_Evening()]] as [TimeOfDay, string][]} value={filters.timeOfDay} onChange={this.changeTime} testIdPrefix="filter-time" />
+                    </div>
+                    <div>
+                        <label className="slot-filter-label">{t.Slot_Type()}</label>
+                        <FilterChipGroup options={[['all', t.Admin_Tab_All()], ['individual', t.Slots_Individual()], ['group', t.Slots_Group()]] as [SlotType, string][]} value={filters.slotType} onChange={this.changeType} testIdPrefix="filter-type" />
+                    </div>
+                    <div>
+                        <label className="slot-filter-label">{t.Slots_Online()} / {t.Slots_Offline()}</label>
+                        <FilterChipGroup options={[['all', t.Admin_Tab_All()], ['online', t.Slots_Online()], ['offline', t.Slots_Offline()]] as [OnlineFilter, string][]} value={filters.onlineFilter} onChange={this.changeOnline} testIdPrefix="filter-online" />
+                    </div>
                 </div>
             </div>
-        </div>
-    );
-};
+        );
+    }
+}

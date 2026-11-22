@@ -1,5 +1,6 @@
 import * as React from 'react';
-import {useState, useRef, useEffect} from 'react';
+import {useRef, useEffect} from 'react';
+import {Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {sendPostFormData} from '@common/Api/Send/sendPostFormData';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
@@ -9,6 +10,46 @@ import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {SupportMessage} from './supportTypes';
 import {collectContext} from './autoContext';
 import {reportAttachmentErrors} from '../../../../Common/attachments/attachmentHelpers';
+
+interface ThreadState {
+    messages: SupportMessage[];
+    loading: boolean;
+}
+
+class ThreadStore extends Carburetor<ThreadState> {
+    constructor() {
+        super({messages: [], loading: false});
+    }
+
+    readonly snapshot = () => this.getData();
+    readonly subscribeSnapshot = (listener: () => void) => {
+        const id = this.subscribe(listener);
+        return () => this.unsubscribe(id);
+    };
+
+    private update<K extends keyof ThreadState>(key: K, value: ThreadState[K]): void {
+        const current = this.getData();
+        if (Object.is(current[key], value)) return;
+        const version = this.getVersion();
+        this.setData({...current, [key]: value});
+        if (this.getVersion() === version) {
+            this.markAllChanged();
+            this.emitUpdate();
+        }
+    }
+
+    readonly setMessages: React.Dispatch<React.SetStateAction<SupportMessage[]>> = value => {
+        const current = this.getData().messages;
+        this.update('messages', typeof value === 'function' ? value(current) : value);
+    };
+    readonly setLoading = (value: boolean) => this.update('loading', value);
+}
+
+function appendFiles(fd: FormData, files: PendingFile[]): void {
+    for (const f of files) {
+        fd.append('attachments[]', f.file, f.name);
+    }
+}
 
 interface Options {
     messagesUrl: string;
@@ -27,8 +68,11 @@ interface Options {
  * Что осталось у вызывающего — вид: список, разговор, форма. Он разный.
  */
 export function useSupportThread({messagesUrl, createUrl, replyUrl}: Options) {
-    const [messages, setMessages] = useState<SupportMessage[]>([]);
-    const [loading, setLoading] = useState(false);
+    const storeRef = useRef<ThreadStore | null>(null);
+    if (storeRef.current === null) storeRef.current = new ThreadStore();
+    const store = storeRef.current;
+    const {messages, loading} = React.useSyncExternalStore(store.subscribeSnapshot, store.snapshot, store.snapshot);
+    const {setMessages, setLoading} = store;
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Новое сообщение должно оказаться на виду само: человек читает низ ленты,
@@ -58,13 +102,7 @@ export function useSupportThread({messagesUrl, createUrl, replyUrl}: Options) {
         } finally {
             setLoading(false);
         }
-    }, [messagesUrl]);
-
-    const appendFiles = (fd: FormData, files: PendingFile[]) => {
-        for (const f of files) {
-            fd.append('attachments[]', f.file, f.name);
-        }
-    };
+    }, [messagesUrl, setLoading, setMessages]);
 
     /** Создать обращение. Возвращает созданный тикет или null. */
     const createTicket = React.useCallback(async (subject: string, message: string, files: PendingFile[]): Promise<any> => {

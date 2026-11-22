@@ -12,7 +12,7 @@ const pagerItems = (counts: PagerCounts): PagerCountItem[] =>
         key: k,
         count: counts[k],
         label: k === 'pending' ? t.Slot_Filter_Pending() : translateStatus(k),
-        cls: `cal-nav-badge--${k}`,
+        kind: k,
     }));
 
 const Chevron: React.FC<{points: string}> = ({points}) => (
@@ -50,10 +50,10 @@ export const CalendarPager: React.FC<Props> = ({
     onToday,
     activeKind,
 }) => (
-    <div className="grid grid-cols-3 items-center gap-3 mb-2" data-test-id="expert-week-nav">
-        <div className="flex items-center gap-2 min-w-0">
+    <div className="calendar-expert-pager" data-test-id="expert-week-nav">
+        <div className="calendar-pager-side">
             <button
-                className="btn-icon-round"
+                className="calendar-pager-arrow"
                 onClick={onPrev}
                 title={t.Slots_PrevWeek()}
                 aria-label={t.Slots_PrevWeek()}
@@ -64,22 +64,22 @@ export const CalendarPager: React.FC<Props> = ({
             <CalendarPagerCounts items={pagerItems(prevCounts)} side="prev" activeKey={activeKind} />
         </div>
 
-        <div className="flex flex-col items-center gap-1 min-w-0">
+        <div className="calendar-pager-center">
             <CalendarPagerCounts items={pagerItems(windowCounts)} side="now" activeKey={activeKind} />
-            <div className="flex items-center gap-2 flex-wrap justify-center">
-                <span className="text-sm font-semibold text-on-surface">{rangeLabel}</span>
+            <div className="calendar-pager-range">
+                <span className="calendar-expert-title">{rangeLabel}</span>
                 {weekOffset !== 0 && (
-                    <button className="chip" onClick={onToday} data-test-id="expert-week-today">
+                    <button className="slot-filter-chip" onClick={onToday} data-test-id="expert-week-today">
                         {t.Slots_Today()}
                     </button>
                 )}
             </div>
         </div>
 
-        <div className="flex items-center gap-2 min-w-0 justify-end">
+        <div className="calendar-pager-next">
             <CalendarPagerCounts items={pagerItems(nextCounts)} side="next" activeKey={activeKind} />
             <button
-                className="btn-icon-round"
+                className="calendar-pager-arrow"
                 onClick={onNext}
                 title={t.Slots_NextWeek()}
                 aria-label={t.Slots_NextWeek()}

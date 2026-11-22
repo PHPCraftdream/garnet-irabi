@@ -1,0 +1,35 @@
+@reference "tailwindcss";
+
+@utility layout-entity-person-group { @apply inline-flex items-center gap-1.5; }
+@utility shape-entity-person-admin { @apply px-1 py-0.5 rounded border; }
+@utility type-entity-person-admin { @apply text-[10px] no-underline; }
+@utility shape-entity-person-role { @apply px-1.5 py-0.5 rounded; }
+@utility type-entity-person-role { @apply text-[10px]; }
+@theme inline reference {
+  /* carburetor-disable-next-line valid-color-role */
+  --color-entityadmin-edge: var(--color-border);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-entityadmin-edge-hover: var(--color-accent);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-entityadmin-ink: var(--color-text-muted);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-entityadmin-ink-hover: var(--color-accent);
+}
+
+@utility tone-entityadmin-outline { @apply border-entityadmin-edge text-entityadmin-ink hover:border-entityadmin-edge-hover hover:text-entityadmin-ink-hover; }
+
+@layer components {
+  .entity-person-link { @apply tone-bookaccent-plain type-book-place-link; }
+  .entity-person-group { @apply tone-bookneutral-plain layout-entity-person-group; }
+  .entity-person-admin { @apply tone-entityadmin-outline shape-entity-person-admin type-entity-person-admin; }
+  .entity-person-role { @apply tone-slotbookmuted-soft shape-entity-person-role type-entity-person-role; }
+  .universal-status-badge[data-status="status-muted"] { @apply tone-slotbookmuted-soft; }
+  .universal-status-badge { @apply tone-slotbookmuted-soft layout-token-status shape-token-status type-token-status; }
+  .universal-status-badge[data-status="status-info"] { @apply tone-slotbookinfo-soft; }
+  .universal-status-badge[data-status="status-success"] { @apply tone-slotbooksuccess-soft; }
+  .universal-status-badge[data-status="status-danger"] { @apply tone-slotbookdanger-soft; }
+  .universal-status-badge[data-status="status-warning"] { @apply tone-slotbookwarning-soft; }
+  .universal-status-badge[data-status="status-notice"] { @apply tone-slotbooknotice-soft; }
+  .universal-status-badge[data-status="status-special"] { @apply tone-slotbookspecial-soft; }
+  .universal-status-badge[data-status="status-active"] { @apply tone-slotbookactive-soft; }
+}

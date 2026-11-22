@@ -1,0 +1,89 @@
+@reference "tailwindcss";
+
+@theme inline reference {
+  /* carburetor-disable-next-line valid-color-role */
+  --color-userbalance-edge: var(--color-border);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-userbalance-wash: var(--color-accent-subtle);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-balancerow-ink: currentColor;
+  /* carburetor-disable-next-line valid-color-role */
+  --color-balanceborder-edge: var(--color-border);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-balancecard-wash: var(--color-bg-surface);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-balancecard-edge: var(--color-border);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-balancerow-wash-hover: var(--color-bg-surface-hover);
+}
+
+@utility shape-balance-topup-offset { @apply mb-6; }
+@utility tone-userbalance-outlined { @apply bg-userbalance-wash border-userbalance-edge; }
+@utility tone-balancecard-outlined { @apply bg-balancecard-wash border-balancecard-edge; }
+@utility tone-balancerow-soft { @apply text-balancerow-ink hover:bg-balancerow-wash-hover; }
+@utility tone-balanceborder-outline { @apply border-balanceborder-edge; }
+@utility shape-balance-caption { @apply mb-1; }
+@utility type-balance-caption { @apply text-sm; }
+@utility type-balance-amount { @apply text-3xl font-bold; }
+@utility shape-balance-notice { @apply mb-4; }
+@utility type-balance-notice { @apply text-sm; }
+@utility layout-balance-label { @apply block; }
+@utility shape-balance-label { @apply mb-1; }
+@utility type-balance-label { @apply font-medium; font-size: .8125rem; }
+@utility layout-balance-controls { @apply flex gap-3 items-end; }
+@utility layout-balance-input { @apply flex-1; }
+@utility layout-balance-reason-detail { @apply block; }
+@utility type-balance-reason-detail { @apply text-xs; }
+@utility effect-balance-reason-detail { @apply opacity-75; }
+@utility type-balance-nowrap { @apply whitespace-nowrap; }
+@utility type-balance-mono { @apply font-mono; }
+@utility type-balance-mono-small { @apply font-mono text-sm; }
+@utility type-balance-amount-cell { @apply text-right font-medium; }
+@utility type-balance-card-value { @apply font-medium whitespace-nowrap; }
+@utility shape-balance-ledger-card { @apply border-b px-4 py-3 last:border-b-0; }
+@utility layout-balance-card-heading { @apply flex items-baseline justify-between gap-3; }
+@utility shape-balance-card-detail { @apply mt-1; }
+@utility type-balance-small { @apply text-sm; }
+@utility type-balance-xs { @apply text-xs; }
+@utility shape-balance-ledger-table { @apply rounded-lg border; }
+@utility layout-balance-narrow { @apply md:hidden; }
+@utility layout-balance-wide { @apply hidden md:block overflow-x-auto; }
+@utility type-balance-align-right { @apply text-right; }
+@utility shape-balance-space-after { @apply mb-4; }
+@utility shape-balance-space-before { @apply mt-4; }
+
+@layer components {
+  .user-balance-card { @apply tone-userbalance-outlined shape-booking-card layout-booking-card effect-booking-card shape-balance-topup-offset; }
+  .balance-caption { @apply tone-bookmuted-plain shape-balance-caption type-balance-caption; }
+  .balance-amount { @apply tone-bookaccent-plain type-balance-amount; }
+  .balance-notice { @apply tone-booksecondary-plain shape-balance-notice type-balance-notice; }
+  .balance-label { @apply tone-booksecondary-plain layout-balance-label shape-balance-label type-balance-label; }
+  .balance-topup-controls { @apply tone-bookneutral-plain layout-balance-controls; }
+  .balance-input { @apply tone-garnetfield-outlined shape-native-control shape-native-field layout-native-select layout-balance-input type-native-select focus-native-select motion-native-select; }
+  .balance-reason-detail { @apply tone-bookneutral-plain layout-balance-reason-detail type-balance-reason-detail effect-balance-reason-detail; }
+  .balance-ledger-row { @apply tone-balancerow-soft; }
+  .balance-ledger-date { @apply tone-bookmuted-plain type-balance-nowrap; }
+  .balance-ledger-type { @apply tone-moneybalance-plain type-balance-mono; }
+  .balance-ledger-value { @apply tone-moneybalance-plain; }
+  .balance-ledger-amount-cell { @apply tone-bookneutral-plain type-balance-amount-cell; }
+  .balance-muted { @apply tone-bookmuted-plain; }
+  .balance-ledger-card { @apply tone-balanceborder-outline shape-balance-ledger-card; }
+  .balance-ledger-card-heading { @apply tone-bookneutral-plain layout-balance-card-heading; }
+  .balance-ledger-card-type { @apply tone-moneybalance-plain type-balance-mono-small; }
+  .balance-ledger-card-value { @apply tone-moneybalance-plain type-balance-card-value; }
+  .balance-ledger-type[data-tone="debit"] { @apply tone-externaldanger-plain; }
+  .balance-ledger-value[data-tone="debit"] { @apply tone-externaldanger-plain; }
+  .balance-ledger-card-type[data-tone="debit"] { @apply tone-externaldanger-plain; }
+  .balance-ledger-card-value[data-tone="debit"] { @apply tone-externaldanger-plain; }
+  .balance-ledger-card-reason { @apply tone-bookmuted-plain shape-balance-card-detail type-balance-small; }
+  .balance-ledger-card-date { @apply tone-bookmuted-plain shape-balance-card-detail type-balance-xs; }
+  .balance-ledger-table { @apply tone-balancecard-outlined shape-balance-ledger-table; }
+  .balance-ledger-narrow { @apply tone-bookneutral-plain layout-balance-narrow; }
+  .balance-ledger-wide { @apply tone-bookneutral-plain layout-balance-wide; }
+  .balance-align-right { @apply tone-bookneutral-plain type-balance-align-right; }
+  .balance-space-after { @apply tone-bookneutral-plain shape-balance-space-after; }
+  .balance-space-before { @apply tone-bookneutral-plain shape-balance-space-before; }
+}
+
+/* carburetor-disable-next-line valid-function-class */
+.booking-card-shell[data-balance-topup] { @apply shape-balance-topup-offset; }

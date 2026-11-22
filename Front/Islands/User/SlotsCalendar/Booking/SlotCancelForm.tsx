@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import SendButton from '@common/Components/Controls/SendButton';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {
@@ -23,16 +24,16 @@ const CancelMoney: React.FC<MoneyProps> = ({cost, penaltyPercent, penaltyApplies
         if (cost <= 0) return null;
 
         return (
-            <div className="text-xs text-muted" data-test-id="slot-detail-refund-full">
+            <div className="booking-cancel-money-muted" data-test-id="slot-detail-refund-full">
                 {t.Booking_RefundInfo()}: {cost} &#8381;
             </div>
         );
     }
 
     return (
-        <div className="space-y-1" data-test-id="slot-detail-penalty-preview">
-            <div className="text-xs text-warning">{t.Booking_PenaltyKeptByExpert([penaltyPercent, penaltyAmount])}</div>
-            <div className="text-xs text-muted">{t.Booking_RefundAmount([refundAmount])}</div>
+        <div className="booking-cancel-money" data-test-id="slot-detail-penalty-preview">
+            <div className="booking-cancel-money-warning">{t.Booking_PenaltyKeptByExpert([penaltyPercent, penaltyAmount])}</div>
+            <div className="booking-cancel-money-muted">{t.Booking_RefundAmount([refundAmount])}</div>
         </div>
     );
 };
@@ -60,44 +61,16 @@ interface Props {
  * остаются слова (`bookingAction`) и расчёт сумм (`penaltyPreview`) — то, из-за
  * расхождения чего и заводилась эта задача.
  */
-export const SlotCancelForm: React.FC<Props> = ({
-    bookingStatus,
-    cost,
-    penaltyPercent,
-    startAt,
-    reason,
-    reasonError,
-    cancelError,
-    sending,
-    onReasonChange,
-    onSubmit,
-    onDismiss,
-}) => {
-    const preview = penaltyPreview(bookingStatus, {cost, penaltyPercent, startAt});
-    const shownError = reasonError || cancelError;
+export class SlotCancelForm extends AntiHookComponent<Props> {
+    private readonly changeReason = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+        this.props.onReasonChange(event.target.value);
+    };
 
-    return (
-        <div className="p-3 rounded-lg border border-default bg-surface-alt space-y-3" data-test-id="slot-detail-cancel-form">
-            <div className="text-sm font-medium">{actionTitle('user', bookingStatus)}</div>
-            <CancelMoney
-                cost={cost}
-                penaltyPercent={penaltyPercent}
-                penaltyApplies={preview.applies}
-                penaltyAmount={preview.penaltyAmount}
-                refundAmount={preview.refundAmount}
-            />
-            {shownError && <div className="text-sm text-danger">{shownError}</div>}
-            <label className="text-sm text-secondary mb-1 block">{actionReasonLabel('user', bookingStatus)}</label>
-            <textarea
-                className="form-control text-sm"
-                rows={3}
-                value={reason}
-                onChange={e => onReasonChange(e.target.value)}
-                placeholder={actionReasonPlaceholder('user', bookingStatus)}
-                data-test-id="slot-detail-cancel-reason-input"
-            />
-            <div className="flex gap-2 justify-end">
-                <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onDismiss}>
+    private renderActions() {
+        const {bookingStatus, sending, onSubmit, onDismiss} = this.props;
+        return (
+            <div className="booking-cancel-actions">
+                <button type="button" className="booking-cancel-dismiss" onClick={onDismiss}>
                     {t.Action_Cancel()}
                 </button>
                 <SendButton
@@ -108,6 +81,36 @@ export const SlotCancelForm: React.FC<Props> = ({
                     variant="outline-warning"
                 />
             </div>
-        </div>
-    );
-};
+        );
+    }
+
+    render() {
+        const {bookingStatus, cost, penaltyPercent, startAt, reason, reasonError, cancelError} = this.props;
+        const preview = penaltyPreview(bookingStatus, {cost, penaltyPercent, startAt});
+        const shownError = reasonError || cancelError;
+
+        return (
+            <div className="booking-cancel-panel" data-test-id="slot-detail-cancel-form">
+                <div className="booking-cancel-title">{actionTitle('user', bookingStatus)}</div>
+                <CancelMoney
+                    cost={cost}
+                    penaltyPercent={penaltyPercent}
+                    penaltyApplies={preview.applies}
+                    penaltyAmount={preview.penaltyAmount}
+                    refundAmount={preview.refundAmount}
+                />
+                {shownError && <div className="booking-cancel-error">{shownError}</div>}
+                <label className="booking-cancel-label">{actionReasonLabel('user', bookingStatus)}</label>
+                <textarea
+                    className="booking-cancel-input"
+                    rows={3}
+                    value={reason}
+                    onChange={this.changeReason}
+                    placeholder={actionReasonPlaceholder('user', bookingStatus)}
+                    data-test-id="slot-detail-cancel-reason-input"
+                />
+                {this.renderActions()}
+            </div>
+        );
+    }
+}

@@ -25,30 +25,33 @@ interface Props {
     counterpartColumn: string;
     count: number;
     items: CancellationItem[];
-    className?: string;
+    spacing?: 'after';
     onOpenUser: (id: number, name: string) => void;
 }
 
 const CancellationTr: React.FC<{item: CancellationItem; onOpenUser: Props['onOpenUser']}> = ({item, onOpenUser}) => (
-    <tr>
-        <td className="admin-cell-date">{formatTs(item.created_at)}</td>
-        <td><PersonCell id={item.counterpartId} name={item.counterpartName} onOpen={onOpenUser} /></td>
-        <td className="admin-cell-date">{item.slot_start_at ? formatTs(item.slot_start_at) : '—'}</td>
-        <td className="text-sm">{item.reason || '—'}</td>
+    <tr className="admin-user-history-row">
+        <td className="admin-user-history-cell-time">{formatTs(item.created_at)}</td>
+        <td className="admin-user-history-cell"><PersonCell id={item.counterpartId} name={item.counterpartName} onOpen={onOpenUser} /></td>
+        <td className="admin-user-history-cell-time">{item.slot_start_at ? formatTs(item.slot_start_at) : '—'}</td>
+        <td className="admin-user-history-cell-context">{item.reason || '—'}</td>
     </tr>
 );
 
-export const CancellationsSection: React.FC<Props> = ({title, counterpartColumn, count, items, className, onOpenUser}) => {
+export const CancellationsSection: React.FC<Props> = ({title, counterpartColumn, count, items, spacing, onOpenUser}) => {
     if (items.length === 0) return null;
+
+    const rows: React.ReactNode[] = [];
+    for (const item of items) rows.push(<CancellationTr key={item.id} item={item} onOpenUser={onOpenUser} />);
 
     return (
         <DetailTable
             title={title}
             count={count}
-            className={className}
+            spacing={spacing}
             columns={[t.Admin_Cancel_Date(), counterpartColumn, t.Admin_Cancel_SlotTime(), t.Admin_Cancel_Reason()]}
         >
-            {items.map(item => <CancellationTr key={item.id} item={item} onOpenUser={onOpenUser} />)}
+            {rows}
         </DetailTable>
     );
 };

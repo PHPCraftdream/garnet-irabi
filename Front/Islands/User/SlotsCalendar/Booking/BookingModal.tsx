@@ -1,18 +1,17 @@
 import * as React from 'react';
-import {useState, useMemo} from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {D} from '@common/Support/Debug/D';
-import {useSending} from '@common/hooks/data/useSending';
 import {useBodyScrollLock} from '@common/hooks/ui/useBodyScrollLock';
 import {useShake} from '@common/hooks/ui/useShake';
-import {bookErrorCode, bookErrorMessage} from './bookingErrors';
-import {BookingSlotSummary} from './BookingSlotSummary';
 import SendButton from '@common/Components/Controls/SendButton';
 import {Portal} from '@common/Components/Layout/Portal';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {ExtraSlotPicker} from '../Slot/ExtraSlotPicker';
-import {SlotItem, ExpertMap} from '../types';
 import {appUrl} from '@common/Utils/Url/appUrl';
+import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import {bookErrorCode, bookErrorMessage} from './bookingErrors';
+import {BookingSlotSummary} from './BookingSlotSummary';
+import {ExtraSlotPicker} from '../Slot/ExtraSlotPicker';
+import type {SlotItem, ExpertMap} from '../types';
 
 interface Props {
     slot: SlotItem;
@@ -23,149 +22,189 @@ interface Props {
     bookUrl: string;
     csrf: string;
     onClose: () => void;
-    /** Called with every slot id actually submitted — not just the one the modal opened for. */
     onBooked: (bookedIds: number[]) => void;
 }
 
-export default function BookingModal({slot, allSlots, experts, bookedIds, balance, bookUrl, csrf, onClose, onBooked}: Props) {
-    useBodyScrollLock(true);
-    const [selected, setSelected] = useState<Set<number>>(() => new Set([slot.id]));
-    const [error, setError] = useState('');
-    const {sending, withSending} = useSending();
-    const [balanceShaking, shakeBalance] = useShake();
+interface ViewProps extends Props {
+    balanceShaking: boolean;
+    shakeBalance: () => void;
+}
 
-    const expert = experts[slot.expert_id];
+interface State {
+    selected: number[];
+    error: string;
+    sending: boolean;
+}
 
-    // Other available slots from same expert (not booked, not the clicked one)
-    const otherSlots = useMemo(() =>
-        allSlots
-            .filter(s => s.expert_id === slot.expert_id && s.id !== slot.id && !bookedIds.has(s.id) && s.status === 'free')
-            .sort((a, b) => a.start_at - b.start_at)
-            .slice(0, 10),
-    [allSlots, slot, bookedIds]);
+function stopClick(event: React.MouseEvent<HTMLDivElement>): void {
+    event.stopPropagation();
+}
 
-    const toggle = (id: number) => {
-        setSelected(prev => {
-            const next = new Set(prev);
-            if (next.has(id)) next.delete(id);
-            else next.add(id);
-            return next;
-        });
+function compareStart(left: SlotItem, right: SlotItem): number {
+    return left.start_at - right.start_at;
+}
+
+function getOtherSlots({allSlots, slot, bookedIds}: Props): SlotItem[] {
+    const available = allSlots.filter(other => other.expert_id === slot.expert_id && other.id !== slot.id && !bookedIds.has(other.id) && other.status === 'free');
+    // Сортируем свежий массив, не исходные слоты.
+    // oxlint-disable-next-line unicorn/no-array-sort
+    available.sort(compareStart);
+    return available.slice(0, 10);
+}
+
+function priceFor(ids: readonly number[], slots: SlotItem[]): number {
+    let sum = 0;
+    for (const id of ids) sum += slots.find(slot => slot.id === id)?.cost ?? 0;
+    return sum;
+}
+
+function uidsFor(ids: readonly number[], slots: SlotItem[]): Record<string, string> {
+    const uids: Record<string, string> = {};
+    for (const id of ids) {
+        const uid = slots.find(slot => slot.id === id)?.uid;
+        if (uid) uids[String(id)] = uid;
+    }
+    return uids;
+}
+
+function canPay(balance: number, total: number): boolean {
+    return total === 0 || balance >= total;
+}
+
+class BookingModalView extends AntiHookComponent<ViewProps> {
+    private readonly store = new Carburetor<State>({selected: [this.props.slot.id], error: '', sending: false});
+    private readonly selection = this.connectSelection(this.store, state => state.selected);
+    private selectionCache?: {ids: readonly number[]; value: Set<number>};
+    private otherCache?: {slot: SlotItem; allSlots: SlotItem[]; bookedIds: Set<number>; value: SlotItem[]};
+
+    private update(patch: Partial<State>): void {
+        this.store.setData({...this.store.getData(), ...patch});
+    }
+
+    private getSelection(ids: readonly number[]): Set<number> {
+        const cache = this.selectionCache;
+        if (cache?.ids === ids) return cache.value;
+        const value = new Set(ids);
+        this.selectionCache = {ids, value};
+        return value;
+    }
+
+    private otherSlots(): SlotItem[] {
+        const {slot, allSlots, bookedIds} = this.props;
+        const cache = this.otherCache;
+        if (cache?.slot === slot && cache.allSlots === allSlots && cache.bookedIds === bookedIds) return cache.value;
+        const value = getOtherSlots(this.props);
+        this.otherCache = {slot, allSlots, bookedIds, value};
+        return value;
+    }
+
+    private readonly toggle = (id: number) => {
+        const {selected} = this.store.getData();
+        this.update({selected: selected.includes(id) ? selected.filter(value => value !== id) : [...selected, id]});
     };
 
-    const totalPrice = useMemo(() => {
-        let sum = 0;
-        for (const id of selected) {
-            const s = allSlots.find(sl => sl.id === id);
-            if (s) sum += s.cost;
-        }
-        return sum;
-    }, [selected, allSlots]);
-
-    const canAfford = totalPrice === 0 || balance >= totalPrice;
-
-    const handleBook = () => {
-        if (selected.size === 0) return;
-        // Button stays enabled when funds are short so the click can draw
-        // attention to the notice instead of silently doing nothing.
-        if (!canAfford) {
+    private readonly book = async () => {
+        const {selected, sending} = this.store.getData();
+        if (!selected.length) return;
+        const {allSlots, balance, csrf, bookUrl, onBooked, onClose, shakeBalance} = this.props;
+        const total = priceFor(selected, allSlots);
+        // Кнопка остаётся доступной, чтобы подсветить нехватку средств.
+        if (!canPay(balance, total)) {
             shakeBalance();
             return;
         }
-        withSending(async () => {
-            D('booking.submit', {slotIds: [...selected], total: totalPrice});
-            setError('');
-            try {
-                // Build id+uid pairs for concurrency guard
-                const slotUids: Record<string, string> = {};
-                for (const id of selected) {
-                    const s = allSlots.find(sl => sl.id === id);
-                    if (s?.uid) slotUids[String(id)] = s.uid;
-                }
-                const r = await sendPost(bookUrl, {
-                    slot_ids: [...selected],
-                    slot_uids: slotUids,
-                    CSRF_TOKEN: csrf,
-                }) as any;
-                if (r?.stale) {
-                    // Slot was rescheduled — notify user and close modal
-                    setError(t.Slot_Rescheduled());
-                    return;
-                }
-                if (r?.error) {
-                    setError(r.error);
-                } else {
-                    D('booking.success', {count: selected.size});
-                    onBooked([...selected]);
-                    onClose();
-                }
-            } catch (e: any) {
-                // The refusal travels as a machine code in the response body,
-                // not in Error.message. Reading the message showed nothing
-                // useful, so a booking refused because the lesson had already
-                // started looked to the user like a button that did nothing.
-                const code = bookErrorCode(e);
-                setError(code ? bookErrorMessage(code) : (e?.message || t.General_Error()));
+        if (sending) return;
+        this.update({sending: true, error: ''});
+        try {
+            D('booking.submit', {slotIds: [...selected], total});
+            const result = await sendPost(bookUrl, {
+                slot_ids: [...selected],
+                slot_uids: uidsFor(selected, allSlots),
+                CSRF_TOKEN: csrf,
+            }) as any;
+            if (result?.stale) {
+                this.update({error: t.Slot_Rescheduled()});
+            } else if (result?.error) {
+                this.update({error: result.error});
+            } else {
+                D('booking.success', {count: selected.length});
+                onBooked([...selected]);
+                onClose();
             }
-        });
+        } catch (e: any) {
+            const code = bookErrorCode(e);
+            this.update({error: code ? bookErrorMessage(code) : (e?.message || t.General_Error())});
+        } finally {
+            this.update({sending: false});
+        }
     };
 
-    return (
-        <Portal><div className="fg-modal-overlay-high" onClick={onClose}>
-            <div
-                role="dialog"
-                aria-modal="true"
-                aria-label={t.Slot_BookSlot()}
-                className="fg-modal-card fg-modal-card-md"
-                onClick={e => e.stopPropagation()}
-                data-test-id="booking-modal"
-            >
-                <div className="fg-modal-header-row">
-                    <h3 className="fg-modal-title">{t.Slot_BookSlot()}</h3>
-                    <button type="button" className="fg-modal-close-x" title={t.Action_Close()} aria-label={t.Action_Close()} onClick={onClose}>&times;</button>
-                </div>
+    private renderHeader() {
+        return (
+            <div className="booking-dialog-header">
+                <h3 className="booking-dialog-title">{t.Slot_BookSlot()}</h3>
+                <button type="button" className="booking-dialog-close" title={t.Action_Close()} aria-label={t.Action_Close()} onClick={this.props.onClose}>&times;</button>
+            </div>
+        );
+    }
 
-                {/* Main slot details */}
-                <BookingSlotSummary slot={slot} expert={expert} />
-
-                {/* Other slots by same expert */}
-                <ExtraSlotPicker slots={otherSlots} selected={selected} onToggle={toggle} />
-
-                {/* Total */}
-                <div className="flex justify-between items-center py-3 border-t border-default">
-                    <span className="text-sm text-secondary">
-                        {t.Booking_Total()}: <strong className="text-lg">{totalPrice} &#8381;</strong>
-                        <span className="ml-2 text-xs text-muted">({selected.size} {t.Booking_Items()})</span>
+    private renderTotal(total: number, count: number) {
+        const {balance, balanceShaking} = this.props;
+        return (
+            <>
+                <div className="booking-dialog-total">
+                    <span className="booking-dialog-total-label">
+                        {t.Booking_Total()}: <strong className="booking-dialog-amount">{total} &#8381;</strong>
+                        <span className="booking-dialog-count">({count} {t.Booking_Items()})</span>
                     </span>
-                    <span className="text-xs text-muted">
-                        {t.Booking_Balance()}: {balance} &#8381;
-                    </span>
+                    <span className="booking-summary-balance">{t.Booking_Balance()}: {balance} &#8381;</span>
                 </div>
-
-                {!canAfford && (
-                    <div
-                        className={`text-danger text-sm mb-2 inline-block ${balanceShaking ? 'animate-shake' : ''}`}
-                        data-test-id="booking-insufficient"
-                    >
+                {!canPay(balance, total) && (
+                    <div className={balanceShaking ? 'booking-dialog-error-shake' : 'booking-dialog-error-funds'} data-booking-error={balanceShaking ? 'shake' : 'funds'} data-test-id="booking-insufficient">
                         {t.Booking_InsufficientBalance()}{' '}
-                        <a href={appUrl('/balance')} className="text-accent hover:underline">(&#8593; {t.Balance_TopUp()})</a>
+                        <a href={appUrl('/balance')} className="booking-place-link">(&#8593; {t.Balance_TopUp()})</a>
                     </div>
                 )}
-                {error && <div className="text-danger text-sm mb-2">{error}</div>}
+            </>
+        );
+    }
 
-                <div className="flex gap-3">
-                    <SendButton
-                        onClick={handleBook}
-                        disabled={selected.size === 0}
-                        sending={sending}
-                        label={`${t.Slot_Book()} (${totalPrice} ₽)`}
-                        testId="booking-confirm-btn"
-                    />
-                    <button type="button" className="btn btn-outline-secondary" onClick={onClose}>
-                        {t.Action_Cancel()}
-                    </button>
-                </div>
+    private renderActions(total: number, count: number, sending: boolean) {
+        return (
+            <div className="booking-dialog-actions">
+                <SendButton onClick={this.book} disabled={count === 0} sending={sending}
+                    label={`${t.Slot_Book()} (${total} ₽)`} testId="booking-confirm-btn" />
+                <button type="button" className="booking-cancel-dismiss-regular" data-booking-action="regular" onClick={this.props.onClose}>
+                    {t.Action_Cancel()}
+                </button>
             </div>
-        </div></Portal>
-    );
+        );
+    }
+
+    render() {
+        const {slot, allSlots, experts, onClose} = this.props;
+        const {error, sending} = this.useCarburetor(this.store);
+        const ids = this.selection();
+        const total = priceFor(ids, allSlots);
+        return (
+            <Portal>
+                <div className="fg-modal-overlay-high" onClick={onClose}>
+                    <div role="dialog" aria-modal="true" aria-label={t.Slot_BookSlot()} className="booking-dialog" onClick={stopClick} data-test-id="booking-modal">
+                        {this.renderHeader()}
+                        <BookingSlotSummary slot={slot} expert={experts[slot.expert_id]} />
+                        <ExtraSlotPicker slots={this.otherSlots()} selected={this.getSelection(ids)} onToggle={this.toggle} />
+                        {this.renderTotal(total, ids.length)}
+                        {error && <div className="booking-dialog-error">{error}</div>}
+                        {this.renderActions(total, ids.length, sending)}
+                    </div>
+                </div>
+            </Portal>
+        );
+    }
+}
+
+export default function BookingModal(props: Props) {
+    useBodyScrollLock(true);
+    const [balanceShaking, shakeBalance] = useShake();
+    return <BookingModalView {...props} balanceShaking={balanceShaking} shakeBalance={shakeBalance} />;
 }

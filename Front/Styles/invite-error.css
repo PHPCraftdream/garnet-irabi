@@ -1,0 +1,27 @@
+@reference "tailwindcss";
+
+@utility shape-invite-page { @apply max-w-lg mx-auto mt-12; }
+@utility shape-invite-card { @apply rounded-lg border p-8; }
+@utility type-invite-card { @apply text-center; }
+@utility shape-invite-warning { @apply mb-4; }
+@utility type-invite-warning { @apply text-4xl; }
+@utility type-invite-title { @apply font-semibold; }
+@utility shape-invite-copy { @apply mb-6; }
+@utility shape-invite-support { @apply border-t pt-5; }
+@utility shape-invite-contact-message { @apply mb-3; }
+@utility shape-invite-contacts { @apply space-y-2; }
+
+@layer components {
+  .invite-foreground { @apply tone-widgetim-plain; }
+  .invite-muted { @apply tone-bookmuted-plain; }
+  .invite-contact-link { @apply tone-bookaccent-plain type-book-place-link; }
+  .invite-support { @apply tone-widgetneutral-outline shape-invite-support; }
+  .invite-contact-message { @apply tone-booksecondary-plain type-book-place shape-invite-contact-message; }
+  .invite-contacts { @apply tone-widgetneutral-plain shape-invite-contacts type-book-place; }
+  .invite-page { @apply tone-widgetneutral-plain shape-invite-page; }
+  .invite-card { @apply tone-cardsurface-outlined shape-invite-card type-invite-card; }
+  .invite-warning { @apply tone-bookwarning-plain shape-invite-warning type-invite-warning; }
+  .invite-title { @apply tone-widgetim-plain type-invite-title; }
+  .invite-reason { @apply tone-booksecondary-plain shape-invite-copy; }
+  .invite-guidance { @apply tone-widgetim-plain shape-invite-copy; }
+}

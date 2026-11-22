@@ -12,22 +12,25 @@ interface Props {
 }
 
 const LedgerTr: React.FC<{e: LedgerRow; onOpenUser: Props['onOpenUser']}> = ({e, onOpenUser}) => (
-    <tr>
-        <td className="admin-cell-date">{formatTs(e.created_at)}</td>
-        <td className="admin-cell-mono">{entryTypeLabel(e.entry_type)}</td>
-        <td>
+    <tr className="admin-user-history-row">
+        <td className="admin-user-history-cell-time">{formatTs(e.created_at)}</td>
+        <td className="admin-user-history-cell-mono">{entryTypeLabel(e.entry_type)}</td>
+        <td className="admin-user-history-cell">
             {e.is_credit
-                ? <span className="badge bg-success">{t.Admin_Ledger_Credit()}</span>
-                : <span className="badge bg-danger">{t.Admin_Ledger_Debit()}</span>}
+                ? <span className="admin-user-role-badge" data-tone="success">{t.Admin_Ledger_Credit()}</span>
+                : <span className="admin-user-role-badge" data-tone="danger">{t.Admin_Ledger_Debit()}</span>}
         </td>
-        <td>{e.amount} &#8381;</td>
-        <td><PersonCell id={e.party_id} name={e.party_name} onOpen={onOpenUser} /></td>
-        <td className="admin-cell-note">{e.note ?? '—'}</td>
+        <td className="admin-user-history-cell">{e.amount} &#8381;</td>
+        <td className="admin-user-history-cell"><PersonCell id={e.party_id} name={e.party_name} onOpen={onOpenUser} /></td>
+        <td className="admin-user-history-cell-muted-small">{e.note ?? '—'}</td>
     </tr>
 );
 
 export const LedgerSection: React.FC<Props> = ({ledger, onOpenUser}) => {
     if (ledger.length === 0) return null;
+
+    const rows: React.ReactNode[] = [];
+    for (const e of ledger) rows.push(<LedgerTr key={e.id} e={e} onOpenUser={onOpenUser} />);
 
     return (
         <DetailTable
@@ -42,7 +45,7 @@ export const LedgerSection: React.FC<Props> = ({ledger, onOpenUser}) => {
                 t.Admin_Ledger_Note(),
             ]}
         >
-            {ledger.map(e => <LedgerTr key={e.id} e={e} onOpenUser={onOpenUser} />)}
+            {rows}
         </DetailTable>
     );
 };

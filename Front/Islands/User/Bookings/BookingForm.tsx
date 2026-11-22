@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {useState} from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {D} from '@common/Support/Debug/D';
 import {useSending} from '@common/hooks/data/useSending';
 import SendButton from '@common/Components/Controls/SendButton';
@@ -48,78 +48,96 @@ const ExpertBlock: React.FC<{
     expertId: number;
     isModerator: boolean;
 }> = ({expert, expertId, isModerator}) => (
-    <div className="mb-3 p-3 bg-surface-hover rounded">
+    <div className="booking-form-expert">
         <h5>{t.Slot_Expert()}</h5>
-        <p className="mb-0">
+        <p className="booking-form-expert-name">
             <EntityLink name={expert.display_name} {...userLinks(expertId, true)} isModerator={isModerator} />
         </p>
     </div>
 );
 
-const BookingFormIslandInner: React.FC<BookingFormProps> = ({slot, expert, csrf: _csrf, isModerator = false}) => {
-    const [error, setError] = useState<string | null>(null);
-    const {sending, withSending} = useSending();
+class BookingFormState extends Carburetor<{error: string | null}> {
+    constructor() { super({error: null}); }
+}
 
-    const submitBooking = () => {
-        withSending(async () => {
-            setError(null);
-            D('booking.submit', {slotId: slot.id, cost: slot.cost, expertId: slot.expert_id});
+class BookingFormView extends AntiHookComponent<BookingFormProps & {sending: boolean; withSending: ReturnType<typeof useSending>['withSending']}> {
+    private readonly ui = new BookingFormState();
 
-            try {
-                const result = await sendPost(appUrl(`/bookings/id~${slot.id}/~book`), {}) as BookingResponse;
+    private readonly submitBooking = () => {
+        void this.props.withSending(this.book);
+    };
 
-                if (result.success) {
-                    D('booking.success', {slotId: slot.id});
-                    goTo(result.redirect || appUrl('/bookings'));
-                } else {
-                    D('booking.error', {slotId: slot.id, error: result.error});
-                    setError(result.error || 'Unknown error');
-                }
-            } catch (err) {
-                const msg = err instanceof Error ? err.message : String(err);
-                D('booking.error', {slotId: slot.id, error: msg});
-                setError(msg);
+    private readonly book = async () => {
+        const {slot} = this.props;
+        this.ui.setData({error: null});
+        D('booking.submit', {slotId: slot.id, cost: slot.cost, expertId: slot.expert_id});
+
+        try {
+            const result = await sendPost(appUrl(`/bookings/id~${slot.id}/~book`), {}) as BookingResponse;
+
+            if (result.success) {
+                D('booking.success', {slotId: slot.id});
+                goTo(result.redirect || appUrl('/bookings'));
+            } else {
+                D('booking.error', {slotId: slot.id, error: result.error});
+                this.ui.setData({error: result.error || 'Unknown error'});
             }
-        });
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            D('booking.error', {slotId: slot.id, error: msg});
+            this.ui.setData({error: msg});
+        }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    private readonly handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        submitBooking();
+        this.submitBooking();
     };
 
-    return (
-        <div className="max-w-lg mx-auto">
-            <div className="card">
-                <div className="card-body">
-                    <h2 className="card-title">{t.Slot_BookSlot()}</h2>
-
-                    <div className="mb-4 space-y-2">
-                        <p><strong>{t.Slot_DateTime()}:</strong> {formatTs(slot.start_at)}</p>
-                        <p><strong>{t.Slot_Duration()}:</strong> {slot.duration_min ?? 60} {t.Slot_Duration_Min()}</p>
-                        <p><strong>{t.Slot_Cost()}:</strong> {slot.cost} &#8381;</p>
-                        <p><strong>{t.Slot_Type()}:</strong> {slot.is_online ? t.Slot_Online() : t.Slot_Offline()}</p>
-                        {slotPlaceValue(slot) && (
-                            <p><strong>{slotPlaceLabel(slot)}:</strong> {slotPlaceValue(slot)}</p>
-                        )}
-                    </div>
-
-                    {expert && (
-                        <ExpertBlock
-                            expert={expert}
-                            expertId={slot.expert_id}
-                            isModerator={isModerator}
-                        />
+    private renderDetails() {
+        const {slot, expert, isModerator = false} = this.props;
+        return (
+            <>
+                <div className="booking-form-details">
+                    <p><strong>{t.Slot_DateTime()}:</strong> {formatTs(slot.start_at)}</p>
+                    <p><strong>{t.Slot_Duration()}:</strong> {slot.duration_min ?? 60} {t.Slot_Duration_Min()}</p>
+                    <p><strong>{t.Slot_Cost()}:</strong> {slot.cost} &#8381;</p>
+                    <p><strong>{t.Slot_Type()}:</strong> {slot.is_online ? t.Slot_Online() : t.Slot_Offline()}</p>
+                    {slotPlaceValue(slot) && (
+                        <p><strong>{slotPlaceLabel(slot)}:</strong> {slotPlaceValue(slot)}</p>
                     )}
+                </div>
+
+                {expert && (
+                    <ExpertBlock
+                        expert={expert}
+                        expertId={slot.expert_id}
+                        isModerator={isModerator}
+                    />
+                )}
+            </>
+        );
+    }
+
+    render() {
+        const {sending} = this.props;
+        const {error} = this.useCarburetor(this.ui);
+        return (
+        <div className="booking-form-container">
+            <div className="booking-form-card">
+                <div className="booking-form-body">
+                    <h2 className="booking-form-title">{t.Slot_BookSlot()}</h2>
+
+                    {this.renderDetails()}
 
                     {error && (
-                        <div className="alert alert-danger mb-3" data-test-id="book-error" role="alert">
+                        <div className="booking-form-error" data-test-id="book-error" role="alert">
                             {error}
                         </div>
                     )}
-                    <form id="bookForm" onSubmit={handleSubmit}>
+                    <form id="bookForm" onSubmit={this.handleSubmit}>
                         <SendButton
-                            onClick={submitBooking}
+                            onClick={this.submitBooking}
                             sending={sending}
                             label={sending ? t.Booking_Submitting() : t.Slot_Book()}
                             testId="book-btn"
@@ -128,7 +146,13 @@ const BookingFormIslandInner: React.FC<BookingFormProps> = ({slot, expert, csrf:
                 </div>
             </div>
         </div>
-    );
+        );
+    }
+}
+
+const BookingFormIslandInner: React.FC<BookingFormProps> = (props) => {
+    const {sending, withSending} = useSending();
+    return <BookingFormView {...props} sending={sending} withSending={withSending} />;
 };
 
 export const BookingFormIsland: React.FC<BookingFormProps> = (props) => (

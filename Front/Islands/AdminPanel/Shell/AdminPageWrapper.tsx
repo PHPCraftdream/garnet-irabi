@@ -46,7 +46,7 @@ export function useAdminPageWrapper(config: SimpleWrapperConfig) {
                 window.history.replaceState(null, '', window.location.pathname);
             }
         }
-    }, []);
+    }, [openUser]);
 
     const isMainActive = activeId === mainTabId;
 

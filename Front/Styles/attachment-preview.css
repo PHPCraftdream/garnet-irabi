@@ -1,0 +1,57 @@
+:root {
+  --palette-pick-nav: rgb(0 0 0 / 50%);
+  --palette-pick-nav-hover: rgb(0 0 0 / 70%);
+  --palette-pick-white: #fff;
+}
+
+@theme inline reference {
+  --color-pick-wash: var(--palette-pick-nav);
+  --color-pick-wash-hover: var(--palette-pick-nav-hover);
+  --color-pick-ink: var(--palette-pick-white);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-pickdanger-wash: var(--color-danger-subtle);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-pickdanger-wash-hover: var(--color-danger-subtle);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-pickdanger-ink: var(--color-danger);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-pickneutral-wash: var(--color-bg-surface-alt);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-pickneutral-wash-hover: var(--color-bg-surface-hover);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-pickneutral-ink: var(--color-text-primary);
+}
+
+@utility tone-pick-soft { @apply bg-pick-wash text-pick-ink hover:bg-pick-wash-hover; }
+@utility tone-pick-plain { @apply text-pick-ink; }
+@utility tone-pickdanger-soft { @apply bg-pickdanger-wash text-pickdanger-ink hover:bg-pickdanger-wash-hover; }
+@utility tone-pickneutral-soft { @apply bg-pickneutral-wash text-pickneutral-ink hover:bg-pickneutral-wash-hover; }
+@utility layout-pick-backdrop { @apply fixed inset-0 z-[9999] flex items-center justify-center; }
+@utility shape-pick-frame { @apply max-w-[90vw] max-h-[90vh]; }
+@utility layout-pick-frame { @apply relative; }
+@utility shape-pick-image { @apply max-w-full max-h-[85vh] object-contain rounded; }
+@utility effect-pick-image { @apply shadow-2xl; }
+@utility layout-pick-actions { @apply absolute top-2 right-2 flex gap-2; }
+@utility shape-pick-action { @apply rounded-full w-8 h-8; }
+@utility layout-pick-action { @apply flex items-center justify-center; }
+@utility shape-pick-navigation { @apply rounded-full w-10 h-10; }
+@utility layout-pick-navigation { @apply absolute top-1/2 flex items-center justify-center; }
+@utility layout-pick-previous { @apply left-2; }
+@utility layout-pick-next { @apply right-2; }
+@utility motion-pick-navigation { @apply -translate-y-1/2; }
+@utility type-pick-navigation { @apply text-xl; }
+@utility shape-pick-caption { @apply mt-2; }
+@utility type-pick-caption { @apply text-center text-sm; }
+@utility effect-pick-caption { @apply opacity-70; }
+
+@layer components {
+  .pick-preview-backdrop { @apply layout-pick-backdrop tone-lightbox-solid; }
+  .pick-preview-frame { @apply shape-pick-frame layout-pick-frame tone-neutral-plain; }
+  .pick-preview-image { @apply shape-pick-image effect-pick-image tone-neutral-plain; }
+  .pick-preview-actions { @apply layout-pick-actions tone-neutral-plain; }
+  .pick-remove-button { @apply shape-pick-action layout-pick-action tone-pickdanger-soft; }
+  .pick-close-button { @apply shape-pick-action layout-pick-action tone-pickneutral-soft; }
+  .pick-previous-button { @apply shape-pick-navigation layout-pick-navigation layout-pick-previous motion-pick-navigation type-pick-navigation tone-pick-soft; }
+  .pick-next-button { @apply shape-pick-navigation layout-pick-navigation layout-pick-next motion-pick-navigation type-pick-navigation tone-pick-soft; }
+  .pick-preview-caption { @apply shape-pick-caption type-pick-caption effect-pick-caption tone-pick-plain; }
+}

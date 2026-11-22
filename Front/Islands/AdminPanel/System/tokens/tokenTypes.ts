@@ -30,13 +30,6 @@ export interface Registration {
 export const accountTypeLabel = (type: string): string =>
     type === 'expert' ? t.Admin_Tokens_AccountTypeExpert() : t.Admin_Tokens_AccountTypeUser();
 
-export const TOKEN_STATUS_CLASS: Record<string, string> = {
-    active: 'status-success',
-    disabled: 'status-muted',
-    expired: 'status-warning',
-    exhausted: 'status-danger',
-};
-
 export const tokenStatusLabel = (s: string): string => {
     switch (s) {
         case 'active': return t.Admin_Tokens_Status_Active();

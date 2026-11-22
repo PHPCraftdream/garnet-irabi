@@ -1,0 +1,11 @@
+@reference "tailwindcss";
+
+@utility shape-users-grid-table { @apply mt-3; }
+@utility layout-users-grid-info { @apply hidden; }
+@utility shape-users-grid-header { @apply mb-3; }
+
+@layer components {
+  .users-grid-table { @apply tone-widgetneutral-plain shape-users-grid-table; }
+  .users-grid-info { @apply tone-widgetneutral-plain layout-users-grid-info; }
+  .users-grid-header { @apply tone-widgetneutral-plain shape-users-grid-header; }
+}

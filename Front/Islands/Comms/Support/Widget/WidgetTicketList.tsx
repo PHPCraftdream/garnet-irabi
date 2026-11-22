@@ -12,32 +12,39 @@ interface TicketListProps {
 }
 
 /** Список обращений. */
-export const WidgetTicketList: React.FC<TicketListProps> = ({loadingTickets, tickets, onNew, onOpen}) => (
-    <div className="flex flex-col h-full">
-        <div className="p-3 border-b border-subtle">
-            <button
-                type="button"
-                data-test-id="support-new-ticket-btn"
-                className="support-new-btn-soft"
-                onClick={onNew}
-            >
-                + {t.Support_NewTicket()}
-            </button>
-        </div>
-        <div className="support-list-scroll">
-            {loadingTickets && <div className="support-empty">{t.User_Loading()}</div>}
-            {!loadingTickets && tickets.length === 0 && (
-                <div className="support-empty">{t.Support_NoTickets()}</div>
-            )}
-            {!loadingTickets && tickets.map(ticket => (
-                <SupportTicketRow
-                    key={ticket.id}
-                    ticket={ticket}
-                    active={false}
-                    className="support-widget-ticket-row"
-                    onSelect={onOpen}
-                />
-            ))}
-        </div>
-    </div>
-);
+export class WidgetTicketList extends React.Component<TicketListProps> {
+    private readonly renderTicket = (ticket: SupportTicket) => (
+        <SupportTicketRow
+            key={ticket.id}
+            ticket={ticket}
+            active={false}
+            variant="widget"
+            onSelect={this.props.onOpen}
+        />
+    );
+
+    public render() {
+        const {loadingTickets, tickets, onNew} = this.props;
+        return (
+            <div className="widget-ticket-list">
+                <div className="widget-ticket-heading">
+                    <button
+                        type="button"
+                        data-test-id="support-new-ticket-btn"
+                        className="support-new-btn-soft"
+                        onClick={onNew}
+                    >
+                        + {t.Support_NewTicket()}
+                    </button>
+                </div>
+                <div className="support-list-scroll">
+                    {loadingTickets && <div className="support-empty">{t.User_Loading()}</div>}
+                    {!loadingTickets && tickets.length === 0 && (
+                        <div className="support-empty">{t.Support_NoTickets()}</div>
+                    )}
+                    {!loadingTickets && tickets.map(this.renderTicket)}
+                </div>
+            </div>
+        );
+    }
+}

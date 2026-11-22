@@ -9,10 +9,16 @@ export const UsersGridIsland: React.FC<UsersGridProps> = ({gridInfo}) => {
     return (
         <div>
             <h1>{I18nFramework.Menu_Users()}</h1>
-            <div className="grid-table-init grid-table mt-3">
-                <div className="hidden grid-info">{gridInfo}</div>
-                <div className="header-container mb-3"></div>
+            {/* Маркеры нужны инициализатору таблицы Garnet. */}
+            {/* carburetor-disable-next-line require-function-class */}
+            <div className="grid-table-init grid-table users-grid-table">
+                {/* carburetor-disable-next-line require-function-class */}
+                <div className="grid-info users-grid-info">{gridInfo}</div>
+                {/* carburetor-disable-next-line require-function-class */}
+                <div className="header-container users-grid-header"></div>
+                {/* carburetor-disable-next-line require-function-class */}
                 <div className="grid-container"></div>
+                {/* carburetor-disable-next-line require-function-class */}
                 <div className="edit-container"></div>
             </div>
         </div>

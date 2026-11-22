@@ -1,0 +1,92 @@
+@reference "tailwindcss";
+
+/* carburetor-disable-next-line valid-color-role */
+@theme inline reference {
+  /* carburetor-disable-next-line valid-color-role */
+  --color-admindashboardactor-ink: var(--color-text-primary);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-admindashboardrow-edge: var(--color-border-subtle);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-admindashboardtile-edge: var(--color-border-subtle);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-admindashboardtile-wash: var(--color-bg-surface-alt);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-admindashboardtile-edge-hover: var(--color-border-strong);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-admindashboardtile-wash-hover: var(--color-bg-surface);
+}
+
+@utility shape-admin-dashboard-rows { @apply space-y-6; }
+@utility layout-admin-dashboard-grid { @apply grid grid-cols-1 md:grid-cols-2 gap-6; }
+@utility shape-admin-dashboard-card { @apply rounded-lg border p-5; }
+@utility layout-admin-dashboard-header { @apply flex items-center justify-between; }
+@utility shape-admin-dashboard-header { @apply mb-4; }
+@utility type-admin-dashboard-title { @apply text-base! font-semibold; }
+@utility shape-admin-dashboard-title-spaced { @apply mb-4!; }
+@utility type-admin-dashboard-count { @apply text-2xl font-bold; }
+@utility shape-admin-dashboard-list { @apply space-y-2; }
+@utility shape-admin-dashboard-list-tight { @apply space-y-1; }
+@utility layout-admin-dashboard-row { @apply flex items-center justify-between; }
+@utility shape-admin-dashboard-row { @apply border-b pb-2 last:border-b-0; }
+@utility layout-admin-dashboard-row-main { @apply flex-1; }
+@utility layout-admin-dashboard-row-aside { @apply shrink-0; }
+@utility shape-admin-dashboard-row-aside { @apply ml-3; }
+@utility type-admin-dashboard-row-aside { @apply text-right; }
+@utility layout-admin-dashboard-link { @apply block; }
+@utility type-admin-dashboard-primary-link { @apply font-medium hover:underline text-ellipsis whitespace-nowrap; }
+@utility shape-admin-dashboard-footer { @apply mt-3; }
+@utility type-admin-dashboard-footer { @apply text-sm hover:underline; }
+@utility shape-admin-dashboard-meta-offset { @apply mt-0.5; }
+@utility layout-admin-dashboard-author { @apply inline-flex items-center gap-1.5; }
+@utility layout-admin-dashboard-stats { @apply grid grid-cols-2 gap-3; }
+@utility shape-admin-dashboard-tile { @apply p-4 rounded-lg border; }
+@utility type-admin-dashboard-tile { @apply text-center no-underline; }
+@utility motion-admin-dashboard-tile { @apply transition-colors; }
+@utility shape-admin-dashboard-stat-label { @apply mt-1; }
+@utility layout-admin-dashboard-activity-item { @apply flex flex-col gap-1; }
+@utility layout-admin-dashboard-activity-head { @apply flex items-baseline justify-between gap-2; }
+@utility layout-admin-dashboard-activity-users { @apply flex items-center flex-wrap gap-y-1; }
+@utility type-admin-dashboard-activity-actor { @apply font-medium; }
+@utility shape-admin-dashboard-activity-arrow { @apply mx-1.5; }
+@utility shape-admin-dashboard-min-width { @apply min-w-0; }
+@utility layout-admin-dashboard-truncate { @apply overflow-hidden; }
+@utility type-admin-dashboard-activity-action { @apply text-ellipsis whitespace-nowrap; }
+@utility tone-admindashboardactor-plain { @apply text-admindashboardactor-ink; }
+@utility tone-admindashboardrow-outline { @apply border-admindashboardrow-edge; }
+@utility tone-admindashboardtile-outlined { @apply border-admindashboardtile-edge bg-admindashboardtile-wash hover:border-admindashboardtile-edge-hover hover:bg-admindashboardtile-wash-hover; }
+
+@layer components {
+  .admin-dash-card { @apply tone-cardsurface-outlined shape-admin-dashboard-card; }
+  .admin-home-card-title { @apply tone-booksecondary-plain type-admin-dashboard-title; }
+  .admin-home-card-title-mb { @apply tone-booksecondary-plain type-admin-dashboard-title shape-admin-dashboard-title-spaced; }
+  .admin-dashboard { @apply tone-widgetneutral-plain shape-admin-dashboard-rows; }
+  .admin-dashboard-grid { @apply tone-widgetneutral-plain layout-admin-dashboard-grid; }
+  .admin-home-card-header { @apply tone-widgetneutral-plain layout-admin-dashboard-header shape-admin-dashboard-header; }
+  .admin-home-count { @apply type-admin-dashboard-count tone-externaldanger-plain; }
+  .admin-home-count[data-tone="warning"] { @apply tone-bookwarning-plain; }
+  .admin-home-list { @apply tone-widgetneutral-plain shape-admin-dashboard-list; }
+  .admin-home-list-tight { @apply tone-widgetneutral-plain shape-admin-dashboard-list-tight; }
+  .admin-home-list-row { @apply layout-admin-dashboard-row shape-admin-dashboard-row tone-admindashboardrow-outline type-book-place; }
+  .admin-home-row-main { @apply tone-widgetneutral-plain layout-admin-dashboard-row-main shape-admin-dashboard-min-width; }
+  .admin-home-row-aside { @apply tone-widgetneutral-plain layout-admin-dashboard-row-aside shape-admin-dashboard-row-aside type-admin-dashboard-row-aside; }
+  .admin-home-link-primary-truncate { @apply layout-admin-dashboard-link type-admin-dashboard-primary-link layout-admin-dashboard-truncate tone-bookaccent-plain; }
+  .admin-home-link-footer { @apply layout-admin-dashboard-link shape-admin-dashboard-footer type-admin-dashboard-footer tone-bookaccent-plain; }
+  .admin-home-empty { @apply type-book-place tone-bookmuted-plain; }
+  .admin-home-meta { @apply type-token-small tone-bookmuted-plain; }
+  .admin-home-author { @apply layout-admin-dashboard-author type-token-small tone-bookmuted-plain; }
+  .admin-home-meta-mt { @apply type-token-small tone-bookmuted-plain shape-admin-dashboard-meta-offset; }
+  .admin-home-pending { @apply type-book-place tone-booksecondary-plain; }
+  .admin-home-stats-grid { @apply tone-widgetneutral-plain layout-admin-dashboard-stats; }
+  .admin-home-stat-tile { @apply layout-admin-dashboard-link shape-admin-dashboard-tile type-admin-dashboard-tile tone-admindashboardtile-outlined motion-admin-dashboard-tile; }
+  .admin-home-stat-value { @apply type-admin-dashboard-count tone-bookaccent-plain; }
+  .admin-home-stat-value[data-tone="success"] { @apply tone-moneybalance-plain; }
+  .admin-home-stat-label { @apply type-token-small tone-bookmuted-plain shape-admin-dashboard-stat-label; }
+  .admin-home-activity-item { @apply layout-admin-dashboard-activity-item shape-admin-dashboard-row tone-admindashboardrow-outline type-book-place; }
+  .admin-home-activity-head { @apply tone-widgetneutral-plain layout-admin-dashboard-activity-head; }
+  .admin-home-activity-time { @apply type-token-small tone-bookmuted-plain layout-admin-dashboard-row-aside; }
+  .admin-home-activity-users { @apply tone-widgetneutral-plain layout-admin-dashboard-activity-users shape-admin-dashboard-min-width; }
+  .admin-home-activity-actor { @apply type-admin-dashboard-activity-actor tone-admindashboardactor-plain; }
+  .admin-home-activity-arrow { @apply tone-bookmuted-plain shape-admin-dashboard-activity-arrow; }
+  .admin-home-activity-action { @apply tone-booksecondary-plain shape-admin-dashboard-min-width layout-admin-dashboard-truncate type-admin-dashboard-activity-action; }
+}
+

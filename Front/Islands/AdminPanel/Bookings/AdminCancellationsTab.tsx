@@ -1,13 +1,12 @@
 import * as React from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import Pagination from '@common/Components/Layout/Paging/Pagination';
 import {PageResponse} from '@common/hooks/data/usePagination';
-import {formatTs} from '@common/Utils/Time/DateUtils';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {EntityLink} from '../../../Common/people/EntityLink';
-import {userLinks} from '../../../Common/people/entityLinkHelpers';
 import {AccountOption, adminPaginationLabels, buildAccountOptions} from '../Shell/adminShared';
 import {useAdminPage} from '../Shell/useAdminPage';
 import {AdminFilterBar, FilterCell} from './AdminFilterBar';
+import {AdminCancellationsTable} from './AdminCancellationsTable';
 
 export interface CancellationRow {
     id: number;
@@ -33,63 +32,6 @@ interface Filters {
 
 const EMPTY: Filters = {search: '', dateFrom: '', dateTo: '', expertId: 0, userId: 0};
 
-interface RowProps {
-    row: CancellationRow;
-    testIdPrefix: string;
-    isModerator: boolean;
-    showExpertColumn: boolean;
-    showUserColumn: boolean;
-}
-
-const CancellationTr: React.FC<RowProps> = ({row, testIdPrefix, isModerator, showExpertColumn, showUserColumn}) => (
-    <tr className="border-b border-subtle" data-test-id={`${testIdPrefix}-row-${row.id}`}>
-        <td className="p-3 whitespace-nowrap">{formatTs(row.created_at)}</td>
-        {showExpertColumn && (
-            <td className="p-3">
-                <EntityLink name={row.expert_name} {...userLinks(row.expert_id, row.expert_has_profile)} isModerator={isModerator} />
-            </td>
-        )}
-        {showUserColumn && (
-            <td className="p-3">
-                <EntityLink name={row.user_name} {...userLinks(row.user_id, false)} isModerator={isModerator} />
-            </td>
-        )}
-        <td className="p-3 whitespace-nowrap">
-            {row.slot_time ? formatTs(row.slot_time) : <span className="text-muted">—</span>}
-        </td>
-        <td className="p-3">
-            {row.booking_id > 0 ? <span className="text-muted">#{row.booking_id}</span> : <span className="text-muted">—</span>}
-        </td>
-        <td className="p-3">{row.reason}</td>
-    </tr>
-);
-
-interface TableProps {
-    items: CancellationRow[];
-    columns: string[];
-    testIdPrefix: string;
-    isModerator: boolean;
-    showExpertColumn: boolean;
-    showUserColumn: boolean;
-}
-
-const CancellationsTable: React.FC<TableProps> = ({items, columns, ...rowProps}) => (
-    <div className="card">
-        <div className="overflow-x-auto">
-            <table className="admin-table">
-                <thead>
-                    <tr className="border-b border-subtle">
-                        {columns.map((c, i) => <th key={i} className="text-left p-3">{c}</th>)}
-                    </tr>
-                </thead>
-                <tbody>
-                    {items.map(row => <CancellationTr key={row.id} row={row} {...rowProps} />)}
-                </tbody>
-            </table>
-        </div>
-    </div>
-);
-
 interface Props {
     initialData: PageResponse<CancellationRow> | null;
     pageUrl: string;
@@ -103,106 +45,152 @@ interface Props {
     showUserColumn?: boolean;
 }
 
-const AdminCancellationsTab: React.FC<Props> = ({
-    initialData,
-    pageUrl,
-    isModerator,
-    kind,
-    experts,
-    users,
-    showExpertColumn = true,
-    showUserColumn = true,
-}) => {
-    const [filters, setFilters] = React.useState<Filters>(EMPTY);
+const buildBody = (f: Filters, page: number, perPage: number) => ({
+    page,
+    perPage,
+    search: f.search,
+    dateFrom: f.dateFrom,
+    dateTo: f.dateTo,
+    expert_id: f.expertId,
+    user_id: f.userId,
+});
 
-    const buildBody = React.useCallback((f: Filters, page: number, perPage: number) => ({
-        page,
-        perPage,
-        search: f.search,
-        dateFrom: f.dateFrom,
-        dateTo: f.dateTo,
-        expert_id: f.expertId,
-        user_id: f.userId,
-    }), []);
+class FilterStore extends Carburetor<Filters> {
+    constructor() {
+        super(EMPTY);
+    }
 
-    const {items, page, perPage, totalPages, total, loading, goToPage, setPerPage} = useAdminPage<CancellationRow, Filters>({
+    readonly snapshot = () => this.getData();
+    readonly subscribeSnapshot = (listener: () => void) => {
+        const id = this.subscribe(listener);
+        return () => this.unsubscribe(id);
+    };
+
+    private replace(next: Filters): void {
+        const before = this.getData();
+        if (next === before) return;
+        const version = this.getVersion();
+        this.setData(next);
+        if (this.getData() !== before && this.getVersion() === version) {
+            this.markAllChanged();
+            this.emitUpdate();
+        }
+    }
+
+    readonly patch = (patch: Partial<Filters>) => this.replace({...this.getData(), ...patch});
+    readonly reset = () => this.replace(EMPTY);
+}
+
+interface ViewProps extends Props {
+    filters: Filters;
+    filterStore: FilterStore;
+    pagination: ReturnType<typeof useAdminPage<CancellationRow, Filters>>;
+}
+
+const AdminCancellationsTab: React.FC<Props> = (props) => {
+    const storeRef = React.useRef<FilterStore | null>(null);
+    if (storeRef.current === null) storeRef.current = new FilterStore();
+    const filterStore = storeRef.current;
+    const filters = React.useSyncExternalStore(filterStore.subscribeSnapshot, filterStore.snapshot, filterStore.snapshot);
+    const {initialData, pageUrl} = props;
+    const pagination = useAdminPage<CancellationRow, Filters>({
         url: pageUrl,
         initialData,
         filters,
         buildBody,
     });
 
-    const testIdPrefix = kind === 'expert' ? 'expert-cancellations' : 'user-cancellations';
-    const patch = (p: Partial<Filters>) => setFilters(prev => ({...prev, ...p}));
-    const expertOptions = React.useMemo(() => buildAccountOptions(experts), [experts]);
-    const userOptions = React.useMemo(() => buildAccountOptions(users), [users]);
-
-    const cells: FilterCell[] = [
-        {
-            kind: 'person',
-            id: `${testIdPrefix}-expert`,
-            label: t.Admin_Filter_Expert(),
-            value: filters.expertId,
-            options: expertOptions,
-            placeholder: t.Admin_Filter_SelectExpert(),
-            searchPlaceholder: t.Admin_Filter_SearchExpert(),
-            onChange: v => patch({expertId: v}),
-        },
-        {
-            kind: 'person',
-            id: `${testIdPrefix}-user`,
-            label: t.Admin_Filter_User(),
-            value: filters.userId,
-            options: userOptions,
-            placeholder: t.Admin_Filter_SelectUser(),
-            searchPlaceholder: t.Admin_Filter_SearchUser(),
-            onChange: v => patch({userId: v}),
-        },
-        {kind: 'date', id: `${testIdPrefix}-date-from`, label: t.Admin_Filter_DateFrom(), value: filters.dateFrom, onChange: v => patch({dateFrom: v})},
-        {kind: 'date', id: `${testIdPrefix}-date-to`, label: t.Admin_Filter_DateTo(), value: filters.dateTo, onChange: v => patch({dateTo: v})},
-        {kind: 'text', id: `${testIdPrefix}-search`, label: t.Admin_Filter_Reason(), value: filters.search, onChange: v => patch({search: v})},
-    ];
-
-    const columns = [
-        t.Cancellations_ColumnDate(),
-        ...(showExpertColumn ? [t.Cancellations_ColumnExpert()] : []),
-        ...(showUserColumn ? [t.Cancellations_ColumnUser()] : []),
-        t.Cancellations_ColumnSlot(),
-        t.Cancellations_ColumnBooking(),
-        t.Cancellations_ColumnReason(),
-    ];
-
-    const pager = (
-        <Pagination
-            page={page}
-            totalPages={totalPages}
-            total={total}
-            loading={loading}
-            onPageChange={goToPage}
-            labels={adminPaginationLabels}
-            pageSize={perPage}
-            onPageSizeChange={setPerPage}
-        />
-    );
-
-    return (
-        <div data-test-id={`${testIdPrefix}-tab`}>
-            <AdminFilterBar cells={cells} loading={loading} resetTestId={`${testIdPrefix}-reset`} onReset={() => setFilters(EMPTY)} />
-            <div className="mb-3">{pager}</div>
-            {items.length === 0 && <p className="text-muted">{t.Cancellations_Empty()}</p>}
-            {items.length > 0 && (
-                <CancellationsTable
-                    items={items}
-                    columns={columns}
-                    testIdPrefix={testIdPrefix}
-                    isModerator={isModerator}
-                    showExpertColumn={showExpertColumn}
-                    showUserColumn={showUserColumn}
-                />
-            )}
-            <div className="mt-3">{pager}</div>
-        </div>
-    );
+    return <AdminCancellationsTabView {...props} filters={filters} filterStore={filterStore} pagination={pagination} />;
 };
+
+class AdminCancellationsTabView extends AntiHookComponent<ViewProps> {
+    private readonly changeSearch = (value: string) => this.props.filterStore.patch({search: value});
+    private readonly changeExpertId = (value: number) => this.props.filterStore.patch({expertId: value});
+    private readonly changeUserId = (value: number) => this.props.filterStore.patch({userId: value});
+    private readonly changeDateFrom = (value: string) => this.props.filterStore.patch({dateFrom: value});
+    private readonly changeDateTo = (value: string) => this.props.filterStore.patch({dateTo: value});
+
+    private filterCells(testIdPrefix: string): FilterCell[] {
+        const {filters, experts, users} = this.props;
+        const expertOptions = buildAccountOptions(experts);
+        const userOptions = buildAccountOptions(users);
+        return [
+            {
+                kind: 'person',
+                id: `${testIdPrefix}-expert`,
+                label: t.Admin_Filter_Expert(),
+                value: filters.expertId,
+                options: expertOptions,
+                placeholder: t.Admin_Filter_SelectExpert(),
+                searchPlaceholder: t.Admin_Filter_SearchExpert(),
+                onChange: this.changeExpertId,
+            },
+            {
+                kind: 'person',
+                id: `${testIdPrefix}-user`,
+                label: t.Admin_Filter_User(),
+                value: filters.userId,
+                options: userOptions,
+                placeholder: t.Admin_Filter_SelectUser(),
+                searchPlaceholder: t.Admin_Filter_SearchUser(),
+                onChange: this.changeUserId,
+            },
+            {kind: 'date', id: `${testIdPrefix}-date-from`, label: t.Admin_Filter_DateFrom(), value: filters.dateFrom, onChange: this.changeDateFrom},
+            {kind: 'date', id: `${testIdPrefix}-date-to`, label: t.Admin_Filter_DateTo(), value: filters.dateTo, onChange: this.changeDateTo},
+            {kind: 'text', id: `${testIdPrefix}-search`, label: t.Admin_Filter_Reason(), value: filters.search, onChange: this.changeSearch},
+        ];
+    }
+
+    private renderPager() {
+        const {page, perPage, totalPages, total, loading, goToPage, setPerPage} = this.props.pagination;
+        return (
+            <Pagination
+                page={page}
+                totalPages={totalPages}
+                total={total}
+                loading={loading}
+                onPageChange={goToPage}
+                labels={adminPaginationLabels}
+                pageSize={perPage}
+                onPageSizeChange={setPerPage}
+            />
+        );
+    }
+
+    render() {
+        const {items, loading} = this.props.pagination;
+        const {kind, isModerator, showExpertColumn = true, showUserColumn = true} = this.props;
+        const testIdPrefix = kind === 'expert' ? 'expert-cancellations' : 'user-cancellations';
+        const columns = [
+            t.Cancellations_ColumnDate(),
+            ...(showExpertColumn ? [t.Cancellations_ColumnExpert()] : []),
+            ...(showUserColumn ? [t.Cancellations_ColumnUser()] : []),
+            t.Cancellations_ColumnSlot(),
+            t.Cancellations_ColumnBooking(),
+            t.Cancellations_ColumnReason(),
+        ];
+
+        const pager = this.renderPager();
+
+        return (
+            <div data-test-id={`${testIdPrefix}-tab`}>
+                <AdminFilterBar cells={this.filterCells(testIdPrefix)} loading={loading} resetTestId={`${testIdPrefix}-reset`} onReset={this.props.filterStore.reset} />
+                <div className="admin-grid-pagination-top">{pager}</div>
+                {items.length === 0 && <p className="admin-bookings-empty">{t.Cancellations_Empty()}</p>}
+                {items.length > 0 && (
+                    <AdminCancellationsTable
+                        items={items}
+                        columns={columns}
+                        testIdPrefix={testIdPrefix}
+                        isModerator={isModerator}
+                        showExpertColumn={showExpertColumn}
+                        showUserColumn={showUserColumn}
+                    />
+                )}
+                <div className="admin-bookings-pager-bottom">{pager}</div>
+            </div>
+        );
+    }
+}
 
 export default AdminCancellationsTab;

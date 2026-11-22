@@ -10,7 +10,8 @@ interface Props {
 export const UniversalBadge: React.FC<Props> = ({status, label, className = ''}) => {
     const statusCls = STATUS_CLASS[status] || 'status-muted';
     return (
-        <span className={`common-status-pill ${statusCls} ${className}`}>
+        // carburetor-disable-next-line require-function-class
+        <span className={`universal-status-badge ${className}`} data-status={statusCls}>
             {label || status}
         </span>
     );

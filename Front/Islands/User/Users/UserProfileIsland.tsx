@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {useState} from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {UserX} from 'lucide-react';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {appUrl} from '@common/Utils/Url/appUrl';
@@ -28,7 +28,7 @@ interface Props {
 const ProfileAvatar: React.FC<{user: Props['user']; initials: string; onOpenLightbox: () => void}> = ({user, initials, onOpenLightbox}) => {
     if (user.is_disabled) {
         return (
-            <div className="avatar-circle-lg mx-auto mb-4 flex items-center justify-center text-muted" data-test-id="user-avatar-disabled">
+            <div className="user-profile-avatar-disabled" data-test-id="user-avatar-disabled">
                 <UserX size={40} />
             </div>
         );
@@ -37,32 +37,32 @@ const ProfileAvatar: React.FC<{user: Props['user']; initials: string; onOpenLigh
         return (
             <button
                 type="button"
-                className="block mx-auto mb-4 p-0 border-0 bg-transparent cursor-pointer"
+                className="user-profile-photo-button"
                 onClick={onOpenLightbox}
                 title={user.name}
             >
                 <img
                     src={user.avatar}
                     alt={user.name}
-                    className="avatar-circle-lg-img"
+                    className="user-profile-photo"
                     data-test-id="user-avatar"
                 />
             </button>
         );
     }
     return (
-        <div className="avatar-circle-lg mx-auto mb-4" data-test-id="user-avatar-fallback">
+        <div className="user-profile-initials" data-test-id="user-avatar-fallback">
             {initials}
         </div>
     );
 };
 
 const ProfileActions: React.FC<{user: Props['user']; isModerator: boolean; isOwnProfile: boolean}> = ({user, isModerator, isOwnProfile}) => (
-    <div className="flex items-center justify-center gap-2 mt-3">
+    <div className="user-profile-actions">
         {isOwnProfile ? (
             <a
                 href={appUrl('/~profile_edit')}
-                className="btn btn-sm btn-primary"
+                className="primary-action-button" data-profile-size="compact"
                 data-test-id="user-profile-edit-btn"
             >
                 {t.Action_Edit()}
@@ -70,7 +70,7 @@ const ProfileActions: React.FC<{user: Props['user']; isModerator: boolean; isOwn
         ) : (
             <a
                 href={appUrl(`/im/#to=${user.id}`)}
-                className="btn btn-sm btn-primary"
+                className="primary-action-button" data-profile-size="compact"
                 data-test-id="user-profile-message-btn"
             >
                 {t.IM_WriteMessage()}
@@ -79,7 +79,7 @@ const ProfileActions: React.FC<{user: Props['user']; isModerator: boolean; isOwn
         {isModerator && !isOwnProfile && (
             <a
                 href={appUrl(`/admin/#user=${user.id}`)}
-                className="profile-admin-link"
+                className="user-profile-admin-link"
             >
                 {t.Admin_Users()}
             </a>
@@ -88,14 +88,14 @@ const ProfileActions: React.FC<{user: Props['user']; isModerator: boolean; isOwn
 );
 
 const ProfileStatCell: React.FC<{testId: string; value: number; label: string}> = ({testId, value, label}) => (
-    <div className="profile-stat-cell">
-        <div className="profile-stat-value" data-test-id={testId}>{value}</div>
-        <div className="stat-tile-label">{label}</div>
+    <div className="user-profile-stat">
+        <div className="user-profile-stat-value" data-test-id={testId}>{value}</div>
+        <div className="user-profile-stat-label">{label}</div>
     </div>
 );
 
 const ProfileStats: React.FC<{user: Props['user']}> = ({user}) => (
-    <div className="grid grid-cols-2 md:grid-cols-5 border-t border-default">
+    <div className="user-profile-stats">
         <ProfileStatCell testId="user-stat-completed" value={user.completedBookings} label={t.Study_CompletedBookings()} />
         {/* D-160: "Всего" used to sit next to Завершено/Отказов/Отмен
             without a category for a still-open booking (pending, or
@@ -109,38 +109,47 @@ const ProfileStats: React.FC<{user: Props['user']}> = ({user}) => (
     </div>
 );
 
-export const UserProfileIsland: React.FC<Props> = ({user, isModerator, isOwnProfile = false, myReviewsUrl}) => {
-    const [lightboxOpen, setLightboxOpen] = useState(false);
-    const fullPhoto = user.avatar_full || user.avatar;
-    const initials = (user.name || '?')
-        .split(' ')
-        .map(w => w[0]?.toUpperCase() || '')
-        .slice(0, 2)
-        .join('');
+function initial(word: string): string {
+    return word[0]?.toUpperCase() || '';
+}
 
-    return (
-        <div className="page-narrow">
-            <div className="profile-card">
-                {/* Header */}
-                <div className="profile-header">
-                    <ProfileAvatar user={user} initials={initials} onOpenLightbox={() => setLightboxOpen(true)} />
-                    <h2 className="text-xl font-semibold text-on-surface mb-1">
-                        {user.name || t.User_Anonymous()}
-                    </h2>
-                    <ProfileActions user={user} isModerator={isModerator} isOwnProfile={isOwnProfile} />
+function getInitials(name: string): string {
+    return (name || '?').split(' ').slice(0, 2).map(initial).join('');
+}
+
+export class UserProfileIsland extends AntiHookComponent<Props> {
+    private readonly ui = new Carburetor({lightboxOpen: false});
+    private readonly openPhoto = () => this.ui.setData({lightboxOpen: true});
+    private readonly closePhoto = () => this.ui.setData({lightboxOpen: false});
+
+    render() {
+        const {user, isModerator, isOwnProfile = false, myReviewsUrl} = this.props;
+        const {lightboxOpen} = this.useCarburetor(this.ui);
+        const fullPhoto = user.avatar_full || user.avatar;
+        return (
+            <div className="comms-page">
+                <div className="user-profile-card">
+                    {/* Header */}
+                    <div className="user-profile-header">
+                        <ProfileAvatar user={user} initials={getInitials(user.name)} onOpenLightbox={this.openPhoto} />
+                        <h2 className="user-profile-name">
+                            {user.name || t.User_Anonymous()}
+                        </h2>
+                        <ProfileActions user={user} isModerator={isModerator} isOwnProfile={isOwnProfile} />
+                    </div>
+                    <ProfileStats user={user} />
                 </div>
-                <ProfileStats user={user} />
+                {user.bio && (
+                    <div className="section-soft" data-profile-about>
+                        <h4 className="user-profile-about-title">{t.Slot_About()}</h4>
+                        <p className="user-profile-bio">{user.bio}</p>
+                    </div>
+                )}
+                {isOwnProfile && myReviewsUrl && <MyReviews listUrl={myReviewsUrl} />}
+                {lightboxOpen && fullPhoto && (
+                    <ImageLightbox src={fullPhoto} alt={user.name} onClose={this.closePhoto} />
+                )}
             </div>
-            {user.bio && (
-                <div className="section-soft mb-8">
-                    <h4 className="mb-2">{t.Slot_About()}</h4>
-                    <p className="mb-0 whitespace-pre-line">{user.bio}</p>
-                </div>
-            )}
-            {isOwnProfile && myReviewsUrl && <MyReviews listUrl={myReviewsUrl} />}
-            {lightboxOpen && fullPhoto && (
-                <ImageLightbox src={fullPhoto} alt={user.name} onClose={() => setLightboxOpen(false)} />
-            )}
-        </div>
-    );
-};
+        );
+    }
+}

@@ -1,0 +1,36 @@
+@reference "tailwindcss";
+
+@utility layout-quick-chat { @apply flex flex-col; }
+@utility layout-quick-chat-messages { @apply overflow-y-auto; }
+@utility shape-quick-chat-messages { @apply px-3 py-2; max-height: 240px; }
+@utility shape-quick-chat-status { @apply py-4; }
+@utility type-quick-chat-status { @apply text-center text-xs; }
+@utility shape-quick-chat-row { @apply mb-2; }
+@utility layout-quick-chat-row { @apply flex justify-start data-[own=true]:justify-end; }
+@utility shape-quick-chat-bubble { @apply max-w-[80%] rounded-lg px-3 py-2; }
+@utility type-quick-chat-bubble { @apply text-xs; }
+@utility shape-quick-chat-author { @apply mb-0.5; }
+@utility type-quick-chat-author { @apply text-[10px] font-medium; }
+@utility shape-quick-chat-attachments { @apply mt-1; }
+@utility shape-quick-chat-time { @apply mt-0.5; }
+@utility type-quick-chat-time { @apply text-[10px]; }
+@utility shape-quick-chat-reply { @apply px-3 py-2 border-t; }
+@utility shape-quick-chat-input { @apply mb-1.5; }
+@utility layout-quick-chat-actions { @apply flex justify-end; }
+
+@layer components {
+  .quick-chat { @apply tone-widgetneutral-plain layout-quick-chat; }
+  .quick-chat-messages { @apply tone-widgetneutral-plain layout-quick-chat-messages shape-quick-chat-messages; }
+  .quick-chat-status { @apply tone-supportmuted-plain shape-quick-chat-status type-quick-chat-status; }
+  .quick-chat-status[data-tone="error"] { @apply tone-externaldanger-plain; }
+  .quick-chat-message-row { @apply tone-widgetneutral-plain layout-quick-chat-row shape-quick-chat-row; }
+  .quick-chat-message-bubble { @apply tone-widgetmessage-soft shape-quick-chat-bubble type-quick-chat-bubble; }
+  .quick-chat-message-bubble[data-own="true"] { @apply tone-widgetown-soft; }
+  .quick-chat-message-author { @apply tone-supportmuted-plain shape-quick-chat-author type-quick-chat-author; }
+  .quick-chat-message-body { @apply tone-widgetneutral-plain type-support-message-body; }
+  .quick-chat-message-attachments { @apply tone-widgetneutral-plain shape-quick-chat-attachments; }
+  .quick-chat-message-time { @apply tone-supportmuted-plain shape-quick-chat-time type-quick-chat-time; }
+  .quick-chat-reply { @apply tone-supportconv-outline shape-quick-chat-reply; }
+  .quick-chat-input { @apply tone-garnetfield-outlined shape-native-control shape-native-field layout-native-select type-native-select focus-native-select motion-native-select shape-quick-chat-input; }
+  .quick-chat-actions { @apply tone-widgetneutral-plain layout-quick-chat-actions; }
+}

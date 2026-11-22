@@ -7,12 +7,39 @@ interface FilterChipGroupProps<T extends string> {
     testIdPrefix: string;
 }
 
-export function FilterChipGroup<T extends string>({options, value, onChange, testIdPrefix}: FilterChipGroupProps<T>) {
-    return (
-        <div className="flex flex-wrap gap-1" role="tablist">
-            {options.map(([val, label]) => (
-                <button key={val} role="tab" aria-selected={value === val} className={`chip ${value === val ? 'chip-active' : ''}`} onClick={() => onChange(val)} data-test-id={`${testIdPrefix}-${val}`}>{label}</button>
-            ))}
-        </div>
+interface FilterChipProps<T extends string> {
+    value: T;
+    label: string;
+    active: boolean;
+    onChange: (value: T) => void;
+    testId: string;
+}
+
+class FilterChip<T extends string> extends React.Component<FilterChipProps<T>> {
+    private readonly select = () => this.props.onChange(this.props.value);
+
+    public render() {
+        const {label, active, testId} = this.props;
+        return (
+            <button
+                role="tab"
+                aria-selected={active}
+                className={active ? 'slot-filter-chip-active' : 'slot-filter-chip'}
+                onClick={this.select}
+                data-test-id={testId}
+            >
+                {label}
+            </button>
+        );
+    }
+}
+
+export class FilterChipGroup<T extends string> extends React.Component<FilterChipGroupProps<T>> {
+    private readonly renderChip = ([value, label]: [T, string]) => (
+        <FilterChip key={value} value={value} label={label} active={this.props.value === value} onChange={this.props.onChange} testId={`${this.props.testIdPrefix}-${value}`} />
     );
+
+    public render() {
+        return <div className="slot-filter-chips" role="tablist">{this.props.options.map(this.renderChip)}</div>;
+    }
 }

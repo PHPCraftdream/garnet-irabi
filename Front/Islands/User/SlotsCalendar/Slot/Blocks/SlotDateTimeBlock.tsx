@@ -9,11 +9,11 @@ interface DateTimeProps {
 }
 
 export const SlotDateTimeBlock: React.FC<DateTimeProps> = ({startAt, endTs, durationMin}) => (
-    <div className="p-3 rounded-lg bg-accent-subtle" data-test-id="slot-detail-datetime">
-        <div className="text-sm text-muted mb-1">{t.Slot_DateLabel()}</div>
-        <div className="font-semibold">{formatDateLong(startAt)}</div>
-        <div className="text-sm font-medium mt-0.5">{formatTime(startAt)} — {formatTime(endTs)}</div>
-        <div className="text-xs text-muted mt-1">
+    <div className="slot-detail-datetime" data-test-id="slot-detail-datetime">
+        <div className="slot-detail-label">{t.Slot_DateLabel()}</div>
+        <div className="slot-detail-date">{formatDateLong(startAt)}</div>
+        <div className="slot-detail-time">{formatTime(startAt)} — {formatTime(endTs)}</div>
+        <div className="slot-detail-duration">
             {t.Slot_Duration()}: {durationMin} {t.Slot_Duration_Min()}
         </div>
     </div>

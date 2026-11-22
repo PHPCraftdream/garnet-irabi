@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
@@ -27,31 +28,36 @@ const CommentAuthor: React.FC<{comment: Comment}> = ({comment}) => {
     return <>{comment.author_name || t.User_Anonymous()}</>;
 };
 
-export const CommentCard: React.FC<Props> = ({comment, statusLabel, canDelete, onDelete}) => (
-    <div data-test-id={`comment-${comment.id}`} className="comment-card">
-        <div className="comment-card-row">
-            <div className="flex-1">
-                <div className="comment-author">
+export class CommentCard extends AntiHookComponent<Props> {
+    private readonly remove = () => this.props.onDelete(this.props.comment.id);
+
+    private renderContent() {
+        const {comment, statusLabel} = this.props;
+        return (
+            <div className="review-content">
+                <div className="review-author">
                     <CommentAuthor comment={comment} />
-                    {statusLabel && (
-                        <span className="text-xs text-muted ml-2" data-test-id={`comment-status-${comment.id}`}>
-                            {statusLabel}
-                        </span>
+                    {statusLabel && <span className="review-status" data-test-id={`comment-status-${comment.id}`}>{statusLabel}</span>}
+                </div>
+                <div className="review-body">{comment.body}</div>
+                <div className="review-time">{formatTs(comment.created_at)}</div>
+            </div>
+        );
+    }
+
+    render() {
+        const {comment, canDelete} = this.props;
+        return (
+            <div data-test-id={`comment-${comment.id}`} className="review-card">
+                <div className="review-row">
+                    {this.renderContent()}
+                    {canDelete && (
+                        <button type="button" data-test-id={`comment-delete-${comment.id}`} className="review-delete" onClick={this.remove}>
+                            {t.Comment_Delete()}
+                        </button>
                     )}
                 </div>
-                <div className="comment-body">{comment.body}</div>
-                <div className="comment-time">{formatTs(comment.created_at)}</div>
             </div>
-            {canDelete && (
-                <button
-                    type="button"
-                    data-test-id={`comment-delete-${comment.id}`}
-                    className="comment-delete-btn"
-                    onClick={() => onDelete(comment.id)}
-                >
-                    {t.Comment_Delete()}
-                </button>
-            )}
-        </div>
-    </div>
-);
+        );
+    }
+}

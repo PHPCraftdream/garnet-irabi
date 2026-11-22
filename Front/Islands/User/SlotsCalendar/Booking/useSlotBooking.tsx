@@ -1,5 +1,6 @@
 import * as React from 'react';
-import {useState, useCallback} from 'react';
+import {Carburetor} from '@react-carburetor/core';
+import {useState, useCallback, useSyncExternalStore} from 'react';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {appUrl} from '@common/Utils/Url/appUrl';
@@ -22,6 +23,36 @@ interface UseSlotBookingOptions {
     onBooked?: (bookedIds: number[]) => void;
 }
 
+function createSlotBookingStore(): SlotBookingStore {
+    return new SlotBookingStore();
+}
+
+interface BookingState {
+    bookData: SlotBookingData | null;
+    loading: boolean;
+}
+
+class SlotBookingStore extends Carburetor<BookingState> {
+    constructor() {
+        super({bookData: null, loading: false});
+    }
+
+    readonly snapshot = () => this.getData();
+    readonly subscribeSnapshot = (listener: () => void) => {
+        const id = this.subscribe(listener);
+        return () => this.unsubscribe(id);
+    };
+
+    readonly update = (changes: Partial<BookingState>) => {
+        const previous = this.getData();
+        const version = this.getVersion();
+        this.setData({...previous, ...changes});
+        if (this.getData() !== previous && this.getVersion() === version) {
+            this.markAllChanged();
+            this.emitUpdate();
+        }
+    };
+}
 
 /**
  * Centralised "open the booking modal for a slot" behaviour.
@@ -37,16 +68,16 @@ interface UseSlotBookingOptions {
  */
 export function useSlotBooking(options: UseSlotBookingOptions = {}) {
     const {onBooked} = options;
-    const [bookData, setBookData] = useState<SlotBookingData | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [store] = useState(createSlotBookingStore);
+    const {bookData, loading} = useSyncExternalStore(store.subscribeSnapshot, store.snapshot, store.snapshot);
 
     const openBooking = useCallback(async (slotId: number) => {
-        if (loading) return;
+        if (store.snapshot().loading) return;
         if (!(slotId > 0)) {
             showToast(t.News_SlotUnavailable(), 'warning');
             return;
         }
-        setLoading(true);
+        store.update({loading: true});
         try {
             const res = await sendPost<{slot_id: number}, SlotBookingData & {error?: string}>(
                 appUrl('/slots/~bookData'), {slot_id: slotId}
@@ -56,7 +87,7 @@ export function useSlotBooking(options: UseSlotBookingOptions = {}) {
                 showToast(bookErrorMessage(data.error), 'warning');
                 return;
             }
-            setBookData(data);
+            store.update({bookData: data});
         } catch (e: any) {
             // The booking can't proceed (slot taken, in the past, not bookable,
             // …). NEVER navigate the user away — just explain why with a toast
@@ -64,9 +95,9 @@ export function useSlotBooking(options: UseSlotBookingOptions = {}) {
             const code = bookErrorCode(e);
             showToast(bookErrorMessage(code), 'warning');
         } finally {
-            setLoading(false);
+            store.update({loading: false});
         }
-    }, [loading]);
+    }, [store]);
 
     const bookingModal = bookData ? (
         <BookingModal
@@ -77,9 +108,9 @@ export function useSlotBooking(options: UseSlotBookingOptions = {}) {
             balance={bookData.balance}
             bookUrl={bookData.bookUrl}
             csrf={bookData.csrf}
-            onClose={() => setBookData(null)}
+            onClose={() => store.update({bookData: null})}
             onBooked={(bookedIds) => {
-                setBookData(null);
+                store.update({bookData: null});
                 // Бронирование двигает деньги, а баланс висит в шапке на
                 // каждой странице. Раньше его обновляли только те экраны,
                 // которые сами про это помнили: забронировав с карточки

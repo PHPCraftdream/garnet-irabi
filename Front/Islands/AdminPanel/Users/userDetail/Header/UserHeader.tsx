@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 import ImageLightbox from '../../../../../Common/media/ImageLightbox';
 import {AccountData, BalanceRow} from '../userDetailTypes';
@@ -33,16 +34,15 @@ interface Props {
     onClear: () => void;
 }
 
-export const UserHeader: React.FC<Props> = (props) => {
-    const {account, displayName, isExpert, photo, fullPhoto, balance, lightboxOpen, setLightboxOpen, showActions} = props;
+export class UserHeader extends AntiHookComponent<Props> {
+    private readonly openPhoto = () => this.props.setLightboxOpen(true);
+    private readonly closePhoto = () => this.props.setLightboxOpen(false);
 
-    return (
-        <div className="admin-user-header">
-            <UserAvatar name={displayName} photo={photo} onView={photo ? () => setLightboxOpen(true) : undefined} />
-            {lightboxOpen && fullPhoto && (
-                <ImageLightbox src={fullPhoto} alt={displayName} onClose={() => setLightboxOpen(false)} />
-            )}
-            <div className="flex-1 min-w-0">
+    private renderIdentity() {
+        const props = this.props;
+        const {account, displayName, isExpert, photo, showActions} = props;
+        return (
+            <>
                 <UserHeaderBadges account={account} displayName={displayName} isExpert={isExpert} />
                 <UserHeaderMeta account={account} />
                 <UserHeaderCounters
@@ -68,13 +68,28 @@ export const UserHeader: React.FC<Props> = (props) => {
                         onClear={props.onClear}
                     />
                 )}
-            </div>
-            <div className="admin-user-balance" data-test-id="user-detail-balance">
-                <div className="admin-user-balance-label">{t.User_Balance()}</div>
-                <div className={`admin-user-balance-amount ${(balance?.balance ?? 0) < 0 ? 'text-danger' : 'text-success'}`}>
-                    {balance?.balance ?? 0} &#8381;
+            </>
+        );
+    }
+
+    render() {
+        const {displayName, photo, fullPhoto, balance, lightboxOpen} = this.props;
+        return (
+            <div className="admin-user-heading">
+                <UserAvatar name={displayName} photo={photo} onView={photo ? this.openPhoto : undefined} />
+                {lightboxOpen && fullPhoto && (
+                    <ImageLightbox src={fullPhoto} alt={displayName} onClose={this.closePhoto} />
+                )}
+                <div className="conversation-summary">
+                    {this.renderIdentity()}
+                </div>
+                <div className="admin-user-heading-balance" data-test-id="user-detail-balance">
+                    <div className="token-registration-ip">{t.User_Balance()}</div>
+                    <div className="admin-user-heading-amount" data-negative={(balance?.balance ?? 0) < 0}>
+                        {balance?.balance ?? 0} &#8381;
+                    </div>
                 </div>
             </div>
-        </div>
-    );
-};
+        );
+    }
+}

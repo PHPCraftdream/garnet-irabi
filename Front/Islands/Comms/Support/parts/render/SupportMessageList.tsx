@@ -13,19 +13,17 @@ interface ListProps {
 }
 
 /** Лента сообщений с якорем для автопрокрутки вниз. */
-export const SupportMessageList: React.FC<ListProps> = ({
-    messages,
-    loading,
-    emptyText,
-    loadingText,
-    endRef,
-    className = 'support-thread-body',
-    tight = false,
-}) => (
-    <div className={className}>
-        {loading && <div className="support-empty-line">{loadingText}</div>}
-        {!loading && messages.length === 0 && <div className="support-empty-line">{emptyText}</div>}
-        {!loading && messages.map(msg => <SupportBubble key={msg.id} msg={msg} tight={tight} />)}
-        <div ref={endRef} />
-    </div>
-);
+export function SupportMessageList({messages, loading, emptyText, loadingText, endRef, className = 'im-thread-body', tight = false}: ListProps) {
+    const rows: React.ReactNode[] = [];
+    if (!loading) {
+        for (const msg of messages) rows.push(<SupportBubble key={msg.id} msg={msg} tight={tight} />);
+    }
+    return (
+        <div className={className}>
+            {loading && <div className="support-empty-line">{loadingText}</div>}
+            {!loading && messages.length === 0 && <div className="support-empty-line">{emptyText}</div>}
+            {rows}
+            <div ref={endRef} />
+        </div>
+    );
+}

@@ -5,7 +5,7 @@ import {AccountData} from '../userDetailTypes';
 
 /** Регистрация, последний визит, номер. */
 export const UserHeaderMeta: React.FC<{account: AccountData}> = ({account}) => (
-    <div className="admin-user-meta">
+    <div className="admin-ticket-meta">
         {account.reg_time && <span>{t.User_RegTime()}: {formatTs(account.reg_time)}</span>}
         {account.last_online_time && <span>{t.User_LastOnline()}: {formatTs(account.last_online_time)}</span>}
         <span>ID: {account.id}</span>

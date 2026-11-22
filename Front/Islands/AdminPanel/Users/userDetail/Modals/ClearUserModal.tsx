@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {useState} from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import SendButton from '@common/Components/Controls/SendButton';
 import {appUrl} from '@common/Utils/Url/appUrl';
@@ -21,17 +21,26 @@ interface Props {
  * удаляемого аккаунта. Это зеркало серверной проверки `confirm_login === login`
  * — и защита от удаления не того человека, у которого похожее имя.
  */
-export const ClearUserModal: React.FC<Props> = ({accountId, accountLogin, accountName, onClose, onSuccess}) => {
-    const [typed, setTyped] = useState('');
-    const [sending, setSending] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+function matchesLogin(typed: string, login: string): boolean {
+    const cleaned = typed.trim();
+    return cleaned.length > 0 && cleaned === login;
+}
 
-    const matches = typed.trim().length > 0 && typed.trim() === accountLogin;
+export class ClearUserModal extends AntiHookComponent<Props> {
+    private readonly ui = new Carburetor({typed: '', sending: false, error: null as string | null});
 
-    const handleSend = async () => {
+    private update(patch: Partial<ReturnType<typeof this.ui.getData>>): void {
+        this.ui.setData({...this.ui.getData(), ...patch});
+    }
+
+    private readonly changeConfirmation = (event: React.ChangeEvent<HTMLInputElement>) => this.update({typed: event.target.value});
+
+    private readonly send = async () => {
+        const {typed, sending} = this.ui.getData();
+        const {accountLogin, accountId, onSuccess} = this.props;
+        const matches = matchesLogin(typed, accountLogin);
         if (!matches || sending) return;
-        setSending(true);
-        setError(null);
+        this.update({sending: true, error: null});
         try {
             const csrf = (window as any).__GARNET_CSRF__ ?? '';
             const r: any = await sendPost(appUrl('/admin/~clearUser'), {
@@ -40,58 +49,53 @@ export const ClearUserModal: React.FC<Props> = ({accountId, accountLogin, accoun
                 confirm_login: typed.trim(),
             });
             if (r?.error) {
-                setError(r.error);
+                this.update({error: r.error});
                 return;
             }
             onSuccess();
         } catch {
-            setError(t.General_Error());
+            this.update({error: t.General_Error()});
         } finally {
-            setSending(false);
+            this.update({sending: false});
         }
     };
 
-    return (
-        <ModalShell
-            title={t.Admin_ClearUserModalTitle()}
-            titleClassName="text-danger"
-            testId={`clear-user-${accountId}`}
-            size="lg"
-            onClose={onClose}
-        >
-            <div className="fg-modal-subtitle">
-                <strong className="text-danger">{accountName}</strong>
-                <span className="text-muted"> · {accountLogin} · ID: {accountId}</span>
-            </div>
-            {error && <div className="fg-modal-error">{error}</div>}
-            <div className="fg-modal-warning mb-3">{t.Admin_ClearUserModalBody()}</div>
-            <div className="mb-3">
-                <label className="block text-sm font-medium mb-1">
+    private renderConfirmation({typed, sending}: ReturnType<typeof this.ui.getData>, matches: boolean) {
+        const {accountId} = this.props;
+        return (
+            <div className="token-field">
+                <label className="admin-user-message-label">
                     {t.Admin_ClearUserTypeEmail()}
-                    <span className="text-muted"> {t.Admin_ClearUserTypeEmailHint()}</span>
+                    <span className="token-cell-muted"> {t.Admin_ClearUserTypeEmailHint()}</span>
                 </label>
                 <input
                     type="text"
-                    className="form-control w-full"
+                    className="admin-filter-field"
                     autoComplete="off"
                     autoCorrect="off"
                     autoCapitalize="off"
                     spellCheck={false}
                     value={typed}
-                    onChange={e => setTyped(e.target.value)}
+                    onChange={this.changeConfirmation}
                     disabled={sending}
                     data-test-id={`clear-user-confirm-input-${accountId}`}
                 />
                 {typed.trim().length > 0 && !matches && (
-                    <div className="text-danger text-sm mt-1">{t.Admin_ClearUserMismatch()}</div>
+                    <div className="admin-user-clear-mismatch">{t.Admin_ClearUserMismatch()}</div>
                 )}
             </div>
-            <div className="fg-modal-actions">
-                <button type="button" className="btn btn-sm btn-secondary" onClick={onClose} disabled={sending}>
+        );
+    }
+
+    private renderActions(matches: boolean, sending: boolean) {
+        const {accountId, onClose} = this.props;
+        return (
+            <div className="booking-cancel-actions">
+                <button type="button" className="admin-user-message-cancel" onClick={onClose} disabled={sending}>
                     {t.Action_Cancel()}
                 </button>
                 <SendButton
-                    onClick={handleSend}
+                    onClick={this.send}
                     sending={sending}
                     disabled={!matches}
                     label={sending ? t.User_Loading() : t.Admin_ClearUser()}
@@ -99,6 +103,31 @@ export const ClearUserModal: React.FC<Props> = ({accountId, accountLogin, accoun
                     size="sm"
                 />
             </div>
-        </ModalShell>
-    );
-};
+        );
+    }
+
+    render() {
+        const {accountId, accountLogin, accountName, onClose} = this.props;
+        const state = this.useCarburetor(this.ui);
+        const {typed, sending, error} = state;
+        const matches = matchesLogin(typed, accountLogin);
+        return (
+            <ModalShell
+                title={t.Admin_ClearUserModalTitle()}
+                titleTone="danger"
+                testId={`clear-user-${accountId}`}
+                size="lg"
+                onClose={onClose}
+            >
+                <div className="admin-user-message-caption">
+                    <strong className="admin-user-count-danger">{accountName}</strong>
+                    <span className="token-cell-muted"> · {accountLogin} · ID: {accountId}</span>
+                </div>
+                {error && <div className="admin-user-message-error">{error}</div>}
+                <div className="admin-user-clear-warning">{t.Admin_ClearUserModalBody()}</div>
+                {this.renderConfirmation(state, matches)}
+                {this.renderActions(matches, sending)}
+            </ModalShell>
+        );
+    }
+}

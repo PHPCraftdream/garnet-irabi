@@ -1,0 +1,233 @@
+@reference "tailwindcss";
+
+/* carburetor-disable-next-line valid-color-role */
+@theme inline reference {
+  /* carburetor-disable-next-line valid-color-role */
+  --color-tokenexpired-wash: var(--color-status-yellow-bg);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-tokenexpired-ink: var(--color-status-yellow);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-tokenmuted-wash: var(--color-status-gray-bg);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-tokenmuted-ink: var(--color-status-gray);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-tokenmuted-edge: var(--color-border-subtle);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-tokenmuted-ink-subtle: var(--color-text-muted);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-usersidle-ink: var(--color-text-muted);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-usersidle-ink-hover: var(--color-text-primary);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-usersidle-edge-hover: var(--color-border-strong);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-usersactive-edge: var(--color-accent);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-usersactive-ink: var(--color-accent);
+}
+
+@utility tone-tokenexpired-soft { @apply bg-tokenexpired-wash text-tokenexpired-ink; }
+@utility tone-tokenmuted-filter { @apply border-tokenmuted-edge text-tokenmuted-ink-subtle; }
+@utility tone-tokenmuted-soft { @apply bg-tokenmuted-wash text-tokenmuted-ink; }
+@utility shape-token-field { @apply mb-3; }
+@utility shape-token-label { @apply mb-1.5; }
+@utility layout-token-label { @apply block; }
+@utility type-token-label { @apply text-[11px] font-semibold uppercase tracking-wider; }
+@utility shape-token-hint { @apply mt-1; }
+@utility type-token-small { @apply text-xs; }
+@utility type-token-nowrap { @apply whitespace-nowrap; }
+@utility layout-token-scroll { @apply overflow-x-auto; }
+@utility layout-token-actions { @apply flex gap-1 flex-wrap; }
+@utility layout-token-status { @apply inline-block; }
+@utility shape-token-status { @apply px-2 py-0.5 rounded; }
+@utility type-token-status { @apply text-xs font-medium; }
+
+@utility shape-token-link-field { @apply mb-4; }
+@utility layout-token-link-actions { @apply flex gap-2; }
+
+@utility shape-token-agent { @apply max-w-xs; }
+@utility layout-token-agent { @apply overflow-hidden; }
+@utility type-token-agent { @apply text-ellipsis whitespace-nowrap; }
+
+@utility layout-token-created-link { @apply flex gap-2 items-center; }
+
+@theme inline reference {
+  /* carburetor-disable-next-line valid-color-role */
+  --color-moneybalance-ink: var(--color-success);
+}
+
+@utility tone-moneybalance-plain { @apply text-moneybalance-ink; }
+@utility type-moneybalance { @apply font-medium; }
+
+@utility shape-admin-money-modal-actions { @apply mt-4; }
+@utility shape-admin-money-modal-fields { @apply space-y-3; }
+@utility type-admin-money-field-value { @apply data-[strong=true]:font-medium; }
+
+@utility layout-admin-money-spinner-wrap { @apply inline-flex items-center gap-1; }
+@utility layout-admin-money-spinner { @apply inline-block; }
+@utility shape-admin-money-spinner { @apply w-4 h-4 border-2 rounded-full; }
+@utility motion-admin-money-spinner { @apply animate-spin; }
+@utility tone-moneyspinner-outline { @apply border-current; }
+
+@utility shape-admin-ledger-reference { @apply p-3 border-t; }
+@utility layout-admin-ledger-reference { @apply grid grid-cols-2 gap-x-6 gap-y-1; }
+
+@utility type-admin-ledger-party-special { @apply text-xs italic; }
+@utility type-admin-ledger-entry-type { @apply font-mono text-sm; }
+
+@utility layout-admin-user-actions { @apply flex items-center gap-2 flex-wrap; }
+@utility shape-admin-user-actions { @apply mt-2; }
+@utility shape-admin-user-action-offset { @apply ml-2; }
+
+@utility layout-admin-user-heading { @apply flex items-start gap-4; }
+@utility shape-admin-user-heading { @apply mb-4; }
+@utility layout-admin-user-identity { @apply flex items-center gap-2 flex-wrap; }
+@utility type-admin-user-heading-amount { @apply text-xl font-bold; }
+@utility type-admin-user-heading-balance { @apply text-right; }
+
+@utility shape-admin-user-photo { @apply w-16 h-16 rounded-full; }
+@utility shape-admin-user-photo-fit { @apply object-cover; }
+@utility shape-admin-user-photo-button { @apply p-0 border-0; }
+@utility tone-adminuserphoto-plain { @apply text-inherit bg-transparent; }
+
+@utility layout-admin-user-notice { @apply fixed top-4 right-4 z-50; }
+@utility shape-admin-user-notice { @apply px-4 py-2 rounded; }
+@utility effect-admin-user-notice { @apply shadow-lg; }
+
+@utility shape-admin-user-history-title { @apply mb-2 mt-5; }
+@utility type-admin-user-history-title { @apply text-sm font-semibold uppercase tracking-wide; }
+@utility shape-admin-user-history-table { @apply w-full data-[spacing=after]:mb-4; }
+@utility layout-admin-user-history-table { @apply border-collapse; }
+@utility shape-admin-user-history-row { @apply border-b; }
+@utility type-admin-user-history-header-row { @apply text-left text-xs; }
+@utility shape-admin-user-history-cell { @apply py-1 pr-3 last:pr-0; }
+@utility type-admin-user-history-header-cell { @apply font-medium; }
+@utility type-admin-user-history-mono { @apply font-mono text-xs; }
+
+@utility layout-admin-users-tabs { @apply flex flex-wrap; }
+@utility shape-admin-users-tabs { @apply border-b mb-4; }
+@utility shape-admin-users-tab-item { @apply mr-1; }
+@utility shape-admin-users-tab-button { @apply px-4 py-2 rounded-t-lg border-b-2; }
+@utility shape-admin-users-tab-count { @apply ml-1; }
+@utility type-admin-users-login { @apply font-mono text-sm hover:underline; }
+@utility tone-usersidle-outline { @apply border-transparent text-usersidle-ink hover:text-usersidle-ink-hover hover:border-usersidle-edge-hover; }
+@utility tone-usersactive-outline { @apply border-usersactive-edge text-usersactive-ink; }
+
+@layer components {
+  .admin-users-tabs { @apply tone-supportconv-outline layout-admin-users-tabs shape-admin-users-tabs; }
+  .admin-users-tab-item { @apply tone-widgetneutral-plain shape-admin-users-tab-item; }
+  .admin-users-tab-button { @apply tone-usersidle-outline layout-token-status shape-admin-users-tab-button type-admin-support-form-label motion-support-control; }
+  .admin-users-tab-button[aria-selected="true"] { @apply tone-usersactive-outline; }
+  .admin-users-tab-count { @apply tone-bookmuted-plain type-token-small shape-admin-users-tab-count; }
+  .admin-users-login { @apply tone-bookaccent-plain type-admin-users-login; }
+  .admin-user-history-title { @apply tone-bookmuted-plain shape-admin-user-history-title type-admin-user-history-title; }
+  .admin-user-history-table { @apply tone-widgetneutral-plain shape-admin-user-history-table layout-admin-user-history-table type-book-place; }
+  .admin-user-history-header-row { @apply tone-tokenmuted-filter shape-admin-user-history-row type-admin-user-history-header-row; }
+  .admin-user-history-row { @apply tone-supportconv-outline shape-admin-user-history-row; }
+  .admin-user-history-header-cell { @apply tone-widgetneutral-plain shape-admin-user-history-cell type-admin-user-history-header-cell; }
+  .admin-user-history-cell { @apply tone-widgetneutral-plain shape-admin-user-history-cell; }
+  .admin-user-history-cell-muted { @apply tone-bookmuted-plain shape-admin-user-history-cell; }
+  .admin-user-history-cell-muted-small { @apply tone-bookmuted-plain shape-admin-user-history-cell type-token-small; }
+  .admin-user-history-cell-time { @apply tone-bookmuted-plain shape-admin-user-history-cell type-token-nowrap type-token-small; }
+  .admin-user-history-cell-mono { @apply tone-widgetneutral-plain shape-admin-user-history-cell type-admin-user-history-mono; }
+  .admin-user-history-cell-nowrap { @apply tone-gridinherit-plain shape-admin-user-history-cell type-token-nowrap; }
+  .admin-user-history-cell-context { @apply tone-widgetneutral-plain shape-admin-user-history-cell type-im-recipient-text; }
+  .admin-user-history-mono { @apply tone-widgetneutral-plain type-admin-user-history-mono; }
+  .admin-user-history-person { @apply tone-bookaccent-plain type-token-small type-book-place-link; }
+  .admin-user-neutral { @apply tone-widgetneutral-plain; }
+  .admin-user-actions { @apply tone-widgetneutral-plain layout-admin-user-actions shape-admin-user-actions; }
+  .admin-user-flag { @apply tone-bookdismiss-outlined layout-compact-action shape-compact-action type-compact-action behavior-compact-action effect-compact-action motion-compact-action; }
+  .admin-user-flag[data-tone="btn-outline-danger"] { @apply tone-batchremove-outlined; }
+  .admin-user-flag[data-tone="btn-outline-primary"] { @apply tone-compactaction-outlined; }
+  .admin-user-flag[data-tone="btn-outline-secondary"] { @apply tone-bookdismiss-outlined; }
+  .admin-user-flag-success { @apply tone-compactsuccess-solid layout-compact-action shape-compact-action type-compact-action behavior-compact-action effect-compact-action effect-confirm-success motion-compact-action; }
+  .admin-user-flag[data-tone="btn-secondary"] { @apply tone-confirmsecondary-solid; }
+  .admin-user-secondary-action { @apply tone-bookdismiss-outlined layout-compact-action shape-compact-action shape-admin-user-action-offset type-compact-action behavior-compact-action effect-compact-action motion-compact-action; }
+  .admin-user-clear-action { @apply tone-confirmdanger-solid layout-compact-action shape-compact-action shape-admin-user-action-offset type-compact-action behavior-compact-action effect-compact-action effect-confirm-danger motion-compact-action; }
+  .admin-user-bio { @apply tone-bookmuted-plain shape-token-hint; }
+  .admin-user-message-label { @apply tone-widgetneutral-plain layout-support-form-label shape-support-form-label type-admin-support-form-label; }
+  .admin-user-message-caption { @apply tone-bookmuted-plain shape-token-field type-book-place; }
+  .admin-user-message-error { @apply tone-externaldanger-plain shape-token-field type-book-place; }
+  .admin-user-clear-warning { @apply tone-widgetneutral-plain shape-token-field; }
+  .admin-user-clear-mismatch { @apply tone-externaldanger-plain shape-token-hint type-book-place; }
+  .admin-user-message-cancel { @apply tone-confirmsecondary-solid layout-compact-action shape-confirm-button type-confirm-button behavior-compact-action effect-compact-action motion-compact-action; }
+  .admin-user-notice { @apply tone-ticketstatusgreen-soft layout-admin-user-notice shape-admin-user-notice effect-admin-user-notice type-book-place; }
+  .admin-user-heading-initials { @apply tone-recipientaccent-soft shape-admin-user-photo layout-im-recipient-avatar type-admin-user-heading-amount behavior-admin-support-history-chevron; }
+  .admin-user-heading-photo { @apply tone-widgetneutral-plain shape-admin-user-photo shape-admin-user-photo-fit; }
+  .admin-user-heading-photo-button { @apply tone-adminuserphoto-plain shape-admin-user-photo-button behavior-support-row; }
+  .admin-user-heading { @apply tone-widgetneutral-plain layout-admin-user-heading shape-admin-user-heading; }
+  .admin-user-heading-balance { @apply tone-widgetneutral-plain layout-conversation-time type-admin-user-heading-balance; }
+  .admin-user-heading-amount { @apply tone-moneybalance-plain type-admin-user-heading-amount; }
+  .admin-user-heading-amount[data-negative="true"] { @apply tone-externaldanger-plain; }
+  .admin-user-identity { @apply tone-widgetneutral-plain layout-admin-user-identity; }
+  .admin-user-identity-name { @apply tone-widgetneutral-plain type-im-new-title; }
+  .admin-user-role-badge { @apply tone-ticketstatusgray-soft layout-book-summary-badge shape-book-summary-badge type-book-summary-badge; }
+  .admin-user-role-badge[data-tone="muted"] { @apply tone-ticketstatusgray-soft; }
+  .admin-user-role-badge[data-tone="info"] { @apply tone-ticketstatusblue-soft; }
+  .admin-user-role-badge[data-tone="danger"] { @apply tone-ticketstatusred-soft; }
+  .admin-user-role-badge[data-tone="warning"] { @apply tone-ticketstatusyellow-soft; }
+  .admin-user-role-badge[data-tone="success"] { @apply tone-ticketstatusgreen-soft; }
+  .admin-user-role-badge[data-tone="secondary"] { @apply tone-expertcardcancelled-soft; }
+  .admin-user-count-warning { @apply tone-bookwarning-plain; }
+  .admin-user-count-danger { @apply tone-externaldanger-plain; }
+  .admin-ledger-reference { @apply tone-supportconv-outlined shape-admin-ledger-reference layout-admin-ledger-reference type-book-place; }
+  .admin-ledger-reference-status { @apply tone-expertcardcancelled-soft layout-book-summary-badge shape-book-summary-badge type-book-summary-badge; }
+  .admin-ledger-party-special { @apply tone-bookmuted-plain type-admin-ledger-party-special; }
+  .admin-ledger-party-label { @apply tone-booksecondary-plain type-book-place; }
+  .admin-ledger-entry-type { @apply tone-widgetneutral-plain type-admin-ledger-entry-type; }
+  .admin-money-spinner-wrap { @apply tone-widgetneutral-plain layout-admin-money-spinner-wrap; }
+  .admin-money-spinner { @apply tone-moneyspinner-outline layout-admin-money-spinner shape-admin-money-spinner motion-admin-money-spinner; }
+  .admin-money-modal-actions { @apply tone-widgetneutral-plain layout-book-dialog-actions shape-admin-money-modal-actions; }
+  .admin-money-modal-fields { @apply tone-widgetneutral-plain shape-admin-money-modal-fields; }
+  .admin-money-field-caption { @apply tone-bookmuted-plain type-token-small shape-token-label; }
+  .admin-money-field-value { @apply tone-widgetim-plain type-book-place type-admin-money-field-value; }
+  .admin-money-note-error { @apply tone-externaldanger-plain type-book-place; }
+  .admin-money-note-hint { @apply tone-externaldanger-plain type-token-small shape-token-hint; }
+  .admin-money-direction { @apply tone-moneybalance-plain type-book-place; }
+  .admin-money-direction[data-credit="false"] { @apply tone-externaldanger-plain; }
+  .admin-money-balance { @apply tone-moneybalance-plain type-moneybalance; }
+  .admin-money-balance[data-negative="true"] { @apply tone-externaldanger-plain; }
+  .token-created-link { @apply tone-gridinherit-plain layout-token-created-link shape-token-field; }
+  .token-registration-ip { @apply tone-bookmuted-plain type-token-small; }
+  .token-registration-agent { @apply tone-bookmuted-plain type-token-small type-token-agent layout-token-agent shape-token-agent; }
+  .token-link-field { @apply tone-gridinherit-plain shape-token-link-field; }
+  .token-link-actions { @apply tone-gridinherit-plain layout-token-link-actions; }
+  .token-field { @apply tone-gridinherit-plain shape-token-field; }
+  .token-field-label { @apply tone-bookmuted-plain shape-token-label layout-token-label type-token-label; }
+  .token-field-hint { @apply tone-bookmuted-plain type-token-small shape-token-hint; }
+  .token-table-scroll { @apply tone-gridinherit-plain layout-token-scroll; }
+  .token-cell { @apply tone-gridinherit-plain; }
+  .token-cell-nowrap { @apply tone-gridinherit-plain type-token-nowrap; }
+  .token-cell-time { @apply tone-bookmuted-plain type-token-nowrap type-token-small; }
+  .token-cell-muted { @apply tone-bookmuted-plain; }
+  .token-row-actions { @apply tone-gridinherit-plain layout-token-actions; }
+  .token-status { @apply tone-tokenmuted-soft layout-token-status shape-token-status type-token-status; }
+  .token-status[data-token-status="active"] { @apply tone-batchavailable-soft; }
+  .token-status[data-token-status="expired"] { @apply tone-tokenexpired-soft; }
+  .token-status[data-token-status="exhausted"] { @apply tone-batchrestricted-soft; }
+}
+
+/* Unlayered overrides preserve priority over the external component shapes. */
+/* carburetor-disable-next-line valid-function-class */
+.btn-outline-warning-full[data-token-action="compact"] { @apply w-auto shape-compact-action type-compact-action; }
+/* carburetor-disable-next-line valid-function-class */
+:is(.compact-outline-action, .slot-remove-btn)[data-user-action="offset"] { @apply ml-2; }
+
+/* The unlayered h3 rule sets text-lg, so retain the title size override. */
+/* carburetor-disable-next-line valid-function-class */
+.admin-user-history-title { @apply text-sm; }
+
+/* The spinner side must override its border-current Tone. */
+/* carburetor-disable-next-line valid-function-class */
+.admin-money-spinner { border-top-color: transparent; }
+
+/* Selected colors override the idle hover Tone regardless of layer order. */
+/* carburetor-disable-next-line valid-function-class */
+.admin-users-tab-button[aria-selected="true"]:is(:hover, :focus, :active) { @apply border-accent text-accent; }
+
+@utility type-admin-grid-external-location { @apply text-sm break-all hover:underline; }
+
+@layer components {
+  .admin-grid-value-time { @apply tone-widgetneutral-plain type-admin-support-history-time; }
+  .admin-grid-external-location { @apply tone-bookaccent-plain type-admin-grid-external-location; }
+}

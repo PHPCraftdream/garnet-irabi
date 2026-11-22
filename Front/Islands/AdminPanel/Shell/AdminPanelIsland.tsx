@@ -1,5 +1,6 @@
 import * as React from 'react';
-import {useEffect, useState} from 'react';
+import {useEffect, useMemo} from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {AdminUser, GridConfig, UserTab} from './types';
 import {UsersSection} from '../Users/UsersSection';
 import {AdminCommentsSection, AdminCommentRow, CommentsAccountOption} from '../Support/AdminCommentsSection';
@@ -76,164 +77,180 @@ function writeTabToUrl(tab: StaticTabId): void {
     window.history.pushState(null, '', url.toString());
 }
 
+type UserTabs = ReturnType<typeof useUserTabs>;
+
+interface PanelProps extends Props {
+    tabs: UserTabs;
+}
+
+class AdminPanel extends AntiHookComponent<PanelProps> {
+    private readonly ui = new Carburetor({staticTab: readTabFromUrl() ?? this.props.initialTab ?? 'users'});
+
+    componentDidMount(): void {
+        super.componentDidMount();
+        window.addEventListener('popstate', this.onPop);
+    }
+
+    componentWillUnmount(): void {
+        window.removeEventListener('popstate', this.onPop);
+        super.componentWillUnmount();
+    }
+
+    private readonly onPop = () => this.ui.setData({staticTab: readTabFromUrl() ?? 'users'});
+
+    private readonly handleSelect = (id: string) => {
+        const {userTabs, setActiveUserTabId} = this.props.tabs;
+        if (isStaticTab(id)) {
+            setActiveUserTabId(null);
+            this.ui.setData({staticTab: id});
+            writeTabToUrl(id);
+        } else if (userTabs.find(ut => ut.id === id)) {
+            setActiveUserTabId(id);
+        }
+    };
+
+    private readonly handleClose = (id: string) => {
+        const {userTabs, closeUser} = this.props.tabs;
+        if (userTabs.find(ut => ut.id === id)) closeUser(id);
+    };
+
+    private renderContent(activeId: string, userTabs: UserTabs["userTabs"]) {
+        const {
+            usersPageUrl,
+            usersInitialData,
+            usersTabCountsUrl,
+            usersTabCounts,
+            setFlagUrl,
+            setUserTypeUrl,
+            gridConfig,
+            userDetailUrl,
+            createTicketUrl,
+            callerIsOwner,
+            callerIsAdmin,
+            commentsPageUrl,
+            commentsHideUrl,
+            commentsUnhideUrl,
+            commentsApproveUrl,
+            commentsRejectUrl,
+            commentsFlagUrl,
+            commentsExperts,
+            commentsAuthors,
+            commentsInitialPayload,
+            tokensListUrl,
+            tokensCreateUrl,
+            tokensDisableUrl,
+            tokensEnableUrl,
+            tokensDeleteUrl,
+            tokensRegistrationsUrl,
+            tokensUpdateUrl,
+        } = this.props;
+        const showUsers = activeId === 'users';
+        const showComments = activeId === 'comments';
+        const showTokens = activeId === 'tokens';
+        let activeUserTab: UserTabs['userTabs'][number] | undefined;
+        for (const tab of userTabs) {
+            if (tab.id === activeId) {
+                activeUserTab = tab;
+                break;
+            }
+        }
+
+        return (
+            <>
+                {showUsers && (
+                    <UsersSection
+                        pageUrl={usersPageUrl}
+                        initialData={usersInitialData}
+                        tabCountsUrl={usersTabCountsUrl}
+                        initialTabCounts={usersTabCounts}
+                        setFlagUrl={setFlagUrl}
+                        setUserTypeUrl={setUserTypeUrl}
+                        config={gridConfig}
+                    />
+                )}
+                {showComments && (
+                    <AdminCommentsSection
+                        commentsPayload={commentsInitialPayload ?? null}
+                        commentsPageUrl={commentsPageUrl}
+                        hideUrl={commentsHideUrl}
+                        unhideUrl={commentsUnhideUrl}
+                        approveUrl={commentsApproveUrl}
+                        rejectUrl={commentsRejectUrl}
+                        flagUrl={commentsFlagUrl}
+                        experts={commentsExperts}
+                        authors={commentsAuthors}
+                    />
+                )}
+                {showTokens && (
+                    <AdminTokensSection
+                        listUrl={tokensListUrl}
+                        createUrl={tokensCreateUrl}
+                        disableUrl={tokensDisableUrl}
+                        enableUrl={tokensEnableUrl}
+                        deleteUrl={tokensDeleteUrl}
+                        registrationsUrl={tokensRegistrationsUrl}
+                        updateUrl={tokensUpdateUrl}
+                    />
+                )}
+                {activeUserTab && (
+                    <UserDetailTab
+                        accountId={activeUserTab.tabKind.accountId}
+                        detailUrl={userDetailUrl || ADMIN_URLS.detailUrl}
+                        setFlagUrl={setFlagUrl ?? ADMIN_URLS.setFlagUrl}
+                        createTicketUrl={createTicketUrl ?? ADMIN_URLS.createTicketUrl}
+                        callerIsOwner={callerIsOwner}
+                        callerIsAdmin={callerIsAdmin}
+                    />
+                )}
+            </>
+        );
+    }
+
+    render() {
+        const {staticTab} = this.useCarburetor(this.ui);
+        const {userTabs, activeUserTabId} = this.props.tabs;
+
+        const activeId: string = activeUserTabId ?? staticTab;
+
+        const allTabs: TabDef[] = [
+            {id: 'users', label: t.Admin_Users(), closeable: false},
+            {id: 'comments', label: t.Admin_Comments(), closeable: false},
+            {id: 'tokens', label: t.Admin_Tokens(), closeable: false},
+            ...userTabs,
+        ];
+
+        return (
+            <>
+                <PageHeader title={t.Admin_Users()} icon={<Users size={22} aria-hidden="true" />} />
+                <div className="section-soft">
+                    <TabNav
+                        tabs={allTabs}
+                        activeId={activeId}
+                        onSelect={this.handleSelect}
+                        onClose={this.handleClose}
+                    />
+                    {this.renderContent(activeId, userTabs)}
+                </div>
+            </>
+        );
+    }
+}
+
 export const AdminPanelIsland: React.FC<Props> = (props) => {
-    const {
-        usersPageUrl,
-        usersInitialData,
-        usersTabCountsUrl,
-        usersTabCounts,
-        setFlagUrl,
-        setUserTypeUrl,
-        gridConfig,
-        userDetailUrl,
-        createTicketUrl,
-        callerIsOwner,
-        callerIsAdmin,
-        commentsPageUrl,
-        commentsHideUrl,
-        commentsUnhideUrl,
-        commentsApproveUrl,
-        commentsRejectUrl,
-        commentsFlagUrl,
-        commentsExperts,
-        commentsAuthors,
-        commentsInitialPayload,
-        tokensListUrl,
-        tokensCreateUrl,
-        tokensDisableUrl,
-        tokensEnableUrl,
-        tokensDeleteUrl,
-        tokensRegistrationsUrl,
-        tokensUpdateUrl,
-        initialTab,
-    } = props;
+    const tabs = useUserTabs();
+    const {openUser} = tabs;
+    const context = useMemo(() => ({openUser}), [openUser]);
 
-    const [staticTab, setStaticTab] = useState<StaticTabId>(() => {
-        const fromUrl = readTabFromUrl();
-        if (fromUrl !== null) return fromUrl;
-        if (initialTab !== undefined) return initialTab;
-        return 'users';
-    });
-
-    const {userTabs, activeUserTabId, setActiveUserTabId, openUser, closeUser} = useUserTabs();
-
-    // React to back/forward navigation
-    useEffect(() => {
-        const onPop = () => {
-            const tab = readTabFromUrl();
-            setStaticTab(tab ?? 'users');
-        };
-        window.addEventListener('popstate', onPop);
-        return () => window.removeEventListener('popstate', onPop);
-    }, []);
-
-    // On mount: hash #user={id} → auto-open user-detail tab. The tab label
-    // starts as a placeholder id (the users list is now server-paginated,
-    // not loaded whole on mount) — UserDetailTab fetches the real name.
     useEffect(() => {
         const hash = window.location.hash;
         if (hash.includes('user=')) {
             const userId = parseInt(hash.split('user=')[1]?.split('&')[0] || '0', 10);
             if (userId > 0) {
                 openUser(userId, `#${userId}`);
-                window.history.replaceState(
-                    null,
-                    '',
-                    window.location.pathname + window.location.search,
-                );
+                window.history.replaceState(null, '', window.location.pathname + window.location.search);
             }
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [openUser]);
 
-    const activeId: string = activeUserTabId ?? staticTab;
-
-    const allTabs: TabDef[] = [
-        {id: 'users', label: t.Admin_Users(), closeable: false},
-        {id: 'comments', label: t.Admin_Comments(), closeable: false},
-        {id: 'tokens', label: t.Admin_Tokens(), closeable: false},
-        ...userTabs,
-    ];
-
-    const handleSelect = (id: string) => {
-        if (isStaticTab(id)) {
-            setActiveUserTabId(null);
-            setStaticTab(id);
-            writeTabToUrl(id);
-            return;
-        }
-        if (userTabs.find(ut => ut.id === id)) {
-            setActiveUserTabId(id);
-        }
-    };
-
-    const handleClose = (id: string) => {
-        if (userTabs.find(ut => ut.id === id)) {
-            closeUser(id);
-        }
-    };
-
-    const showUsers = activeId === 'users';
-    const showComments = activeId === 'comments';
-    const showTokens = activeId === 'tokens';
-    const activeUserTab = userTabs.find(ut => ut.id === activeId);
-
-    return (
-        <UserDetailContext.Provider value={{openUser}}>
-            <PageHeader title={t.Admin_Users()} icon={<Users size={22} aria-hidden="true" />} />
-            <div className="section-soft">
-            <TabNav
-                tabs={allTabs}
-                activeId={activeId}
-                onSelect={handleSelect}
-                onClose={handleClose}
-            />
-            {showUsers && (
-                <UsersSection
-                    pageUrl={usersPageUrl}
-                    initialData={usersInitialData}
-                    tabCountsUrl={usersTabCountsUrl}
-                    initialTabCounts={usersTabCounts}
-                    setFlagUrl={setFlagUrl}
-                    setUserTypeUrl={setUserTypeUrl}
-                    config={gridConfig}
-                />
-            )}
-            {showComments && (
-                <AdminCommentsSection
-                    commentsPayload={commentsInitialPayload ?? null}
-                    commentsPageUrl={commentsPageUrl}
-                    hideUrl={commentsHideUrl}
-                    unhideUrl={commentsUnhideUrl}
-                    approveUrl={commentsApproveUrl}
-                    rejectUrl={commentsRejectUrl}
-                    flagUrl={commentsFlagUrl}
-                    experts={commentsExperts}
-                    authors={commentsAuthors}
-                />
-            )}
-            {showTokens && (
-                <AdminTokensSection
-                    listUrl={tokensListUrl}
-                    createUrl={tokensCreateUrl}
-                    disableUrl={tokensDisableUrl}
-                    enableUrl={tokensEnableUrl}
-                    deleteUrl={tokensDeleteUrl}
-                    registrationsUrl={tokensRegistrationsUrl}
-                    updateUrl={tokensUpdateUrl}
-                />
-            )}
-            {activeUserTab && (
-                <UserDetailTab
-                    accountId={activeUserTab.tabKind.accountId}
-                    detailUrl={userDetailUrl || ADMIN_URLS.detailUrl}
-                    setFlagUrl={setFlagUrl ?? ADMIN_URLS.setFlagUrl}
-                    createTicketUrl={createTicketUrl ?? ADMIN_URLS.createTicketUrl}
-                    callerIsOwner={callerIsOwner}
-                    callerIsAdmin={callerIsAdmin}
-                />
-            )}
-            </div>
-        </UserDetailContext.Provider>
-    );
+    return <UserDetailContext.Provider value={context}><AdminPanel {...props} tabs={tabs} /></UserDetailContext.Provider>;
 };

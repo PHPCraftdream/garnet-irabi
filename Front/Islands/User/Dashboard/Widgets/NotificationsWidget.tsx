@@ -11,11 +11,11 @@ export const NotificationsWidget: React.FC<NotificationsWidgetProps> = ({unreadS
     if (unreadSupport <= 0 && unreadIm <= 0) return null;
 
     return (
-        <div className="flex flex-wrap gap-3" data-test-id="notifications-widget">
+        <div className="dashboard-notifications" data-test-id="notifications-widget">
             {unreadSupport > 0 && (
                 <a
                     href={appUrl('/support')}
-                    className="notification-pill notification-pill-warning"
+                    className="dashboard-support-notification"
                 >
                     {t.Dash_UnreadSupport()}: {unreadSupport}
                 </a>
@@ -23,7 +23,7 @@ export const NotificationsWidget: React.FC<NotificationsWidgetProps> = ({unreadS
             {unreadIm > 0 && (
                 <a
                     href={appUrl('/im')}
-                    className="notification-pill notification-pill-accent"
+                    className="dashboard-message-notification"
                 >
                     {t.Dash_UnreadMessages()}: {unreadIm}
                 </a>

@@ -1,29 +1,19 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {DateInput} from '@common/Components/ui/DateInput';
 import {DurationSelect} from '@common/Components/Controls/DurationSelect';
 import {Calendar} from '@common/Components/Controls/Calendar';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {useBatchSlots} from '../../hooks/useBatchSlots';
+import {anyPastDate, type BatchSlotsState} from './BatchSlotsState';
+import type {ExistingItem, ProposedSlot} from '../../types';
 import {BatchPreviewTable} from './BatchPreviewTable';
 
-interface FieldProps {
-    label: string;
-    children: React.ReactNode;
-}
-
-const Field: React.FC<FieldProps> = ({label, children}) => (
-    <div>
-        <label className="form-label">{label}</label>
-        {children}
-    </div>
-);
-
-const DAY_NAMES = () => [t.Cal_Sun(), t.Cal_Mon(), t.Cal_Tue(), t.Cal_Wed(), t.Cal_Thu(), t.Cal_Fri(), t.Cal_Sat()];
+const dayNames = () => [t.Cal_Sun(), t.Cal_Mon(), t.Cal_Tue(), t.Cal_Wed(), t.Cal_Thu(), t.Cal_Fri(), t.Cal_Sat()];
 
 interface Props {
     startDate: string;
     endDate: string;
-    batch: ReturnType<typeof useBatchSlots>;
+    batch: BatchSlotsState;
     addSlotDate: string;
     setAddSlotDate: (v: string) => void;
     addSlotTime: string;
@@ -36,77 +26,116 @@ interface Props {
     onCreate: () => void;
 }
 
-export const BatchPreviewSection: React.FC<Props> = ({startDate, endDate, batch, addSlotDate, setAddSlotDate, addSlotTime, setAddSlotTime, addSlotDuration, setAddSlotDuration, onAddSlot, onDateClick, onCancel, onCreate}) => (
-    <div id="batchPreview">
-        <hr className="my-3" />
-        <div className="mb-3">
-            <span className="badge bg-success">{t.Batch_Available()}</span>{' '}
-            <span className="badge bg-danger">{t.Batch_Restricted()}</span>{' '}
-            <span className="badge bg-primary">{t.Batch_Proposed()}</span>
-        </div>
+export class BatchPreviewSection extends AntiHookComponent<Props> {
+    private readonly batchSnapshot = this.connectSelection(() => this.props.batch, state => state);
 
-        <div className="mb-3">
-            <Calendar
+    private readonly changeDate = (event: React.ChangeEvent<HTMLInputElement>) => {
+        this.props.setAddSlotDate(event.target.value);
+    };
+
+    private readonly changeTime = (event: React.ChangeEvent<HTMLInputElement>) => {
+        this.props.setAddSlotTime(event.target.value);
+    };
+
+    private readonly isProposed = (date: string): boolean => {
+        return this.props.batch.getData().batchSlots.some(slot => slot.date === date);
+    };
+
+    private renderCalendar(availableDates: Record<string, string>, restrictedDates: Record<string, string>) {
+        const {startDate, endDate, onDateClick} = this.props;
+        return (
+            <div className="batch-preview-spacing">
+                <Calendar
+                    startDate={startDate}
+                    endDate={endDate}
+                    dayNames={dayNames()}
+                    isProposed={this.isProposed}
+                    restrictedDates={restrictedDates}
+                    availableDates={availableDates}
+                    onDateClick={onDateClick}
+                    idPrefix="batchCalendar"
+                    hideEmptyWeeks
+                />
+            </div>
+        );
+    }
+
+    private renderTable(batchSlots: readonly ProposedSlot[], existingSlots: readonly ExistingItem[]) {
+        const {batch, startDate, endDate} = this.props;
+        return (
+            <BatchPreviewTable
+                slots={batchSlots}
                 startDate={startDate}
                 endDate={endDate}
-                dayNames={DAY_NAMES()}
-                isProposed={batch.isProposed}
-                restrictedDates={batch.restrictedDates}
-                availableDates={batch.availableDates}
-                onDateClick={onDateClick}
-                idPrefix="batchCalendar"
-                hideEmptyWeeks
+                existingSlots={existingSlots}
+                onDateChange={batch.updateSlotDate}
+                onTimeChange={batch.updateSlotTime}
+                onDurationChange={batch.updateSlotDuration}
+                onRemove={batch.removeSlot}
             />
-        </div>
+        );
+    }
 
-        <h6>{t.Batch_ProposedDates()}:</h6>
-        <BatchPreviewTable
-            slots={batch.batchSlots}
-            startDate={startDate}
-            endDate={endDate}
-            hasOverlap={batch.hasOverlap}
-            hasProposedOverlap={batch.hasProposedOverlap}
-            getDayItems={batch.getDayItems}
-            onDateChange={batch.updateSlotDate}
-            onTimeChange={batch.updateSlotTime}
-            onDurationChange={batch.updateSlotDuration}
-            onRemove={batch.removeSlot}
-        />
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3 items-end" id="addSlotRow">
-            <Field label={t.Slot_Date()}>
-                <DateInput id="addSlotDate" value={addSlotDate} onChange={e => setAddSlotDate(e.target.value)} />
-            </Field>
-            <Field label={t.Slot_Time()}>
-                <DateInput type="time" id="addSlotTime" value={addSlotTime} onChange={e => setAddSlotTime(e.target.value)} />
-            </Field>
-            <Field label={t.Slot_Duration()}>
-                <DurationSelect value={addSlotDuration} onChange={setAddSlotDuration} className="form-select" id="addSlotDuration" />
-            </Field>
-            <div>
-                <button type="button" id="addSlotBtn" className="btn btn-outline-primary w-full" title={t.Action_Add()} onClick={onAddSlot}>+</button>
+    private renderAddRow() {
+        const {addSlotDate, addSlotTime, addSlotDuration, setAddSlotDuration, onAddSlot} = this.props;
+        return (
+            <div className="batch-preview-add-row" id="addSlotRow">
+                <div>
+                    <label className="batch-field-label">{t.Slot_Date()}</label>
+                    <DateInput id="addSlotDate" value={addSlotDate} onChange={this.changeDate} />
+                </div>
+                <div>
+                    <label className="batch-field-label">{t.Slot_Time()}</label>
+                    <DateInput type="time" id="addSlotTime" value={addSlotTime} onChange={this.changeTime} />
+                </div>
+                <div>
+                    <label className="batch-field-label">{t.Slot_Duration()}</label>
+                    <DurationSelect value={addSlotDuration} onChange={setAddSlotDuration} id="addSlotDuration" />
+                </div>
+                <div>
+                    <button type="button" id="addSlotBtn" className="compact-outline-action" title={t.Action_Add()} onClick={onAddSlot}>+</button>
+                </div>
             </div>
-        </div>
+        );
+    }
 
-        <p className="text-muted" id="batchStats">
-            {t.Batch_AvailableDays()}: {Object.keys(batch.availableDates).length} | {t.Batch_RestrictedDays()}: {Object.keys(batch.restrictedDates).length} | {t.Batch_Proposed()}: {batch.batchSlots.length}
-        </p>
+    private renderActions(hasPastDate: boolean) {
+        const {onCancel, onCreate} = this.props;
+        return (
+            <div className="batch-preview-actions">
+                {onCancel && <button type="button" className="confirm-modal-cancel" onClick={onCancel}>{t.Batch_Cancel()}</button>}
+                <button
+                    type="button"
+                    id="batchCreateBtn"
+                    data-test-id="batch-create-btn"
+                    className="confirm-modal-success"
+                    disabled={hasPastDate}
+                    title={hasPastDate ? t.Batch_PastDate() : undefined}
+                    onClick={onCreate}
+                >{t.Batch_CreateAll()}</button>
+            </div>
+        );
+    }
 
-        <div className="flex gap-2 justify-end">
-            {onCancel && (
-                <button type="button" className="btn btn-secondary" onClick={onCancel}>
-                    {t.Batch_Cancel()}
-                </button>
-            )}
-            <button
-                type="button"
-                id="batchCreateBtn"
-                data-test-id="batch-create-btn"
-                className="btn btn-success"
-                disabled={batch.hasPastDate()}
-                title={batch.hasPastDate() ? t.Batch_PastDate() : undefined}
-                onClick={onCreate}
-            >{t.Batch_CreateAll()}</button>
-        </div>
-    </div>
-);
+    render() {
+        const state = this.batchSnapshot();
+        return (
+            <div id="batchPreview">
+                <hr className="batch-preview-divider" />
+                <div className="batch-preview-spacing">
+                    <span className="batch-legend-available">{t.Batch_Available()}</span>{' '}
+                    <span className="batch-legend-restricted">{t.Batch_Restricted()}</span>{' '}
+                    <span className="batch-legend-proposed">{t.Batch_Proposed()}</span>
+                </div>
+                {this.renderCalendar(state.availableDates, state.restrictedDates)}
+                <h6>{t.Batch_ProposedDates()}:</h6>
+                {this.renderTable(state.batchSlots, state.existingSlots)}
+                {this.renderAddRow()}
+                <p className="batch-preview-stats" id="batchStats">
+                    {t.Batch_AvailableDays()}: {Object.keys(state.availableDates).length} | {t.Batch_RestrictedDays()}: {Object.keys(state.restrictedDates).length} | {t.Batch_Proposed()}: {state.batchSlots.length}
+                </p>
+                {this.renderActions(anyPastDate(state.batchSlots))}
+            </div>
+        );
+    }
+}

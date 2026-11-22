@@ -1,0 +1,65 @@
+@reference "tailwindcss";
+
+@theme inline reference {
+  /* carburetor-disable-next-line valid-color-role */
+  --color-expertavatar-wash: var(--color-bg-surface-hover);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-expertavatar-ink: var(--color-text-muted);
+}
+
+@utility tone-expertavatar-soft { @apply bg-expertavatar-wash text-expertavatar-ink; }
+@utility layout-expert-profile-avatar { @apply flex items-center justify-center shrink-0; }
+@utility shape-expert-profile-avatar { @apply w-24 h-24 md:w-32 md:h-32 rounded-lg; }
+@utility type-expert-profile-initials { @apply data-[variant=initials]:text-2xl data-[variant=initials]:font-semibold; }
+@utility layout-expert-profile-avatar-button { @apply shrink-0; }
+@utility shape-expert-profile-avatar-button { @apply p-0 border-0; }
+@utility behavior-expert-profile-avatar-button { @apply cursor-pointer; }
+@utility shape-expert-profile-avatar-image { @apply object-cover; }
+@utility effect-expert-profile-avatar-image { @apply shadow; }
+@utility layout-expert-profile-actions { @apply flex items-center gap-2; }
+@utility shape-expert-profile-stats { @apply mb-5; }
+@utility layout-expert-profile-stats { @apply grid grid-cols-2 md:grid-cols-5; }
+@utility shape-expert-profile-stat { @apply px-6 py-5; }
+@utility type-expert-profile-stat { @apply text-center; }
+@utility type-expert-profile-stat-value { @apply text-2xl font-bold; }
+@utility shape-expert-profile-hint { @apply px-4 pb-3 mb-0; }
+@utility type-expert-profile-small { @apply text-xs; }
+@utility shape-expert-profile-more { @apply mt-4; }
+@utility type-expert-profile-more { @apply text-center; }
+@utility layout-expert-profile-header { @apply flex items-start gap-4; }
+@utility shape-expert-profile-header { @apply mb-6; }
+@utility layout-expert-profile-heading { @apply flex flex-col justify-center; }
+@utility shape-expert-profile-heading { @apply min-w-0; }
+@utility shape-expert-profile-bio-heading { @apply mb-2; }
+@utility shape-expert-profile-bio-text { @apply mb-0; }
+@utility type-expert-profile-bio { @apply whitespace-pre-line; }
+@utility shape-expert-profile-slots-heading { @apply mt-6; }
+@utility layout-expert-profile-slots { @apply grid grid-cols-1 md:grid-cols-2 gap-4; }
+
+@layer components {
+  .expert-profile-avatar-placeholder { @apply tone-expertavatar-soft layout-expert-profile-avatar shape-expert-profile-avatar type-expert-profile-initials; }
+  .expert-profile-avatar-button { @apply tone-adminuserphoto-plain layout-expert-profile-avatar-button shape-expert-profile-avatar-button behavior-expert-profile-avatar-button; }
+  .expert-profile-avatar-image { @apply tone-widgetneutral-plain shape-expert-profile-avatar shape-expert-profile-avatar-image effect-expert-profile-avatar-image; }
+  .expert-profile-actions { @apply tone-widgetneutral-plain layout-expert-profile-actions; }
+  .expert-profile-stats-grid { @apply tone-widgetneutral-plain layout-expert-profile-stats; }
+  .expert-profile-stat { @apply tone-widgetneutral-plain shape-expert-profile-stat type-expert-profile-stat; }
+  .expert-profile-stat-value { @apply tone-supportmuted-plain type-expert-profile-stat-value; }
+  .expert-profile-stat-value[data-tone="success"] { @apply tone-moneybalance-plain; }
+  .expert-profile-stat-value[data-tone="accent"] { @apply tone-bookaccent-plain; }
+  .expert-profile-stat-value[data-tone="warning"] { @apply tone-bookwarning-plain; }
+  .expert-profile-stat-label { @apply tone-supportmuted-plain type-expert-profile-small shape-support-message-time; }
+  .expert-profile-stats-hint { @apply tone-supportmuted-plain shape-expert-profile-hint type-expert-profile-small; }
+  .expert-profile-more { @apply tone-widgetneutral-plain shape-expert-profile-more type-expert-profile-more; }
+  .expert-profile-muted { @apply tone-supportmuted-plain type-expert-profile-small; }
+  .expert-profile-empty { @apply tone-supportmuted-plain; }
+  .expert-profile-header { @apply tone-widgetneutral-plain layout-expert-profile-header shape-expert-profile-header; }
+  .expert-profile-heading { @apply tone-widgetneutral-plain layout-expert-profile-heading shape-expert-profile-heading; }
+  .expert-profile-name { @apply tone-widgetim-plain; }
+  .expert-profile-bio-heading { @apply tone-widgetneutral-plain shape-expert-profile-bio-heading; }
+  .expert-profile-bio-text { @apply tone-widgetneutral-plain shape-expert-profile-bio-text type-expert-profile-bio; }
+  .expert-profile-slots-heading { @apply tone-widgetneutral-plain shape-expert-profile-slots-heading; }
+  .expert-profile-slots { @apply tone-widgetneutral-plain layout-expert-profile-slots; }
+}
+
+/* carburetor-disable-next-line valid-function-class */
+.booking-card-shell[data-expert-profile="stats"] { @apply shape-expert-profile-stats; }

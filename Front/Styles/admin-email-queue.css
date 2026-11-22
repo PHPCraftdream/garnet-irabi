@@ -1,0 +1,15 @@
+@reference "tailwindcss";
+
+@layer components {
+  .admin-email-queue-time { @apply tone-bookmuted-plain type-token-small type-token-nowrap; }
+  .admin-email-queue-muted { @apply tone-bookmuted-plain; }
+}
+
+@layer components {
+  .admin-email-queue-notice { @apply tone-widgetneutral-plain shape-admin-support-form; }
+  .admin-email-queue-status { @apply tone-ticketstatusgray-soft layout-book-summary-badge shape-book-summary-badge type-book-summary-badge; }
+  .admin-email-queue-status[data-status="queued"] { @apply tone-ticketstatusyellow-soft; }
+  .admin-email-queue-status[data-status="sending"] { @apply tone-ticketstatusblue-soft; }
+  .admin-email-queue-status[data-status="sent"] { @apply tone-ticketstatusgreen-soft; }
+  .admin-email-queue-status[data-status="error"] { @apply tone-ticketstatusred-soft; }
+}

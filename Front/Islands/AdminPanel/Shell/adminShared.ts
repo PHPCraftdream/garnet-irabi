@@ -29,10 +29,14 @@ export const adminPaginationLabels = {
     items: t.Pagination_Items(),
 };
 
+function accountOption(item: AccountOption): {value: string; label: string} {
+    return {value: String(item.id), label: item.name};
+}
+
 /** Список для выпадающего фильтра: «Все» первым пунктом, затем люди. */
 export function buildAccountOptions(items: AccountOption[]): {value: string; label: string}[] {
     return [
         {value: '0', label: t.Admin_Filter_All()},
-        ...items.map(a => ({value: String(a.id), label: a.name})),
+        ...items.map(accountOption),
     ];
 }

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {useState} from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 import {SupportMessage} from '../../../../Comms/Support/parts/supportTypes';
 import {AttachmentRow, AttachmentWithAuthor} from './AttachmentRow';
@@ -8,40 +8,47 @@ interface Props {
     messages: SupportMessage[];
 }
 
-/** Собрать вложения со всей переписки, запомнив, кто их прислал. */
-const collect = (messages: SupportMessage[]): AttachmentWithAuthor[] =>
-    messages.flatMap(msg => (msg.attachments ?? []).map(att => ({...att, author_name: msg.author_name})));
+function collect(messages: SupportMessage[]): AttachmentWithAuthor[] {
+    const attachments: AttachmentWithAuthor[] = [];
+    for (const msg of messages) {
+        for (const attachment of msg.attachments ?? []) attachments.push({...attachment, author_name: msg.author_name});
+    }
+    return attachments;
+}
 
-/**
- * Все файлы обращения одним списком.
- *
- * Свёрнут по умолчанию: нужен, когда ищешь конкретный файл, а не читаешь
- * переписку.
- */
-export default function TicketAttachments({messages}: Props) {
-    const [expanded, setExpanded] = useState(false);
-    const attachments = collect(messages);
+function renderAttachment(att: AttachmentWithAuthor) {
+    return <AttachmentRow key={att.id} att={att} />;
+}
 
-    if (attachments.length === 0) return null;
+export default class TicketAttachments extends AntiHookComponent<Props> {
+    private readonly ui = new Carburetor({expanded: false});
+    private readonly toggle = () => this.ui.setData({expanded: !this.ui.getData().expanded});
 
-    return (
-        <div className="mb-4" data-test-id="support-attachments-block">
-            <button
-                type="button"
-                className="text-sm text-muted hover:text-secondary flex items-center gap-1"
-                onClick={() => setExpanded(!expanded)}
-                data-test-id="support-attachments-toggle"
-            >
-                <span className="text-xs select-none">{expanded ? '\u25BE' : '\u25B8'}</span>
-                {t.Support_Attachments()} ({attachments.length})
-            </button>
-            {expanded && (
-                <div className="mt-2 bg-surface-alt rounded border border-default p-3" data-test-id="support-attachments-list">
-                    <div className="flex flex-col gap-2">
-                        {attachments.map(att => <AttachmentRow key={att.id} att={att} />)}
+    render() {
+        const {expanded} = this.useCarburetor(this.ui);
+        const attachments = collect(this.props.messages);
+        if (attachments.length === 0) return null;
+
+        return (
+            <div className="admin-support-form" data-test-id="support-attachments-block">
+                <button
+                    type="button"
+                    className="admin-support-history-toggle"
+                    onClick={this.toggle}
+                    aria-expanded={expanded}
+                    data-test-id="support-attachments-toggle"
+                >
+                    <span className="admin-support-history-chevron">{expanded ? '\u25BE' : '\u25B8'}</span>
+                    {t.Support_Attachments()} ({attachments.length})
+                </button>
+                {expanded && (
+                    <div className="admin-attachment-panel" data-test-id="support-attachments-list">
+                        <div className="admin-attachment-list">
+                            {attachments.map(renderAttachment)}
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
-    );
+                )}
+            </div>
+        );
+    }
 }

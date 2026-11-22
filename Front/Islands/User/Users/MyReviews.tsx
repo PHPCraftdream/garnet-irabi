@@ -22,17 +22,21 @@ const STATUS_LABEL: Record<MyReview['moderation_status'], () => string> = {
 };
 
 const MyReviewItem: React.FC<{review: MyReview}> = ({review: r}) => (
-    <div className="p-4" data-test-id={`my-review-${r.id}`}>
-        <div className="flex items-center justify-between gap-2 mb-1">
-            <a href={appUrl(`/expert/id~${r.expert_id}`)} className="text-accent hover:underline font-medium">
+    <div className="my-review-item" data-test-id={`my-review-${r.id}`}>
+        <div className="my-review-item-heading">
+            <a href={appUrl(`/expert/id~${r.expert_id}`)} className="my-review-expert">
                 {r.expert_name || t.Booking_NA()}
             </a>
-            <span className="text-xs text-muted">{STATUS_LABEL[r.moderation_status]()}</span>
+            <span className="support-ticket-time">{STATUS_LABEL[r.moderation_status]()}</span>
         </div>
-        <p className="text-sm text-on-surface mb-1">{r.body}</p>
-        <span className="text-xs text-muted">{formatTs(r.created_at)}</span>
+        <p className="my-review-copy">{r.body}</p>
+        <span className="support-ticket-time">{formatTs(r.created_at)}</span>
     </div>
 );
+
+function renderReview(review: MyReview) {
+    return <MyReviewItem key={review.id} review={review} />;
+}
 
 /**
  * D-128: до этого отзывы не жили нигде, кроме страницы того эксперта, о
@@ -57,14 +61,14 @@ export const MyReviews: React.FC<{listUrl: string; initialData?: PageResponse<My
     }
 
     return (
-        <div className="profile-card mt-4" data-test-id="my-reviews-section">
-            <div className="p-4 border-b border-default flex items-center justify-between">
-                <h3 className="mb-0">{t.MyReviews_Title()}</h3>
-                <span className="text-sm text-muted" data-test-id="my-reviews-count">{total}</span>
+        <div className="my-reviews-panel" data-test-id="my-reviews-section">
+            <div className="my-reviews-header">
+                <h3 className="my-reviews-heading">{t.MyReviews_Title()}</h3>
+                <span className="admin-client-context-empty" data-test-id="my-reviews-count">{total}</span>
             </div>
 
             {totalPages > 1 && (
-                <div className="p-4 pb-0">
+                <div className="my-reviews-pager">
                     <Pagination
                         page={page}
                         totalPages={totalPages}
@@ -79,10 +83,8 @@ export const MyReviews: React.FC<{listUrl: string; initialData?: PageResponse<My
                 </div>
             )}
 
-            <div className="divide-y divide-default">
-                {items.map(r => (
-                    <MyReviewItem key={r.id} review={r} />
-                ))}
+            <div className="my-reviews-list">
+                {items.map(renderReview)}
             </div>
         </div>
     );

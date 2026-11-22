@@ -1,0 +1,35 @@
+@reference "tailwindcss";
+
+@utility layout-registration-heading { @apply flex items-center justify-between gap-3; }
+@utility shape-registration-heading { @apply mb-6; }
+@utility shape-registration-panel { @apply border rounded-lg p-6; }
+@utility type-registration-profile-link { @apply whitespace-nowrap hover:underline; }
+@utility shape-registration-consent { @apply space-y-3 mb-4; }
+@utility layout-registration-consent { @apply flex items-start gap-2; }
+@utility shape-registration-consent-check { @apply mt-1; }
+@utility shape-registration-notif-title { @apply mb-4; }
+@utility layout-registration-notif-row { @apply flex gap-3; }
+@utility shape-registration-notif-row { @apply mb-3; }
+@utility shape-registration-notif-label { @apply mb-1; min-width: 12rem; }
+@utility shape-registration-marketing { @apply mt-4 pt-3; }
+
+@layer components {
+  .registration-heading { @apply tone-widgetneutral-plain layout-registration-heading shape-registration-heading; }
+  .registration-title { @apply tone-widgetim-plain; }
+  .registration-profile-link { @apply tone-bookaccent-plain type-registration-profile-link; }
+  .registration-panel { @apply tone-cardsurface-outlined shape-registration-panel; }
+  .registration-consent-block { @apply tone-widgetneutral-plain shape-registration-consent; }
+  .registration-consent-row { @apply tone-widgetneutral-plain layout-registration-consent; }
+  .registration-consent-check { @apply tone-widgetneutral-plain shape-registration-consent-check; }
+  .registration-consent-error { @apply tone-externaldanger-plain; }
+  .registration-notif-heading { @apply tone-widgetim-plain shape-registration-notif-title; }
+  .registration-notif-row { @apply tone-widgetneutral-plain layout-registration-notif-row shape-registration-notif-row; }
+  .registration-notif-label { @apply tone-batchsecondary-plain layout-batch-label shape-registration-notif-label type-batch-label; }
+  .registration-notif-select { @apply tone-garnetfield-outlined shape-native-control shape-native-select layout-native-select type-native-select behavior-native-select focus-native-select motion-native-select; }
+  .registration-marketing { @apply tone-widgetneutral-plain shape-registration-marketing; }
+}
+
+/* carburetor-disable-next-line valid-function-class */
+.section-soft[data-registration-notif] { @apply mt-6; }
+/* carburetor-disable-next-line valid-function-class */
+.registration-notif-select { width: auto; }

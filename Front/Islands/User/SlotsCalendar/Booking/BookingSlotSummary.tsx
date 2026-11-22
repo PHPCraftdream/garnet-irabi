@@ -3,49 +3,56 @@ import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {formatTime as fmtTime, formatDateShort as fmtDate} from '@common/Utils/Time/DateUtils';
 import {slotFormatLine} from '../../../../Common/booking/slotFormat';
-import {SlotItem, ExpertInfo} from '../types';
+import type {SlotItem, ExpertInfo} from '../types';
 
-export const BookingSlotSummary: React.FC<{slot: SlotItem; expert?: ExpertInfo}> = ({slot, expert}) => (
-    <div className="p-3 rounded-lg bg-accent-subtle mb-4" data-test-id="booking-main-slot">
-        <div className="font-medium">{fmtDate(slot.start_at)}, {fmtTime(slot.start_at)} — {fmtTime(slot.end_at || (slot.start_at + (slot.duration_min || 60) * 60))}</div>
-        {expert && (
-            <div className="text-sm text-secondary">
-                <UserLink id={slot.expert_id} name={expert.display_name} isExpert className="text-accent hover:underline" onClick={e => e.stopPropagation()} />
-            </div>
-        )}
-        {/* Формат — на экране, где человек решает платить.
-            Он был добавлен в карточку каталога и в форму брони, а
-            эта модалка осталась без него: платишь за очное занятие
-            и не видишь адреса. Нашёл user-7 в первый же час после
-            выката — ровно тот случай, когда правку внесли не во все
-            копии одного экрана. */}
-        <div className="text-sm mt-1" data-test-id="booking-format">{slotFormatLine(slot)}</div>
-        {/* D-162 (продолжение D-149): каталог с D-149 уже помечает
-            групповые карточки значком, а эта модалка — тот самый
-            экран, где человек решает платить за место в группе,
-            не за персональное занятие, — молчала. */}
-        {slot.max_users > 1 && (
-            <div className="mt-1">
-                <span className="badge text-bg-primary" data-test-id="booking-group-badge">
-                    {t.Slot_GroupBadge([slot.max_users])}
-                </span>
-            </div>
-        )}
-        <div className="text-sm font-medium mt-1">{slot.cost} &#8381;</div>
-        {slot.cancellation_penalty_percent > 0 && slot.cost > 0 && (
-            <div className="text-xs text-warning mt-1" data-test-id="booking-penalty-warning">
-                {t.Booking_PenaltyWarning([
-                    slot.cancellation_penalty_percent,
-                    Math.floor(slot.cost * slot.cancellation_penalty_percent / 100),
-                ])}
-            </div>
-        )}
-        {/* «А если преподаватель откажет?» — вопрос задают здесь, до
-            оплаты, а ответ до сих пор был только на карточке уже
-            оплаченной заявки. Отказ преподавателя всегда возвращает
-            всю сумму (ExpertBookingsService: «no penalty branch»). */}
-        <div className="text-xs text-muted mt-1" data-test-id="booking-refund-note">
-            {t.Booking_CancelTerms_Unanswered()}
+interface Props {
+    slot: SlotItem;
+    expert?: ExpertInfo;
+}
+
+function stopClick(event: React.MouseEvent<HTMLAnchorElement>): void {
+    event.stopPropagation();
+}
+
+function BookingExpert({slot, expert}: Props) {
+    if (!expert) return null;
+    return (
+        <div className="booking-summary-expert">
+            <UserLink id={slot.expert_id} name={expert.display_name} isExpert className="booking-place-link" onClick={stopClick} />
         </div>
-    </div>
-);
+    );
+}
+
+function BookingGroup({size}: {size: number}) {
+    if (!(size > 1)) return null;
+    return (
+        <div className="booking-summary-group">
+            <span className="booking-summary-badge" data-test-id="booking-group-badge">{t.Slot_GroupBadge([size])}</span>
+        </div>
+    );
+}
+
+function BookingPenalty({slot}: {slot: SlotItem}) {
+    const {cost, cancellation_penalty_percent: percent} = slot;
+    if (!(percent > 0 && cost > 0)) return null;
+    return (
+        <div className="booking-summary-penalty" data-test-id="booking-penalty-warning">
+            {t.Booking_PenaltyWarning([percent, Math.floor(cost * percent / 100)])}
+        </div>
+    );
+}
+
+export function BookingSlotSummary({slot, expert}: Props) {
+    const endsAt = slot.end_at || (slot.start_at + (slot.duration_min || 60) * 60);
+    return (
+        <div className="booking-summary-slot" data-test-id="booking-main-slot">
+            <div className="booking-summary-time">{fmtDate(slot.start_at)}, {fmtTime(slot.start_at)} — {fmtTime(endsAt)}</div>
+            <BookingExpert slot={slot} expert={expert} />
+            <div className="booking-summary-format" data-test-id="booking-format">{slotFormatLine(slot)}</div>
+            <BookingGroup size={slot.max_users} />
+            <div className="booking-summary-cost">{slot.cost} &#8381;</div>
+            <BookingPenalty slot={slot} />
+            <div className="booking-summary-refund" data-test-id="booking-refund-note">{t.Booking_CancelTerms_Unanswered()}</div>
+        </div>
+    );
+}

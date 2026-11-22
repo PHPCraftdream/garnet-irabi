@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {useMemo, useRef, useState} from 'react';
 import {AdminUser, GridConfig, PageResponse, UserTab} from '../Shell/types';
 import {AdminGrid, AdminGridHandle} from '../Grid/AdminGrid';
@@ -7,7 +8,7 @@ import {sendPost} from '@common/Api/Send/sendPost';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {useOpenUser} from './UserDetailContext';
 import {flag, roleFlagLabel} from './usersFlags';
-import {FlagBtn} from './FlagBtn';
+import {FlagBtn, type FlagButtonTone} from './FlagBtn';
 
 type TabCounts = Record<UserTab, number>;
 
@@ -39,25 +40,29 @@ const tabs: TabDef[] = [
 const ROLE_TABS = new Set<UserTab>(['moderators', 'owners', 'admins']);
 const TYPE_TABS = new Set<UserTab>(['experts', 'users']);
 
-const TabButton: React.FC<{
-    tabKey: string;
+interface TabButtonProps {
+    tabKey: UserTab;
     label: string;
     count: number;
     active: boolean;
-    onSelect: (key: any) => void;
-}> = ({tabKey, label, count, active, onSelect}) => (
-    <li className="admin-tabnav-item">
-        <button
-            type="button"
-            data-test-id={`filter-tab-${tabKey}`}
-            aria-selected={active}
-            className={`admin-tabnav-btn ${active ? 'admin-tabnav-btn-active' : ''}`}
-            onClick={() => onSelect(tabKey)}
-        >
-            {label} <span className="admin-tabnav-count">({count})</span>
-        </button>
-    </li>
-);
+    onSelect: (key: UserTab) => void;
+}
+
+class TabButton extends AntiHookComponent<TabButtonProps> {
+    private readonly select = () => this.props.onSelect(this.props.tabKey);
+
+    render() {
+        const {tabKey, label, count, active} = this.props;
+        return (
+            <li className="admin-users-tab-item">
+                <button type="button" data-test-id={`filter-tab-${tabKey}`} aria-selected={active}
+                    className="admin-users-tab-button" onClick={this.select}>
+                    {label} <span className="admin-users-tab-count">({count})</span>
+                </button>
+            </li>
+        );
+    }
+}
 
 /** Тип аккаунта и переключатель «сделать преподавателем». */
 const UserTypeCell: React.FC<{
@@ -69,8 +74,8 @@ const UserTypeCell: React.FC<{
     const isExpert = row.type === 'expert';
 
     return (
-        <div className="flex items-center gap-2">
-            <span className={`badge ${isExpert ? 'status-info' : 'status-muted'}`}>
+        <div className="widget-header-actions">
+            <span className="admin-user-role-badge" data-tone={isExpert ? 'info' : 'muted'}>
                 {isExpert ? t.Reg_AccountTypeExpert() : t.Reg_AccountTypeUser()}
             </span>
             {canChange && (
@@ -91,7 +96,7 @@ type FlagKey = 'IS_APPROVED' | 'IS_DISABLED' | 'IS_MODERATOR' | 'IS_OWNER' | 'IS
 
 interface FlagDef {
     key: FlagKey;
-    cls: [string, string];
+    cls: [FlagButtonTone, FlagButtonTone];
     label: (r: AdminUser) => string;
     title?: (r: AdminUser) => string | undefined;
     expertOnly?: boolean;
@@ -143,48 +148,167 @@ const flagDefs: Record<FlagKey, FlagDef> = {
 };
 
 /** Кнопка флага роли/статуса в строке таблицы. */
-const UserFlagCell: React.FC<{
+interface FlagCellProps {
     row: AdminUser;
     def: FlagDef;
     pending: boolean;
     onSetFlag: (userId: number, name: FlagKey, value: 0 | 1) => void;
-}> = ({row, def, pending, onSetFlag}) => {
-    if (def.expertOnly && row.type !== 'expert') return null;
-    const active = flag(row[def.key]);
+}
 
-    return (
-        <FlagBtn
-            testId={`flag-${def.key}-${row.id}`}
-            label={def.label(row)}
-            title={def.title?.(row)}
-            active={active}
-            cls={def.cls}
-            disabled={pending || (def.lockedBy?.(row) ?? false)}
-            onClick={() => onSetFlag(row.id, def.key, active ? 0 : 1)}
-        />
-    );
-};
+class UserFlagCell extends AntiHookComponent<FlagCellProps> {
+    private readonly toggle = () => {
+        const {row, def, onSetFlag} = this.props;
+        onSetFlag(row.id, def.key, flag(row[def.key]) ? 0 : 1);
+    };
 
-const UserLoginCell: React.FC<{
-    row: AdminUser;
-    onOpen: (id: number, label: string) => void;
-}> = ({row, onOpen}) => (
-    <button
-        type="button"
-        data-test-id={`user-login-${row.id}`}
-        className="admin-link-btn-md font-mono"
-        onClick={() => onOpen(row.id, row.name || row.login)}
-    >
-        {row.login}
-    </button>
-);
+    render() {
+        const {row, def, pending} = this.props;
+        if (def.expertOnly && row.type !== 'expert') return null;
+        return (
+            <FlagBtn testId={`flag-${def.key}-${row.id}`} label={def.label(row)} title={def.title?.(row)}
+                active={flag(row[def.key])} cls={def.cls} disabled={pending || (def.lockedBy?.(row) ?? false)}
+                onClick={this.toggle} />
+        );
+    }
+}
+
+class UserLoginCell extends AntiHookComponent<{row: AdminUser; onOpen: (id: number, label: string) => void}> {
+    private readonly open = () => {
+        const {row, onOpen} = this.props;
+        onOpen(row.id, row.name || row.login);
+    };
+
+    render() {
+        const {row} = this.props;
+        return (
+            <button type="button" data-test-id={`user-login-${row.id}`} className="admin-users-login" onClick={this.open}>
+                {row.login}
+            </button>
+        );
+    }
+}
+
+interface ListState {
+    activeTab: UserTab;
+    tabCounts: TabCounts;
+    pending: Record<number, boolean>;
+}
+
+class UsersListState extends Carburetor<ListState> {
+    constructor(tabCounts: TabCounts) {
+        super({activeTab: 'all', tabCounts, pending: {}});
+    }
+
+    readonly snapshot = () => this.getData();
+    readonly subscribeSnapshot = (listener: () => void) => {
+        const id = this.subscribe(listener);
+        return () => this.unsubscribe(id);
+    };
+
+    readonly setActiveTab = (activeTab: UserTab) => {
+        const state = this.getData();
+        if (state.activeTab !== activeTab) this.setData({...state, activeTab});
+    };
+
+    readonly setTabCounts = (tabCounts: TabCounts) => this.setData({...this.getData(), tabCounts});
+
+    setPending(id: number, pending: boolean): void {
+        const state = this.getData();
+        this.setData({...state, pending: {...state.pending, [id]: pending}});
+    }
+}
+
+function isVisibleColumn(column: GridConfig['columns'][number]): boolean {
+    return column.key !== 'IS_APPROVED';
+}
+
+function userRowKey(row: AdminUser): number {
+    return row.id;
+}
+
+function renderUserId(row: AdminUser) {
+    return <span className="token-cell-muted">{row.id}</span>;
+}
+
+function renderLastOnline(row: AdminUser) {
+    return <span className="token-registration-ip">{formatTs(row.last_online_time)}</span>;
+}
+
+function patchUser(rows: AdminUser[], userId: number, patch: Partial<AdminUser>): AdminUser[] {
+    const index = rows.findIndex(row => row.id === userId);
+    if (index < 0) return rows;
+    const next = rows.slice();
+    next[index] = {...rows[index], ...patch};
+    return next;
+}
+
+function renderTabButtons(activeTab: UserTab, counts: TabCounts, onSelect: (tab: UserTab) => void) {
+    return tabs.map(tab => <TabButton key={tab.key} tabKey={tab.key} label={tab.labelFn()}
+        count={counts[tab.key]} active={activeTab === tab.key} onSelect={onSelect} />);
+}
+
+class UsersListActions {
+    constructor(private readonly ui: UsersListState, private readonly gridRef: React.RefObject<AdminGridHandle<AdminUser>>,
+        private readonly tabCountsUrl?: string, private readonly setFlagUrl?: string, private readonly setUserTypeUrl?: string) {}
+
+    private async refreshTabCounts(): Promise<void> {
+        const {tabCountsUrl, ui} = this;
+        if (!tabCountsUrl) return;
+        try {
+            const resp = await sendPost<{}, TabCounts>(tabCountsUrl, {});
+            const data = ('data' in resp && resp.data) ? resp.data : (resp as unknown as TabCounts);
+            ui.setTabCounts(data);
+        } catch {
+            // best-effort — stale counts are cosmetic, not worth surfacing an error for
+        }
+    }
+
+    readonly setFlag = async (userId: number, flagName: FlagKey, value: 0 | 1) => {
+        const {setFlagUrl, ui, gridRef} = this;
+        const {activeTab} = ui.getData();
+        if (!setFlagUrl || ui.getData().pending[userId]) return;
+        ui.setPending(userId, true);
+        try {
+            const csrf = (window as any).__GARNET_CSRF__ ?? '';
+            await sendPost(setFlagUrl, {CSRF_TOKEN: csrf, user_id: userId, flag: flagName, value});
+            const affectsTab = flagName === 'IS_MODERATOR' || flagName === 'IS_OWNER' || flagName === 'IS_ADMIN';
+            if (affectsTab && ROLE_TABS.has(activeTab)) {
+                gridRef.current?.refresh();
+            } else {
+                gridRef.current?.setItems(rows => patchUser(rows, userId, {[flagName]: value || null}));
+            }
+            if (affectsTab) void this.refreshTabCounts();
+        } finally {
+            ui.setPending(userId, false);
+        }
+    };
+
+    readonly setUserType = async (userId: number, nextType: 'user' | 'expert') => {
+        const {setUserTypeUrl, ui, gridRef} = this;
+        const {activeTab} = ui.getData();
+        if (!setUserTypeUrl || ui.getData().pending[userId]) return;
+        ui.setPending(userId, true);
+        try {
+            const csrf = (window as any).__GARNET_CSRF__ ?? '';
+            await sendPost(setUserTypeUrl, {CSRF_TOKEN: csrf, user_id: userId, type: nextType});
+            if (TYPE_TABS.has(activeTab)) {
+                gridRef.current?.refresh();
+            } else {
+                gridRef.current?.setItems(rows => patchUser(rows, userId, {type: nextType}));
+            }
+            void this.refreshTabCounts();
+        } finally {
+            ui.setPending(userId, false);
+        }
+    };
+}
 
 export const UsersSection: React.FC<Props> = ({
     pageUrl, initialData, tabCountsUrl, initialTabCounts, setFlagUrl, setUserTypeUrl, config,
 }) => {
-    const [activeTab, setActiveTab] = useState<UserTab>('all');
-    const [tabCounts, setTabCounts] = useState<TabCounts>(initialTabCounts);
-    const [pending, setPending]     = useState<Record<number, boolean>>({});
+    const [ui] = useState(() => new UsersListState(initialTabCounts));
+    const {activeTab, tabCounts, pending} = React.useSyncExternalStore(ui.subscribeSnapshot, ui.snapshot, ui.snapshot);
+    const {setActiveTab} = ui;
     const gridRef = useRef<AdminGridHandle<AdminUser>>(null);
     const openUser = useOpenUser();
 
@@ -194,69 +318,20 @@ export const UsersSection: React.FC<Props> = ({
         if (activeTab === 'experts' || activeTab === 'all') return config;
         return {
             ...config,
-            columns: config.columns.filter(c => c.key !== 'IS_APPROVED'),
+            columns: config.columns.filter(isVisibleColumn),
         };
     }, [config, activeTab]);
 
-    const refreshTabCounts = async () => {
-        if (!tabCountsUrl) return;
-        try {
-            const resp = await sendPost<{}, TabCounts>(tabCountsUrl, {});
-            const data = ('data' in resp && resp.data) ? resp.data : (resp as unknown as TabCounts);
-            setTabCounts(data);
-        } catch {
-            // best-effort — stale counts are cosmetic, not worth surfacing an error for
-        }
-    };
-
-    const setFlag = async (userId: number, flagName: FlagKey, value: 0 | 1) => {
-        if (!setFlagUrl || pending[userId]) return;
-        setPending(p => ({...p, [userId]: true}));
-        try {
-            const csrf = (window as any).__GARNET_CSRF__ ?? '';
-            await sendPost(setFlagUrl, {CSRF_TOKEN: csrf, user_id: userId, flag: flagName, value});
-            const affectsTab = flagName === 'IS_MODERATOR' || flagName === 'IS_OWNER' || flagName === 'IS_ADMIN';
-            if (affectsTab && ROLE_TABS.has(activeTab)) {
-                gridRef.current?.refresh();
-            } else {
-                gridRef.current?.setItems(prev => prev.map(u => u.id === userId ? {...u, [flagName]: value || null} : u));
-            }
-            if (affectsTab) void refreshTabCounts();
-        } finally {
-            setPending(p => ({...p, [userId]: false}));
-        }
-    };
-
-    const setUserType = async (userId: number, nextType: 'user' | 'expert') => {
-        if (!setUserTypeUrl || pending[userId]) return;
-        setPending(p => ({...p, [userId]: true}));
-        try {
-            const csrf = (window as any).__GARNET_CSRF__ ?? '';
-            await sendPost(setUserTypeUrl, {CSRF_TOKEN: csrf, user_id: userId, type: nextType});
-            if (TYPE_TABS.has(activeTab)) {
-                gridRef.current?.refresh();
-            } else {
-                gridRef.current?.setItems(prev => prev.map(u => u.id === userId ? {...u, type: nextType} : u));
-            }
-            void refreshTabCounts();
-        } finally {
-            setPending(p => ({...p, [userId]: false}));
-        }
-    };
+    const {setFlag, setUserType} = useMemo(
+        () => new UsersListActions(ui, gridRef, tabCountsUrl, setFlagUrl, setUserTypeUrl),
+        [ui, gridRef, tabCountsUrl, setFlagUrl, setUserTypeUrl],
+    );
+    const tabButtons = renderTabButtons(activeTab, tabCounts, setActiveTab);
 
     return (
         <div>
-            <ul className="admin-tabnav">
-                {tabs.map(tab => (
-                    <TabButton
-                        key={tab.key}
-                        tabKey={tab.key}
-                        label={tab.labelFn()}
-                        count={tabCounts[tab.key]}
-                        active={activeTab === tab.key}
-                        onSelect={setActiveTab}
-                    />
-                ))}
+            <ul className="admin-users-tabs">
+                {tabButtons}
             </ul>
 
             <AdminGrid
@@ -265,13 +340,13 @@ export const UsersSection: React.FC<Props> = ({
                 initialData={initialData}
                 extraParams={extraParams}
                 config={gridConfig}
-                rowKey={r => r.id}
+                rowKey={userRowKey}
                 emptyMessage={t.Admin_NoUsers()}
                 renders={{
-                    id:    r => <span className="text-muted">{r.id}</span>,
+                    id:    renderUserId,
                     login: r => <UserLoginCell row={r} onOpen={openUser} />,
                     type: r => <UserTypeCell row={r} canChange={!!setUserTypeUrl} pending={!!pending[r.id]} onToggle={() => setUserType(r.id, r.type === 'expert' ? 'user' : 'expert')} />,
-                    last_online_time: r => <span className="text-muted text-xs">{formatTs(r.last_online_time)}</span>,
+                    last_online_time: renderLastOnline,
                     IS_APPROVED: r => <UserFlagCell row={r} def={flagDefs.IS_APPROVED} pending={!!pending[r.id]} onSetFlag={setFlag} />,
                     IS_DISABLED: r => <UserFlagCell row={r} def={flagDefs.IS_DISABLED} pending={!!pending[r.id]} onSetFlag={setFlag} />,
                     IS_MODERATOR: r => <UserFlagCell row={r} def={flagDefs.IS_MODERATOR} pending={!!pending[r.id]} onSetFlag={setFlag} />,

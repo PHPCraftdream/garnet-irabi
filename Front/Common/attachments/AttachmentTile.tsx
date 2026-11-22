@@ -21,30 +21,45 @@ interface Props {
  * остального. Крестик убирает файл и не открывает просмотр — поэтому
  * всплытие останавливается.
  */
-export const AttachmentTile: React.FC<Props> = ({file, index, onOpen, onRemove}) => (
-    <div
-        className="group common-pick-tile"
-        style={{width: 80, height: 80}}
-        onClick={() => file.preview && onOpen(index)}
-    >
-        {file.preview
-            ? <img src={file.preview} alt={file.name} className="w-full h-full object-cover" />
-            : (
-                <div className="common-pick-tile-fallback">
-                    {file.name.split('.').pop()?.toUpperCase()}
-                    <br />
-                    {formatSize(file.file.size)}
-                </div>
-            )}
-        <button
-            type="button"
-            className="common-pick-remove"
-            onClick={(e) => { e.stopPropagation(); onRemove(index); }}
-            data-test-id={`attachment-remove-${index}`}
-            title={t.A11y_RemoveAttachment()}
-            aria-label={t.A11y_RemoveAttachment()}
-        >
-            ×
-        </button>
-    </div>
-);
+export class AttachmentTile extends React.Component<Props> {
+    private readonly open = () => {
+        const {file, index, onOpen} = this.props;
+        if (file.preview) onOpen(index);
+    };
+
+    private readonly remove = (event: React.MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
+        this.props.onRemove(this.props.index);
+    };
+
+    public render() {
+        const {file, index} = this.props;
+        return (
+            <div
+                className="pick-file-tile"
+                style={{width: 80, height: 80}}
+                onClick={this.open}
+            >
+                {file.preview
+                    ? <img src={file.preview} alt={file.name} className="pick-tile-image" />
+                    : (
+                        <div className="pick-tile-fallback">
+                            {file.name.split('.').pop()?.toUpperCase()}
+                            <br />
+                            {formatSize(file.file.size)}
+                        </div>
+                    )}
+                <button
+                    type="button"
+                    className="pick-tile-remove"
+                    onClick={this.remove}
+                    data-test-id={`attachment-remove-${index}`}
+                    title={t.A11y_RemoveAttachment()}
+                    aria-label={t.A11y_RemoveAttachment()}
+                >
+                    ×
+                </button>
+            </div>
+        );
+    }
+}

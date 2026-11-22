@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {D} from '@common/Support/Debug/D';
 import {useConfirm} from '@common/hooks/ui/useConfirm';
 
@@ -58,127 +59,161 @@ interface CardProps {
  * общего `bookingAction` — одно и то же действие над одной и той же бронью не
  * должно называться по-разному в двух местах кабинета (нашла expert-2).
  */
-const ExpertBookingCard: React.FC<CardProps> = ({booking, slot, busy, onConfirm, onCancel}) => (
-    <div className="card" data-test-id={`booking-card-${booking.id}`}>
-        <div className="card-body">
-            <h5 className="card-title">
-                {t.Booking_Slot()}: {slot ? formatTs(slot.start_at) : t.Booking_NA()}
-            </h5>
-            {booking.user_name && (
-                <p className="card-text mb-2">
-                    <strong>{t.Booking_UserName()}:</strong>{' '}
-                    {booking.user_id
-                        ? <UserLink id={booking.user_id} name={booking.user_name} className="text-accent hover:underline" />
-                        : booking.user_name}
-                </p>
-            )}
-            <p className="card-text mb-2">
-                <strong>{t.Slot_Status()}:</strong>{' '}
-                <UniversalBadge
-                    status={booking.status}
-                    label={outcomeLabel(booking) || translateStatus(booking.status)}
-                />
-            </p>
-            <p className="card-text mb-0">
-                <strong>{t.Booking_Created()}:</strong> {formatTs(booking.created_at)}
-            </p>
-            {isActionable(booking.status) && (
-                <div className="mt-3 flex gap-2">
-                    {booking.status === 'pending' && (
-                        <button
-                            className="btn btn-sm btn-success"
-                            data-test-id={`confirm-btn-${booking.id}`}
-                            disabled={busy}
-                            onClick={() => onConfirm(booking.id)}
-                        >
-                            {busy ? '...' : t.Booking_Confirm()}
-                        </button>
+class ExpertBookingCard extends AntiHookComponent<CardProps> {
+    private readonly confirm = () => this.props.onConfirm(this.props.booking.id);
+    private readonly cancel = () => this.props.onCancel(this.props.booking.id);
+
+    private renderActions() {
+        const {booking, busy} = this.props;
+        return (
+            <>
+                    {isActionable(booking.status) && (
+                        <div className="booking-list-actions">
+                            {booking.status === 'pending' && (
+                                <button
+                                    className="compact-success-action"
+                                    data-test-id={`confirm-btn-${booking.id}`}
+                                    disabled={busy}
+                                    onClick={this.confirm}
+                                >
+                                    {busy ? '...' : t.Booking_Confirm()}
+                                </button>
+                            )}
+                            <button
+                                className="slot-remove-btn"
+                                data-test-id={`expert-cancel-btn-${booking.id}`}
+                                disabled={busy}
+                                onClick={this.cancel}
+                            >
+                                {busy ? '...' : actionLabel('expert', booking.status)}
+                            </button>
+                        </div>
                     )}
-                    <button
-                        className="btn btn-sm btn-outline-danger"
-                        data-test-id={`expert-cancel-btn-${booking.id}`}
-                        disabled={busy}
-                        onClick={() => onCancel(booking.id)}
-                    >
-                        {busy ? '...' : actionLabel('expert', booking.status)}
-                    </button>
+                    {isActionable(booking.status) && (
+                        <p className="booking-card-action-hint" data-test-id={`booking-cost-hint-${booking.id}`}>
+                            {actionCostHint('expert', booking.status)}
+                        </p>
+                    )}
+            </>
+        );
+    }
+
+    render() {
+        const {booking, slot} = this.props;
+        return (
+            <div className="booking-card-shell" data-test-id={`booking-card-${booking.id}`}>
+                <div className="booking-card-body">
+                    <h5 className="booking-list-card-title">
+                        {t.Booking_Slot()}: {slot ? formatTs(slot.start_at) : t.Booking_NA()}
+                    </h5>
+                    {booking.user_name && (
+                        <p className="booking-list-card-meta">
+                            <strong>{t.Booking_UserName()}:</strong>{' '}
+                            {booking.user_id
+                                ? <UserLink id={booking.user_id} name={booking.user_name} className="booking-place-link" />
+                                : booking.user_name}
+                        </p>
+                    )}
+                    <p className="booking-list-card-meta">
+                        <strong>{t.Slot_Status()}:</strong>{' '}
+                        <UniversalBadge
+                            status={booking.status}
+                            label={outcomeLabel(booking) || translateStatus(booking.status)}
+                        />
+                    </p>
+                    <p className="booking-list-card-meta">
+                        <strong>{t.Booking_Created()}:</strong> {formatTs(booking.created_at)}
+                    </p>
+                    {this.renderActions()}
                 </div>
-            )}
-            {isActionable(booking.status) && (
-                <p className="mt-2 mb-0 text-xs text-muted" data-test-id={`booking-cost-hint-${booking.id}`}>
-                    {actionCostHint('expert', booking.status)}
-                </p>
-            )}
-        </div>
-    </div>
-);
+            </div>
+        );
+    }
+}
 
-const ExpertBookingsIslandInner: React.FC<ExpertBookingsProps> = ({bookings: initialBookings, slots, title}) => {
-    const [bookingList, setBookingList] = React.useState<Booking[]>(initialBookings);
-    const [loading, setLoading] = React.useState<Record<number, boolean>>({});
-    const {confirmState, confirm, handleConfirm: onModalConfirm, handleCancel: onModalCancel} = useConfirm();
-    
+interface ExpertBookingsState {
+    bookingList: Booking[];
+    loading: Record<number, boolean>;
+}
 
-    const handleConfirm = async (bookingId: number) => {
-        if (loading[bookingId]) return;
-        setLoading(prev => ({...prev, [bookingId]: true}));
+type ConfirmControls = ReturnType<typeof useConfirm>;
+
+class ExpertBookingsView extends AntiHookComponent<ExpertBookingsProps & {confirmControls: ConfirmControls}> {
+    private readonly ui = new Carburetor<ExpertBookingsState>({bookingList: this.props.bookings, loading: {}});
+    private readonly bookings = this.connectSelection(this.ui, state => state.bookingList);
+    private readonly patch = (patch: Partial<ExpertBookingsState>) => this.ui.setData({...this.ui.getData(), ...patch});
+
+    private updateStatus(id: number, status: Booking['status']): void {
+        const {bookingList} = this.ui.getData();
+        const index = bookingList.findIndex(booking => booking.id === id);
+        if (index < 0) return;
+        const next = bookingList.slice();
+        next[index] = {...next[index], status};
+        this.patch({bookingList: next});
+    }
+
+    private readonly handleConfirm = async (bookingId: number) => {
+        if (this.ui.getData().loading[bookingId]) return;
+        this.patch({loading: {...this.ui.getData().loading, [bookingId]: true}});
         D('booking.confirm', {bookingId});
         try {
             const csrf = (window as any).__GARNET_CSRF__ ?? '';
             await sendPost(appUrl('/expert/~confirmBooking'), {CSRF_TOKEN: csrf, booking_id: bookingId});
-            setBookingList(prev => prev.map(b =>
-                b.id === bookingId ? {...b, status: 'confirmed'} : b
-            ));
-            setLoading(prev => ({...prev, [bookingId]: false}));
+            this.updateStatus(bookingId, 'confirmed');
+            this.patch({loading: {...this.ui.getData().loading, [bookingId]: false}});
         } catch (e: any) {
             D('booking.error', {action: 'confirm', bookingId, error: e?.message});
             showToast(e?.message || t.General_Error(), 'danger');
-            setLoading(prev => ({...prev, [bookingId]: false}));
+            this.patch({loading: {...this.ui.getData().loading, [bookingId]: false}});
         }
     };
 
-    const handleCancel = async (bookingId: number) => {
-        if (loading[bookingId]) return;
-        const target = bookingList.find(b => b.id === bookingId);
+    private readonly handleCancel = async (bookingId: number) => {
+        if (this.ui.getData().loading[bookingId]) return;
+        const target = this.ui.getData().bookingList.find(b => b.id === bookingId);
         const impact = actionImpact('expert', target?.status);
-        const ok = await confirm(`${t.Booking_CancelConfirm()} ${impact}`);
+        const ok = await this.props.confirmControls.confirm(`${t.Booking_CancelConfirm()} ${impact}`);
         if (!ok) return;
-        setLoading(prev => ({...prev, [bookingId]: true}));
+        this.patch({loading: {...this.ui.getData().loading, [bookingId]: true}});
         D('booking.cancel', {bookingId, source: 'expert'});
         try {
             const csrf = (window as any).__GARNET_CSRF__ ?? '';
             await sendPost(appUrl('/expert/~cancelBooking'), {CSRF_TOKEN: csrf, booking_id: bookingId});
-            setBookingList(prev => prev.map(b =>
-                b.id === bookingId ? {...b, status: 'cancelled'} : b
-            ));
-            setLoading(prev => ({...prev, [bookingId]: false}));
+            this.updateStatus(bookingId, 'cancelled');
+            this.patch({loading: {...this.ui.getData().loading, [bookingId]: false}});
         } catch (e: any) {
             D('booking.error', {action: 'cancel', bookingId, error: e?.message});
             showToast(e?.message || t.General_Error(), 'danger');
-            setLoading(prev => ({...prev, [bookingId]: false}));
+            this.patch({loading: {...this.ui.getData().loading, [bookingId]: false}});
         }
     };
 
-    return (
-        <>
-            <PageHeader title={title} icon={<CalendarCheck size={22} aria-hidden="true" />} />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {bookingList.length === 0 && <p className="text-muted">{t.Booking_NoBookings()}</p>}
-                {bookingList.map(booking => (
-                    <ExpertBookingCard
-                        key={booking.id}
-                        booking={booking}
-                        slot={slots[booking.bookable_id]}
-                        busy={!!loading[booking.id]}
-                        onConfirm={handleConfirm}
-                        onCancel={handleCancel}
-                    />
-                ))}
-            </div>
-            <ConfirmModal state={confirmState} onConfirm={onModalConfirm} onCancel={onModalCancel} />
+    render() {
+        const {slots, title, confirmControls} = this.props;
+        const {loading} = this.useCarburetor(this.ui);
+        const bookingList = this.bookings();
+        const cards: React.ReactNode[] = [];
+        for (const booking of bookingList) {
+            cards.push(<ExpertBookingCard key={booking.id} booking={booking} slot={slots[booking.bookable_id]}
+                busy={!!loading[booking.id]} onConfirm={this.handleConfirm} onCancel={this.handleCancel} />);
+        }
+        return (
+            <>
+                <PageHeader title={title} icon={<CalendarCheck size={22} aria-hidden="true" />} />
+                <div className="expert-bookings-grid">
+                    {bookingList.length === 0 && <p className="booking-list-empty">{t.Booking_NoBookings()}</p>}
+                    {cards}
+                </div>
+                <ConfirmModal state={confirmControls.confirmState} onConfirm={confirmControls.handleConfirm} onCancel={confirmControls.handleCancel} />
 
-        </>
-    );
+            </>
+        );
+    }
+}
+
+const ExpertBookingsIslandInner: React.FC<ExpertBookingsProps> = (props) => {
+    const confirmControls = useConfirm();
+    return <ExpertBookingsView {...props} confirmControls={confirmControls} />;
 };
 
 export const ExpertBookingsIsland: React.FC<ExpertBookingsProps> = (props) => (

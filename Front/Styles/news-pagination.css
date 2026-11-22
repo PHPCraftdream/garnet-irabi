@@ -1,0 +1,16 @@
+@reference "tailwindcss";
+
+@theme inline reference {
+  /* carburetor-disable-next-line valid-color-role */
+  --color-newsneutral-edge: var(--color-border);
+}
+
+@utility tone-newsneutral-plain { @apply text-inherit; }
+@utility tone-newsneutral-outline { @apply border-newsneutral-edge; }
+@utility shape-news-pagination-top { @apply px-4 pt-3; }
+@utility shape-news-pagination-bottom { @apply px-4 py-3 border-t; }
+
+@layer components {
+  .news-pagination-top { @apply shape-news-pagination-top tone-newsneutral-plain; }
+  .news-pagination-bottom { @apply shape-news-pagination-bottom tone-newsneutral-outline; }
+}

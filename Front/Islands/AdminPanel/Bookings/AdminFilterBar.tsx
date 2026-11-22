@@ -25,15 +25,27 @@ export type FilterCell =
           onChange: (v: number) => void;
       };
 
-const Cell: React.FC<{cell: FilterCell}> = ({cell}) => {
-    if (cell.kind === 'person') {
+const renderOption = (option: {value: string; label: string}) => <option key={option.value} value={option.value}>{option.label}</option>;
+
+class Cell extends React.Component<{cell: FilterCell}> {
+    private readonly changePerson = (value: string) => {
+        const {cell} = this.props;
+        if (cell.kind === 'person') cell.onChange(parseInt(value, 10) || 0);
+    };
+
+    private readonly changeValue = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const {cell} = this.props;
+        if (cell.kind !== 'person') cell.onChange(event.target.value);
+    };
+
+    private renderPerson(cell: Extract<FilterCell, {kind: 'person'}>) {
         return (
             <div className="filter-cell">
                 <label>{cell.label}</label>
                 <Combobox
                     options={cell.options}
                     value={String(cell.value)}
-                    onChange={v => cell.onChange(parseInt(v, 10) || 0)}
+                    onChange={this.changePerson}
                     placeholder={cell.placeholder}
                     searchPlaceholder={cell.searchPlaceholder}
                     emptyText={t.Admin_Filter_All()}
@@ -43,46 +55,58 @@ const Cell: React.FC<{cell: FilterCell}> = ({cell}) => {
         );
     }
 
-    if (cell.kind === 'select') {
+    private renderSelect(cell: Extract<FilterCell, {kind: 'select'}>) {
         return (
             <div className="filter-cell">
                 <label htmlFor={cell.id}>{cell.label}</label>
                 <select
                     id={cell.id}
                     value={cell.value}
-                    onChange={e => cell.onChange(e.target.value)}
-                    className="form-control"
+                    onChange={this.changeValue}
+                    className="admin-filter-field"
                     data-test-id={cell.id}
                 >
-                    {cell.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    {cell.options.map(renderOption)}
                 </select>
             </div>
         );
     }
 
-    if (cell.kind === 'date') {
+    private renderDate(cell: Extract<FilterCell, {kind: 'date'}>) {
         return (
             <div className="filter-cell">
                 <label htmlFor={cell.id}>{cell.label}</label>
-                <DateInput id={cell.id} value={cell.value} onChange={e => cell.onChange(e.target.value)} data-test-id={cell.id} />
+                <DateInput id={cell.id} value={cell.value} onChange={this.changeValue} data-test-id={cell.id} />
             </div>
         );
     }
 
-    return (
-        <div className="filter-cell">
-            <label htmlFor={cell.id}>{cell.label}</label>
-            <input
-                id={cell.id}
-                type="text"
-                value={cell.value}
-                onChange={e => cell.onChange(e.target.value)}
-                className="form-control"
-                data-test-id={cell.id}
-            />
-        </div>
-    );
-};
+    private renderText(cell: Extract<FilterCell, {kind: 'text'}>) {
+        return (
+            <div className="filter-cell">
+                <label htmlFor={cell.id}>{cell.label}</label>
+                <input
+                    id={cell.id}
+                    type="text"
+                    value={cell.value}
+                    onChange={this.changeValue}
+                    className="admin-filter-field"
+                    data-test-id={cell.id}
+                />
+            </div>
+        );
+    }
+
+    public render() {
+        const {cell} = this.props;
+        if (cell.kind === 'person') return this.renderPerson(cell);
+        if (cell.kind === 'select') return this.renderSelect(cell);
+        if (cell.kind === 'date') return this.renderDate(cell);
+        return this.renderText(cell);
+    }
+}
+
+const renderCell = (cell: FilterCell) => <Cell key={cell.id} cell={cell} />;
 
 interface Props {
     cells: FilterCell[];
@@ -93,11 +117,11 @@ interface Props {
 
 export const AdminFilterBar: React.FC<Props> = ({cells, loading, resetTestId, onReset}) => (
     <div className="admin-bookings-filters">
-        {cells.map(cell => <Cell key={cell.id} cell={cell} />)}
+        {cells.map(renderCell)}
         <div className="filter-actions">
             <button
                 type="button"
-                className="btn btn-secondary"
+                className="admin-filter-reset"
                 onClick={onReset}
                 disabled={loading}
                 data-test-id={resetTestId}

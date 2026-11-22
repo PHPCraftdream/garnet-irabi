@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {useConfirm} from '@common/hooks/ui/useConfirm';
@@ -10,7 +11,7 @@ import {TokenTable} from './tokens/TokenTable';
 import {CreateTokenModal} from './tokens/Modals/CreateTokenModal';
 import {RegistrationsModal} from './tokens/Modals/RegistrationsModal';
 import {LinkModal} from './tokens/Modals/LinkModal';
-import {EditTokenModal} from './tokens/Modals/EditTokenModal';
+import {EditTokenModal, type TokenUpdate} from './tokens/Modals/EditTokenModal';
 
 export interface AdminTokensSectionProps {
     listUrl: string;
@@ -22,157 +23,165 @@ export interface AdminTokensSectionProps {
     updateUrl: string;
 }
 
-/**
- * Приглашения: список, фильтры и четыре окна.
- *
- * Раньше всё это лежало одним файлом на 777 строк, где строка таблицы и её
- * кнопки уходили на четырнадцатый уровень вложенности. Здесь остались только
- * состояние, загрузка и действия — разметка живёт в `tokens/`.
- */
-export const AdminTokensSection: React.FC<AdminTokensSectionProps> = (props) => {
-    const {listUrl, createUrl, disableUrl, enableUrl, deleteUrl, registrationsUrl, updateUrl} = props;
+interface State {
+    tokens: TokenRow[];
+    loading: boolean;
+    search: string;
+    status: string;
+    showCreate: boolean;
+    registrations: TokenRow | null;
+    link: string | null;
+    edit: TokenRow | null;
+}
 
-    const [tokens, setTokens] = React.useState<TokenRow[]>([]);
-    const [loading, setLoading] = React.useState(false);
-    const [search, setSearch] = React.useState('');
-    const [statusFilter, setStatusFilter] = React.useState('');
-    const [showCreate, setShowCreate] = React.useState(false);
-    const [regsModal, setRegsModal] = React.useState<TokenRow | null>(null);
-    const [linkModal, setLinkModal] = React.useState<string | null>(null);
-    const [editModal, setEditModal] = React.useState<TokenRow | null>(null);
+interface ViewProps extends AdminTokensSectionProps, ReturnType<typeof useConfirm> {}
 
-    const {confirmState, confirm, handleConfirm, handleCancel} = useConfirm();
+class AdminTokensView extends AntiHookComponent<ViewProps> {
+    private readonly ui = new Carburetor<State>({tokens: [], loading: false, search: '', status: '', showCreate: false, registrations: null, link: null, edit: null});
+    private readonly snapshot = this.connectSelection(this.ui, state => state);
+    private timer?: ReturnType<typeof setTimeout>;
 
-    const stateRef = React.useRef({search, statusFilter});
-    stateRef.current = {search, statusFilter};
+    componentDidMount(): void {
+        super.componentDidMount();
+        void this.fetchTokens();
+    }
 
-    const fetchTokens = React.useCallback(async (overrides: {search?: string; status?: string} = {}) => {
-        const cur = stateRef.current;
-        setLoading(true);
+    componentDidUpdate(previous: Readonly<ViewProps>): void {
+        super.componentDidUpdate(previous);
+        if (previous.listUrl !== this.props.listUrl) this.scheduleFetch();
+    }
+
+    componentWillUnmount(): void {
+        clearTimeout(this.timer);
+        super.componentWillUnmount();
+    }
+
+    private update(patch: Partial<State>): void {
+        this.ui.setData({...this.ui.getData(), ...patch});
+    }
+
+    private scheduleFetch(): void {
+        clearTimeout(this.timer);
+        this.timer = setTimeout(this.fetchTokens, 300);
+    }
+
+    private readonly fetchTokens = async () => {
+        const {search, status} = this.ui.getData();
+        this.update({loading: true});
         try {
-            const resp = await sendPost<{search: string; status: string}, {tokens: TokenRow[]}>(listUrl, {
-                search: overrides.search ?? cur.search,
-                status: overrides.status ?? cur.statusFilter,
-            });
-            const data = ('data' in resp && resp.data) ? resp.data : (resp as unknown as {tokens: TokenRow[]});
-            setTokens(data.tokens ?? []);
+            const response = await sendPost<{search: string; status: string}, {tokens: TokenRow[]}>(this.props.listUrl, {search, status});
+            const data = ('data' in response && response.data) ? response.data : (response as unknown as {tokens: TokenRow[]});
+            this.update({tokens: data.tokens ?? []});
         } catch {
             showToast(t.User_LoadError(), 'danger');
         } finally {
-            setLoading(false);
+            this.update({loading: false});
         }
-    }, [listUrl]);
+    };
 
-    React.useEffect(() => {
-        void fetchTokens();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    private readonly search = (search: string) => {
+        if (search === this.ui.getData().search) return;
+        this.update({search});
+        this.scheduleFetch();
+    };
 
-    // Фильтр с задержкой: набор в поле не должен бить в сервер на каждую букву.
-    const isFirstRef = React.useRef(true);
-    React.useEffect(() => {
-        if (isFirstRef.current) {
-            isFirstRef.current = false;
-            return;
-        }
-        const handle = setTimeout(() => void fetchTokens(), 300);
-        return () => clearTimeout(handle);
-    }, [search, statusFilter, fetchTokens]);
+    private readonly filter = (status: string) => {
+        if (status === this.ui.getData().status) return;
+        this.update({status});
+        this.scheduleFetch();
+    };
 
-    /** Общая часть «нажали — сервер ответил — правим строку в списке». */
-    const applyToRow = React.useCallback(async (url: string, id: number, patch: Partial<TokenRow>) => {
+    private patchRow(id: number, patch: Partial<TokenRow>): void {
+        const previous = this.ui.getData().tokens;
+        const index = previous.findIndex(row => row.id === id);
+        if (index < 0) return;
+        const tokens = previous.slice();
+        tokens[index] = {...tokens[index], ...patch};
+        this.update({tokens});
+    }
+
+    private async changeRow(url: string, id: number, patch?: Partial<TokenRow>): Promise<void> {
         try {
-            const resp = await sendPost<{id: number}, {success: boolean}>(url, {id});
-            const data = ('data' in resp && resp.data) ? resp.data : (resp as unknown as {success: boolean});
+            const response = await sendPost<{id: number}, {success: boolean}>(url, {id});
+            const data = ('data' in response && response.data) ? response.data : (response as unknown as {success: boolean});
             if (!data?.success) {
                 showToast(t.General_Error(), 'danger');
                 return;
             }
-            setTokens(prev => prev.map(tk => tk.id === id ? {...tk, ...patch} : tk));
+            if (patch) this.patchRow(id, patch);
+            else this.update({tokens: this.ui.getData().tokens.filter(row => row.id !== id)});
         } catch {
             showToast(t.General_Error(), 'danger');
         }
-    }, []);
+    }
 
-    const handleToggleDisable = React.useCallback(async (row: TokenRow) => {
-        // Включение обратно ничего не ломает — спрашиваем только про отключение.
+    private readonly toggle = async (row: TokenRow) => {
+        const {enableUrl, disableUrl, confirm} = this.props;
         if (row.is_disabled) {
-            await applyToRow(enableUrl, row.id, {is_disabled: false, status: 'active'});
+            await this.changeRow(enableUrl, row.id, {is_disabled: false, status: 'active'});
             return;
         }
-
         const ok = await confirm(t.Admin_Tokens_DisableConfirm(), {variant: 'danger', confirmLabel: t.Admin_Tokens_Disable()});
-        if (!ok) return;
-        await applyToRow(disableUrl, row.id, {is_disabled: true, status: 'disabled'});
-    }, [applyToRow, confirm, disableUrl, enableUrl]);
+        if (ok) await this.changeRow(disableUrl, row.id, {is_disabled: true, status: 'disabled'});
+    };
 
-    const handleDelete = React.useCallback(async (row: TokenRow) => {
+    private readonly remove = async (row: TokenRow) => {
+        const {deleteUrl, confirm} = this.props;
         const ok = await confirm(t.Admin_Tokens_DeleteConfirm(), {variant: 'danger', confirmLabel: t.Action_Delete()});
-        if (!ok) return;
-        try {
-            const resp = await sendPost<{id: number}, {success: boolean}>(deleteUrl, {id: row.id});
-            const data = ('data' in resp && resp.data) ? resp.data : (resp as unknown as {success: boolean});
-            if (!data?.success) {
-                showToast(t.General_Error(), 'danger');
-                return;
-            }
-            setTokens(prev => prev.filter(tk => tk.id !== row.id));
-        } catch {
-            showToast(t.General_Error(), 'danger');
-        }
-    }, [confirm, deleteUrl]);
+        if (ok) await this.changeRow(deleteUrl, row.id);
+    };
 
-    return (
-        <div data-test-id="admin-tokens">
-            <TokenFilters
-                search={search}
-                status={statusFilter}
-                onSearchChange={setSearch}
-                onStatusChange={setStatusFilter}
-                onCreate={() => setShowCreate(true)}
-            />
+    private readonly openCreate = () => this.update({showCreate: true});
+    private readonly closeCreate = () => this.update({showCreate: false});
+    private readonly showRegistrations = (registrations: TokenRow) => this.update({registrations});
+    private readonly closeRegistrations = () => this.update({registrations: null});
+    private readonly showLink = (link: string) => this.update({link});
+    private readonly closeLink = () => this.update({link: null});
+    private readonly openEdit = (edit: TokenRow) => this.update({edit});
+    private readonly closeEdit = () => this.update({edit: null});
 
-            {tokens.length === 0 && (
-                <p className="text-muted">{loading ? t.User_Loading() : t.Admin_Tokens_Empty()}</p>
-            )}
-            {tokens.length > 0 && (
-                <TokenTable
-                    tokens={tokens}
-                    onShowLink={setLinkModal}
-                    onShowRegistrations={setRegsModal}
-                    onEdit={setEditModal}
-                    onToggleDisable={row => void handleToggleDisable(row)}
-                    onDelete={row => void handleDelete(row)}
-                />
-            )}
+    private readonly created = (token: TokenRow) => {
+        this.update({tokens: [token, ...this.ui.getData().tokens], showCreate: false});
+    };
 
-            {showCreate && (
-                <CreateTokenModal
-                    createUrl={createUrl}
-                    onCreated={newToken => {
-                        setTokens(prev => [newToken, ...prev]);
-                        setShowCreate(false);
-                    }}
-                    onClose={() => setShowCreate(false)}
-                />
-            )}
-            {regsModal && (
-                <RegistrationsModal token={regsModal} registrationsUrl={registrationsUrl} onClose={() => setRegsModal(null)} />
-            )}
-            {linkModal && <LinkModal url={linkModal} onClose={() => setLinkModal(null)} />}
-            {editModal && (
-                <EditTokenModal
-                    token={editModal}
-                    updateUrl={updateUrl}
-                    onUpdated={updated => {
-                        setTokens(prev => prev.map(tk => tk.id === updated.id ? {...tk, ...updated} : tk));
-                        setEditModal(null);
-                    }}
-                    onClose={() => setEditModal(null)}
-                />
-            )}
+    private readonly edited = (updated: TokenUpdate) => {
+        this.patchRow(updated.id, updated);
+        this.closeEdit();
+    };
 
-            <ConfirmModal state={confirmState} onConfirm={handleConfirm} onCancel={handleCancel} />
-        </div>
-    );
-};
+    private renderTable(tokens: readonly TokenRow[], loading: boolean) {
+        if (!tokens.length) return <p className="token-cell-muted">{loading ? t.User_Loading() : t.Admin_Tokens_Empty()}</p>;
+        return <TokenTable tokens={tokens} onShowLink={this.showLink} onShowRegistrations={this.showRegistrations}
+            onEdit={this.openEdit} onToggleDisable={this.toggle} onDelete={this.remove} />;
+    }
+
+    private renderModals({showCreate, registrations, link, edit}: Omit<State, 'tokens'>) {
+        const {createUrl, registrationsUrl, updateUrl} = this.props;
+        return (
+            <>
+                {showCreate && <CreateTokenModal createUrl={createUrl} onCreated={this.created} onClose={this.closeCreate} />}
+                {registrations && <RegistrationsModal token={registrations} registrationsUrl={registrationsUrl} onClose={this.closeRegistrations} />}
+                {link && <LinkModal url={link} onClose={this.closeLink} />}
+                {edit && <EditTokenModal token={edit} updateUrl={updateUrl} onUpdated={this.edited} onClose={this.closeEdit} />}
+            </>
+        );
+    }
+
+    render() {
+        const {confirmState, handleConfirm, handleCancel} = this.props;
+        const state = this.snapshot();
+        return (
+            <div data-test-id="admin-tokens">
+                <TokenFilters search={state.search} status={state.status} onSearchChange={this.search} onStatusChange={this.filter} onCreate={this.openCreate} />
+                {this.renderTable(state.tokens, state.loading)}
+                {this.renderModals(state)}
+                <ConfirmModal state={confirmState} onConfirm={handleConfirm} onCancel={handleCancel} />
+            </div>
+        );
+    }
+}
+
+export function AdminTokensSection(props: AdminTokensSectionProps) {
+    const confirmation = useConfirm();
+    return <AdminTokensView {...props} {...confirmation} />;
+}

@@ -1,0 +1,66 @@
+@reference "tailwindcss";
+
+@theme inline reference {
+  /* carburetor-disable-next-line valid-color-role */
+  --color-weekmuted-ink: var(--color-text-muted);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-weekempty-ink: color-mix(in srgb, var(--color-text-muted) 75%, transparent);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-weekborder-edge: var(--color-border);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-weekaccent-ink: var(--color-accent);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-weekprimary-ink: var(--color-text-primary);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-weekcurrent-wash: var(--color-accent);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-weekcurrent-ink: var(--color-accent-text);
+}
+
+@utility tone-weekmuted-plain { @apply text-weekmuted-ink; }
+@utility tone-weekempty-plain { @apply text-weekempty-ink; }
+@utility tone-weekneutral-plain { @apply text-inherit; }
+@utility tone-weekborder-outline { @apply border-weekborder-edge; }
+@utility tone-weekaccent-plain { @apply text-weekaccent-ink; }
+@utility tone-weekprimary-plain { @apply text-weekprimary-ink; }
+@utility tone-weekcurrent-soft { @apply bg-weekcurrent-wash text-weekcurrent-ink; }
+@utility shape-week-slot-total { @apply mt-3; }
+@utility type-week-slot-total { @apply text-xs text-right; }
+@utility shape-week-empty-notice { @apply py-6; }
+@utility layout-week-empty-notice { @apply md:hidden; }
+@utility type-week-empty-notice { @apply text-center text-[11px]; }
+@utility shape-week-grid { @apply border rounded-lg max-md:border-0; }
+@utility layout-week-grid { @apply grid grid-cols-7 gap-0 overflow-hidden max-md:grid-cols-1 max-md:gap-2; }
+@utility shape-week-day { @apply min-w-[148px]; }
+@utility layout-week-day { @apply flex flex-col; }
+@utility layout-week-day-empty { @apply max-md:hidden; }
+@utility effect-week-day-past { @apply opacity-60; }
+@utility shape-week-day-head { @apply py-3 px-2; }
+@utility type-week-day-head { @apply text-center; }
+@utility type-week-day-label { @apply text-[11px] uppercase tracking-wider font-semibold; }
+@utility shape-week-day-number { @apply mt-1 min-w-8 h-8 px-2 rounded-full; }
+@utility layout-week-day-number { @apply inline-flex items-center justify-center; }
+@utility type-week-day-number { @apply text-sm font-bold tabular-nums; }
+@utility shape-week-day-content { @apply p-2; }
+@utility layout-week-day-content { @apply flex-1; }
+
+@layer components {
+  .week-slot-total { @apply shape-week-slot-total type-week-slot-total tone-weekmuted-plain; }
+  .week-empty-notice { @apply shape-week-empty-notice layout-week-empty-notice type-week-empty-notice tone-weekempty-plain; }
+  .week-calendar-grid { @apply shape-week-grid layout-week-grid tone-weekborder-outline; }
+  .week-day-normal { @apply shape-week-day layout-week-day tone-weekneutral-plain; }
+  .week-day-past { @apply shape-week-day layout-week-day effect-week-day-past tone-weekneutral-plain; }
+  .week-day-empty { @apply shape-week-day layout-week-day layout-week-day-empty tone-weekneutral-plain; }
+  .week-day-empty-past { @apply shape-week-day layout-week-day layout-week-day-empty effect-week-day-past tone-weekneutral-plain; }
+  .week-day-head { @apply shape-week-day-head type-week-day-head tone-weekneutral-plain; }
+  .week-day-label {
+    @apply type-week-day-label tone-weekmuted-plain;
+    &[data-today="true"] { @apply tone-weekaccent-plain; }
+  }
+  .week-day-number {
+    @apply shape-week-day-number layout-week-day-number type-week-day-number tone-weekprimary-plain;
+    &[data-today="true"] { @apply tone-weekcurrent-soft; }
+  }
+  .week-day-content { @apply shape-week-day-content layout-week-day-content tone-weekneutral-plain; }
+  .week-day-empty-message { @apply shape-week-empty-notice type-week-empty-notice tone-weekempty-plain; }
+}

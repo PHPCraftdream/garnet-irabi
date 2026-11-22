@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {useState, useEffect} from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import SendButton from '@common/Components/Controls/SendButton';
 import {useBodyScrollLock} from '@common/hooks/ui/useBodyScrollLock';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
@@ -24,7 +24,7 @@ interface FieldProps {
     placeholder?: string;
     value: string;
     testId: string;
-    onChange: (v: string) => void;
+    onChange: React.ChangeEventHandler<HTMLTextAreaElement>;
 }
 
 /**
@@ -36,17 +36,17 @@ interface FieldProps {
  * сообщение об ошибке после действия.
  */
 const ReasonField: React.FC<FieldProps> = ({label, placeholder, value, testId, onChange}) => (
-    <div className="mb-4">
-        <label className="text-sm text-secondary mb-1 block">
-            {label} <span className="text-danger" aria-hidden="true">*</span>
+    <div className="reason-modal-field">
+        <label className="booking-cancel-label">
+            {label} <span className="booking-cancel-error" aria-hidden="true">*</span>
         </label>
         <textarea
-            className="form-control"
+            className="booking-cancel-input"
             rows={3}
             required
             aria-required="true"
             value={value}
-            onChange={e => onChange(e.target.value)}
+            onChange={onChange}
             placeholder={placeholder}
             data-test-id={`${testId}-reason`}
         />
@@ -62,10 +62,10 @@ interface FooterProps {
 }
 
 const ReasonFooter: React.FC<FooterProps> = ({submitLabel, sending, testId, onSubmit, onClose}) => (
-    <div className="flex gap-2 justify-end">
+    <div className="booking-cancel-actions">
         <button
             type="button"
-            className="btn btn-secondary"
+            className="confirm-modal-cancel"
             onClick={onClose}
             disabled={sending}
             data-test-id={`${testId}-dismiss`}
@@ -103,73 +103,44 @@ export interface ReasonModalProps {
     onClose: () => void;
 }
 
-export const ReasonModal: React.FC<ReasonModalProps> = ({
-    open,
-    title,
-    impact,
-    details,
-    reasonLabel,
-    reasonPlaceholder,
-    reasonRequired = true,
-    requiredMessage,
-    submitLabel,
-    sending = false,
-    error,
-    testId,
-    onSubmit,
-    onClose,
-}) => {
-    const [reason, setReason] = useState('');
-    const [reasonError, setReasonError] = useState('');
+interface ReasonState {reason: string; reasonError: string}
 
-    useBodyScrollLock(open);
+class ReasonModalView extends AntiHookComponent<ReasonModalProps> {
+    private readonly ui = new Carburetor<ReasonState>({reason: '', reasonError: ''});
 
-    // Каждое открытие начинается с чистого листа: иначе прошлая причина и
-    // прошлая ошибка достаются следующей брони.
-    useEffect(() => {
-        if (open) {
-            setReason('');
-            setReasonError('');
-        }
-    }, [open]);
-
-    if (!open) return null;
-
-    const handleChange = (v: string) => {
-        setReason(v);
-        setReasonError('');
+    private readonly handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+        this.ui.setData({reason: event.currentTarget.value, reasonError: ''});
     };
 
-    const handleSubmit = () => {
-        const trimmed = reason.trim();
+    private readonly handleSubmit = () => {
+        const {reasonRequired = true, requiredMessage, onSubmit} = this.props;
+        const state = this.ui.getData();
+        const trimmed = state.reason.trim();
         if (reasonRequired && !trimmed) {
-            setReasonError(requiredMessage || t.Booking_RejectReasonRequired());
+            this.ui.setData({...state, reasonError: requiredMessage || t.Booking_RejectReasonRequired()});
             return;
         }
         onSubmit(trimmed);
     };
 
-    const shownError = reasonError || error;
+    render() {
+        const {title, impact, details, reasonLabel, reasonPlaceholder, submitLabel, sending = false, error, testId, onClose} = this.props;
+        const {reason, reasonError} = this.useCarburetor(this.ui);
+        const shownError = reasonError || error;
+        return (
+            <ModalShell title={title} testId={testId} onClose={onClose}>
+                {impact && <div className="reason-modal-notice" data-tone="warning" data-test-id={`${testId}-impact`}>{impact}</div>}
+                {details}
+                {shownError && <div className="reason-modal-notice" data-tone="error" data-test-id={`${testId}-error`}>{shownError}</div>}
+                <ReasonField label={reasonLabel} placeholder={reasonPlaceholder} value={reason} testId={testId} onChange={this.handleChange} />
+                <ReasonFooter submitLabel={submitLabel} sending={sending} testId={testId} onSubmit={this.handleSubmit} onClose={onClose} />
+            </ModalShell>
+        );
+    }
+}
 
-    return (
-        <ModalShell title={title} testId={testId} onClose={onClose}>
-            {impact && <div className="mb-3 text-sm text-warning" data-test-id={`${testId}-impact`}>{impact}</div>}
-            {details}
-            {shownError && <div className="mb-3 text-sm text-danger" data-test-id={`${testId}-error`}>{shownError}</div>}
-            <ReasonField
-                label={reasonLabel}
-                placeholder={reasonPlaceholder}
-                value={reason}
-                testId={testId}
-                onChange={handleChange}
-            />
-            <ReasonFooter
-                submitLabel={submitLabel}
-                sending={sending}
-                testId={testId}
-                onSubmit={handleSubmit}
-                onClose={onClose}
-            />
-        </ModalShell>
-    );
+export const ReasonModal: React.FC<ReasonModalProps> = (props) => {
+    const {open} = props;
+    useBodyScrollLock(open);
+    return open ? <ReasonModalView {...props} /> : null;
 };

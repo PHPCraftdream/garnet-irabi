@@ -30,18 +30,18 @@ export const CancelRefundDetails: React.FC<Props> = ({booking, slots}) => {
 
     if (!preview.applies) {
         return (
-            <div className="user-cancel-info-bar" data-test-id="cancel-refund-info">
+            <div className="booking-refund-info" data-test-id="cancel-refund-info">
                 {t.Booking_RefundInfo()} {cost} &#x20bd;
             </div>
         );
     }
 
     return (
-        <div className="user-cancel-info-bar space-y-1" data-test-id="cancel-penalty-preview">
-            <div className="text-warning">
+        <div className="booking-penalty-info" data-test-id="cancel-penalty-preview">
+            <div className="booking-penalty-amount">
                 {t.Booking_PenaltyKeptByExpert([slot.cancellation_penalty_percent, preview.penaltyAmount])}
             </div>
-            <div className="text-muted">
+            <div className="booking-refund-amount">
                 {t.Booking_RefundAmount([preview.refundAmount])}
             </div>
         </div>

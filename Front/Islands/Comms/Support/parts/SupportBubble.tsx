@@ -16,13 +16,12 @@ import AttachmentDisplay from '../../../../Common/attachments/AttachmentDisplay'
 export const SupportBubble: React.FC<{msg: SupportMessage; tight?: boolean}> = ({msg, tight = false}) => {
     // Всплывающее окно у́же страницы, и те же пузыри в нём набраны плотнее.
     // Разница только в классах — ради неё копировать разметку не стоит.
-    const suffix = tight ? '-tight' : '';
 
     if (msg.msg_type === 'system') {
         return (
-            <div className={`support-system-line${suffix}`}>
+            <div className="support-message-system" data-tight={tight}>
                 {msg.body}
-                <div className="text-muted mt-0.5">{formatTs(msg.created_at)}</div>
+                <div className="support-message-system-time">{formatTs(msg.created_at)}</div>
             </div>
         );
     }
@@ -30,12 +29,12 @@ export const SupportBubble: React.FC<{msg: SupportMessage; tight?: boolean}> = (
     const isUser = msg.msg_type === 'user';
 
     return (
-        <div className={`im-bubble-row${suffix} ${isUser ? 'justify-end' : 'justify-start'}`}>
-            <div className={`im-bubble${suffix} ${isUser ? 'im-bubble-mine' : 'im-bubble-theirs'}`}>
-                {!isUser && msg.author_name && <div className={`im-bubble-author${suffix}`}>{msg.author_name}</div>}
-                <div className="im-bubble-body">{msg.body}</div>
+        <div className="support-message-row" data-tight={tight} data-own={isUser}>
+            <div className="support-message-bubble" data-tight={tight} data-own={isUser}>
+                {!isUser && msg.author_name && <div className="support-message-author" data-tight={tight}>{msg.author_name}</div>}
+                <div className="support-message-body">{msg.body}</div>
                 {msg.attachments && msg.attachments.length > 0 && <AttachmentDisplay attachments={msg.attachments} />}
-                <div className="im-bubble-time">{formatTs(msg.created_at)}</div>
+                <div className="support-message-time">{formatTs(msg.created_at)}</div>
             </div>
         </div>
     );

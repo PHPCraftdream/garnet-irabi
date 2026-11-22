@@ -1,8 +1,7 @@
 import * as React from 'react';
-import {useState, useEffect, useRef} from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
-import {useSending} from '@common/hooks/data/useSending';
-import {useCtrlEnter, CTRL_ENTER_HINT} from '@common/hooks/ui/useCtrlEnter';
+import {CTRL_ENTER_HINT} from '@common/hooks/ui/useCtrlEnter';
 import SendButton from '@common/Components/Controls/SendButton';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/Time/DateUtils';
@@ -26,127 +25,163 @@ interface Props {
     maxMessages?: number;
 }
 
-/** Сообщение в коротком просмотре переписки. */
+interface QuickChatState {
+    messages: QuickMessage[];
+    conversationId: number | null;
+    loading: boolean;
+    error: string | null;
+    replyText: string;
+    sending: boolean;
+}
+
 const QuickChatBubble: React.FC<{msg: QuickMessage; mine: boolean}> = ({msg, mine}) => (
-    <div className={`flex mb-2 ${mine ? 'justify-end' : 'justify-start'}`} data-test-id={`quick-chat-msg-${msg.id}`}>
-        <div className={`max-w-[80%] rounded-lg px-3 py-2 text-xs ${mine ? 'bg-accent-subtle' : 'bg-surface-hover'} text-on-surface`}>
+    <div className="quick-chat-message-row" data-own={mine} data-test-id={`quick-chat-msg-${msg.id}`}>
+        <div className="quick-chat-message-bubble" data-own={mine}>
             {!mine && msg.sender_name && (
-                <div className="text-[10px] font-medium text-muted mb-0.5">{msg.sender_name}</div>
+                <div className="quick-chat-message-author">{msg.sender_name}</div>
             )}
-            <div className="whitespace-pre-wrap break-words">{msg.body}</div>
-            {/* Сервер отдавал вложения всегда; этот вид их терял, и сообщение
-                с файлом читалось здесь как сообщение без файла. */}
+            <div className="quick-chat-message-body">{msg.body}</div>
             {msg.attachments && msg.attachments.length > 0 && (
-                <div className="mt-1"><AttachmentDisplay attachments={msg.attachments} /></div>
+                <div className="quick-chat-message-attachments"><AttachmentDisplay attachments={msg.attachments} /></div>
             )}
-            <div className="text-[10px] mt-0.5 text-muted">{formatTs(msg.created_at)}</div>
+            <div className="quick-chat-message-time">{formatTs(msg.created_at)}</div>
         </div>
     </div>
 );
 
-export default function QuickChat({partnerId, quickChatUrl, sendUrl, currentAccountId, maxMessages = 10}: Props) {
-    const [messages, setMessages] = useState<QuickMessage[]>([]);
-    const [_conversationId, setConversationId] = useState<number | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [replyText, setReplyText] = useState('');
-    const {sending, withSending} = useSending();
-    const messagesEndRef = useRef<HTMLDivElement>(null);
-    // The mount effect, the 20s poll interval and a just-sent message can all
-    // call fetchMessages() within the same tick — without a guard each call
-    // fired its own POST, and a losing one sometimes came back 403 (D-203/D-185).
-    // A call that lands while one is already in flight doesn't fire a second
-    // request; it queues a single coalesced re-fetch for right after the
-    // current one resolves, so a send during an in-flight poll still shows up.
-    const fetchInFlight = useRef<Promise<void> | null>(null);
-    const refetchQueued = useRef(false);
+export default class QuickChat extends AntiHookComponent<Props> {
+    private readonly ui = new Carburetor<QuickChatState>({messages: [], conversationId: null, loading: true, error: null, replyText: '', sending: false});
+    private readonly messages = this.connectSelection(this.ui, state => state.messages);
+    private readonly messagesEndRef = React.createRef<HTMLDivElement>();
+    private fetchInFlight: Promise<void> | null = null;
+    private refetchQueued = false;
+    private timer?: number;
+    private mounted = false;
+    private lastMessages?: QuickMessage[];
 
-    const fetchMessages = React.useCallback((): Promise<void> => {
-        if (fetchInFlight.current) {
-            refetchQueued.current = true;
-            return fetchInFlight.current;
+    componentDidMount(): void {
+        super.componentDidMount();
+        this.mounted = true;
+        void this.load();
+        this.timer = window.setInterval(this.poll, 20000);
+    }
+
+    componentDidUpdate(previous: Readonly<Props>): void {
+        super.componentDidUpdate(previous);
+        const {partnerId, quickChatUrl, maxMessages} = this.props;
+        if (partnerId !== previous.partnerId || quickChatUrl !== previous.quickChatUrl || maxMessages !== previous.maxMessages) {
+            void this.load();
+            window.clearInterval(this.timer);
+            this.timer = window.setInterval(this.poll, 20000);
         }
-        const req = sendPost(quickChatUrl, {partner_id: partnerId, limit: maxMessages})
-            .then((resp: any) => {
-                setMessages(resp?.messages || []);
-                setConversationId(resp?.conversation_id ?? null);
-            })
-            .finally(() => {
-                fetchInFlight.current = null;
-                if (refetchQueued.current) {
-                    refetchQueued.current = false;
-                    fetchMessages();
-                }
-            });
-        fetchInFlight.current = req;
-        return req;
-    }, [partnerId, quickChatUrl, maxMessages]);
+        const {messages} = this.ui.getData();
+        if (messages !== this.lastMessages) {
+            this.lastMessages = messages;
+            this.messagesEndRef.current?.scrollIntoView({behavior: 'smooth'});
+        }
+    }
 
-    useEffect(() => {
-        setLoading(true);
-        fetchMessages()
-            .catch(() => setError(t.User_LoadError()))
-            .finally(() => setLoading(false));
-    }, [fetchMessages]);
+    componentWillUnmount(): void {
+        this.mounted = false;
+        this.refetchQueued = false;
+        window.clearInterval(this.timer);
+        super.componentWillUnmount();
+    }
 
-    useEffect(() => {
-        const id = window.setInterval(() => {
-            if (document.hidden) return; // don't poll from a backgrounded tab
-            fetchMessages().catch(() => {});
-        }, 20000);
-        return () => window.clearInterval(id);
-    }, [fetchMessages]);
+    private patch(changes: Partial<QuickChatState>): void {
+        this.ui.setData({...this.ui.getData(), ...changes});
+    }
 
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({behavior: 'smooth'});
-    }, [messages]);
+    private fetchMessages(): Promise<void> {
+        if (this.fetchInFlight) {
+            this.refetchQueued = true;
+            return this.fetchInFlight;
+        }
+        const request = this.requestMessages().finally(this.finishFetch);
+        this.fetchInFlight = request;
+        return request;
+    }
 
-    const handleSend = () => {
-        if (!replyText.trim()) return;
-        withSending(async () => {
-            try {
-                await sendPost(sendUrl, {
-                    recipient_id: partnerId,
-                    message: replyText.trim(),
-                });
-                setReplyText('');
-                await fetchMessages();
-            } catch {
-                setError(t.General_Error());
-            }
-        });
+    private async requestMessages(): Promise<void> {
+        const {quickChatUrl, partnerId, maxMessages = 10} = this.props;
+        const response = await sendPost(quickChatUrl, {partner_id: partnerId, limit: maxMessages}) as any;
+        if (this.mounted && this.props.partnerId === partnerId && this.props.quickChatUrl === quickChatUrl) {
+            this.patch({messages: response?.messages || [], conversationId: response?.conversation_id ?? null});
+        }
+    }
+
+    private readonly finishFetch = () => {
+        this.fetchInFlight = null;
+        if (this.mounted && this.refetchQueued) {
+            this.refetchQueued = false;
+            this.refreshSilently();
+        }
     };
 
-    return (
-        <div className="flex flex-col" data-test-id="quick-chat">
-            {/* Messages */}
-            <div className="overflow-y-auto px-3 py-2" style={{maxHeight: '240px'}} data-test-id="quick-chat-messages">
-                {loading && <div className="text-center text-muted text-xs py-4">{t.User_Loading()}</div>}
-                {!loading && error && <div className="text-center text-danger text-xs py-4">{error}</div>}
-                {!loading && !error && messages.length === 0 && (
-                    <div className="text-center text-muted text-xs py-4">{t.QuickChat_NoMessages()}</div>
-                )}
-                {!loading && !error && messages.map(msg => (
-                    <QuickChatBubble key={msg.id} msg={msg} mine={msg.sender_id === currentAccountId} />
-                ))}
-                <div ref={messagesEndRef} />
-            </div>
+    private async load(): Promise<void> {
+        this.patch({loading: true});
+        try {
+            await this.fetchMessages();
+        } catch {
+            this.patch({error: t.User_LoadError()});
+        } finally {
+            this.patch({loading: false});
+        }
+    }
 
-            {/* Input */}
-            <div className="px-3 py-2 border-t border-default">
+    private refreshSilently(): void {
+        void this.fetchMessages().catch(ignorePollError);
+    }
+
+    private readonly poll = () => {
+        if (!document.hidden) this.refreshSilently();
+    };
+
+    private readonly handleSend = async () => {
+        const {replyText, sending} = this.ui.getData();
+        if (!replyText.trim() || sending) return;
+        const {sendUrl, partnerId} = this.props;
+        this.patch({sending: true});
+        try {
+            await sendPost(sendUrl, {recipient_id: partnerId, message: replyText.trim()});
+            if (!this.mounted || this.props.partnerId !== partnerId) return;
+            this.patch({replyText: ''});
+            await this.fetchMessages();
+        } catch {
+            this.patch({error: t.General_Error()});
+        } finally {
+            this.patch({sending: false});
+        }
+    };
+
+    private readonly handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => this.patch({replyText: event.target.value});
+    private readonly handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        const {replyText, sending} = this.ui.getData();
+        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !sending && replyText.trim()) {
+            event.preventDefault();
+            void this.handleSend();
+        }
+    };
+    private readonly renderMessage = (msg: QuickMessage) => (
+        <QuickChatBubble key={msg.id} msg={msg} mine={msg.sender_id === this.props.currentAccountId} />
+    );
+
+    private renderReply(replyText: string, sending: boolean) {
+        return (
+            <div className="quick-chat-reply">
                 <textarea
                     data-test-id="quick-chat-input"
-                    className="form-control text-xs mb-1.5"
+                    className="quick-chat-input"
                     rows={2}
                     aria-label={t.A11y_WriteMessage()}
                     placeholder={t.IM_MessagePlaceholder() + CTRL_ENTER_HINT}
                     value={replyText}
-                    onChange={e => setReplyText(e.target.value)}
-                    onKeyDown={useCtrlEnter(handleSend, sending || !replyText.trim())}
+                    onChange={this.handleChange}
+                    onKeyDown={this.handleKeyDown}
                 />
-                <div className="flex justify-end">
+                <div className="quick-chat-actions">
                     <SendButton
-                        onClick={handleSend}
+                        onClick={this.handleSend}
                         disabled={!replyText.trim()}
                         sending={sending}
                         label={t.IM_Send()}
@@ -154,6 +189,27 @@ export default function QuickChat({partnerId, quickChatUrl, sendUrl, currentAcco
                     />
                 </div>
             </div>
-        </div>
-    );
+        );
+    }
+
+    render() {
+        const {loading, error, replyText, sending} = this.useCarburetor(this.ui);
+        const messages = this.messages();
+        return (
+            <div className="quick-chat" data-test-id="quick-chat">
+                <div className="quick-chat-messages" data-test-id="quick-chat-messages">
+                    {loading && <div className="quick-chat-status">{t.User_Loading()}</div>}
+                    {!loading && error && <div className="quick-chat-status" data-tone="error">{error}</div>}
+                    {!loading && !error && messages.length === 0 && (
+                        <div className="quick-chat-status">{t.QuickChat_NoMessages()}</div>
+                    )}
+                    {!loading && !error && messages.map(this.renderMessage)}
+                    <div ref={this.messagesEndRef} />
+                </div>
+                {this.renderReply(replyText, sending)}
+            </div>
+        );
+    }
 }
+
+function ignorePollError(): void {}

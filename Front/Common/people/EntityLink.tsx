@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {Settings} from 'lucide-react';
 import {usePreview} from '@common/Components/UserPreviewModal/PreviewContext';
 
@@ -28,17 +29,15 @@ interface EntityLinkProps {
     adminTitle?: string;
 }
 
-export const EntityLink: React.FC<EntityLinkProps> = ({name, publicUrl, adminUrl, isModerator, adminMode, userId, className = '', adminTitle}) => {
-    const {openPreview} = usePreview();
+type LinkProps = EntityLinkProps;
+type ContextValue = ReturnType<typeof usePreview>['openPreview'];
 
-    // In admin mode: main link = adminUrl, no gear icon
-    const mainUrl = adminMode ? adminUrl : publicUrl;
+function stopLinkClick(event: React.MouseEvent): void { event.stopPropagation(); }
 
-    if (!mainUrl && !adminUrl) return <span className={className}>{name}</span>;
-
-    const previewEligible = !adminMode && !!openPreview && !!userId && userId > 0;
-
-    const handleMainClick = (e: React.MouseEvent) => {
+class LinkView extends AntiHookComponent<LinkProps & {openPreview: ContextValue}> {
+    private readonly handleMainClick = (e: React.MouseEvent) => {
+        const {openPreview, userId, name, adminMode} = this.props;
+        const previewEligible = !adminMode && !!openPreview && !!userId && userId > 0;
         e.stopPropagation();
         if (!previewEligible) return;
         // Allow modifier-clicks (open in new tab, etc.) to fall through to navigation.
@@ -47,30 +46,51 @@ export const EntityLink: React.FC<EntityLinkProps> = ({name, publicUrl, adminUrl
         openPreview!(userId!, name);
     };
 
-    return (
-        <span className={`common-entity-link ${className}`}>
-            {mainUrl ? (
-                <a
-                    href={mainUrl}
-                    className="common-link"
-                    onClick={handleMainClick}
-                    data-test-id={previewEligible ? `entity-link-preview-${userId}` : undefined}
-                >
-                    {name}
-                </a>
-            ) : (
-                <span>{name}</span>
-            )}
-            {!adminMode && isModerator && adminUrl && (
-                <a
-                    href={adminUrl}
-                    className="common-link-admin-tag"
-                    onClick={e => e.stopPropagation()}
-                    title={adminTitle}
-                >
-                    <Settings size={14} aria-hidden="true" />
-                </a>
-            )}
-        </span>
-    );
-};
+    render() {
+        const {name, publicUrl, adminUrl, isModerator, adminMode, userId, className = '', adminTitle, openPreview} = this.props;
+
+        // In admin mode: main link = adminUrl, no gear icon
+        const mainUrl = adminMode ? adminUrl : publicUrl;
+
+        // Совместимость с переданным классом ссылки.
+        // carburetor-disable-next-line require-function-class
+        if (!mainUrl && !adminUrl) return <span className={className}>{name}</span>;
+
+        const previewEligible = !adminMode && !!openPreview && !!userId && userId > 0;
+
+
+
+        return (
+            // carburetor-disable-next-line require-function-class
+            <span className={`entity-person-group ${className}`}>
+                {mainUrl ? (
+                    <a
+                        href={mainUrl}
+                        className="entity-person-link"
+                        onClick={this.handleMainClick}
+                        data-test-id={previewEligible ? `entity-link-preview-${userId}` : undefined}
+                    >
+                        {name}
+                    </a>
+                ) : (
+                    <span>{name}</span>
+                )}
+                {!adminMode && isModerator && adminUrl && (
+                    <a
+                        href={adminUrl}
+                        className="entity-person-admin"
+                        onClick={stopLinkClick}
+                        title={adminTitle}
+                    >
+                        <Settings size={14} aria-hidden="true" />
+                    </a>
+                )}
+            </span>
+        );
+    }
+}
+
+export function EntityLink(props: LinkProps) {
+    const {openPreview} = usePreview();
+    return <LinkView {...props} openPreview={openPreview} />;
+}

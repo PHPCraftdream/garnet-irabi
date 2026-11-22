@@ -1,0 +1,92 @@
+@reference "tailwindcss";
+
+@theme inline reference {
+  /* carburetor-disable-next-line valid-color-role */
+  --color-userdashbadge-wash: var(--color-accent-subtle);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-userdashbadge-ink: var(--color-accent);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-userdashempty-wash: var(--color-bg-surface-alt);
+  /* carburetor-disable-next-line valid-color-role */
+  --color-userdashempty-edge: var(--color-border-strong);
+}
+
+@utility tone-userdashbadge-soft { @apply bg-userdashbadge-wash text-userdashbadge-ink; }
+@utility tone-userdashempty-outlined { @apply bg-userdashempty-wash border-userdashempty-edge; }
+@utility layout-user-dash-section-header { @apply flex items-center justify-between; }
+@utility shape-user-dash-section-header { @apply mb-3; }
+@utility type-user-dash-section-heading { @apply text-base! font-semibold; }
+@utility shape-user-dash-section-heading { @apply mb-3; }
+@utility type-user-dash-view-all { @apply text-sm hover:underline; }
+@utility layout-user-dash-count-badge { @apply inline-block; }
+@utility shape-user-dash-count-badge { @apply px-2 py-0.5 rounded-full; }
+@utility type-user-dash-count-badge { @apply text-xs font-medium; }
+@utility shape-user-dash-tile { @apply p-4 rounded-lg border; }
+@utility type-user-dash-tile { @apply text-center; }
+@utility type-user-dash-stat-value { @apply text-2xl font-bold; }
+@utility shape-user-dash-stat-label { @apply mt-1; }
+@utility shape-user-dash-empty { @apply p-6 rounded-lg border border-dashed; }
+@utility type-user-dash-empty { @apply text-center; }
+@utility shape-user-dash-compact-action { @apply px-2 py-1 rounded; }
+@utility type-user-dash-compact-action { @apply text-xs; }
+@utility type-user-dash-compact-nowrap { @apply whitespace-nowrap; }
+
+@utility shape-user-dash-stats-card { @apply rounded-lg border; }
+@utility layout-user-dash-stats-heading { @apply flex items-center; }
+@utility shape-user-dash-stats-heading { @apply px-4 py-3 border-b; }
+@utility type-user-dash-stats-heading { @apply text-base font-semibold; }
+@utility layout-user-dash-expert-grid { @apply grid grid-cols-3 gap-3; }
+@utility layout-user-dash-moderator-grid { @apply grid grid-cols-2 gap-3; }
+@utility shape-user-dash-stats-grid { @apply p-4; }
+@utility shape-user-dash-stats-hint { @apply px-4 pb-4 mb-0; }
+@utility layout-user-dash-row-main { @apply flex-1; }
+@utility shape-user-dash-row-main { @apply min-w-0; }
+@utility type-user-dash-row-title { @apply text-sm font-medium; }
+@utility type-user-dash-row-meta { @apply text-sm; }
+@utility type-user-dash-row-small { @apply text-xs; }
+@utility shape-user-dash-meeting { @apply mt-0.5; }
+@utility type-user-dash-meeting { @apply text-xs text-ellipsis whitespace-nowrap; }
+@utility layout-user-dash-meeting { @apply overflow-hidden; }
+@utility type-user-dash-link { @apply hover:underline; }
+@utility shape-user-dash-empty-label { @apply mb-1; }
+@utility type-user-dash-empty-label { @apply font-medium; }
+@utility shape-user-dash-list { @apply space-y-2; }
+@utility layout-user-dash-slot-aside { @apply flex flex-col items-end gap-1 shrink-0; }
+@utility type-user-dash-slot-cost { @apply text-sm font-medium whitespace-nowrap; }
+
+@layer components {
+  .user-dash-section-header { @apply tone-widgetneutral-plain layout-user-dash-section-header shape-user-dash-section-header; }
+  .user-dash-section-heading { @apply tone-booksecondary-plain type-user-dash-section-heading shape-user-dash-section-heading; }
+  .user-dash-view-all { @apply tone-bookaccent-plain type-user-dash-view-all; }
+  .user-dash-count-badge { @apply tone-userdashbadge-soft layout-user-dash-count-badge shape-user-dash-count-badge type-user-dash-count-badge; }
+  .stat-tile { @apply tone-cardsurface-outlined shape-user-dash-tile type-user-dash-tile; }
+  .user-dash-stat-value { @apply tone-bookaccent-plain type-user-dash-stat-value; }
+  .user-dash-stat-value[data-tone="success"] { @apply tone-moneybalance-plain; }
+  .user-dash-stat-value[data-tone="warning"] { @apply tone-bookwarning-plain; }
+  .user-dash-stat-value[data-tone="danger"] { @apply tone-externaldanger-plain; }
+  .user-dash-stat-value[data-tone="muted"] { @apply tone-bookmuted-plain; }
+  .user-dash-stat-label { @apply tone-bookmuted-plain type-user-dash-row-small shape-user-dash-stat-label; }
+  .empty-state-card { @apply tone-userdashempty-outlined shape-user-dash-empty type-user-dash-empty; }
+  .user-dash-muted { @apply tone-bookmuted-plain; }
+  .user-dash-stats-card { @apply tone-cardsurface-outlined shape-user-dash-stats-card; }
+  .user-dash-stats-heading { @apply tone-balanceborder-outline layout-user-dash-stats-heading shape-user-dash-stats-heading; }
+  .user-dash-stats-title { @apply tone-widgetim-plain type-user-dash-stats-heading; }
+  .user-dash-expert-grid { @apply tone-widgetneutral-plain layout-user-dash-expert-grid shape-user-dash-stats-grid; }
+  .user-dash-moderator-grid { @apply tone-widgetneutral-plain layout-user-dash-moderator-grid shape-user-dash-stats-grid; }
+  .user-dash-stats-hint { @apply tone-bookmuted-plain shape-user-dash-stats-hint type-user-dash-row-small; }
+  .user-dash-row-main { @apply tone-widgetneutral-plain layout-user-dash-row-main shape-user-dash-row-main; }
+  .user-dash-row-title { @apply tone-widgetim-plain type-user-dash-row-title; }
+  .user-dash-row-meta { @apply tone-bookmuted-plain type-user-dash-row-meta; }
+  .user-dash-row-small { @apply tone-bookmuted-plain type-user-dash-row-small; }
+  .user-dash-meeting { @apply tone-bookmuted-plain shape-user-dash-meeting layout-user-dash-meeting type-user-dash-meeting; }
+  .user-dash-link { @apply tone-bookaccent-plain type-user-dash-link; }
+  .user-dash-empty-label { @apply tone-bookmuted-plain shape-user-dash-empty-label type-user-dash-empty-label; }
+  .user-dash-list { @apply tone-widgetneutral-plain shape-user-dash-list; }
+  .user-dash-slot-aside { @apply tone-widgetneutral-plain layout-user-dash-slot-aside; }
+  .user-dash-slot-cost { @apply tone-booksecondary-plain type-user-dash-slot-cost; }
+}
+
+/* carburetor-disable-next-line valid-function-class */
+.primary-action-button[data-user-dash-compact] { @apply shape-user-dash-compact-action type-user-dash-compact-action; color: var(--color-accent-text); }
+/* carburetor-disable-next-line valid-function-class */
+.primary-action-button[data-user-dash-compact="nowrap"] { @apply type-user-dash-compact-nowrap; }

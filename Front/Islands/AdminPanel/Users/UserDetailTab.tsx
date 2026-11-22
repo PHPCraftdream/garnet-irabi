@@ -19,7 +19,7 @@ interface Props {
 }
 
 export const UserDetailTab: React.FC<Props> = (props) => (
-    <Suspense fallback={<div className="p-6 text-muted text-sm">{t.User_Loading()}</div>}>
+    <Suspense fallback={<div className="admin-support-detail-loading">{t.User_Loading()}</div>}>
         <UserDetailPanel {...props} />
     </Suspense>
 );

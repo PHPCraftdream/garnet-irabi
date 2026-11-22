@@ -1,5 +1,6 @@
 import * as React from 'react';
-import {useState, useEffect} from 'react';
+import {useState} from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {sendPostFormData} from '@common/Api/Send/sendPostFormData';
 import {D} from '@common/Support/Debug/D';
@@ -52,29 +53,98 @@ interface TicketDetailData {
     context?: AutoContext | null;
 }
 
-export default function SupportTicketTab({ticketId, ticketDetailUrl, clientContextUrl, replyUrl, internalCommentUrl, changeStatusUrl, assignUrl, moderators, onTicketChanged}: Props) {
-    const [data, setData]               = useState<TicketDetailData | null>(null);
-    const [error, setError]             = useState<string | null>(null);
-    const [replyText, setReplyText]     = useState('');
-    const [internalText, setInternalText] = useState('');
-    const [replyFiles, setReplyFiles]   = useState<PendingFile[]>([]);
-    const [internalFiles, setInternalFiles] = useState<PendingFile[]>([]);
-    const [staleWarning, setStaleWarning] = useState(false);
-    // D-188: D-167's warning only fires on the next 15s poll — a reply sent
-    // within the same short window as a colleague's never triggers it,
-    // since at send time neither side has seen the other's message yet.
-    // The server now checks this at insert time and flags the response
-    // instead; this notice shows immediately, independent of the (already
-    // cleared) draft text.
-    const [staleReplySent, setStaleReplySent] = useState(false);
-    const {sending, withSending} = useSending();
+interface TicketUI {
+    data: TicketDetailData | null;
+    error: string | null;
+    replyText: string;
+    internalText: string;
+    staleWarning: boolean;
+    staleReplySent: boolean;
+}
 
-    const replyTextRef = React.useRef(replyText);
-    useEffect(() => { replyTextRef.current = replyText; }, [replyText]);
-    useEffect(() => { if (!replyText.trim()) setStaleWarning(false); }, [replyText]);
-    const messageCountRef = React.useRef<number | null>(null);
+class TicketUIStore extends Carburetor<TicketUI> {
+    constructor() {
+        super({data: null, error: null, replyText: '', internalText: '', staleWarning: false, staleReplySent: false});
+    }
 
-    const loadDetail = (notify = false) => {
+    readonly snapshot = () => this.getData();
+    readonly subscribeSnapshot = (listener: () => void) => {
+        const id = this.subscribe(listener);
+        return () => this.unsubscribe(id);
+    };
+
+    private change<K extends keyof TicketUI>(key: K, value: TicketUI[K]): void {
+        const before = this.getData();
+        if (Object.is(before[key], value)) return;
+        const version = this.getVersion();
+        this.setData({...before, [key]: value});
+        if (this.getData() !== before && this.getVersion() === version) {
+            this.markAllChanged();
+            this.emitUpdate();
+        }
+    }
+
+    readonly setDataSnapshot = (data: TicketDetailData | null) => this.change('data', data);
+    readonly setError = (error: string | null) => this.change('error', error);
+    readonly setReplyText = (text: string) => this.change('replyText', text);
+    readonly setInternalText = (text: string) => this.change('internalText', text);
+    readonly setStaleWarning = (value: boolean) => this.change('staleWarning', value);
+    readonly setStaleReplySent = (value: boolean) => this.change('staleReplySent', value);
+    readonly dismissStaleReply = () => this.setStaleReplySent(false);
+}
+
+function createTicketUI(): TicketUIStore {
+    return new TicketUIStore();
+}
+
+interface TabViewProps extends Props, ReturnType<typeof useSending> {
+    ui: TicketUIStore;
+    snapshot: ReturnType<TicketUIStore['snapshot']>;
+    replyFiles: PendingFile[];
+    internalFiles: PendingFile[];
+    setReplyFiles: (files: PendingFile[]) => void;
+    setInternalFiles: (files: PendingFile[]) => void;
+}
+
+class SupportTicketView extends AntiHookComponent<TabViewProps> {
+    private timer?: number;
+    private messageCount: number | null = null;
+
+    componentDidMount(): void {
+        super.componentDidMount();
+        this.openTicket();
+    }
+
+    componentDidUpdate(previous: Readonly<TabViewProps>): void {
+        super.componentDidUpdate(previous);
+        const {ticketId, ticketDetailUrl, snapshot, ui} = this.props;
+        if (previous.snapshot.replyText !== snapshot.replyText && !snapshot.replyText.trim()) ui.setStaleWarning(false);
+        if (ticketId !== previous.ticketId || ticketDetailUrl !== previous.ticketDetailUrl) this.openTicket();
+    }
+
+    componentWillUnmount(): void {
+        window.clearInterval(this.timer);
+        super.componentWillUnmount();
+    }
+
+    private openTicket(): void {
+        window.clearInterval(this.timer);
+        const {ui} = this.props;
+        this.messageCount = null;
+        ui.setDataSnapshot(null);
+        ui.setStaleWarning(false);
+        ui.setStaleReplySent(false);
+        this.loadDetail(true);
+        this.timer = window.setInterval(this.poll, 15000);
+    }
+
+    private readonly poll = () => {
+        if (!document.hidden) this.loadDetail();
+    };
+
+    private loadDetail(notify = false, target = this.props): void {
+        const {ticketId, ticketDetailUrl, onTicketChanged} = target;
+        const {setError, setDataSnapshot: setData, setStaleWarning} = target.ui;
         setError(null);
         D('support.admin.detail', {ticketId});
         sendPost(ticketDetailUrl, {ticket_id: ticketId}).then((r: any) => {
@@ -82,187 +152,203 @@ export default function SupportTicketTab({ticketId, ticketDetailUrl, clientConte
             else {
                 const newData = r as TicketDetailData;
                 if (
-                    messageCountRef.current !== null &&
-                    newData.messages.length > messageCountRef.current &&
-                    replyTextRef.current.trim()
+                    this.messageCount !== null &&
+                    newData.messages.length > this.messageCount &&
+                    this.props.snapshot.replyText.trim()
                 ) {
                     // Кто-то ответил в тикете, пока модератор набирал свой ответ —
                     // именно так mod-1/mod-2 в одном цикле чуть не продублировали ответы.
                     setStaleWarning(true);
                 }
-                messageCountRef.current = newData.messages.length;
+                this.messageCount = newData.messages.length;
                 D('support.admin.detail.loaded', {ticketId, messages: newData.messages.length});
                 setData(newData);
                 if (notify) onTicketChanged?.();
             }
         }).catch((err) => { D('support.error', {action: 'loadDetail', ticketId, error: err}); setError(t.User_LoadError()); });
+    }
+
+    private readonly handleReply = () => {
+        if (this.props.snapshot.replyText.trim()) void this.props.withSending(this.sendReply);
     };
 
-    useEffect(() => {
-        setData(null);
-        setStaleWarning(false);
-        setStaleReplySent(false);
-        messageCountRef.current = null;
-        // Открытие гасит непрочитанное на сервере — очередь должна это увидеть.
-        loadDetail(true);
-    }, [ticketId, ticketDetailUrl]);
-
-    /**
-     * Клиентская половина переписки обновляется сама (`useSupportThread`,
-     * раз в 15 секунд), а половина сотрудника — нет: ответ человека приходил
-     * только по нажатию. Один разговор не должен жить по разным правилам в
-     * зависимости от того, с какой стороны прилавка на него смотрят.
-     *
-     * В свёрнутой вкладке опрос молчит: обновлять то, чего никто не видит, —
-     * только нагрузка на сервер.
-     */
-    useEffect(() => {
-        const id = window.setInterval(() => {
-            if (!document.hidden) loadDetail();
-        }, 15000);
-
-        return () => window.clearInterval(id);
-    }, [ticketId, ticketDetailUrl]);
-
-    if (error) return <div className="admin-detail-error">{error}</div>;
-    if (!data)  return <div className="admin-detail-loading">{t.User_Loading()}</div>;
-
-    const {ticket, messages, assignmentLog} = data;
-
-    const handleReply = () => {
-        if (!replyText.trim()) return;
-        withSending(async () => {
-            try {
-                D('support.admin.reply', {ticketId, hasAttachments: replyFiles.length > 0});
-                const fd = new FormData();
-                fd.append('ticket_id', String(ticketId));
-                fd.append('message', replyText.trim());
-                // D-188: what THIS moderator saw when they started composing.
-                // The server compares it against the actual count at insert
-                // time — the only way to catch two replies typed in the same
-                // short window, where neither side's 15s poll fires in time.
-                fd.append('known_message_count', String(messageCountRef.current ?? 0));
-                for (const f of replyFiles) fd.append('attachments[]', f.file, f.name);
-                const resp = await sendPostFormData<FormData, any>(replyUrl, fd);
-                setReplyText('');
-                setReplyFiles([]);
-                setStaleReplySent(!!resp?.staleReply);
-                loadDetail(true);
-                reportAttachmentErrors(resp);
-            } catch (err: any) {
-                D('support.error', {action: 'admin.reply', error: err});
-                showToast(err?.message || t.General_Error(), 'danger');
-            }
-        });
+    private readonly sendReply = async () => {
+        const target = this.props;
+        const {ticketId, replyFiles, setReplyFiles, replyUrl} = target;
+        const {replyText} = target.snapshot;
+        const {setReplyText, setStaleReplySent} = target.ui;
+        try {
+            D('support.admin.reply', {ticketId, hasAttachments: replyFiles.length > 0});
+            const fd = new FormData();
+            fd.append('ticket_id', String(ticketId));
+            fd.append('message', replyText.trim());
+            // D-188: what THIS moderator saw when they started composing.
+            // The server compares it against the actual count at insert
+            // time — the only way to catch two replies typed in the same
+            // short window, where neither side's 15s poll fires in time.
+            fd.append('known_message_count', String(this.messageCount ?? 0));
+            for (const f of replyFiles) fd.append('attachments[]', f.file, f.name);
+            const resp = await sendPostFormData<FormData, any>(replyUrl, fd);
+            setReplyText('');
+            setReplyFiles([]);
+            setStaleReplySent(!!resp?.staleReply);
+            this.loadDetail(true, target);
+            reportAttachmentErrors(resp);
+        } catch (err: any) {
+            D('support.error', {action: 'admin.reply', error: err});
+            showToast(err?.message || t.General_Error(), 'danger');
+        }
     };
 
-    const handleInternalComment = () => {
-        if (!internalText.trim()) return;
-        withSending(async () => {
-            try {
-                D('support.admin.internal', {ticketId});
-                const fd = new FormData();
-                fd.append('ticket_id', String(ticketId));
-                fd.append('message', internalText.trim());
-                for (const f of internalFiles) fd.append('attachments[]', f.file, f.name);
-                const resp = await sendPostFormData<FormData, any>(internalCommentUrl, fd);
-                setInternalText('');
-                setInternalFiles([]);
-                loadDetail(true);
-                reportAttachmentErrors(resp);
-            } catch (err: any) {
-                D('support.error', {action: 'admin.internal', error: err});
-                showToast(err?.message || t.General_Error(), 'danger');
-            }
-        });
+    private readonly handleInternalComment = () => {
+        if (this.props.snapshot.internalText.trim()) void this.props.withSending(this.sendInternal);
     };
 
-    const handleStatusChange = async (newStatus: SupportStatus) => {
+    private readonly sendInternal = async () => {
+        const target = this.props;
+        const {ticketId, internalFiles, setInternalFiles, internalCommentUrl} = target;
+        const {internalText} = target.snapshot;
+        const {setInternalText} = target.ui;
+        try {
+            D('support.admin.internal', {ticketId});
+            const fd = new FormData();
+            fd.append('ticket_id', String(ticketId));
+            fd.append('message', internalText.trim());
+            for (const f of internalFiles) fd.append('attachments[]', f.file, f.name);
+            const resp = await sendPostFormData<FormData, any>(internalCommentUrl, fd);
+            setInternalText('');
+            setInternalFiles([]);
+            this.loadDetail(true, target);
+            reportAttachmentErrors(resp);
+        } catch (err: any) {
+            D('support.error', {action: 'admin.internal', error: err});
+            showToast(err?.message || t.General_Error(), 'danger');
+        }
+    };
+
+    private readonly handleStatusChange = async (newStatus: SupportStatus) => {
+        const target = this.props;
+        const {ticketId, changeStatusUrl} = target;
         try {
             D('support.admin.status', {ticketId, status: newStatus});
             await sendPost(changeStatusUrl, {ticket_id: ticketId, status: newStatus});
             showToast(t.Support_StatusChanged(), 'success');
-            loadDetail(true);
+            this.loadDetail(true, target);
         } catch (err: any) {
             D('support.error', {action: 'admin.status', error: err});
             showToast(err?.message || t.General_Error(), 'danger');
         }
     };
 
-    const handleAssign = async (assigneeId: number | null) => {
+    private readonly handleAssign = async (assigneeId: number | null) => {
+        const target = this.props;
+        const {ticketId, assignUrl} = target;
         try {
             D('support.admin.assign', {ticketId, assigneeId});
             await sendPost(assignUrl, {ticket_id: ticketId, assignee_id: assigneeId});
-            loadDetail(true);
+            this.loadDetail(true, target);
         } catch (err: any) {
             D('support.error', {action: 'admin.assign', error: err});
             showToast(err?.message || t.General_Error(), 'danger');
         }
     };
 
-    return (
-        <div className="admin-detail-pane" data-test-id="support-ticket-detail">
-            
-            <TicketHeader
-                ticket={ticket}
-                moderators={moderators}
-                onStatusChange={handleStatusChange}
-                onAssign={handleAssign}
-            />
+    private renderNotices() {
+        const {ui, snapshot: {staleWarning, staleReplySent}} = this.props;
+        return (
+            <>
+                {staleWarning && (
+                    <div className="admin-support-stale-warning" data-test-id="support-stale-warning">
+                        {t.Support_TicketUpdatedWhileTyping()}
+                    </div>
+                )}
 
-            <TicketTimeline
-                messages={messages}
-                assignmentLog={assignmentLog}
-            />
+                {staleReplySent && (
+                    <div className="admin-support-stale-warning" data-test-id="support-stale-reply-notice">
+                        {t.Support_StaleReplySent()}
+                        <button
+                            type="button"
+                            className="admin-support-stale-dismiss"
+                            onClick={ui.dismissStaleReply}
+                            data-test-id="support-stale-reply-notice-dismiss"
+                        >
+                            {t.Action_Close()}
+                        </button>
+                    </div>
+                )}
+            </>
+        );
+    }
 
-            {data.context && <TicketContext context={data.context} />}
+    private renderForms() {
+        const {ui, snapshot: {replyText, internalText}, replyFiles, internalFiles, setReplyFiles, setInternalFiles, sending} = this.props;
+        const {setReplyText, setInternalText} = ui;
+        return (
+            <>
+                <TicketReplyForm
+                    replyText={replyText}
+                    onReplyTextChange={setReplyText}
+                    replyFiles={replyFiles}
+                    onReplyFilesChange={setReplyFiles}
+                    sending={sending}
+                    onSend={this.handleReply}
+                />
 
-            {/*
-              * D-209: рядом с обращением — занятия и деньги того, кто его
-              * написал. Без этого модератор уходил искать их в другой раздел
-              * по имени, на каждое обращение заново.
-              */}
-            <TicketClientContext ticketId={ticketId} clientContextUrl={clientContextUrl} />
+                <TicketInternalForm
+                    internalText={internalText}
+                    onInternalTextChange={setInternalText}
+                    internalFiles={internalFiles}
+                    onInternalFilesChange={setInternalFiles}
+                    sending={sending}
+                    onSend={this.handleInternalComment}
+                />
+            </>
+        );
+    }
 
-            <TicketAttachments messages={messages} />
+    render() {
+        const {ticketId, clientContextUrl, moderators, snapshot: {data, error}} = this.props;
+        if (error) return <div className="admin-support-detail-error">{error}</div>;
+        if (!data) return <div className="admin-support-detail-loading">{t.User_Loading()}</div>;
+        const {ticket, messages, assignmentLog} = data;
+        return (
+            <div className="admin-support-detail" data-test-id="support-ticket-detail">
 
-            {staleWarning && (
-                <div className="alert alert-warning mb-3" data-test-id="support-stale-warning">
-                    {t.Support_TicketUpdatedWhileTyping()}
-                </div>
-            )}
+                <TicketHeader
+                    ticket={ticket}
+                    moderators={moderators}
+                    onStatusChange={this.handleStatusChange}
+                    onAssign={this.handleAssign}
+                />
 
-            {staleReplySent && (
-                <div className="alert alert-warning mb-3" data-test-id="support-stale-reply-notice">
-                    {t.Support_StaleReplySent()}
-                    <button
-                        type="button"
-                        className="btn btn-sm btn-link p-0 ml-2"
-                        onClick={() => setStaleReplySent(false)}
-                        data-test-id="support-stale-reply-notice-dismiss"
-                    >
-                        {t.Action_Close()}
-                    </button>
-                </div>
-            )}
+                <TicketTimeline
+                    messages={messages}
+                    assignmentLog={assignmentLog}
+                />
 
-            <TicketReplyForm
-                replyText={replyText}
-                onReplyTextChange={setReplyText}
-                replyFiles={replyFiles}
-                onReplyFilesChange={setReplyFiles}
-                sending={sending}
-                onSend={handleReply}
-            />
+                {data.context && <TicketContext context={data.context} />}
 
-            <TicketInternalForm
-                internalText={internalText}
-                onInternalTextChange={setInternalText}
-                internalFiles={internalFiles}
-                onInternalFilesChange={setInternalFiles}
-                sending={sending}
-                onSend={handleInternalComment}
-            />
-        </div>
-    );
+                {/*
+                  * D-209: рядом с обращением — занятия и деньги того, кто его
+                  * написал. Без этого модератор уходил искать их в другой раздел
+                  * по имени, на каждое обращение заново.
+                  */}
+                <TicketClientContext ticketId={ticketId} clientContextUrl={clientContextUrl} />
+
+                <TicketAttachments messages={messages} />
+                {this.renderNotices()}
+                {this.renderForms()}
+            </div>
+        );
+    }
+}
+
+export default function SupportTicketTab(props: Props) {
+    const [ui] = useState(createTicketUI);
+    const snapshot = React.useSyncExternalStore(ui.subscribeSnapshot, ui.snapshot, ui.snapshot);
+    const [replyFiles, setReplyFiles] = useState<PendingFile[]>([]);
+    const [internalFiles, setInternalFiles] = useState<PendingFile[]>([]);
+    const sending = useSending();
+    return <SupportTicketView {...props} {...sending} ui={ui} snapshot={snapshot} replyFiles={replyFiles}
+        internalFiles={internalFiles} setReplyFiles={setReplyFiles} setInternalFiles={setInternalFiles} />;
 }

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {actionLabel} from '@common/Components/Admin/AdminLog/Sections/actionLabel';
@@ -33,54 +34,66 @@ interface Props {
 // (AdminPanelIsland's writeTabToUrl) — not a new deep-link mechanism.
 const COMMENT_TARGET_RE = /^comment#(\d+)$/;
 
-const ActivityPerson: React.FC<{
-    id: number;
-    name: string;
-}> = ({id, name}) => {
-    if (id > 0) return <AdminUserDualLink id={id} name={name} />;
+class ActivityPerson extends AntiHookComponent<{id: number; name: string}> {
+    render() {
+        const {id, name} = this.props;
+        if (id > 0) return <AdminUserDualLink id={id} name={name} />;
 
-    const commentMatch = COMMENT_TARGET_RE.exec(name);
-    if (commentMatch) {
+        const commentMatch = COMMENT_TARGET_RE.exec(name);
+        if (commentMatch) {
+            return (
+                <a href={appUrl('/admin/?tab=comments')} className="admin-home-activity-actor">
+                    {name}
+                </a>
+            );
+        }
+
+        return <span className="admin-home-activity-actor">{name}</span>;
+    }
+}
+
+class ActivityItem extends AntiHookComponent<{log: LogEntry}> {
+    render() {
+        const {log} = this.props;
         return (
-            <a href={appUrl('/admin/?tab=comments')} className="admin-dash-activity-actor">
-                {name}
-            </a>
+            <li className="admin-home-activity-item" data-test-id={`admin-dash-log-${log.id}`}>
+                <div className="admin-home-activity-head">
+                    <span className="admin-home-activity-action" title={log.action}>{actionLabel(log.action)}</span>
+                    <span className="admin-home-activity-time">{formatTs(log.created_at)}</span>
+                </div>
+                <div className="admin-home-activity-users">
+                    <ActivityPerson id={log.actor_id} name={log.actor_name || log.actor_login} />
+                    <span className="admin-home-activity-arrow">&rarr;</span>
+                    <ActivityPerson id={log.target_id} name={log.target_name || log.target_login} />
+                </div>
+            </li>
         );
     }
+}
 
-    return <span className="admin-dash-activity-actor">{name}</span>;
-};
+function renderActivity(log: LogEntry) {
+    return <ActivityItem key={log.id} log={log} />;
+}
 
-const ActivityItem: React.FC<{
-    log: LogEntry;
-}> = ({log}) => (
-    <li className="admin-dash-activity-item" data-test-id={`admin-dash-log-${log.id}`}>
-        <div className="admin-dash-activity-head">
-            <span className="admin-dash-activity-action" title={log.action}>{actionLabel(log.action)}</span>
-            <span className="admin-dash-activity-time">{formatTs(log.created_at)}</span>
-        </div>
-        <div className="admin-dash-activity-users">
-            <ActivityPerson id={log.actor_id} name={log.actor_name || log.actor_login} />
-            <span className="admin-dash-activity-arrow">&rarr;</span>
-            <ActivityPerson id={log.target_id} name={log.target_name || log.target_login} />
-        </div>
-    </li>
-);
+export class AdminRecentActivity extends AntiHookComponent<Props> {
+    render() {
+        const {logs, logsUrl} = this.props;
+        return (
+            <div className="admin-dash-card" data-test-id="admin-dash-activity">
+                <h2 className="admin-home-card-title-mb">{t.Admin_RecentActivity()}</h2>
 
-export const AdminRecentActivity: React.FC<Props> = ({logs, logsUrl}) => (
-    <div className="admin-dash-card" data-test-id="admin-dash-activity">
-        <h2 className="admin-dash-card-title-mb">{t.Admin_RecentActivity()}</h2>
+                {logs.length > 0 ? (
+                    <ul className="admin-home-list">
+                        {logs.map(renderActivity)}
+                    </ul>
+                ) : (
+                    <p className="admin-home-empty">{t.Admin_NoActivity()}</p>
+                )}
 
-        {logs.length > 0 ? (
-            <ul className="admin-dash-list">
-                {logs.map(log => <ActivityItem key={log.id} log={log} />)}
-            </ul>
-        ) : (
-            <p className="admin-dash-empty">{t.Admin_NoActivity()}</p>
-        )}
-
-        <a href={logsUrl} className="admin-dash-link-footer" data-test-id="admin-dash-activity-link">
-            {t.Admin_Logs()}
-        </a>
-    </div>
-);
+                <a href={logsUrl} className="admin-home-link-footer" data-test-id="admin-dash-activity-link">
+                    {t.Admin_Logs()}
+                </a>
+            </div>
+        );
+    }
+}

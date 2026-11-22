@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {useState, useEffect} from 'react';
+import {Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {appUrl} from '@common/Utils/Url/appUrl';
@@ -24,6 +25,67 @@ interface Props {
     callerIsAdmin?: boolean;
 }
 
+interface PanelState {
+    data: UserDetailData | null;
+    error: string | null;
+    flagPending: boolean;
+    photoRemovePending: boolean;
+    showWriteModal: boolean;
+    showClearModal: boolean;
+    cleared: boolean;
+    toastMsg: string | null;
+    lightboxOpen: boolean;
+}
+
+class UserDetailStore extends Carburetor<PanelState> {
+    constructor() {
+        super({data: null, error: null, flagPending: false, photoRemovePending: false, showWriteModal: false, showClearModal: false, cleared: false, toastMsg: null, lightboxOpen: false});
+    }
+
+    readonly snapshot = () => this.getData();
+    readonly subscribeSnapshot = (listener: () => void) => {
+        const id = this.subscribe(listener);
+        return () => this.unsubscribe(id);
+    };
+
+    private change<K extends keyof PanelState>(key: K, value: PanelState[K]): void {
+        const current = this.getData();
+        if (Object.is(current[key], value)) return;
+        const version = this.getVersion();
+        this.setData({...current, [key]: value});
+        if (this.getData() !== current && this.getVersion() === version) {
+            this.markAllChanged();
+            this.emitUpdate();
+        }
+    }
+
+    readonly setDetail = (value: React.SetStateAction<PanelState['data']>) => {
+        const next = typeof value === 'function' ? value(this.getData().data) : value;
+        this.change('data', next);
+    };
+    readonly setError = (value: string | null) => this.change('error', value);
+    readonly setFlagPending = (value: boolean) => this.change('flagPending', value);
+    readonly setPhotoRemovePending = (value: boolean) => this.change('photoRemovePending', value);
+    readonly setShowWriteModal = (value: boolean) => this.change('showWriteModal', value);
+    readonly setShowClearModal = (value: boolean) => this.change('showClearModal', value);
+    readonly setCleared = (value: boolean) => this.change('cleared', value);
+    readonly setToastMsg = (value: string | null) => this.change('toastMsg', value);
+    readonly openWrite = () => this.setShowWriteModal(true);
+    readonly closeWrite = () => this.setShowWriteModal(false);
+    readonly openClear = () => this.setShowClearModal(true);
+    readonly closeClear = () => this.setShowClearModal(false);
+    readonly completeClear = () => {
+        this.closeClear();
+        this.setToastMsg(t.Admin_ClearUserDone());
+        this.setCleared(true);
+    };
+    readonly setLightboxOpen = (value: boolean) => this.change('lightboxOpen', value);
+}
+
+function createStore(): UserDetailStore {
+    return new UserDetailStore();
+}
+
 /**
  * Карточка пользователя в админке: шапка с ролями и деньгами, затем разделы —
  * обращения, финансы, брони, отмены, слоты.
@@ -32,36 +94,16 @@ interface Props {
  * строк — самым большим на фронте, — где строка таблицы уходила на
  * тринадцатый уровень вложенности.
  */
-export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, createTicketUrl, callerIsOwner, callerIsAdmin}: Props) {
-    const [data, setData] = useState<UserDetailData | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [flagPending, setFlagPending] = useState(false);
-    const [photoRemovePending, setPhotoRemovePending] = useState(false);
-    const [showWriteModal, setShowWriteModal] = useState(false);
-    const [showClearModal, setShowClearModal] = useState(false);
-    const [cleared, setCleared] = useState(false);
-    const [toastMsg, setToastMsg] = useState<string | null>(null);
-    const [lightboxOpen, setLightboxOpen] = useState(false);
-    const openUser = useOpenUser();
+function ignoreReloadFailure(): void {}
 
-    useEffect(() => {
-        setData(null);
-        setError(null);
-        sendPost(detailUrl, {account_id: accountId})
-            .then((r: any) => {
-                if (r?.error) setError(r.error);
-                else setData(r as UserDetailData);
-            })
-            .catch(() => setError(t.User_LoadError()));
-    }, [accountId, detailUrl]);
+class UserDetailActions {
+    constructor(private readonly ui: UserDetailStore, private readonly accountId: number,
+        private readonly detailUrl: string, private readonly setFlagUrl?: string) {}
 
-    useEffect(() => {
-        if (!toastMsg) return;
-        const timer = setTimeout(() => setToastMsg(null), 3000);
-        return () => clearTimeout(timer);
-    }, [toastMsg]);
-
-    const setFlag = async (flagName: string, value: 0 | 1) => {
+    readonly setFlag = async (flagName: string, value: 0 | 1) => {
+        const {setFlagUrl, ui} = this;
+        const {data, flagPending} = ui.getData();
+        const {setFlagPending, setDetail: setData} = ui;
         if (!setFlagUrl || flagPending || !data) return;
         setFlagPending(true);
         try {
@@ -71,7 +113,7 @@ export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, creat
                 showToast(resp.error, 'danger');
                 return;
             }
-            setData(prev => prev ? {...prev, account: {...prev.account, [flagName]: value ? '1' : null}} : prev);
+            setData(prev => prev?.account.id === data.account.id ? {...prev, account: {...prev.account, [flagName]: value ? '1' : null}} : prev);
         } catch (err: any) {
             showToast(err?.response?.error || err?.message || t.General_Error(), 'danger');
         } finally {
@@ -79,7 +121,10 @@ export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, creat
         }
     };
 
-    const removePhoto = async () => {
+    readonly removePhoto = async () => {
+        const {ui} = this;
+        const {data, photoRemovePending} = ui.getData();
+        const {setPhotoRemovePending, setDetail: setData} = ui;
         if (!data || photoRemovePending) return;
         if (!window.confirm(t.Admin_RemovePhotoConfirm())) return;
         setPhotoRemovePending(true);
@@ -90,7 +135,7 @@ export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, creat
                 showToast(resp.error, 'danger');
                 return;
             }
-            setData(prev => prev ? {...prev, account: {...prev.account, avatar: null, photo: undefined}} : prev);
+            setData(prev => prev?.account.id === data.account.id ? {...prev, account: {...prev.account, avatar: null, photo: undefined}} : prev);
             showToast(t.Admin_RemovePhotoDone(), 'success');
         } catch (err: any) {
             showToast(err?.response?.error || err?.message || t.General_Error(), 'danger');
@@ -99,18 +144,86 @@ export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, creat
         }
     };
 
-    if (error) return <div className="admin-detail-error">{error}</div>;
-    if (!data) return <div className="admin-detail-loading">{t.User_Loading()}</div>;
+    readonly reloadAfterWrite = () => {
+        const {ui, detailUrl, accountId} = this;
+        const {setShowWriteModal, setToastMsg, setDetail: setData} = ui;
+        setShowWriteModal(false);
+        setToastMsg(t.Admin_MessageSent());
+        sendPost(detailUrl, {account_id: accountId}).then((r: any) => {
+            if (!r?.error && ui.getData().data?.account.id === accountId) setData(r as UserDetailData);
+        }).catch(ignoreReloadFailure);
+    };
+}
+
+export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, createTicketUrl, callerIsOwner, callerIsAdmin}: Props) {
+    const [ui] = useState(createStore);
+    const {data, error, flagPending, photoRemovePending, showWriteModal, showClearModal, cleared, toastMsg, lightboxOpen} =
+        React.useSyncExternalStore(ui.subscribeSnapshot, ui.snapshot, ui.snapshot);
+    const {setDetail: setData, setError, setToastMsg, setLightboxOpen} = ui;
+    const {setFlag, removePhoto, reloadAfterWrite} = React.useMemo(
+        () => new UserDetailActions(ui, accountId, detailUrl, setFlagUrl), [ui, accountId, detailUrl, setFlagUrl],
+    );
+    const openUser = useOpenUser();
+
+    useEffect(() => {
+        let current = true;
+        setData(null);
+        setError(null);
+        sendPost(detailUrl, {account_id: accountId})
+            .then((r: any) => {
+                if (!current) return;
+                if (r?.error) setError(r.error);
+                else setData(r as UserDetailData);
+            })
+            .catch(() => { if (current) setError(t.User_LoadError()); });
+        return () => { current = false; };
+    }, [accountId, detailUrl, setData, setError]);
+
+    useEffect(() => {
+        if (!toastMsg) return;
+        const timer = setTimeout(() => setToastMsg(null), 3000);
+        return () => clearTimeout(timer);
+    }, [toastMsg, setToastMsg]);
+
+    return <UserDetailView {...{ui, data, error, flagPending, photoRemovePending, showWriteModal, showClearModal, cleared,
+        toastMsg, lightboxOpen, setLightboxOpen, openUser, setFlagUrl, createTicketUrl, callerIsOwner, callerIsAdmin,
+        setFlag, removePhoto, reloadAfterWrite}} />;
+}
+
+interface ViewProps extends PanelState, Pick<Props, 'setFlagUrl' | 'createTicketUrl' | 'callerIsOwner' | 'callerIsAdmin'> {
+    ui: UserDetailStore;
+    openUser: ReturnType<typeof useOpenUser>;
+    setLightboxOpen: (open: boolean) => void;
+    setFlag: (name: string, value: 0 | 1) => void;
+    removePhoto: () => void;
+    reloadAfterWrite: () => void;
+}
+
+function studentCancellation(item: UserDetailData['userCancellations'][number]) {
+    const {id, created_at, slot_start_at, reason, expert_id, expert_name} = item;
+    return {id, created_at, slot_start_at, reason, counterpartId: expert_id, counterpartName: expert_name};
+}
+
+function expertCancellation(item: UserDetailData['expertCancellations'][number]) {
+    const {id, created_at, slot_start_at, reason, user_id, user_name} = item;
+    return {id, created_at, slot_start_at, reason, counterpartId: user_id, counterpartName: user_name};
+}
+
+function UserDetailView({ui, data, error, flagPending, photoRemovePending, showWriteModal, showClearModal, cleared,
+    toastMsg, lightboxOpen, setLightboxOpen, openUser, setFlagUrl, createTicketUrl, callerIsOwner, callerIsAdmin,
+    setFlag, removePhoto, reloadAfterWrite}: ViewProps) {
+    if (error) return <div className="admin-support-detail-error">{error}</div>;
+    if (!data) return <div className="admin-support-detail-loading">{t.User_Loading()}</div>;
 
     // После успешной очистки аккаунта и всех связанных записей уже нет —
     // обновиться с сервера панель не может. Показываем итоговую надпись;
     // вкладку администратор закрывает сам.
     if (cleared) {
         return (
-            <div className="admin-detail-pane" data-test-id="user-detail-pane">
-                {toastMsg && <div className="admin-floating-toast">{toastMsg}</div>}
-                <div className="admin-detail-cleared">
-                    <h3 className="text-danger">{t.Admin_ClearUserDone()}</h3>
+            <div className="admin-support-detail" data-test-id="user-detail-pane">
+                {toastMsg && <div className="admin-user-notice">{toastMsg}</div>}
+                <div className="admin-user-neutral">
+                    <h3 className="admin-user-count-danger">{t.Admin_ClearUserDone()}</h3>
                 </div>
             </div>
         );
@@ -128,17 +241,9 @@ export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, creat
     const displayName = expertProfile?.display_name || account.name || account.login;
     const showStudentPart = bookings.length > 0 || userCancellations.length > 0;
 
-    const reloadAfterWrite = () => {
-        setShowWriteModal(false);
-        setToastMsg(t.Admin_MessageSent());
-        sendPost(detailUrl, {account_id: accountId}).then((r: any) => {
-            if (!r?.error) setData(r as UserDetailData);
-        });
-    };
-
     return (
-        <div className="admin-detail-pane" data-test-id="user-detail-pane">
-            {toastMsg && <div className="admin-floating-toast">{toastMsg}</div>}
+        <div className="admin-support-detail" data-test-id="user-detail-pane">
+            {toastMsg && <div className="admin-user-notice">{toastMsg}</div>}
 
             <UserHeader
                 account={account}
@@ -160,9 +265,9 @@ export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, creat
                 callerIsAdmin={!!callerIsAdmin}
                 createTicketUrl={createTicketUrl}
                 onSetFlag={setFlag}
-                onWrite={() => setShowWriteModal(true)}
+                onWrite={ui.openWrite}
                 onRemovePhoto={removePhoto}
-                onClear={() => setShowClearModal(true)}
+                onClear={ui.openClear}
             />
 
             <TicketsSection tickets={tickets} />
@@ -174,23 +279,16 @@ export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, creat
                     title={t.User_UserCancellations()}
                     counterpartColumn={t.Admin_Cancel_Expert()}
                     count={userCancelCount}
-                    items={userCancellations.map(sc => ({
-                        id: sc.id,
-                        created_at: sc.created_at,
-                        slot_start_at: sc.slot_start_at,
-                        reason: sc.reason,
-                        counterpartId: sc.expert_id,
-                        counterpartName: sc.expert_name,
-                    }))}
+                    items={userCancellations.map(studentCancellation)}
                     onOpenUser={openUser}
                 />
             )}
 
             {isExpert && expertProfile && (
-                <div className="admin-expert-profile-card">
-                    <div className="admin-expert-profile-row">
+                <div className="admin-user-neutral">
+                    <div className="admin-user-neutral">
                     </div>
-                    {expertProfile.bio && <div className="text-muted mt-1">{expertProfile.bio}</div>}
+                    {expertProfile.bio && <div className="admin-user-bio">{expertProfile.bio}</div>}
                 </div>
             )}
             {isExpert && (
@@ -198,15 +296,8 @@ export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, creat
                     title={t.User_ExpertCancellations()}
                     counterpartColumn={t.Admin_Cancel_User()}
                     count={expertCancelCount}
-                    className="admin-detail-table mb-4"
-                    items={expertCancellations.map(tc => ({
-                        id: tc.id,
-                        created_at: tc.created_at,
-                        slot_start_at: tc.slot_start_at,
-                        reason: tc.reason,
-                        counterpartId: tc.user_id,
-                        counterpartName: tc.user_name,
-                    }))}
+                    spacing="after"
+                    items={expertCancellations.map(expertCancellation)}
                     onOpenUser={openUser}
                 />
             )}
@@ -217,7 +308,7 @@ export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, creat
                     accountId={account.id}
                     accountName={displayName}
                     createTicketUrl={createTicketUrl}
-                    onClose={() => setShowWriteModal(false)}
+                    onClose={ui.closeWrite}
                     onSuccess={reloadAfterWrite}
                 />
             )}
@@ -226,12 +317,8 @@ export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, creat
                     accountId={account.id}
                     accountLogin={account.login}
                     accountName={displayName}
-                    onClose={() => setShowClearModal(false)}
-                    onSuccess={() => {
-                        setShowClearModal(false);
-                        setToastMsg(t.Admin_ClearUserDone());
-                        setCleared(true);
-                    }}
+                    onClose={ui.closeClear}
+                    onSuccess={ui.completeClear}
                 />
             )}
         </div>

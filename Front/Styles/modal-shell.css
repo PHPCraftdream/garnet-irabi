@@ -1,0 +1,16 @@
+@reference "tailwindcss";
+
+@utility shape-modal-shell-card { @apply rounded-xl border w-full mx-4 p-6; }
+@utility shape-modal-shell-card-md { @apply max-w-md; }
+@utility shape-modal-shell-card-lg { @apply max-w-lg; }
+@utility type-modal-shell-title { @apply font-semibold; }
+
+@layer components {
+  .modal-shell-overlay { @apply tone-fgbackdrop-soft layout-expert-slot-modal-overlay; }
+  .modal-shell-card-md { @apply tone-cardsurface-outlined shape-modal-shell-card shape-modal-shell-card-md effect-book-dialog; }
+  .modal-shell-card-lg { @apply tone-cardsurface-outlined shape-modal-shell-card shape-modal-shell-card-lg effect-book-dialog; }
+  .modal-shell-header { @apply tone-bookneutral-plain layout-book-dialog-header shape-book-dialog-header; }
+  .modal-shell-title { @apply tone-booktitle-plain type-modal-shell-title; }
+  .modal-shell-title[data-tone="danger"] { @apply tone-externaldanger-plain; }
+  .modal-shell-close { @apply tone-bookclose-plain type-book-dialog-close; }
+}

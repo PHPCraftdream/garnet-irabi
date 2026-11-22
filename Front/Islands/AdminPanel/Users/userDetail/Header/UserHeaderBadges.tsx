@@ -11,16 +11,16 @@ interface BadgesProps {
 
 /** Имя, логин, тип аккаунта и роли одной строкой. */
 export const UserHeaderBadges: React.FC<BadgesProps> = ({account, displayName, isExpert}) => (
-    <div className="admin-header-badges">
-        <span className="text-lg font-semibold">{displayName}</span>
-        {account.login !== displayName && <span className="text-muted text-sm">{account.login}</span>}
-        <span className={`badge ${isExpert ? 'status-info' : 'status-muted'}`}>
+    <div className="admin-user-identity">
+        <span className="admin-user-identity-name">{displayName}</span>
+        {account.login !== displayName && <span className="admin-client-context-empty">{account.login}</span>}
+        <span className="admin-user-role-badge" data-tone={isExpert ? 'info' : 'muted'}>
             {isExpert ? t.Reg_AccountTypeExpert() : t.Reg_AccountTypeUser()}
         </span>
-        {flag(account.IS_ADMIN) && <span className="badge bg-danger">{t.Admin_Role_Admin()}</span>}
-        {flag(account.IS_OWNER) && <span className="badge status-warning">{t.Admin_Role_Owner()}</span>}
-        {flag(account.IS_MODERATOR) && <span className="badge bg-primary">{t.Admin_Role_Moderator()}</span>}
-        {flag(account.IS_APPROVED) && <span className="badge bg-success">{t.User_Status_Approved()}</span>}
-        {flag(account.IS_DISABLED) && <span className="badge bg-secondary">{t.User_Status_Disabled()}</span>}
+        {flag(account.IS_ADMIN) && <span className="admin-user-role-badge" data-tone="danger">{t.Admin_Role_Admin()}</span>}
+        {flag(account.IS_OWNER) && <span className="admin-user-role-badge" data-tone="warning">{t.Admin_Role_Owner()}</span>}
+        {flag(account.IS_MODERATOR) && <span className="admin-user-role-badge" data-tone="info">{t.Admin_Role_Moderator()}</span>}
+        {flag(account.IS_APPROVED) && <span className="admin-user-role-badge" data-tone="success">{t.User_Status_Approved()}</span>}
+        {flag(account.IS_DISABLED) && <span className="admin-user-role-badge" data-tone="secondary">{t.User_Status_Disabled()}</span>}
     </div>
 );
