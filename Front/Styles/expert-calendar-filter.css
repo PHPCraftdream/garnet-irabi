@@ -1,5 +1,6 @@
 @reference "tailwindcss";
 
+/* valid-color-role: тема объявляет цвета как var(--color-*); слоя var(--palette-*) в приложении нет. */
 @theme inline reference {
   /* carburetor-disable-next-line valid-color-role */
   --color-expertfilter-edge: var(--color-border);

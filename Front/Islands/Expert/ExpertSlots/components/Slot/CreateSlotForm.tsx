@@ -2,6 +2,7 @@ import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {useForm, FieldError, FieldErrors, UseFormRegister, UseFormHandleSubmit} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
+import {z} from 'zod';
 import {D} from '@common/Support/Debug/D';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 import {zodFromFieldsInfo, getFieldRegisterOptions} from '@common/Utils/Data/zodFromFieldsInfo';
@@ -123,14 +124,10 @@ interface Props {
 
 export function CreateSlotForm(props: Props) {
     const {fieldsInfo, defaultPenaltyPercent} = props;
-    const schema = React.useMemo(
-        () => zodFromFieldsInfo(fieldsInfo.fields, fieldsInfo.detailsFields),
-        [fieldsInfo],
-    );
+    const schema = zodFromFieldsInfo(fieldsInfo.fields, fieldsInfo.detailsFields) as unknown as z.ZodType<SlotFormData, SlotFormData>;
 
     const {register, handleSubmit, formState: {errors, isSubmitting}} = useForm<SlotFormData>({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        resolver: zodResolver(schema) as any,
+        resolver: zodResolver(schema),
         defaultValues: {date: getTomorrow(), time: '10:00', duration: 60, cost: 500, max_users: 1, cancellation_penalty_percent: defaultPenaltyPercent},
     });
 
