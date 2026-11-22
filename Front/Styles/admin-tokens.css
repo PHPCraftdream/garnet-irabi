@@ -23,6 +23,7 @@
 @utility tone-tokenmuted-filter { @apply border-tokenmuted-edge text-tokenmuted-ink-subtle; }
 @utility shape-token-field { @apply mb-3; }
 @utility shape-token-label { @apply mb-1.5; }
+@utility shape-money-field-caption { @apply mb-1; }
 @utility layout-token-label { @apply block; }
 @utility type-token-label { @apply text-[11px] font-semibold uppercase tracking-wider; }
 @utility shape-token-hint { @apply mt-1; }
@@ -172,7 +173,7 @@
   .admin-money-spinner { @apply tone-moneyspinner-outline layout-admin-money-spinner shape-admin-money-spinner motion-admin-money-spinner; }
   .admin-money-modal-actions { @apply tone-widgetneutral-plain layout-book-dialog-actions shape-admin-money-modal-actions; }
   .admin-money-modal-fields { @apply tone-widgetneutral-plain shape-admin-money-modal-fields; }
-  .admin-money-field-caption { @apply tone-bookmuted-plain type-token-small shape-token-label; }
+  .admin-money-field-caption { @apply tone-bookmuted-plain type-token-small shape-money-field-caption; }
   .admin-money-field-value { @apply tone-widgetim-plain type-book-place type-admin-money-field-value; }
   .admin-money-note-error { @apply tone-externaldanger-plain type-book-place; }
   .admin-money-note-hint { @apply tone-externaldanger-plain type-token-small shape-token-hint; }
