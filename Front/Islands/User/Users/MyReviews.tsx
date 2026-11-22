@@ -1,8 +1,10 @@
 import * as React from 'react';
+import {AntiHookComponent, type TReadonly} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {appUrl} from '@common/Utils/Url/appUrl';
 import {formatTs} from '@common/Utils/Time/DateUtils';
-import {usePagination, PageResponse} from '@common/hooks/data/usePagination';
+import {PaginationController} from '@common/hooks/data/PaginationController';
+import type {PageResponse} from '@common/hooks/data/usePagination';
 import Pagination, {PaginationLabels} from '@common/Components/Layout/Paging/Pagination';
 
 interface MyReview {
@@ -38,54 +40,90 @@ function renderReview(review: MyReview) {
     return <MyReviewItem key={review.id} review={review} />;
 }
 
+interface MyReviewsProps {
+    listUrl: string;
+    initialData?: PageResponse<MyReview>;
+}
+
+// Подписка = пути, прочитанные в этом render: поля отзыва копируем здесь,
+// иначе их изменение не разбудит компонент (RULES.md, «Подписки useCarburetor»).
+function readReview(row: TReadonly<MyReview>): MyReview {
+    return {
+        id: row.id,
+        expert_id: row.expert_id,
+        expert_name: row.expert_name,
+        body: row.body,
+        moderation_status: row.moderation_status,
+        created_at: row.created_at,
+    };
+}
+
+function paginationLabels(): PaginationLabels {
+    return {prev: t.Pagination_Prev(), next: t.Pagination_Next(), of: t.Pagination_Of(), items: t.Pagination_Items()};
+}
+
 /**
  * D-128: до этого отзывы не жили нигде, кроме страницы того эксперта, о
  * котором были написаны — ни числа, ни списка, ни ссылки на свои. Автор с
  * отзывами о трёх разных преподавателях не мог увидеть их разом.
  */
-export const MyReviews: React.FC<{listUrl: string; initialData?: PageResponse<MyReview>}> = ({listUrl, initialData}) => {
-    const {items, page, totalPages, total, loading, goToPage, perPage, setPerPage} = usePagination<MyReview>({
-        url: listUrl,
-        initialData,
+export class MyReviews extends AntiHookComponent<MyReviewsProps> {
+    private readonly pagination = new PaginationController<MyReview>({
+        url: this.props.listUrl,
+        initialData: this.props.initialData,
     });
 
-    const paginationLabels: PaginationLabels = {
-        prev: t.Pagination_Prev(),
-        next: t.Pagination_Next(),
-        of: t.Pagination_Of(),
-        items: t.Pagination_Items(),
-    };
-
-    if (!loading && total === 0) {
-        return null;
+    componentDidMount(): void {
+        super.componentDidMount();
+        this.pagination.start();
     }
 
-    return (
-        <div className="my-reviews-panel" data-test-id="my-reviews-section">
-            <div className="my-reviews-header">
-                <h3 className="my-reviews-heading">{t.MyReviews_Title()}</h3>
-                <span className="admin-client-context-empty" data-test-id="my-reviews-count">{total}</span>
-            </div>
+    componentWillUnmount(): void {
+        this.pagination.dispose();
+        super.componentWillUnmount();
+    }
 
-            {totalPages > 1 && (
-                <div className="my-reviews-pager">
-                    <Pagination
-                        page={page}
-                        totalPages={totalPages}
-                        total={total}
-                        loading={loading}
-                        compact
-                        onPageChange={goToPage}
-                        labels={paginationLabels}
-                        pageSize={perPage}
-                        onPageSizeChange={setPerPage}
-                    />
+    private renderBody(rows: MyReview[], pager: {
+        page: number;
+        totalPages: number;
+        total: number;
+        loading: boolean;
+        perPage: number;
+    }) {
+        const {page, totalPages, total, loading, perPage} = pager;
+        return (
+            <div className="my-reviews-panel" data-test-id="my-reviews-section">
+                <div className="my-reviews-header">
+                    <h3 className="my-reviews-heading">{t.MyReviews_Title()}</h3>
+                    <span className="admin-client-context-empty" data-test-id="my-reviews-count">{total}</span>
                 </div>
-            )}
 
-            <div className="my-reviews-list">
-                {items.map(renderReview)}
+                {totalPages > 1 && (
+                    <div className="my-reviews-pager">
+                        <Pagination
+                            page={page}
+                            totalPages={totalPages}
+                            total={total}
+                            loading={loading}
+                            compact
+                            onPageChange={this.pagination.goToPage}
+                            labels={paginationLabels()}
+                            pageSize={perPage}
+                            onPageSizeChange={this.pagination.setPerPage}
+                        />
+                    </div>
+                )}
+
+                <div className="my-reviews-list">
+                    {rows.map(renderReview)}
+                </div>
             </div>
-        </div>
-    );
-};
+        );
+    }
+
+    render() {
+        const {items, page, perPage, totalPages, total, loading} = this.useCarburetor(this.pagination);
+        if (!loading && total === 0) return null;
+        return this.renderBody(items.map(readReview), {page, totalPages, total, loading, perPage});
+    }
+}

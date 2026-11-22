@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {AntiHookComponent} from '@react-carburetor/core';
+import {AntiHookComponent, type TReadonly} from '@react-carburetor/core';
 import {fetchMessages, refreshConversations} from './ImPageRequests';
 import {sendPostFormData, ApiError} from '@common/Api/Send/sendPostFormData';
 import {D} from '@common/Support/Debug/D';
@@ -7,7 +7,7 @@ import {useSending} from '@common/hooks/data/useSending';
 
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import type {ImConversation} from './imTypes';
+import type {ImMessage, ImConversation, ImAttachment} from './imTypes';
 import {ImPageState} from './ImPageState';
 import type {ImPageSnapshot} from './ImPageState';
 import {PendingFile} from '../../../Common/attachments/AttachmentPicker';
@@ -45,6 +45,48 @@ interface Props {
 type IslandProps = Props & ReturnType<typeof useSending>;
 
 const PAGE_ICON = <MessagesSquare size={22} aria-hidden="true" />;
+
+// Подписка = пути, прочитанные в этом render: поля строк читаем здесь, иначе их
+// изменение не разбудит остров (см. RULES.md, «Подписки useCarburetor»).
+function readAttachment(row: TReadonly<ImAttachment>): ImAttachment {
+    return {
+        id: row.id,
+        message_id: row.message_id,
+        original_name: row.original_name,
+        stored_name: row.stored_name,
+        mime_type: row.mime_type,
+        size: row.size,
+        download_url: row.download_url,
+    };
+}
+
+function readMessage(row: TReadonly<ImMessage>): ImMessage {
+    return {
+        id: row.id,
+        conversation_id: row.conversation_id,
+        sender_id: row.sender_id,
+        sender_name: row.sender_name,
+        body: row.body,
+        created_at: row.created_at,
+        attachments: row.attachments?.map(readAttachment),
+    };
+}
+
+function readConversation(row: TReadonly<ImConversation>): ImConversation {
+    return {
+        id: row.id,
+        partner_id: row.partner_id,
+        partner_name: row.partner_name,
+        partner_avatar: row.partner_avatar,
+        partner_has_expert_profile: row.partner_has_expert_profile,
+        partner_is_disabled: row.partner_is_disabled,
+        last_message_snippet: row.last_message_snippet,
+        last_message_at: row.last_message_at,
+        last_message_is_mine: row.last_message_is_mine,
+        unread_count: row.unread_count,
+        attachments_count: row.attachments_count,
+    };
+}
 
 function findConversation(conversations: readonly ImConversation[], selectedId: number | null): ImConversation | undefined {
     return conversations.find(conversation => conversation.id === selectedId);
@@ -230,7 +272,7 @@ class ImPageView extends AntiHookComponent<IslandProps> {
         setRecipientId(id);
     };
 
-    private renderNew(state: ImPageSnapshot) {
+    private renderNew(state: TReadonly<ImPageSnapshot>) {
         const {searchRecipientsUrl, sending} = this.props;
         const {recipientId, newMessage} = state;
         return (
@@ -248,9 +290,9 @@ class ImPageView extends AntiHookComponent<IslandProps> {
         );
     }
 
-    private renderThread(state: ImPageSnapshot, selectedConversation: ImConversation) {
+    private renderThread(state: TReadonly<ImPageSnapshot>, messages: ImMessage[], selectedConversation: ImConversation) {
         const {sending, currentAccountId, isModerator = false} = this.props;
-        const {messages, loadingMessages, replyText} = state;
+        const {loadingMessages, replyText} = state;
         return (
             <MessageThread
                 conversation={selectedConversation}
@@ -269,8 +311,13 @@ class ImPageView extends AntiHookComponent<IslandProps> {
         );
     }
 
-    private renderPanel(state: ImPageSnapshot, selectedConversation: ImConversation | undefined) {
-        const {conversations, showNewForm} = state;
+    private renderPanel(
+        state: TReadonly<ImPageSnapshot>,
+        conversations: readonly ImConversation[],
+        messages: ImMessage[],
+        selectedConversation: ImConversation | undefined,
+    ) {
+        const {showNewForm} = state;
         return (
             <div className="comms-page-thread">
                 {(selectedConversation || showNewForm) && (
@@ -283,7 +330,7 @@ class ImPageView extends AntiHookComponent<IslandProps> {
                         {t.Support_BackToList()}
                     </button>
                 )}
-                {showNewForm ? this.renderNew(state) : selectedConversation ? this.renderThread(state, selectedConversation) : (
+                {showNewForm ? this.renderNew(state) : selectedConversation ? this.renderThread(state, messages, selectedConversation) : (
                     <div className="comms-page-empty">
                         {conversations.length === 0 ? t.IM_NoConversations() : t.IM_NoMessages()}
                     </div>
@@ -293,22 +340,25 @@ class ImPageView extends AntiHookComponent<IslandProps> {
     }
 
     render() {
-        // Вид из useCarburetor — TReadonly; детям нужны прежние мутабельные типы.
-        const state = this.useCarburetor(this.ui) as ImPageSnapshot;
-        const selectedConversation = findConversation(state.conversations, state.selectedId);
+        // Подписка = пути, прочитанные в этом render: поля строк копируем здесь, иначе
+        // их изменение не разбудит остров (см. RULES.md, «Подписки useCarburetor»).
+        const state = this.useCarburetor(this.ui);
+        const conversations = state.conversations.map(readConversation);
+        const messages = state.messages.map(readMessage);
+        const selectedConversation = findConversation(conversations, state.selectedId);
         return (
             <div className="comms-page">
                 <PageHeader title={t.IM_Title()} icon={PAGE_ICON} />
 
                 <div className="comms-page-layout" data-detail={Boolean(selectedConversation || state.showNewForm)}>
                     <ConversationList
-                        conversations={state.conversations}
+                        conversations={conversations}
                         selectedId={state.selectedId}
                         onSelectConversation={this.selectConversation}
                         onNewMessage={this.handleNewMessage}
                     />
 
-                    {this.renderPanel(state, selectedConversation)}
+                    {this.renderPanel(state, conversations, messages, selectedConversation)}
                 </div>
 
 

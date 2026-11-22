@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
+import {AntiHookComponent, Carburetor, type TReadonly} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {D} from '@common/Support/Debug/D';
 import {CTRL_ENTER_HINT} from '@common/hooks/ui/useCtrlEnter';
@@ -26,9 +26,19 @@ interface State {
     loading: boolean;
 }
 
+// Селектор читает поля строк: иначе изменение имени/роли получателя не попадёт
+// в подписку (RULES.md, «Подписки useCarburetor»).
+function readRecipient(row: TReadonly<Recipient>): Recipient {
+    return {id: row.id, name: row.name, role: row.role};
+}
+
+function selectRecipients(state: TReadonly<State>): Recipient[] {
+    return state.recipients.map(readRecipient);
+}
+
 export default class NewMessageForm extends AntiHookComponent<Props> {
     private readonly store = new Carburetor<State>({recipients: [], loading: true});
-    private readonly recipients = this.connectSelection(this.store, state => state.recipients);
+    private readonly recipients = this.connectSelection(this.store, selectRecipients);
     private requestId = 0;
 
     componentDidMount(): void {

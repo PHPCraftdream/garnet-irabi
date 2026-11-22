@@ -24,7 +24,7 @@ const SlotCardTitle: React.FC<{slot: SlotLike}> = ({slot}) => (
     <h5 className="expert-slot-card-title">
         {formatTs(slot.start_at)}
         {(slot.max_users ?? 1) > 1 && (
-            <span className="profile-slot-group" data-test-id={`slot-group-badge-${slot.id}`}>
+            <span className="expert-profile-slot-group" data-test-id={`slot-group-badge-${slot.id}`}>
                 {t.Slot_GroupBadge([slot.max_users ?? 1])}
             </span>
         )}
@@ -89,8 +89,8 @@ export const ExpertSlotCard: React.FC<Props> = ({slot, isOwnProfile, canBook, on
         <div className="booking-card-shell">
             <div className="expert-slot-card-body">
                 <SlotCardTitle slot={slot} />
-                <p className="expert-slot-card-meta"><strong>{t.Slot_Cost()}:</strong> {slot.cost} &#8381;</p>
-                <p className="expert-slot-card-meta"><strong>{t.Slot_Type()}:</strong> {slotFormatLine(slot)}</p>
+                <p className="expert-profile-slot-cost"><strong>{t.Slot_Cost()}:</strong> {slot.cost} &#8381;</p>
+                <p className="expert-profile-slot-format"><strong>{t.Slot_Type()}:</strong> {slotFormatLine(slot)}</p>
                 <SlotBookingAction slot={slot} isOwnProfile={isOwnProfile} canBook={canBook} onBook={onBook} />
             </div>
         </div>
