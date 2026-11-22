@@ -60,6 +60,14 @@ export class SlotsCalendarIsland extends AntiHookComponent<SlotsCalendarProps> {
     private readonly controller = new SlotBookingController({booking: this.booking, actions: this.bookingActions});
     private readonly filterStore = new SlotsCalendarFilterStore();
     private readonly view = new SlotsCalendarView();
+    // Данные острова — снимки сторов, а не вью-прокси useCarburetor:
+    // `SlotsCalendarView` сравнивает входы по ссылке, а прокси пересоздаётся
+    // при каждой замене корня стора (`nextWeek()`, открытие/закрытие модалки).
+    // Снимок `connectSelection` меняет идентичность только вместе с
+    // содержимым, поэтому производные значения и счётчики переживают и переход
+    // по неделе, и модалку, пока сами слоты, брони и фильтры не изменились.
+    private readonly bookingSnapshot = this.connectSelection(this.booking, state => state);
+    private readonly filterSnapshot = this.connectSelection(this.filterStore, state => state);
     private readonly initialBooking = {
         bookingIds: {...this.props.bookedSlotBookingIds},
         currentBalance: this.props.balance ?? 0,
@@ -143,6 +151,7 @@ export class SlotsCalendarIsland extends AntiHookComponent<SlotsCalendarProps> {
             <>
                 {bookingSlot && (
                     <BookingModal
+                        controller={this.controller}
                         slot={bookingSlot}
                         allSlots={slots}
                         experts={experts}
@@ -175,8 +184,8 @@ export class SlotsCalendarIsland extends AntiHookComponent<SlotsCalendarProps> {
     }
 
     render() {
-        const {slots, bookingSlot, detailSlot, bookedIds, slotStatuses} = this.useCarburetor(this.booking);
-        const {filters, statusFilter, weekOffset} = this.useCarburetor(this.filterStore);
+        const {slots, bookedIds, slotStatuses, bookingSlot, detailSlot} = this.bookingSnapshot();
+        const {filters, statusFilter, weekOffset} = this.filterSnapshot();
 
         D('slots-calendar.init', {slotCount: slots.length, expertCount: Object.keys(this.props.experts).length});
 

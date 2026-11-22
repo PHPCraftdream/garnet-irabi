@@ -27,10 +27,15 @@ export class SlotsCalendarBookingStore extends Carburetor<BookingState> {
         }
     }
 
-    /** Объект слота из собственных данных: в стор не должен попадать вью-прокси useCarburetor. */
+    /**
+     * Объект слота из собственных данных: в стор не должен попадать вью-прокси
+     * useCarburetor. Слота, которого нет в каталоге, здесь нет — его не
+     * открываем: иначе в состояние попадал бы объект, которого на странице нет
+     * (подставлялся бы `slot` из аргумента вместо результата поиска по id).
+     */
     private resolve(slot: SlotItem | null): SlotItem | null {
         if (!slot) return null;
-        return this.getData().slots.find(candidate => candidate.id === slot.id) ?? slot;
+        return this.getData().slots.find(candidate => candidate.id === slot.id) ?? null;
     }
 
     readonly showBooking = (slot: SlotItem | null) => {

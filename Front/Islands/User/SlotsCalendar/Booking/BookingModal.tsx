@@ -1,16 +1,14 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
-import {sendPost} from '@common/Api/Send/sendPost';
-import {D} from '@common/Support/Debug/D';
 import SendButton from '@common/Components/Controls/SendButton';
 import {Portal} from '@common/Components/Layout/Portal';
 import {appUrl} from '@common/Utils/Url/appUrl';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {bookErrorCode, bookErrorMessage} from './bookingErrors';
 import {BookingSlotSummary} from './BookingSlotSummary';
 import {ExtraSlotPicker} from '../Slot/ExtraSlotPicker';
 import type {SlotItem, ExpertMap} from '../types';
 import {sortByStart} from '../slotsCalendarSelectors';
+import {priceFor, canPay, type SlotBookingController} from './SlotBookingController';
 
 interface Props {
     slot: SlotItem;
@@ -22,12 +20,11 @@ interface Props {
     csrf: string;
     onClose: () => void;
     onBooked: (bookedIds: number[]) => void;
+    controller: SlotBookingController;
 }
 
 interface State {
     selected: number[];
-    error: string;
-    sending: boolean;
     shaking: boolean;
 }
 
@@ -40,27 +37,8 @@ function getOtherSlots({allSlots, slot, bookedIds}: Props): SlotItem[] {
     return sortByStart(available).slice(0, 10);
 }
 
-function priceFor(ids: readonly number[], slots: readonly SlotItem[]): number {
-    let sum = 0;
-    for (const id of ids) sum += slots.find(slot => slot.id === id)?.cost ?? 0;
-    return sum;
-}
-
-function uidsFor(ids: readonly number[], slots: readonly SlotItem[]): Record<string, string> {
-    const uids: Record<string, string> = {};
-    for (const id of ids) {
-        const uid = slots.find(slot => slot.id === id)?.uid;
-        if (uid) uids[String(id)] = uid;
-    }
-    return uids;
-}
-
-function canPay(balance: number, total: number): boolean {
-    return total === 0 || balance >= total;
-}
-
 export default class BookingModal extends AntiHookComponent<Props> {
-    private readonly store = new Carburetor<State>({selected: [this.props.slot.id], error: '', sending: false, shaking: false});
+    private readonly store = new Carburetor<State>({selected: [this.props.slot.id], shaking: false});
     private shakeTimer?: number;
     private shakeFrame?: number;
 
@@ -123,40 +101,11 @@ export default class BookingModal extends AntiHookComponent<Props> {
         this.update({selected: selected.includes(id) ? selected.filter(value => value !== id) : [...selected, id]});
     };
 
-    private readonly book = async () => {
-        const {selected, sending} = this.store.getData();
+    private readonly book = () => {
+        const {selected} = this.store.getData();
         if (!selected.length) return;
-        const {allSlots, balance, csrf, bookUrl, onBooked, onClose} = this.props;
-        const total = priceFor(selected, allSlots);
-        // Кнопка остаётся доступной, чтобы подсветить нехватку средств.
-        if (!canPay(balance, total)) {
-            this.shakeBalance();
-            return;
-        }
-        if (sending) return;
-        this.update({sending: true, error: ''});
-        try {
-            D('booking.submit', {slotIds: [...selected], total});
-            const result = await sendPost(bookUrl, {
-                slot_ids: [...selected],
-                slot_uids: uidsFor(selected, allSlots),
-                CSRF_TOKEN: csrf,
-            }) as any;
-            if (result?.stale) {
-                this.update({error: t.Slot_Rescheduled()});
-            } else if (result?.error) {
-                this.update({error: result.error});
-            } else {
-                D('booking.success', {count: selected.length});
-                onBooked([...selected]);
-                onClose();
-            }
-        } catch (e: any) {
-            const code = bookErrorCode(e);
-            this.update({error: code ? bookErrorMessage(code) : (e?.message || t.General_Error())});
-        } finally {
-            this.update({sending: false});
-        }
+        const {allSlots, balance, csrf, bookUrl, onBooked, onClose, controller} = this.props;
+        void controller.submitBooking({selected, allSlots, balance, csrf, bookUrl, onBooked, onClose, onShake: this.shakeBalance});
     };
 
     private renderHeader() {
@@ -203,7 +152,8 @@ export default class BookingModal extends AntiHookComponent<Props> {
 
     render() {
         const {slot, allSlots, experts, onClose} = this.props;
-        const {error, sending, shaking} = this.useCarburetor(this.store);
+        const {sending, error} = this.useCarburetor(this.props.controller);
+        const {shaking} = this.useCarburetor(this.store);
         const ids = this.selection();
         const total = priceFor(ids, allSlots);
         return (

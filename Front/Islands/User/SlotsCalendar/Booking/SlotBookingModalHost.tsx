@@ -18,6 +18,7 @@ export class SlotBookingModalHost extends AntiHookComponent<Props> {
         if (!bookData) return null;
         return (
             <BookingModal
+                controller={this.props.controller}
                 slot={bookData.slot}
                 allSlots={[bookData.slot]}
                 experts={{[String(bookData.expert.account_id)]: bookData.expert} as ExpertMap}
