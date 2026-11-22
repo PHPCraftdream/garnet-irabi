@@ -2,7 +2,7 @@ import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
-import {useConfirm} from '@common/hooks/ui/useConfirm';
+import type {ConfirmOptions, ConfirmState} from '@common/hooks/ui/useConfirm';
 import {ConfirmModal} from '@common/Components/Feedback/ConfirmModal';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {TokenRow} from './tokens/tokenTypes';
@@ -32,21 +32,21 @@ interface State {
     registrations: TokenRow | null;
     link: string | null;
     edit: TokenRow | null;
+    confirmState: ConfirmState;
 }
 
-interface ViewProps extends AdminTokensSectionProps, ReturnType<typeof useConfirm> {}
-
-class AdminTokensView extends AntiHookComponent<ViewProps> {
-    private readonly ui = new Carburetor<State>({tokens: [], loading: false, search: '', status: '', showCreate: false, registrations: null, link: null, edit: null});
+export class AdminTokensSection extends AntiHookComponent<AdminTokensSectionProps> {
+    private readonly ui = new Carburetor<State>({tokens: [], loading: false, search: '', status: '', showCreate: false, registrations: null, link: null, edit: null, confirmState: {visible: false, message: '', items: []}});
     private readonly snapshot = this.connectSelection(this.ui, state => state);
     private timer?: ReturnType<typeof setTimeout>;
+    private confirmResolver?: (ok: boolean) => void;
 
     componentDidMount(): void {
         super.componentDidMount();
         void this.fetchTokens();
     }
 
-    componentDidUpdate(previous: Readonly<ViewProps>): void {
+    componentDidUpdate(previous: Readonly<AdminTokensSectionProps>): void {
         super.componentDidUpdate(previous);
         if (previous.listUrl !== this.props.listUrl) this.scheduleFetch();
     }
@@ -115,19 +115,48 @@ class AdminTokensView extends AntiHookComponent<ViewProps> {
         }
     }
 
+    private confirm(message: string, opts: string[] | ConfirmOptions = []): Promise<boolean> {
+        return new Promise(resolve => {
+            this.confirmResolver = resolve;
+            if (Array.isArray(opts)) {
+                this.update({confirmState: {visible: true, message, items: opts}});
+            } else {
+                this.update({
+                    confirmState: {
+                        visible: true,
+                        message,
+                        items: opts.items ?? [],
+                        confirmLabel: opts.confirmLabel,
+                        variant: opts.variant,
+                    },
+                });
+            }
+        });
+    }
+
+    private settleConfirm(confirmed: boolean): void {
+        const data = this.ui.getData();
+        this.update({confirmState: {...data.confirmState, visible: false}});
+        this.confirmResolver?.(confirmed);
+        this.confirmResolver = null;
+    }
+
+    private readonly handleConfirm = (): void => { this.settleConfirm(true); };
+    private readonly handleCancel = (): void => { this.settleConfirm(false); };
+
     private readonly toggle = async (row: TokenRow) => {
-        const {enableUrl, disableUrl, confirm} = this.props;
+        const {enableUrl, disableUrl} = this.props;
         if (row.is_disabled) {
             await this.changeRow(enableUrl, row.id, {is_disabled: false, status: 'active'});
             return;
         }
-        const ok = await confirm(t.Admin_Tokens_DisableConfirm(), {variant: 'danger', confirmLabel: t.Admin_Tokens_Disable()});
+        const ok = await this.confirm(t.Admin_Tokens_DisableConfirm(), {variant: 'danger', confirmLabel: t.Admin_Tokens_Disable()});
         if (ok) await this.changeRow(disableUrl, row.id, {is_disabled: true, status: 'disabled'});
     };
 
     private readonly remove = async (row: TokenRow) => {
-        const {deleteUrl, confirm} = this.props;
-        const ok = await confirm(t.Admin_Tokens_DeleteConfirm(), {variant: 'danger', confirmLabel: t.Action_Delete()});
+        const {deleteUrl} = this.props;
+        const ok = await this.confirm(t.Admin_Tokens_DeleteConfirm(), {variant: 'danger', confirmLabel: t.Action_Delete()});
         if (ok) await this.changeRow(deleteUrl, row.id);
     };
 
@@ -155,7 +184,7 @@ class AdminTokensView extends AntiHookComponent<ViewProps> {
             onEdit={this.openEdit} onToggleDisable={this.toggle} onDelete={this.remove} />;
     }
 
-    private renderModals({showCreate, registrations, link, edit}: Omit<State, 'tokens'>) {
+    private renderModals({showCreate, registrations, link, edit}: Omit<State, 'tokens' | 'confirmState'>) {
         const {createUrl, registrationsUrl, updateUrl} = this.props;
         return (
             <>
@@ -168,20 +197,15 @@ class AdminTokensView extends AntiHookComponent<ViewProps> {
     }
 
     render() {
-        const {confirmState, handleConfirm, handleCancel} = this.props;
         const state = this.snapshot();
+        const {confirmState} = state;
         return (
             <div data-test-id="admin-tokens">
                 <TokenFilters search={state.search} status={state.status} onSearchChange={this.search} onStatusChange={this.filter} onCreate={this.openCreate} />
                 {this.renderTable(state.tokens, state.loading)}
                 {this.renderModals(state)}
-                <ConfirmModal state={confirmState} onConfirm={handleConfirm} onCancel={handleCancel} />
+                <ConfirmModal state={{...confirmState, items: [...confirmState.items]}} onConfirm={this.handleConfirm} onCancel={this.handleCancel} />
             </div>
         );
     }
-}
-
-export function AdminTokensSection(props: AdminTokensSectionProps) {
-    const confirmation = useConfirm();
-    return <AdminTokensView {...props} {...confirmation} />;
 }

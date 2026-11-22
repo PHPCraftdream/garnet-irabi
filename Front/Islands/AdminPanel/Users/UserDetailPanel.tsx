@@ -1,11 +1,10 @@
 import * as React from 'react';
-import {useState, useEffect} from 'react';
-import {Carburetor} from '@react-carburetor/core';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {appUrl} from '@common/Utils/Url/appUrl';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {useOpenUser} from './UserDetailContext';
+import {UserDetailContext, UserDetailContextValue} from './UserDetailContext';
 import {UserDetailData} from './userDetail/userDetailTypes';
 import {UserHeader} from './userDetail/Header/UserHeader';
 import {WriteToUserModal} from './userDetail/Modals/WriteToUserModal';
@@ -36,6 +35,8 @@ interface PanelState {
     toastMsg: string | null;
     lightboxOpen: boolean;
 }
+
+const selectToastMsg = (state: PanelState) => state.toastMsg;
 
 class UserDetailStore extends Carburetor<PanelState> {
     constructor() {
@@ -82,10 +83,6 @@ class UserDetailStore extends Carburetor<PanelState> {
     readonly setLightboxOpen = (value: boolean) => this.change('lightboxOpen', value);
 }
 
-function createStore(): UserDetailStore {
-    return new UserDetailStore();
-}
-
 /**
  * Карточка пользователя в админке: шапка с ролями и деньгами, затем разделы —
  * обращения, финансы, брони, отмены, слоты.
@@ -97,11 +94,11 @@ function createStore(): UserDetailStore {
 function ignoreReloadFailure(): void {}
 
 class UserDetailActions {
-    constructor(private readonly ui: UserDetailStore, private readonly accountId: number,
-        private readonly detailUrl: string, private readonly setFlagUrl?: string) {}
+    constructor(private readonly ui: UserDetailStore, private readonly readProps: () => Props) {}
 
     readonly setFlag = async (flagName: string, value: 0 | 1) => {
-        const {setFlagUrl, ui} = this;
+        const {setFlagUrl} = this.readProps();
+        const {ui} = this;
         const {data, flagPending} = ui.getData();
         const {setFlagPending, setDetail: setData} = ui;
         if (!setFlagUrl || flagPending || !data) return;
@@ -145,7 +142,8 @@ class UserDetailActions {
     };
 
     readonly reloadAfterWrite = () => {
-        const {ui, detailUrl, accountId} = this;
+        const {accountId, detailUrl} = this.readProps();
+        const {ui} = this;
         const {setShowWriteModal, setToastMsg, setDetail: setData} = ui;
         setShowWriteModal(false);
         setToastMsg(t.Admin_MessageSent());
@@ -153,50 +151,6 @@ class UserDetailActions {
             if (!r?.error && ui.getData().data?.account.id === accountId) setData(r as UserDetailData);
         }).catch(ignoreReloadFailure);
     };
-}
-
-export default function UserDetailPanel({accountId, detailUrl, setFlagUrl, createTicketUrl, callerIsOwner, callerIsAdmin}: Props) {
-    const [ui] = useState(createStore);
-    const {data, error, flagPending, photoRemovePending, showWriteModal, showClearModal, cleared, toastMsg, lightboxOpen} =
-        React.useSyncExternalStore(ui.subscribeSnapshot, ui.snapshot, ui.snapshot);
-    const {setDetail: setData, setError, setToastMsg, setLightboxOpen} = ui;
-    const {setFlag, removePhoto, reloadAfterWrite} = React.useMemo(
-        () => new UserDetailActions(ui, accountId, detailUrl, setFlagUrl), [ui, accountId, detailUrl, setFlagUrl],
-    );
-    const openUser = useOpenUser();
-
-    useEffect(() => {
-        let current = true;
-        setData(null);
-        setError(null);
-        sendPost(detailUrl, {account_id: accountId})
-            .then((r: any) => {
-                if (!current) return;
-                if (r?.error) setError(r.error);
-                else setData(r as UserDetailData);
-            })
-            .catch(() => { if (current) setError(t.User_LoadError()); });
-        return () => { current = false; };
-    }, [accountId, detailUrl, setData, setError]);
-
-    useEffect(() => {
-        if (!toastMsg) return;
-        const timer = setTimeout(() => setToastMsg(null), 3000);
-        return () => clearTimeout(timer);
-    }, [toastMsg, setToastMsg]);
-
-    return <UserDetailView {...{ui, data, error, flagPending, photoRemovePending, showWriteModal, showClearModal, cleared,
-        toastMsg, lightboxOpen, setLightboxOpen, openUser, setFlagUrl, createTicketUrl, callerIsOwner, callerIsAdmin,
-        setFlag, removePhoto, reloadAfterWrite}} />;
-}
-
-interface ViewProps extends PanelState, Pick<Props, 'setFlagUrl' | 'createTicketUrl' | 'callerIsOwner' | 'callerIsAdmin'> {
-    ui: UserDetailStore;
-    openUser: ReturnType<typeof useOpenUser>;
-    setLightboxOpen: (open: boolean) => void;
-    setFlag: (name: string, value: 0 | 1) => void;
-    removePhoto: () => void;
-    reloadAfterWrite: () => void;
 }
 
 function studentCancellation(item: UserDetailData['userCancellations'][number]) {
@@ -209,118 +163,183 @@ function expertCancellation(item: UserDetailData['expertCancellations'][number])
     return {id, created_at, slot_start_at, reason, counterpartId: user_id, counterpartName: user_name};
 }
 
-function UserDetailView({ui, data, error, flagPending, photoRemovePending, showWriteModal, showClearModal, cleared,
-    toastMsg, lightboxOpen, setLightboxOpen, openUser, setFlagUrl, createTicketUrl, callerIsOwner, callerIsAdmin,
-    setFlag, removePhoto, reloadAfterWrite}: ViewProps) {
-    if (error) return <div className="admin-support-detail-error">{error}</div>;
-    if (!data) return <div className="admin-support-detail-loading">{t.User_Loading()}</div>;
+function renderCleared(toastMsg: string | null) {
+    return (
+        <div className="admin-support-detail" data-test-id="user-detail-pane">
+            {toastMsg && <div className="admin-user-notice">{toastMsg}</div>}
+            <div className="admin-user-neutral">
+                <h3 className="admin-user-count-danger">{t.Admin_ClearUserDone()}</h3>
+            </div>
+        </div>
+    );
+}
 
-    // После успешной очистки аккаунта и всех связанных записей уже нет —
-    // обновиться с сервера панель не может. Показываем итоговую надпись;
-    // вкладку администратор закрывает сам.
-    if (cleared) {
+export default class UserDetailPanel extends AntiHookComponent<Props> {
+    static contextType = UserDetailContext;
+    declare context: UserDetailContextValue;
+
+    private readonly ui = new UserDetailStore();
+    private readonly actions = new UserDetailActions(this.ui, () => this.props);
+
+    private readonly clearToast = () => this.ui.setToastMsg(null);
+
+    private readonly toastTimer = (toastMsg: string | null): (() => void) | void => {
+        if (!toastMsg) return;
+        const timer = setTimeout(this.clearToast, 3000);
+        return () => clearTimeout(timer);
+    };
+
+    protected useEffects(): void {
+        const {accountId, detailUrl} = this.props;
+        this.useEffect('load', () => {
+            let current = true;
+            this.ui.setDetail(null);
+            this.ui.setError(null);
+            sendPost(detailUrl, {account_id: accountId})
+                .then((r: any) => {
+                    if (!current) return;
+                    if (r?.error) this.ui.setError(r.error);
+                    else this.ui.setDetail(r as UserDetailData);
+                })
+                .catch(() => { if (current) this.ui.setError(t.User_LoadError()); });
+            return () => { current = false; };
+        }, [accountId, detailUrl]);
+
+        this.useStoreEffect('toast', this.ui, selectToastMsg, this.toastTimer);
+    }
+
+    public render() {
+        const {data, error, flagPending, photoRemovePending, showWriteModal, showClearModal, cleared, toastMsg, lightboxOpen} =
+            this.useCarburetor(this.ui);
+        const panelData = data as UserDetailData;
+        if (error) return <div className="admin-support-detail-error">{error}</div>;
+        if (!data) return <div className="admin-support-detail-loading">{t.User_Loading()}</div>;
+
+        // После успешной очистки аккаунта и всех связанных записей уже нет —
+        // обновиться с сервера панель не может. Показываем итоговую надпись;
+        // вкладку администратор закрывает сам.
+        if (cleared) return renderCleared(toastMsg);
+
         return (
             <div className="admin-support-detail" data-test-id="user-detail-pane">
                 {toastMsg && <div className="admin-user-notice">{toastMsg}</div>}
-                <div className="admin-user-neutral">
-                    <h3 className="admin-user-count-danger">{t.Admin_ClearUserDone()}</h3>
-                </div>
+
+                {this.renderHeader(panelData, flagPending, photoRemovePending, lightboxOpen)}
+                {this.renderStudentSections(panelData)}
+                {this.renderExpertSections(panelData)}
+                {this.renderModals(panelData, showWriteModal, showClearModal)}
             </div>
         );
     }
 
-    const {
-        account, expertProfile, slots, balance, ledger, bookings, tickets,
-        expertCancelCount, userCancelCount, expertDeclineCount, userDeclineCount,
-        expertCancellations, userCancellations,
-    } = data;
-
-    const isExpert = account.type === 'expert';
-    const photo = account.avatar ?? expertProfile?.photo ?? null;
-    const fullPhoto = account.avatar_full ?? photo;
-    const displayName = expertProfile?.display_name || account.name || account.login;
-    const showStudentPart = bookings.length > 0 || userCancellations.length > 0;
-
-    return (
-        <div className="admin-support-detail" data-test-id="user-detail-pane">
-            {toastMsg && <div className="admin-user-notice">{toastMsg}</div>}
-
+    private renderHeader(data: UserDetailData, flagPending: boolean, photoRemovePending: boolean, lightboxOpen: boolean) {
+        const {account, expertProfile, balance, expertCancelCount, userCancelCount, expertDeclineCount, userDeclineCount} = data;
+        const {setFlagUrl, createTicketUrl, callerIsOwner, callerIsAdmin} = this.props;
+        const photo = account.avatar ?? expertProfile?.photo ?? null;
+        return (
             <UserHeader
                 account={account}
-                displayName={displayName}
-                isExpert={isExpert}
+                displayName={expertProfile?.display_name || account.name || account.login}
+                isExpert={account.type === 'expert'}
                 photo={photo}
-                fullPhoto={fullPhoto}
+                fullPhoto={account.avatar_full ?? photo}
                 balance={balance}
                 expertCancelCount={expertCancelCount}
                 userCancelCount={userCancelCount}
                 expertDeclineCount={expertDeclineCount}
                 userDeclineCount={userDeclineCount}
                 lightboxOpen={lightboxOpen}
-                setLightboxOpen={setLightboxOpen}
+                setLightboxOpen={this.ui.setLightboxOpen}
                 showActions={!!setFlagUrl}
                 flagPending={flagPending}
                 photoRemovePending={photoRemovePending}
                 callerIsOwner={!!callerIsOwner}
                 callerIsAdmin={!!callerIsAdmin}
                 createTicketUrl={createTicketUrl}
-                onSetFlag={setFlag}
-                onWrite={ui.openWrite}
-                onRemovePhoto={removePhoto}
-                onClear={ui.openClear}
+                onSetFlag={this.actions.setFlag}
+                onWrite={this.ui.openWrite}
+                onRemovePhoto={this.actions.removePhoto}
+                onClear={this.ui.openClear}
             />
+        );
+    }
 
-            <TicketsSection tickets={tickets} />
-            <LedgerSection ledger={ledger} onOpenUser={openUser} />
+    private renderStudentSections(data: UserDetailData) {
+        const {bookings, tickets, ledger, userCancellations, userCancelCount} = data;
+        const {openUser} = this.context;
+        const showStudentPart = bookings.length > 0 || userCancellations.length > 0;
+        return (
+            <>
+                <TicketsSection tickets={tickets} />
+                <LedgerSection ledger={ledger} onOpenUser={openUser} />
 
-            {showStudentPart && <BookingsSection bookings={bookings} onOpenUser={openUser} />}
-            {showStudentPart && (
-                <CancellationsSection
-                    title={t.User_UserCancellations()}
-                    counterpartColumn={t.Admin_Cancel_Expert()}
-                    count={userCancelCount}
-                    items={userCancellations.map(studentCancellation)}
-                    onOpenUser={openUser}
-                />
-            )}
+                {showStudentPart && <BookingsSection bookings={bookings} onOpenUser={openUser} />}
+                {showStudentPart && (
+                    <CancellationsSection
+                        title={t.User_UserCancellations()}
+                        counterpartColumn={t.Admin_Cancel_Expert()}
+                        count={userCancelCount}
+                        items={userCancellations.map(studentCancellation)}
+                        onOpenUser={openUser}
+                    />
+                )}
+            </>
+        );
+    }
 
-            {isExpert && expertProfile && (
-                <div className="admin-user-neutral">
+    private renderExpertSections(data: UserDetailData) {
+        const {account, expertProfile, slots, expertCancellations, expertCancelCount} = data;
+        const {openUser} = this.context;
+        const isExpert = account.type === 'expert';
+        return (
+            <>
+                {isExpert && expertProfile && (
                     <div className="admin-user-neutral">
+                        <div className="admin-user-neutral">
+                        </div>
+                        {expertProfile.bio && <div className="admin-user-bio">{expertProfile.bio}</div>}
                     </div>
-                    {expertProfile.bio && <div className="admin-user-bio">{expertProfile.bio}</div>}
-                </div>
-            )}
-            {isExpert && (
-                <CancellationsSection
-                    title={t.User_ExpertCancellations()}
-                    counterpartColumn={t.Admin_Cancel_User()}
-                    count={expertCancelCount}
-                    spacing="after"
-                    items={expertCancellations.map(expertCancellation)}
-                    onOpenUser={openUser}
-                />
-            )}
-            {isExpert && <SlotsSection slots={slots} />}
+                )}
+                {isExpert && (
+                    <CancellationsSection
+                        title={t.User_ExpertCancellations()}
+                        counterpartColumn={t.Admin_Cancel_User()}
+                        count={expertCancelCount}
+                        spacing="after"
+                        items={expertCancellations.map(expertCancellation)}
+                        onOpenUser={openUser}
+                    />
+                )}
+                {isExpert && <SlotsSection slots={slots} />}
+            </>
+        );
+    }
 
-            {showWriteModal && createTicketUrl && (
-                <WriteToUserModal
-                    accountId={account.id}
-                    accountName={displayName}
-                    createTicketUrl={createTicketUrl}
-                    onClose={ui.closeWrite}
-                    onSuccess={reloadAfterWrite}
-                />
-            )}
-            {showClearModal && (
-                <ClearUserModal
-                    accountId={account.id}
-                    accountLogin={account.login}
-                    accountName={displayName}
-                    onClose={ui.closeClear}
-                    onSuccess={ui.completeClear}
-                />
-            )}
-        </div>
-    );
+    private renderModals(data: UserDetailData, showWriteModal: boolean, showClearModal: boolean) {
+        const {account, expertProfile} = data;
+        const {createTicketUrl} = this.props;
+        const accountName = expertProfile?.display_name || account.name || account.login;
+        return (
+            <>
+                {showWriteModal && createTicketUrl && (
+                    <WriteToUserModal
+                        accountId={account.id}
+                        accountName={accountName}
+                        createTicketUrl={createTicketUrl}
+                        onClose={this.ui.closeWrite}
+                        onSuccess={this.actions.reloadAfterWrite}
+                    />
+                )}
+                {showClearModal && (
+                    <ClearUserModal
+                        accountId={account.id}
+                        accountLogin={account.login}
+                        accountName={accountName}
+                        onClose={this.ui.closeClear}
+                        onSuccess={this.ui.completeClear}
+                    />
+                )}
+            </>
+        );
+    }
 }

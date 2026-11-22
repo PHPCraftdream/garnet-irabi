@@ -4,7 +4,7 @@ import Pagination from '@common/Components/Layout/Paging/Pagination';
 import {PageResponse} from '@common/hooks/data/usePagination';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {AccountOption, adminPaginationLabels, buildAccountOptions} from '../Shell/adminShared';
-import {useAdminPage} from '../Shell/useAdminPage';
+import {AdminPageController} from '../Shell/AdminPageController';
 import {AdminFilterBar, FilterCell} from './AdminFilterBar';
 import {AdminCancellationsTable} from './AdminCancellationsTable';
 
@@ -45,6 +45,14 @@ interface Props {
     showUserColumn?: boolean;
 }
 
+interface PagerState {
+    page: number;
+    perPage: number;
+    totalPages: number;
+    total: number;
+    loading: boolean;
+}
+
 const buildBody = (f: Filters, page: number, perPage: number) => ({
     page,
     perPage,
@@ -81,37 +89,40 @@ class FilterStore extends Carburetor<Filters> {
     readonly reset = () => this.replace(EMPTY);
 }
 
-interface ViewProps extends Props {
-    filters: Filters;
-    filterStore: FilterStore;
-    pagination: ReturnType<typeof useAdminPage<CancellationRow, Filters>>;
-}
-
-const AdminCancellationsTab: React.FC<Props> = (props) => {
-    const storeRef = React.useRef<FilterStore | null>(null);
-    if (storeRef.current === null) storeRef.current = new FilterStore();
-    const filterStore = storeRef.current;
-    const filters = React.useSyncExternalStore(filterStore.subscribeSnapshot, filterStore.snapshot, filterStore.snapshot);
-    const {initialData, pageUrl} = props;
-    const pagination = useAdminPage<CancellationRow, Filters>({
-        url: pageUrl,
-        initialData,
-        filters,
+class AdminCancellationsTab extends AntiHookComponent<Props> {
+    private readonly filterStore = new FilterStore();
+    private readonly pagination = new AdminPageController<CancellationRow, Filters>({
+        url: this.props.pageUrl,
+        initialData: this.props.initialData,
+        filters: this.filterStore.getData(),
         buildBody,
     });
+    private unsubscribeFilters?: () => void;
 
-    return <AdminCancellationsTabView {...props} filters={filters} filterStore={filterStore} pagination={pagination} />;
-};
+    componentDidMount(): void {
+        super.componentDidMount();
+        // Подписка на стор фильтров заменяет прежний эффект с debounce: срабатывает на каждую запись фильтров.
+        this.unsubscribeFilters = this.filterStore.subscribeSnapshot(this.onFiltersChanged);
+        this.pagination.start();
+    }
 
-class AdminCancellationsTabView extends AntiHookComponent<ViewProps> {
-    private readonly changeSearch = (value: string) => this.props.filterStore.patch({search: value});
-    private readonly changeExpertId = (value: number) => this.props.filterStore.patch({expertId: value});
-    private readonly changeUserId = (value: number) => this.props.filterStore.patch({userId: value});
-    private readonly changeDateFrom = (value: string) => this.props.filterStore.patch({dateFrom: value});
-    private readonly changeDateTo = (value: string) => this.props.filterStore.patch({dateTo: value});
+    componentWillUnmount(): void {
+        this.unsubscribeFilters?.();
+        this.unsubscribeFilters = undefined;
+        this.pagination.stop();
+        super.componentWillUnmount();
+    }
 
-    private filterCells(testIdPrefix: string): FilterCell[] {
-        const {filters, experts, users} = this.props;
+    private readonly onFiltersChanged = () => this.pagination.setFilters(this.filterStore.getData());
+
+    private readonly changeSearch = (value: string) => this.filterStore.patch({search: value});
+    private readonly changeExpertId = (value: number) => this.filterStore.patch({expertId: value});
+    private readonly changeUserId = (value: number) => this.filterStore.patch({userId: value});
+    private readonly changeDateFrom = (value: string) => this.filterStore.patch({dateFrom: value});
+    private readonly changeDateTo = (value: string) => this.filterStore.patch({dateTo: value});
+
+    private filterCells(testIdPrefix: string, filters: Filters): FilterCell[] {
+        const {experts, users} = this.props;
         const expertOptions = buildAccountOptions(experts);
         const userOptions = buildAccountOptions(users);
         return [
@@ -141,25 +152,42 @@ class AdminCancellationsTabView extends AntiHookComponent<ViewProps> {
         ];
     }
 
-    private renderPager() {
-        const {page, perPage, totalPages, total, loading, goToPage, setPerPage} = this.props.pagination;
+    private renderPager(pager: PagerState) {
+        const {page, perPage, totalPages, total, loading} = pager;
         return (
             <Pagination
                 page={page}
                 totalPages={totalPages}
                 total={total}
                 loading={loading}
-                onPageChange={goToPage}
+                onPageChange={this.pagination.goToPage}
                 labels={adminPaginationLabels}
                 pageSize={perPage}
-                onPageSizeChange={setPerPage}
+                onPageSizeChange={this.pagination.setPerPage}
+            />
+        );
+    }
+
+    private renderTable(items: CancellationRow[], columns: string[], testIdPrefix: string, showExpertColumn: boolean, showUserColumn: boolean) {
+        if (items.length === 0) return null;
+        return (
+            <AdminCancellationsTable
+                items={items}
+                columns={columns}
+                testIdPrefix={testIdPrefix}
+                isModerator={this.props.isModerator}
+                showExpertColumn={showExpertColumn}
+                showUserColumn={showUserColumn}
             />
         );
     }
 
     render() {
-        const {items, loading} = this.props.pagination;
-        const {kind, isModerator, showExpertColumn = true, showUserColumn = true} = this.props;
+        const filters = this.useCarburetor(this.filterStore);
+        const pagination = this.useCarburetor(this.pagination);
+        const {loading} = pagination;
+        const items = [...pagination.items];
+        const {kind, showExpertColumn = true, showUserColumn = true} = this.props;
         const testIdPrefix = kind === 'expert' ? 'expert-cancellations' : 'user-cancellations';
         const columns = [
             t.Cancellations_ColumnDate(),
@@ -170,23 +198,14 @@ class AdminCancellationsTabView extends AntiHookComponent<ViewProps> {
             t.Cancellations_ColumnReason(),
         ];
 
-        const pager = this.renderPager();
+        const pager = this.renderPager(pagination);
 
         return (
             <div data-test-id={`${testIdPrefix}-tab`}>
-                <AdminFilterBar cells={this.filterCells(testIdPrefix)} loading={loading} resetTestId={`${testIdPrefix}-reset`} onReset={this.props.filterStore.reset} />
+                <AdminFilterBar cells={this.filterCells(testIdPrefix, filters)} loading={loading} resetTestId={`${testIdPrefix}-reset`} onReset={this.filterStore.reset} />
                 <div className="admin-grid-pagination-top">{pager}</div>
                 {items.length === 0 && <p className="admin-bookings-empty">{t.Cancellations_Empty()}</p>}
-                {items.length > 0 && (
-                    <AdminCancellationsTable
-                        items={items}
-                        columns={columns}
-                        testIdPrefix={testIdPrefix}
-                        isModerator={isModerator}
-                        showExpertColumn={showExpertColumn}
-                        showUserColumn={showUserColumn}
-                    />
-                )}
+                {this.renderTable(items, columns, testIdPrefix, showExpertColumn, showUserColumn)}
                 <div className="admin-bookings-pager-bottom">{pager}</div>
             </div>
         );
