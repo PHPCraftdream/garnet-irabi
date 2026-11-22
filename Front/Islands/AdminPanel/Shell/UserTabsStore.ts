@@ -49,9 +49,8 @@ export class UserTabsStore extends Carburetor<UserTabsState> {
 
     readonly closeUser = (tabId: string): void => {
         const previous = this.getData();
-        this.patch({
-            tabs: previous.tabs.filter(t => t.id !== tabId),
-            activeId: previous.activeId === tabId ? null : previous.activeId,
-        });
+        const tabs = previous.tabs.filter(t => t.id !== tabId);
+        if (tabs.length === previous.tabs.length && previous.activeId !== tabId) return;
+        this.patch({tabs, activeId: previous.activeId === tabId ? null : previous.activeId});
     };
 }

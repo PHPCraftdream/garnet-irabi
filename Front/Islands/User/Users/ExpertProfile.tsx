@@ -5,7 +5,8 @@ import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {CommentsSection} from '../../Comms/Comments/CommentsSection';
 import {IrabiPreviewProvider} from '../../../Common/people/IrabiPreviewProvider';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {useSlotBooking} from '../SlotsCalendar/Booking/useSlotBooking';
+import {SlotBookingController} from '../SlotsCalendar/Booking/SlotBookingController';
+import {SlotBookingModalHost} from '../SlotsCalendar/Booking/SlotBookingModalHost';
 import ImageLightbox from '../../../Common/media/ImageLightbox';
 import {ExpertSlotCard} from './ExpertSlotCard';
 
@@ -185,11 +186,6 @@ class ProfileStore extends Carburetor<ProfileState> {
     }
 }
 
-interface InnerProps extends ExpertProfileProps {
-    openBooking: (slotId: number) => void;
-    bookingModal: React.ReactNode;
-}
-
 const initialOf = (word: string) => word[0]?.toUpperCase() || '';
 
 const ProfileHeader: React.FC<{expert: Expert; expertId: number; isOwnProfile: boolean; onOpen: () => void}> = ({expert, expertId, isOwnProfile, onOpen}) => {
@@ -245,12 +241,13 @@ class ProfileSlots extends AntiHookComponent<ProfileSlotsProps> {
     }
 }
 
-class ExpertProfileIslandInner extends AntiHookComponent<InnerProps> {
+export class ExpertProfileIsland extends AntiHookComponent<ExpertProfileProps> {
     private readonly store = new ProfileStore({visibleCount: SLOTS_PAGE_SIZE, lightboxOpen: false});
+    private readonly controller = new SlotBookingController();
     private readonly openLightbox = () => this.store.setLightbox(true);
     private readonly closeLightbox = () => this.store.setLightbox(false);
     private readonly showMore = () => this.store.showMore();
-    private readonly book = (slotId: number) => this.props.openBooking(slotId);
+    private readonly book = (slotId: number) => void this.controller.openBooking(slotId);
 
     private renderLightbox(open: boolean) {
         const {expert} = this.props;
@@ -261,46 +258,36 @@ class ExpertProfileIslandInner extends AntiHookComponent<InnerProps> {
 
     render() {
         const {expert, expertId, slots, commentsListUrl, commentsCreateUrl, commentsDeleteUrl,
-            currentAccountId, isModerator, isOwnProfile = false, canBook = false, canReview,
-            bookingModal} = this.props;
+            currentAccountId, isModerator, isOwnProfile = false, canBook = false, canReview} = this.props;
         const {visibleCount, lightboxOpen} = this.useCarburetor(this.store);
 
         return (
-            <div className="comms-page" data-test-id="expert-profile">
-                <ProfileHeader expert={expert} expertId={expertId} isOwnProfile={isOwnProfile} onOpen={this.openLightbox} />
+            <IrabiPreviewProvider>
+                <div className="comms-page" data-test-id="expert-profile">
+                    <ProfileHeader expert={expert} expertId={expertId} isOwnProfile={isOwnProfile} onOpen={this.openLightbox} />
 
-                {this.renderLightbox(lightboxOpen)}
+                    {this.renderLightbox(lightboxOpen)}
 
-                <ProfileBio bio={expert.bio} />
-                <ExpertStats expert={expert} />
-                <ProfileSlots slots={slots} visibleCount={visibleCount} isOwnProfile={isOwnProfile}
-                    canBook={canBook} onBook={this.book} onShowMore={this.showMore} />
+                    <ProfileBio bio={expert.bio} />
+                    <ExpertStats expert={expert} />
+                    <ProfileSlots slots={slots} visibleCount={visibleCount} isOwnProfile={isOwnProfile}
+                        canBook={canBook} onBook={this.book} onShowMore={this.showMore} />
 
-                <CommentsSection
-                    entityType="expert"
-                    entityId={expertId}
-                    listUrl={commentsListUrl}
-                    createUrl={commentsCreateUrl}
-                    deleteUrl={commentsDeleteUrl}
-                    currentAccountId={currentAccountId}
-                    isModerator={isModerator}
-                    canCreate={canReview}
-                />
-                {bookingModal}
-            </div>
+                    <CommentsSection
+                        entityType="expert"
+                        entityId={expertId}
+                        listUrl={commentsListUrl}
+                        createUrl={commentsCreateUrl}
+                        deleteUrl={commentsDeleteUrl}
+                        currentAccountId={currentAccountId}
+                        isModerator={isModerator}
+                        canCreate={canReview}
+                    />
+                    <SlotBookingModalHost controller={this.controller} onBooked={reloadAfterBooking} />
+                </div>
+            </IrabiPreviewProvider>
         );
     }
 }
 
 const reloadAfterBooking = () => window.location.reload();
-
-const ExpertProfileBooking: React.FC<ExpertProfileProps> = props => {
-    const {openBooking, bookingModal} = useSlotBooking({onBooked: reloadAfterBooking});
-    return <ExpertProfileIslandInner {...props} openBooking={openBooking} bookingModal={bookingModal} />;
-};
-
-export const ExpertProfileIsland: React.FC<ExpertProfileProps> = (props) => (
-    <IrabiPreviewProvider>
-        <ExpertProfileBooking {...props} />
-    </IrabiPreviewProvider>
-);

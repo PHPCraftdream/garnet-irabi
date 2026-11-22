@@ -14,7 +14,7 @@ import {formatTs} from '@common/Utils/Time/DateUtils';
 import {AdminUserLink} from '../../../Common/people/EntityLinks';
 import {UserDetailContext, type UserDetailContextValue} from '../Users/UserDetailContext';
 import {UserDetailTab} from '../Users/UserDetailTab';
-import {AdminSupportUserTabs} from './adminSupportUserTabs';
+import {UserTabsStore} from '../Shell/UserTabsStore';
 import {ADMIN_URLS} from '../Shell/adminShared';
 import {SupportTicketFilters} from './SupportTicket/Forms/SupportTicketFilters';
 import {SupportStatusBar} from './SupportTicket/Forms/SupportStatusBar';
@@ -214,7 +214,7 @@ const ticketCellRenderers = {
     ),
 };
 
-type UserTabs = ReturnType<AdminSupportUserTabs['snapshot']>['tabs'];
+type UserTabs = ReturnType<UserTabsStore['snapshot']>['tabs'];
 const OPEN_TICKETS_KEY = 'admin-support-open-tickets';
 
 function saveTicketTabs(dynamicTabs: InternalTab[], activeId: string): void {
@@ -246,9 +246,9 @@ function findTab(tabs: InternalTab[], id: string): InternalTab | undefined {
     return tabs.find(tab => tab.id === id);
 }
 
-type UserTabControls = AdminSupportUserTabs;
+type UserTabControls = UserTabsStore;
 
-function openQueueTicket(tabs: QueueTabStore, setActive: UserTabControls['setActiveUserTabId'], id: number, subject: string) {
+function openQueueTicket(tabs: QueueTabStore, setActive: UserTabControls['setActiveId'], id: number, subject: string) {
     tabs.open(id, subject);
     setActive(null);
 }
@@ -257,7 +257,7 @@ function keepFilterOptions(): void {
     // Повторим обновление при следующем действии модератора.
 }
 
-function restoreTicketTabs(tabs: QueueTabStore, openUser: UserTabControls['openUser'], setActive: UserTabControls['setActiveUserTabId']): void {
+function restoreTicketTabs(tabs: QueueTabStore, openUser: UserTabControls['openUser'], setActive: UserTabControls['setActiveId']): void {
     const hash = window.location.hash;
     if (hash.includes('ticket=')) {
         const ticketId = parseInt(hash.split('ticket=')[1]?.split('&')[0] || '0', 10);
@@ -297,7 +297,7 @@ function queueParams({statusFilter, userId, assigneeId, dateField, dateFrom, dat
 export class AdminSupportIsland extends AntiHookComponent<Props> {
     private readonly tabs = new QueueTabStore();
     private readonly filters = new QueueFilterStore();
-    private readonly userTabs = new AdminSupportUserTabs();
+    private readonly userTabs = new UserTabsStore();
     private readonly userDetail: UserDetailContextValue = {openUser: this.userTabs.openUser};
     private readonly gridRef = React.createRef<AdminGridHandle<SupportTicket>>();
     private readonly filterOptions = new Carburetor({value: this.props.initialFilterOptions});
@@ -325,16 +325,16 @@ export class AdminSupportIsland extends AntiHookComponent<Props> {
     }
 
     private readonly openTicket = (id: number, subject: string) =>
-        openQueueTicket(this.tabs, this.userTabs.setActiveUserTabId, id, subject);
+        openQueueTicket(this.tabs, this.userTabs.setActiveId, id, subject);
 
     private readonly renderSubject = (row: SupportTicket) => <TicketSubject row={row} open={this.openTicket} />;
     private readonly ticketRenders = {...ticketCellRenderers, subject: this.renderSubject};
 
     private readonly handleSelect = (id: string) => {
         const {tabs, userTabs} = this;
-        if (hasUserTab(userTabs.snapshot().tabs, id)) userTabs.setActiveUserTabId(id);
+        if (hasUserTab(userTabs.snapshot().tabs, id)) userTabs.setActiveId(id);
         else {
-            userTabs.setActiveUserTabId(null);
+            userTabs.setActiveId(null);
             tabs.select(id);
         }
     };
@@ -413,7 +413,7 @@ export class AdminSupportIsland extends AntiHookComponent<Props> {
     protected override useEffects(): void {
         const {dynamicTabs, activeId} = this.tabs.snapshot();
         this.useEffect('restore', () => {
-            restoreTicketTabs(this.tabs, this.userTabs.openUser, this.userTabs.setActiveUserTabId);
+            restoreTicketTabs(this.tabs, this.userTabs.openUser, this.userTabs.setActiveId);
         }, []);
         this.useEffect('save', () => {
             saveTicketTabs(dynamicTabs, activeId);

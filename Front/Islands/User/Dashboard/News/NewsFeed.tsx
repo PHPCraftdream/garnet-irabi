@@ -5,8 +5,8 @@ import {sendPostFormData} from '@common/Api/Send/sendPostFormData';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {NewsPagination} from './NewsPagination';
-import {useSlotBooking} from '../../SlotsCalendar/Booking/useSlotBooking';
-import {useNewsFeedReload} from './useNewsFeedReload';
+import {SlotBookingController} from '../../SlotsCalendar/Booking/SlotBookingController';
+import {SlotBookingModalHost} from '../../SlotsCalendar/Booking/SlotBookingModalHost';
 import {NewsEvent} from './newsTypes';
 import {NewsGroup, NewsGroupRow} from './NewsGroupRow';
 import {EventMessage} from './EventMessage';
@@ -92,25 +92,28 @@ interface FeedState {
     showArchived: boolean;
 }
 
-interface FeedInnerProps extends Props {
-    handleBookSlot: (slotId: number) => void;
-    bookingModal: React.ReactNode;
-}
-
-class NewsFeedInner extends AntiHookComponent<FeedInnerProps> {
+export class NewsFeed extends AntiHookComponent<Props> {
     private readonly ui = new Carburetor<FeedState>({
         items: [], page: 1, totalPages: 1, total: 0,
         unreadCount: this.props.initialUnreadCount, loading: false, showArchived: false,
     });
     private readonly items = this.connectSelection(this.ui, state => state.items);
     private loadedArchived = false;
+    private unmounted = false;
+    private readonly controller = new SlotBookingController();
+    private readonly handleBookSlot = (slotId: number) => void this.controller.openBooking(slotId);
 
     componentDidMount(): void {
         super.componentDidMount();
         void this.loadFeed(1, false);
     }
 
-    componentDidUpdate(previous: Readonly<FeedInnerProps>): void {
+    componentWillUnmount(): void {
+        this.unmounted = true;
+        super.componentWillUnmount();
+    }
+
+    componentDidUpdate(previous: Readonly<Props>): void {
         super.componentDidUpdate(previous);
         const {showArchived} = this.ui.getData();
         if (showArchived !== this.loadedArchived) {
@@ -139,6 +142,7 @@ class NewsFeedInner extends AntiHookComponent<FeedInnerProps> {
     }
 
     public readonly reloadAfterBooking = (): void => {
+        if (this.unmounted) return;
         const {page, showArchived} = this.ui.getData();
         void this.loadFeed(page, showArchived);
     };
@@ -227,7 +231,7 @@ class NewsFeedInner extends AntiHookComponent<FeedInnerProps> {
 
     private readonly renderGroup = (group: NewsGroup) => (
         <NewsGroupRow key={group.first.id} group={group} detail={eventDetail(group.first)}
-            message={<EventMessage event={group.first} onBookSlot={this.props.handleBookSlot} />}
+            message={<EventMessage event={group.first} onBookSlot={this.handleBookSlot} />}
             onMarkRead={this.markRead} onArchive={this.archiveEvent} onUnarchive={this.unarchiveEvent} />
     );
 
@@ -253,14 +257,8 @@ class NewsFeedInner extends AntiHookComponent<FeedInnerProps> {
                 {totalPages > 1 && (
                     <NewsPagination position="bottom" page={page} totalPages={totalPages} onPageChange={this.handlePageChange} total={total} loading={loading} />
                 )}
-                {this.props.bookingModal}
+                <SlotBookingModalHost controller={this.controller} onBooked={this.reloadAfterBooking} />
             </div>
         );
     }
 }
-
-export const NewsFeed: React.FC<Props> = props => {
-    const {ref, onBooked} = useNewsFeedReload<NewsFeedInner>();
-    const {openBooking, bookingModal} = useSlotBooking({onBooked});
-    return <NewsFeedInner ref={ref} {...props} handleBookSlot={openBooking} bookingModal={bookingModal} />;
-};
