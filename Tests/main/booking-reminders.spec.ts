@@ -52,6 +52,9 @@ async function seedLesson(startInSeconds: number): Promise<{ slotId: number; boo
             [2, slotId, now, now],
         );
 
+        seededSlotIds.push(slotId);
+        seededBookingIds.push(Number(booking.insertId));
+
         return { slotId, bookingId: Number(booking.insertId) };
     });
 }
@@ -119,6 +122,19 @@ async function accountIdByLogin(login: string): Promise<number> {
 }
 
 /** Бронь через N секунд у КОНКРЕТНОГО эксперта/ученика (не фиксированных 1/2). */
+// Lessons seeded below sit an hour ahead on the shared expert; left behind they make
+// any later "create a slot around now" in the same scope fail with an overlap.
+const seededSlotIds: number[] = [];
+const seededBookingIds: number[] = [];
+
+test.afterAll(async () => {
+    if (seededSlotIds.length === 0 && seededBookingIds.length === 0) return;
+    await withConnection(async conn => {
+        for (const id of seededBookingIds) await conn.execute(`DELETE FROM ${tn('bookings')} WHERE id = ?`, [id]);
+        for (const id of seededSlotIds) await conn.execute(`DELETE FROM ${tn('time_slots')} WHERE id = ?`, [id]);
+    });
+});
+
 async function seedLessonFor(expertId: number, userId: number, startInSeconds: number): Promise<{ slotId: number; bookingId: number }> {
     return withConnection(async conn => {
         const now = Math.floor(Date.now() / 1000);
@@ -138,6 +154,9 @@ async function seedLessonFor(expertId: number, userId: number, startInSeconds: n
              VALUES (?, 'time_slot', ?, 'confirmed', ?, ?)`,
             [userId, slotId, now, now],
         );
+
+        seededSlotIds.push(slotId);
+        seededBookingIds.push(Number(booking.insertId));
 
         return { slotId, bookingId: Number(booking.insertId) };
     });
