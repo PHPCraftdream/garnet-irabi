@@ -88,6 +88,23 @@ async function clearFreeSlotsAround(expertId: number, fromTs: number, toTs: numb
 	}
 }
 
+/** Slots of the expert that touch [fromTs, toTs] — named in the failure message when a create is refused. */
+async function slotsAround(expertId: number, fromTs: number, toTs: number): Promise<unknown[]> {
+	const conn = await mysql.createConnection(DB);
+	try {
+		const [rows] = await conn.execute<any[]>(
+			`SELECT id, status, start_at, end_at, max_users, booked_count, location, created_at,
+			        (SELECT COUNT(*) FROM ${tn('bookings')} b WHERE b.bookable_id = t.id AND b.bookable_type = 'time_slot') AS bookings
+			 FROM ${tn('time_slots')} t
+			 WHERE expert_id = ? AND start_at < ? AND end_at > ?`,
+			[expertId, toTs, fromTs]
+		);
+		return rows;
+	} finally {
+		await conn.end();
+	}
+}
+
 /** Format a JS Date as `Y-m-d` / `H:i` in the given IANA timezone. */
 function formatInTz(date: Date, tz: string): { dateStr: string; timeStr: string } {
 	const parts = new Intl.DateTimeFormat('en-CA', {
@@ -280,7 +297,8 @@ test.describe('F-02: createSlot boundary around "now"', () => {
 			cost: 500,
 		});
 
-		expect(status, JSON.stringify(body)).toBe(200);
+		const refused = status === 200 ? '' : ` overlapping now±: ${JSON.stringify(await slotsAround(expertId, nowTs - 3600, nowTs + 3 * 3600))}`;
+		expect(status, JSON.stringify(body) + refused).toBe(200);
 		expect(body?.success).toBe(true);
 
 		const created = await countSlotsForExpert(expertId, markCreatedAt);
