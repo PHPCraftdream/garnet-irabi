@@ -127,7 +127,7 @@ const LEDGER_RENDERS = {
 
 export class LedgerSection extends AntiHookComponent<Props> {
     private readonly ui = new Carburetor<LedgerFilters>({...DEFAULT_FILTERS});
-    private readonly filterSnapshot = this.connectSelection(this.ui, state => state);
+    private readonly filterSnapshot = this.connectSelection(this.ui, state => ({fromAccountId: state.fromAccountId, toAccountId: state.toAccountId, dateFrom: state.dateFrom, dateTo: state.dateTo, entryType: state.entryType}));
     private paramsCache?: {filters: Readonly<LedgerFilters>; value: Record<string, unknown>};
     private fromCache?: {source: LedgerFilterOptions['fromOptions']; value: LedgerFilterOptions['fromOptions']};
     private toCache?: {source: LedgerFilterOptions['toOptions']; value: LedgerFilterOptions['toOptions']};

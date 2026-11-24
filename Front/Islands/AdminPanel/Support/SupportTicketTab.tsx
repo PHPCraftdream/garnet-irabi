@@ -103,7 +103,7 @@ export default class SupportTicketTab extends AntiHookComponent<Props> {
      * идентичность только вместе с содержимым (RULES.md, «Подписки useCarburetor»).
      */
     private readonly detailSnapshot = this.connectSelection(this.ui, state => state.data);
-    private readonly filesSnapshot = this.connectSelection(this.files, state => state);
+    private readonly filesSnapshot = this.connectSelection(this.files, state => ({reply: state.reply, internal: state.internal}));
     private timer?: number;
     private messageCount: number | null = null;
     // replyText предыдущего рендера: раньше его давал snapshot в props.

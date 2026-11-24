@@ -27,7 +27,7 @@ interface Props {
 }
 
 export class BatchPreviewSection extends AntiHookComponent<Props> {
-    private readonly batchSnapshot = this.connectSelection(() => this.props.batch, state => state);
+    private readonly batchSnapshot = this.connectSelection(() => this.props.batch, state => ({batchSlots: state.batchSlots, existingSlots: state.existingSlots, availableDates: state.availableDates, restrictedDates: state.restrictedDates}));
 
     private readonly changeDate = (event: React.ChangeEvent<HTMLInputElement>) => {
         this.props.setAddSlotDate(event.target.value);

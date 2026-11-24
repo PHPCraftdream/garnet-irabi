@@ -64,8 +64,8 @@ export class SupportWidgetIsland extends AntiHookComponent<Props> {
      * (RULES.md, «Подписки useCarburetor»).
      */
     private readonly ticketsSnapshot = this.connectSelection(this.ui, state => state.tickets);
-    private readonly threadSnapshot = this.connectSelection(this.thread, state => state);
-    private readonly filesSnapshot = this.connectSelection(this.files, state => state);
+    private readonly threadSnapshot = this.connectSelection(this.thread, state => ({messages: state.messages, loading: state.loading}));
+    private readonly filesSnapshot = this.connectSelection(this.files, state => ({list: state.list}));
 
     private readonly setFiles = (files: PendingFile[]) => this.files.setData({list: files});
     private readonly setLiveCounts = (counts: LiveCounts) => this.live.setData({counts});

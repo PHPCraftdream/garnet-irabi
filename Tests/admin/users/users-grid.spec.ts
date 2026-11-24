@@ -13,6 +13,7 @@
  */
 
 import { test, expect } from '../../helpers/scoped-test';
+import { searchAdminGrid, clearAdminGridSearch } from '../../helpers/ui/admin-grid';
 import { EXPERT_LOGIN } from '../../helpers/auth/logins';
 
 // Read-only smoke (zero `conn.execute`/INSERT/DELETE/UPDATE, no
@@ -122,8 +123,7 @@ test.describe('Users — column structure', () => {
 test.describe('Users — search within tab', () => {
     test('search filters rows in All tab', async ({ page }) => {
         await openUsers(page);
-        const search = page.locator('[data-test-id="admin-grid-search"]');
-        await search.fill('testuser_setup_admin@irabi.test');
+        await searchAdminGrid(page, 'testuser_setup_admin@irabi.test');
 
         const rows = page.locator('tbody tr:not(:has(td[colspan]))');
         const count = await rows.count();
@@ -135,14 +135,13 @@ test.describe('Users — search within tab', () => {
 
     test('clearing search restores all rows', async ({ page }) => {
         await openUsers(page);
-        const search = page.locator('[data-test-id="admin-grid-search"]');
         const initial = await page.locator('tbody tr:not(:has(td[colspan]))').count();
 
-        await search.fill('zzz_no_match_zzz');
+        await searchAdminGrid(page, 'zzz_no_match_zzz');
         const filtered = await page.locator('tbody tr:not(:has(td[colspan]))').count();
         expect(filtered).toBeLessThan(initial);
 
-        await search.clear();
+        await clearAdminGridSearch(page);
         const restored = await page.locator('tbody tr:not(:has(td[colspan]))').count();
         expect(restored).toBe(initial);
     });
@@ -151,8 +150,7 @@ test.describe('Users — search within tab', () => {
         await openUsers(page);
         await page.locator('[data-test-id="filter-tab-experts"]').click();
 
-        const search = page.locator('[data-test-id="admin-grid-search"]');
-        await search.fill('testuser_setup_expert@irabi.test');
+        await searchAdminGrid(page, 'testuser_setup_expert@irabi.test');
 
         const rows = page.locator('tbody tr:not(:has(td[colspan]))');
         const count = await rows.count();
@@ -173,7 +171,7 @@ test.describe('Users — IS_APPROVED column', () => {
         // эта проверка падала три полных прогона подряд, выглядя как
         // «эксперту не дают кнопку». Берём конкретного эксперта по логину:
         // шапка файла не зря требует data-test-id, а не текст.
-        await page.locator('[data-test-id="admin-grid-search"]').fill(EXPERT_LOGIN);
+        await searchAdminGrid(page, EXPERT_LOGIN);
 
         const expertRow = page.locator('tbody tr').filter({ hasText: EXPERT_LOGIN }).first();
         await expect(expertRow).toBeVisible({ timeout: 5000 });

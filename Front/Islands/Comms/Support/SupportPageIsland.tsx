@@ -58,12 +58,12 @@ export class SupportPageIsland extends AntiHookComponent<Props> {
      * (RULES.md, «Подписки useCarburetor»).
      */
     private readonly ticketsSnapshot = this.connectSelection(this.pagination, state => state.items);
-    private readonly threadSnapshot = this.connectSelection(this.thread, state => state);
+    private readonly threadSnapshot = this.connectSelection(this.thread, state => ({messages: state.messages, loading: state.loading}));
     /*
      * Выбранные файлы тоже заменяются массивом целиком: подписка на маркер `files.~p` записи
      * вглубь не замечает, поэтому берём их снимком (RULES.md, «Подписки useCarburetor»).
      */
-    private readonly filesSnapshot = this.connectSelection(this.files, state => state);
+    private readonly filesSnapshot = this.connectSelection(this.files, state => ({create: state.create, reply: state.reply}));
     /*
      * Заголовок переписки (`subject`/`status`/`created_at`/`updated_at`) рисует
      * `PageConversation` в своём рендере, а ответ на обращение заменяет тикет с тем же id:

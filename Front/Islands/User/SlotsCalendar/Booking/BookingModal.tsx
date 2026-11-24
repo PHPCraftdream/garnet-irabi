@@ -164,7 +164,7 @@ export default class BookingModal extends AntiHookComponent<Props> {
                         <BookingSlotSummary slot={slot} expert={experts[slot.expert_id]} />
                         <ExtraSlotPicker slots={this.otherSlots()} selected={this.getSelection(ids)} onToggle={this.toggle} />
                         {this.renderTotal(total, ids.length, shaking)}
-                        {error && <div className="booking-dialog-error">{error}</div>}
+                        {error && <div className="booking-dialog-error" data-test-id="booking-error">{error}</div>}
                         {this.renderActions(total, ids.length, sending)}
                     </div>
                 </div>

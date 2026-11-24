@@ -66,8 +66,8 @@ export class SlotsCalendarIsland extends AntiHookComponent<SlotsCalendarProps> {
     // Снимок `connectSelection` меняет идентичность только вместе с
     // содержимым, поэтому производные значения и счётчики переживают и переход
     // по неделе, и модалку, пока сами слоты, брони и фильтры не изменились.
-    private readonly bookingSnapshot = this.connectSelection(this.booking, state => state);
-    private readonly filterSnapshot = this.connectSelection(this.filterStore, state => state);
+    private readonly bookingSnapshot = this.connectSelection(this.booking, state => ({slots: state.slots, bookedIds: state.bookedIds, slotStatuses: state.slotStatuses, bookingSlot: state.bookingSlot, detailSlot: state.detailSlot}));
+    private readonly filterSnapshot = this.connectSelection(this.filterStore, state => ({filters: state.filters, statusFilter: state.statusFilter, weekOffset: state.weekOffset}));
     private readonly initialBooking = {
         bookingIds: {...this.props.bookedSlotBookingIds},
         currentBalance: this.props.balance ?? 0,

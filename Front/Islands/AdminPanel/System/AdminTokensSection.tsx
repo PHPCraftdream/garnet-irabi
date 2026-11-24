@@ -37,7 +37,7 @@ interface State {
 
 export class AdminTokensSection extends AntiHookComponent<AdminTokensSectionProps> {
     private readonly ui = new Carburetor<State>({tokens: [], loading: false, search: '', status: '', showCreate: false, registrations: null, link: null, edit: null, confirmState: {visible: false, message: '', items: []}});
-    private readonly snapshot = this.connectSelection(this.ui, state => state);
+    private readonly snapshot = this.connectSelection(this.ui, state => ({tokens: state.tokens, loading: state.loading, search: state.search, status: state.status, showCreate: state.showCreate, registrations: state.registrations, link: state.link, edit: state.edit, confirmState: state.confirmState}));
     private timer?: ReturnType<typeof setTimeout>;
     private confirmResolver?: (ok: boolean) => void;
 
