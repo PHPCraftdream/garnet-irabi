@@ -21,6 +21,7 @@ import { resolveStorageStatePath } from '../../helpers/auth/state';
 
 import { newScopedContext } from '../../helpers/scoped-test';
 import { DB } from '../../helpers/db/db';
+import { searchAdminGrid } from '../../helpers/ui/admin-grid';
 test.describe.configure({ mode: 'serial' });
 
 // Force max page-size — admin grid defaults to 10/page, but several seed
@@ -104,6 +105,7 @@ test.describe('AccountSM: active → disabled → active', () => {
 
 		await page.goto('/admin/');
 		await page.waitForSelector('table', { timeout: 12000 });
+		await searchAdminGrid(page, 'testuser_setup_user@irabi.test');
 
 		const disableBtn = page.locator(`[data-test-id="flag-IS_DISABLED-${userId}"]`);
 		await expect(disableBtn).toBeVisible({ timeout: 8000 });
@@ -114,6 +116,7 @@ test.describe('AccountSM: active → disabled → active', () => {
 
 		await page.goto('/admin/');
 		await page.waitForSelector('table', { timeout: 12000 });
+		await searchAdminGrid(page, 'testuser_setup_user@irabi.test');
 
 		const disableBtn = page.locator(`[data-test-id="flag-IS_DISABLED-${userId}"]`);
 		await expect(disableBtn).toBeVisible({ timeout: 8000 });
@@ -159,6 +162,7 @@ test.describe('AccountSM: active → disabled → active', () => {
 
 		await page.goto('/admin/');
 		await page.waitForSelector('table', { timeout: 12000 });
+		await searchAdminGrid(page, 'testuser_setup_user@irabi.test');
 
 		const enableBtn = page.locator(`[data-test-id="flag-IS_DISABLED-${userId}"]`);
 		await expect(enableBtn).toBeVisible({ timeout: 8000 });

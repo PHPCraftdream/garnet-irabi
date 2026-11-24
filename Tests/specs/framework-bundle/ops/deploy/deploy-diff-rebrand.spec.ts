@@ -70,16 +70,17 @@ echo $out . PHP_EOL . $out2;
         expect(lines[0]).toBe(lines[1]);
     });
 
-    test('genFiles returns four absolute paths', async () => {
+    test('genFiles returns the five generated paths', async () => {
         const out = await phpEval(`
 $files = PublicPathRebrander::genFiles('IRabi');
 echo json_encode($files);
 `);
         const files = JSON.parse(out);
-        expect(files).toHaveLength(4);
+        expect(files).toHaveLength(5);
         expect(files[0]).toContain('ForegroundJsGen.php');
         expect(files[1]).toContain('ForegroundCssGen.php');
-        expect(files[2]).toContain('FrameworkJsGen.php');
-        expect(files[3]).toContain('FrameworkCssGen.php');
+        expect(files[2]).toContain('VersionGen.php');
+        expect(files[3]).toContain('FrameworkJsGen.php');
+        expect(files[4]).toContain('FrameworkCssGen.php');
     });
 });

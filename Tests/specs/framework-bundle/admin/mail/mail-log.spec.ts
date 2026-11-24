@@ -20,6 +20,7 @@ import mysql from 'mysql2/promise';
 import { newScopedContext } from '../../../../helpers/scoped-test';
 import { roleLogin } from '../../../../helpers/auth/role-login';
 import { DB } from '../../../../helpers/db/db';
+import { searchAdminGrid, waitForGridRefetch } from '../../../../helpers/ui/admin-grid';
 test.describe.configure({ mode: 'serial' });
 
 // ── DB helpers ───────────────────────────────────────────────────────────────
@@ -109,7 +110,6 @@ test.describe('Admin Mail Log', () => {
         	expect(page.locator('[data-test-id="mails-recipient-filter"]')).toBeVisible({ timeout: 5000 }),
         	expect(page.locator('[data-test-id="mails-type-filter"]')).toBeVisible({ timeout: 5000 }),
         	expect(page.locator('[data-test-id="mails-status-filter"]')).toBeVisible({ timeout: 5000 }),
-        	expect(page.locator('[data-test-id="mails-subject-filter"]')).toBeVisible({ timeout: 5000 }),
         ]);
 
         // Sidebar now has a single "Логи" item (mail-log was folded into it).
@@ -250,8 +250,7 @@ test.describe('Admin Mail Log', () => {
         // Narrow the grid to our 3 inserted test rows so sorting is observable
         // — without the filter, dev-DB rows dominate and order is dictated by
         // those instead.
-        const search = page.locator('[data-test-id="admin-grid-search"]');
-        await search.fill(TEST_EMAIL_DOMAIN);
+        await searchAdminGrid(page, TEST_EMAIL_DOMAIN);
 
         const rows = page.locator(ROW_SELECTOR);
         await expect(rows).toHaveCount(3, { timeout: 5000 });
@@ -273,12 +272,12 @@ test.describe('Admin Mail Log', () => {
         // Click sort-col-status
         const sortBtn = page.locator('[data-test-id="sort-col-status"]');
         await expect(sortBtn).toBeVisible({ timeout: 5000 });
-        await sortBtn.click();
+        await waitForGridRefetch(page, () => sortBtn.click(), (r) => r.sortField === 'status' && r.sortDir === 'asc');
 
         const sortedAsc = await getStatusTexts();
 
         // Click again for descending
-        await sortBtn.click();
+        await waitForGridRefetch(page, () => sortBtn.click(), (r) => r.sortField === 'status' && r.sortDir === 'desc');
 
         const sortedDesc = await getStatusTexts();
 

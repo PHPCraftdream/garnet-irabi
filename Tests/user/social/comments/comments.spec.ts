@@ -101,7 +101,8 @@ test.describe('Comments on expert profile', () => {
         // simulation — the only path that survives both intercepts and
         // the React-vs-DOM mismatch.
         await Promise.all([
-            page.waitForResponse((r) => r.request().method() === 'POST' && r.status() < 500, { timeout: 10000 }),
+            // Only the create call: the list reload that fires on page load is also a POST.
+            page.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('~create') && r.status() < 500, { timeout: 10000 }),
             page.locator('[data-test-id="comment-submit-btn"]').dispatchEvent('click'),
         ]);
         await expect(page.locator('[data-test-id^="comment-"]').first()).toBeVisible({ timeout: 8000 });

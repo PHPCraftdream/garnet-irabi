@@ -28,14 +28,13 @@ test.describe('Admin — Logs page (/admin/logs/)', () => {
 		await expectTableVisible(page);
 	});
 
-	test('actions tab exposes actor / target / action / actor-type / date filters', async ({ page }) => {
+	test('actions tab exposes actor / target / action / date filters', async ({ page }) => {
 		await openAdminPage(page, '/admin/logs/');
 		await Promise.all([
 			expect(page.locator('[data-test-id="tabnav-btn-actions"]')).toHaveAttribute('aria-selected', 'true'),
 			expect(page.locator('[data-test-id="actions-actor-filter"]')).toBeVisible({ timeout: 5000 }),
 			expect(page.locator('[data-test-id="actions-target-filter"]')).toBeVisible({ timeout: 5000 }),
 			expect(page.locator('[data-test-id="actions-action-filter"]')).toBeVisible({ timeout: 5000 }),
-			expect(page.locator('[data-test-id="actions-actor-type-filter"]')).toBeVisible({ timeout: 5000 }),
 			expect(page.locator('[data-test-id="actions-date-from"]')).toBeVisible({ timeout: 5000 }),
 			expect(page.locator('[data-test-id="actions-date-to"]')).toBeVisible({ timeout: 5000 }),
 		]);

@@ -26,6 +26,7 @@ import { resolveStorageStatePath } from '../../helpers/auth/state';
 
 import { newScopedContext } from '../../helpers/scoped-test';
 import { DB } from '../../helpers/db/db';
+import { searchAdminGrid } from '../../helpers/ui/admin-grid';
 test.describe.configure({ mode: 'serial' });
 
 // ── DB helpers ─────────────────────────────────────────────────────────────────
@@ -143,6 +144,7 @@ test.describe('OwnerSM × ModerationSM: 3-level capability chain', () => {
 		try {
 			await ownerPage.goto('/admin/');
 			await expect(ownerPage.locator('[data-test-id="filter-tab-all"]')).toBeVisible({ timeout: 20000 });
+			await searchAdminGrid(ownerPage, 'testuser_setup_moderator@irabi.test');
 
 			const grantBtn = ownerPage.locator(`[data-test-id="flag-IS_MODERATOR-${moderatorId}"]`);
 			await expect(grantBtn).toBeVisible({ timeout: 8000 });
@@ -228,6 +230,7 @@ test.describe('OwnerSM × ModerationSM: 3-level capability chain', () => {
 		try {
 			await ownerPage.goto('/admin/');
 			await expect(ownerPage.locator('[data-test-id="filter-tab-all"]')).toBeVisible({ timeout: 20000 });
+			await searchAdminGrid(ownerPage, 'testuser_setup_moderator@irabi.test');
 
 			const revokeBtn = ownerPage.locator(`[data-test-id="flag-IS_MODERATOR-${moderatorId}"]`);
 			await expect(revokeBtn).toBeVisible({ timeout: 8000 });
