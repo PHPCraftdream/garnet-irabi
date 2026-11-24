@@ -44,8 +44,8 @@ export async function waitForPageRow(page: any, slug: string) {
 export async function openPageEditor(page: any, slug: string) {
 	await openStaticPages(page);
 	const row = await waitForPageRow(page, slug);
-	await row.locator('button.text-accent').first().click();
-	const editorSection = page.locator('section.section-soft');
+	await row.locator('button.static-admin-link').first().click();
+	const editorSection = page.locator('section.page-editor-panel');
 	await expect(editorSection).toBeVisible({ timeout: 8000 });
 	return editorSection;
 }

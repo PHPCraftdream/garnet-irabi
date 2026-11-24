@@ -111,7 +111,7 @@ test.describe('Admin -- Structured header editor', () => {
 		// Save and wait for the save POST to land before reading DB.
 		await Promise.all([
 			page.waitForResponse(r => r.request().method() === 'POST' && r.url().includes('~snippetUpdate') && r.status() < 500, { timeout: 10000 }),
-			editorSection.locator('button.btn-primary.btn-lg').click(),
+			editorSection.locator('button.snippet-save').click(),
 		]);
 
 		// Verify JSON in DB
@@ -197,7 +197,7 @@ test.describe('Admin -- Structured header editor', () => {
 		const items = editorSection.locator('[data-test-id="header-menu-item"]');
 		const before = await items.count();
 
-		const deleteBtn = items.last().locator('[data-test-id="delete-item"], button.text-danger');
+		const deleteBtn = items.last().locator('[data-test-id="delete-item"], button.static-admin-delete');
 		await deleteBtn.click();
 
 		const after = await items.count();
@@ -242,7 +242,7 @@ test.describe('Admin -- Structured header editor', () => {
 
 		await Promise.all([
 			page.waitForResponse(r => r.request().method() === 'POST' && r.url().includes('~snippetUpdate') && r.status() < 500, { timeout: 10000 }),
-			editorSection.locator('button.btn-primary.btn-lg').click(),
+			editorSection.locator('button.snippet-save').click(),
 		]);
 
 		const conn = await mysql.createConnection(DB);

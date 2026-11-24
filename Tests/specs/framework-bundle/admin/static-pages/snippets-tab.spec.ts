@@ -32,17 +32,17 @@ test.describe('Admin -- Static Pages -- Snippets tab', () => {
 		// Fill snippet form (slug, name, type)
 		const formSection = page.locator('[data-test-id="admin-static-pages"] section');
 		await expect(formSection).toBeVisible({ timeout: 5000 });
-		const inputs = formSection.locator('input.form-control');
+		const inputs = formSection.locator('input.static-admin-input');
 		await inputs.nth(0).fill(TEST_SNIPPET_SLUG);
 		await inputs.nth(1).fill(TEST_SNIPPET_NAME);
 
 		// Select type "block" (default)
-		const typeSelect = formSection.locator('select.form-control');
+		const typeSelect = formSection.locator('select.static-admin-input');
 		await typeSelect.selectOption('block');
 
 		// Submit + wait for the `~snippetCreate` XHR before we navigate
 		// back; the list reads need the row in DB.
-		const submitBtn = formSection.locator('button.btn-primary').first();
+		const submitBtn = formSection.locator('button.static-admin-create-submit').first();
 		await Promise.all([
 			page.waitForResponse(
 				(r) => r.request().method() === 'POST' && r.url().includes('~snippetCreate') && r.status() < 500,
@@ -64,7 +64,7 @@ test.describe('Admin -- Static Pages -- Snippets tab', () => {
 		await page.locator('[data-test-id="tabnav-btn-snippets"]').click();
 
 		// Type filter buttons should exist (All, header, footer, variable, block)
-		const filterButtons = page.locator('[data-test-id="admin-static-pages"] button.status-muted, [data-test-id="admin-static-pages"] button.status-active');
+		const filterButtons = page.locator('[data-test-id="admin-static-pages"] button.static-admin-filter');
 		const count = await filterButtons.count();
 		// At least "All" + 4 type filters = 5
 		expect(count).toBeGreaterThanOrEqual(5);
@@ -78,15 +78,15 @@ test.describe('Admin -- Static Pages -- Snippets tab', () => {
 		const row = page.locator(`tr:has(td:has-text("${TEST_SNIPPET_SLUG}"))`);
 		await expect(row).toBeVisible({ timeout: 10000 });
 
-		const editBtn = row.locator('button.text-accent').first();
+		const editBtn = row.locator('button.static-admin-link').first();
 		await editBtn.click();
 
 		// The snippet editor tab should be visible
-		const editorSection = page.locator('section.section-soft');
+		const editorSection = page.locator('section.snippet-editor');
 		await expect(editorSection).toBeVisible({ timeout: 8000 });
 
 		// Textarea should be present
-		const textarea = editorSection.locator('textarea.form-control');
+		const textarea = editorSection.locator('textarea.snippet-content');
 		await expect(textarea).toBeVisible({ timeout: 5000 });
 	});
 
@@ -97,13 +97,13 @@ test.describe('Admin -- Static Pages -- Snippets tab', () => {
 		// Open snippet editor
 		const row = page.locator(`tr:has(td:has-text("${TEST_SNIPPET_SLUG}"))`);
 		await expect(row).toBeVisible({ timeout: 10000 });
-		await row.locator('button.text-accent').first().click();
+		await row.locator('button.static-admin-link').first().click();
 
-		const editorSection = page.locator('section.section-soft');
+		const editorSection = page.locator('section.snippet-editor');
 		await expect(editorSection).toBeVisible({ timeout: 8000 });
 
 		// For block type, markdown toolbar should be present (B = Bold button)
-		const boldBtn = editorSection.locator('button.blk-fmt-btn').first();
+		const boldBtn = editorSection.locator('button.snippet-format-button').first();
 		await expect(boldBtn).toBeVisible({ timeout: 5000 });
 	});
 
@@ -116,21 +116,21 @@ test.describe('Admin -- Static Pages -- Snippets tab', () => {
 		await expect(row).toBeVisible({ timeout: 10000 });
 
 		// The active/inactive toggle button in the snippet row
-		const toggleBtn = row.locator('button.status-success, button.status-muted');
+		const toggleBtn = row.locator('button.static-admin-status[data-published="true"], button.static-admin-status[data-published="false"]');
 		await expect(toggleBtn).toBeVisible({ timeout: 5000 });
 
-		const wasSuccess = await row.locator('button.status-success').count() > 0;
+		const wasSuccess = await row.locator('button.static-admin-status[data-published="true"]').count() > 0;
 		await toggleBtn.click();
 
 		// After toggle, the class should change
 		if (wasSuccess) {
-			await expect(row.locator('button.status-muted')).toBeVisible({ timeout: 5000 });
+			await expect(row.locator('button.static-admin-status[data-published="false"]')).toBeVisible({ timeout: 5000 });
 		} else {
-			await expect(row.locator('button.status-success')).toBeVisible({ timeout: 5000 });
+			await expect(row.locator('button.static-admin-status[data-published="true"]')).toBeVisible({ timeout: 5000 });
 		}
 
 		// Toggle back to restore original state
-		const restoreBtn = row.locator('button.status-success, button.status-muted');
+		const restoreBtn = row.locator('button.static-admin-status[data-published="true"], button.static-admin-status[data-published="false"]');
 		await restoreBtn.click();
 	});
 
@@ -142,7 +142,7 @@ test.describe('Admin -- Static Pages -- Snippets tab', () => {
 		const row = page.locator(`tr:has(td:has-text("${TEST_SNIPPET_SLUG}"))`);
 		await expect(row).toBeVisible({ timeout: 10000 });
 
-		const deleteBtn = row.locator('button.text-danger').first();
+		const deleteBtn = row.locator('button.static-admin-delete').first();
 		await deleteBtn.click();
 
 		// Confirm dialog should appear

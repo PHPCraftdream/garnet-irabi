@@ -15,8 +15,8 @@
 import { test, expect } from '../../../../helpers/scoped-test';
 import { newScopedContext } from '../../../../helpers/scoped-test';
 
-const MAIN_CLASSES = /class="grow flex flex-col min-w-0 main-container"/;
-const MAIN_WITH_PADDING = /class="grow flex flex-col min-w-0 main-container p-4 lg:p-6"/;
+const MAIN_CLASSES = /class="shell-main main-container"/;
+const MAIN_WITH_PADDING = /class="shell-main-padded main-container"/;
 
 function extractMainTag(html: string): string | null {
 	const match = html.match(/<main[^>]*>/);

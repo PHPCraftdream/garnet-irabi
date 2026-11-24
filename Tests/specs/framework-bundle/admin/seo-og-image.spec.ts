@@ -51,12 +51,12 @@ test.describe('Admin -- per-page OG image upload', () => {
 
         await page.locator('[data-test-id="admin-static-pages"] button:has-text("+")').first().click();
         const formSection = page.locator('[data-test-id="admin-static-pages"] section');
-        const inputs = formSection.locator('input.form-control');
+        const inputs = formSection.locator('input.static-admin-input');
         await inputs.nth(0).fill(SLUG);
         await inputs.nth(1).fill(TITLE);
         await Promise.all([
             page.waitForResponse(r => r.request().method() === 'POST' && r.url().includes('~create') && r.status() < 500, { timeout: 10000 }),
-            formSection.locator('button.btn-primary').first().click(),
+            formSection.locator('button.static-admin-create-submit').first().click(),
         ]);
 
         // Editor is now open; the OG field shows an upload area (no image yet).
@@ -77,7 +77,7 @@ test.describe('Admin -- per-page OG image upload', () => {
         // Save the page (~update) so og_image persists; assert it in the DB.
         await Promise.all([
             page.waitForResponse(r => r.request().method() === 'POST' && r.url().includes('~update') && r.status() < 500, { timeout: 15000 }),
-            page.locator('button.btn-primary.btn-lg').click(),
+            page.locator('button.snippet-save').click(),
         ]);
         expect(String(await ogImageInDb(SLUG))).toContain('/pages/');
 
@@ -93,7 +93,7 @@ test.describe('Admin -- per-page OG image upload', () => {
         // Save again → DB og_image cleared.
         await Promise.all([
             page.waitForResponse(r => r.request().method() === 'POST' && r.url().includes('~update') && r.status() < 500, { timeout: 15000 }),
-            page.locator('button.btn-primary.btn-lg').click(),
+            page.locator('button.snippet-save').click(),
         ]);
         expect(await ogImageInDb(SLUG)).toBe('');
     });

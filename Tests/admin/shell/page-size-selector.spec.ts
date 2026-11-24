@@ -161,7 +161,7 @@ test.describe('Page-size selector — dev panel does not overlap pagination', ()
 
 		const measured = await page.evaluate(() => {
 			const btn = document.querySelector('[data-test-id="dev-login-admin"]');
-			const panel = btn?.closest('div[style*="position: fixed"]') as HTMLElement | null;
+			const panel = btn?.closest('.dev-login-floating') as HTMLElement | null;
 			const panelH = panel?.getBoundingClientRect().height ?? 0;
 			const padH = parseFloat(getComputedStyle(document.body).paddingBottom);
 			return { panelH, padH };

@@ -49,7 +49,7 @@ test.describe('Admin -- Static Pages (/admin/pages/)', () => {
 		// Fill slug and title in the create form
 		const formSection = page.locator('[data-test-id="admin-static-pages"] section');
 		await expect(formSection).toBeVisible({ timeout: 5000 });
-		const inputs = formSection.locator('input.form-control');
+		const inputs = formSection.locator('input.static-admin-input');
 		await inputs.nth(0).fill(TEST_SLUG);
 		await inputs.nth(1).fill(TEST_TITLE);
 
@@ -57,7 +57,7 @@ test.describe('Admin -- Static Pages (/admin/pages/)', () => {
 		// is in the DB before we navigate back to the list. Match the URL
 		// suffix explicitly — the admin pages island also fires a list
 		// re-fetch and other side-effect POSTs around create.
-		const submitBtn = formSection.locator('button.btn-primary').first();
+		const submitBtn = formSection.locator('button.static-admin-create-submit').first();
 		await Promise.all([
 			page.waitForResponse(
 				r => r.request().method() === 'POST' && r.url().includes('~create') && r.status() < 500,
@@ -83,7 +83,7 @@ test.describe('Admin -- Static Pages (/admin/pages/)', () => {
 		const row = await waitForPageRow(page, TEST_SLUG);
 
 		// The status badge should be draft (status-muted class)
-		const draftBtn = row.locator('button.status-muted');
+		const draftBtn = row.locator('button.static-admin-status[data-published="false"]');
 		await expect(draftBtn).toBeVisible({ timeout: 5000 });
 	});
 
@@ -91,11 +91,11 @@ test.describe('Admin -- Static Pages (/admin/pages/)', () => {
 		const editorSection = await openPageEditor(page, TEST_SLUG);
 
 		// Editor should have title, slug fields
-		const titleInput = editorSection.locator('input.form-control').first();
+		const titleInput = editorSection.locator('input.static-admin-input').first();
 		await expect(titleInput).toBeVisible();
 
 		// Verify the slug field has the correct value
-		const slugInput = editorSection.locator('input.form-control').nth(1);
+		const slugInput = editorSection.locator('input.static-admin-input').nth(1);
 		const slugValue = await slugInput.inputValue();
 		expect(slugValue).toBe(TEST_SLUG);
 	});
@@ -106,13 +106,13 @@ test.describe('Admin -- Static Pages (/admin/pages/)', () => {
 		// All fields are siblings inside the freshly-opened editor — batch
 		// their visibility polls so the wall = max() instead of Σ.
 		await Promise.all([
-			expect(editorSection.locator('input.form-control').first()).toBeVisible(),
-			expect(editorSection.locator('input.form-control').nth(1)).toBeVisible(),
-			expect(editorSection.locator('input.form-control').nth(2)).toBeVisible(),
-			expect(editorSection.locator('select.form-control').first()).toBeVisible(),
-			expect(editorSection.locator('select.form-control').nth(1)).toBeVisible(),
-			expect(editorSection.locator('select.form-control').nth(2)).toBeVisible(),
-			expect(editorSection.locator('button.btn-primary.btn-lg')).toBeVisible(),
+			expect(editorSection.locator('input.static-admin-input').first()).toBeVisible(),
+			expect(editorSection.locator('input.static-admin-input').nth(1)).toBeVisible(),
+			expect(editorSection.locator('input.static-admin-input').nth(2)).toBeVisible(),
+			expect(editorSection.locator('select.static-admin-input').first()).toBeVisible(),
+			expect(editorSection.locator('select.static-admin-input').nth(1)).toBeVisible(),
+			expect(editorSection.locator('select.static-admin-input').nth(2)).toBeVisible(),
+			expect(editorSection.locator('button.snippet-save')).toBeVisible(),
 			expect(page.getByRole('checkbox', { name: /Опубликовано|Published/i })).toBeVisible(),
 		]);
 	});
@@ -127,14 +127,14 @@ test.describe('Admin -- Static Pages (/admin/pages/)', () => {
 
 		// Type picker should appear -- click text block
 		// Labels may be in Russian or English, match both
-		const textBlockBtn = editorSection.locator('button.btn-secondary').filter({
+		const textBlockBtn = editorSection.locator('button.page-editor-picker-button').filter({
 			has: page.locator('text=/Text|Текст/i'),
 		}).first();
 		await expect(textBlockBtn).toBeVisible({ timeout: 5000 });
 		await textBlockBtn.click();
 
 		// A text block should now be present with a textarea
-		const textarea = editorSection.locator('.blk-card textarea.form-control');
+		const textarea = editorSection.locator('.blk-card textarea');
 		await expect(textarea).toBeVisible({ timeout: 5000 });
 
 		// Type markdown content into the text block
@@ -144,7 +144,7 @@ test.describe('Admin -- Static Pages (/admin/pages/)', () => {
 		// handleSave fires `~update` followed by `~saveBlocks`; the next
 		// test reopens the editor and reads `.blk-card`, which depends on
 		// `~saveBlocks` finishing — not the earlier `~update` ping.
-		const saveBtn = editorSection.locator('button.btn-primary.btn-lg');
+		const saveBtn = editorSection.locator('button.snippet-save');
 		await Promise.all([
 			page.waitForResponse(
 				(r) => r.request().method() === 'POST' && r.url().includes('~saveBlocks') && r.status() < 500,
@@ -171,7 +171,7 @@ test.describe('Admin -- Static Pages (/admin/pages/)', () => {
 		await lastAddBtn.click();
 
 		// Type picker: click gallery
-		const galleryBtn = editorSection.locator('button.btn-secondary').filter({
+		const galleryBtn = editorSection.locator('button.page-editor-picker-button').filter({
 			has: page.locator('text=/Gallery|Галерея/i'),
 		}).first();
 		await expect(galleryBtn).toBeVisible({ timeout: 5000 });
@@ -185,7 +185,7 @@ test.describe('Admin -- Static Pages (/admin/pages/)', () => {
 
 		// Save so gallery block persists for later tests. Wait for the
 		// blocks-save XHR so the next test sees the persisted state.
-		const saveBtn = editorSection.locator('button.btn-primary.btn-lg');
+		const saveBtn = editorSection.locator('button.snippet-save');
 		await Promise.all([
 			page.waitForResponse(
 				(r) => r.request().method() === 'POST' && r.url().includes('~saveBlocks') && r.status() < 500,
@@ -212,7 +212,7 @@ test.describe('Admin -- Static Pages (/admin/pages/)', () => {
 
 		// Save + wait for the `~update` XHR (carries is_published) before
 		// the next test reopens the pages list and reads the status badge.
-		const saveBtn = editorSection.locator('button.btn-primary.btn-lg');
+		const saveBtn = editorSection.locator('button.snippet-save');
 		await Promise.all([
 			page.waitForResponse(
 				(r) => r.request().method() === 'POST' && r.url().includes('~update') && !r.url().includes('~updateBlock') && r.status() < 500,
@@ -227,7 +227,7 @@ test.describe('Admin -- Static Pages (/admin/pages/)', () => {
 		const row = await waitForPageRow(page, TEST_SLUG);
 
 		// The status badge should now be "published" (status-success)
-		const publishedBtn = row.locator('button.status-success');
+		const publishedBtn = row.locator('button.static-admin-status[data-published="true"]');
 		await expect(publishedBtn).toBeVisible({ timeout: 5000 });
 
 		// Toggle to unpublish — wait for the `~update` toggle XHR before
@@ -241,7 +241,7 @@ test.describe('Admin -- Static Pages (/admin/pages/)', () => {
 		]);
 
 		// Should now be draft (status-muted)
-		const draftBtn = row.locator('button.status-muted');
+		const draftBtn = row.locator('button.static-admin-status[data-published="false"]');
 		await expect(draftBtn).toBeVisible({ timeout: 8000 });
 
 		// Toggle back to publish (for the public rendering tests)
@@ -254,7 +254,7 @@ test.describe('Admin -- Static Pages (/admin/pages/)', () => {
 		]);
 
 		// Should be published again
-		await expect(row.locator('button.status-success')).toBeVisible({ timeout: 8000 });
+		await expect(row.locator('button.static-admin-status[data-published="true"]')).toBeVisible({ timeout: 8000 });
 	});
 });
 
@@ -376,7 +376,7 @@ test.describe('Admin -- Static Pages -- Delete page', () => {
 		const editorSection = await openPageEditor(page, TEST_SLUG);
 
 		// Click delete button in the editor
-		const deleteBtn = editorSection.locator('button.btn-danger').first();
+		const deleteBtn = editorSection.locator('button.page-editor-delete').first();
 		await expect(deleteBtn).toBeVisible({ timeout: 5000 });
 		await deleteBtn.click();
 

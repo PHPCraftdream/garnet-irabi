@@ -77,7 +77,7 @@ test.describe('Admin -- Structured footer editor', () => {
 		// Save and wait for the save POST to land before reading DB.
 		await Promise.all([
 			page.waitForResponse(r => r.request().method() === 'POST' && r.url().includes('~snippetUpdate') && r.status() < 500, { timeout: 10000 }),
-			editorSection.locator('button.btn-primary.btn-lg').click(),
+			editorSection.locator('button.snippet-save').click(),
 		]);
 
 		// Verify JSON
@@ -115,7 +115,7 @@ test.describe('Admin -- Structured footer editor', () => {
 
 		await Promise.all([
 			page.waitForResponse(r => r.request().method() === 'POST' && r.url().includes('~snippetUpdate') && r.status() < 500, { timeout: 10000 }),
-			editorSection.locator('button.btn-primary.btn-lg').click(),
+			editorSection.locator('button.snippet-save').click(),
 		]);
 
 		const conn = await mysql.createConnection(DB);

@@ -33,10 +33,10 @@ test.describe('Admin dashboard — working user links', () => {
         await expect(row.locator('.admin-home-activity-head')).toHaveCount(1);
         await expect(row.locator('.admin-home-activity-users')).toHaveCount(1);
 
-        // Dual link: public profile (common-link) + admin gear (common-link-admin-tag).
-        const profile = row.locator('a.common-link').first();
+        // Dual link: public profile (entity-person-link) + admin gear (entity-person-admin).
+        const profile = row.locator('a.entity-person-link').first();
         await expect(profile).toHaveAttribute('href', /\/user\/id~\d+/);
-        const gear = row.locator('a.common-link-admin-tag').first();
+        const gear = row.locator('a.entity-person-admin').first();
         await expect(gear).toHaveAttribute('href', /\/admin\/#user=\d+/);
 
         // The profile link must actually navigate (it was a dead button before).
