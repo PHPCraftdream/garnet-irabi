@@ -7,6 +7,8 @@ import {appUrl} from '@common/Utils/Url/appUrl';
 import {SlotBookingController} from '../../SlotsCalendar/Booking/SlotBookingController';
 import {SlotBookingModalHost} from '../../SlotsCalendar/Booking/SlotBookingModalHost';
 
+const USER_DASH_LINK_TEMPLATE = <a className="user-dash-link" />;
+
 interface SlotTeaser {
     id: number;
     start_at: number;
@@ -54,7 +56,7 @@ class SlotTeaserRow extends AntiHookComponent<{slot: SlotTeaser; onBook: (id: nu
                                 id={slot.expert_id}
                                 name={slot.expert_name}
                                 isExpert
-                                className="user-dash-link"
+                                anchor={USER_DASH_LINK_TEMPLATE}
                                 onClick={stopPropagation}
                             />
                         )

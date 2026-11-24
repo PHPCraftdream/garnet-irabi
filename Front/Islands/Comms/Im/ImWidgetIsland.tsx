@@ -7,12 +7,6 @@ interface Props {
     pageUrl: string;
 }
 
-// `.hot-click` — маркер навигации фреймворка (classClick), а не стилизация,
-// поэтому вешается на узел при каждом его монтировании.
-function attachHotClick(node: HTMLAnchorElement | null): void {
-    if (node) node.classList.add('hot-click');
-}
-
 /**
  * Floating IM badge — shows unread message count.
  * Positioned to the left of the support widget.
@@ -30,7 +24,7 @@ export class ImWidgetIsland extends AntiHookComponent<Props> {
         const {pageUrl} = this.props;
         const {badge} = this;
         return (
-            <a ref={attachHotClick}
+            <a data-hot-click
                 className="im-page-fab"
                 href={pageUrl}
                 data-test-id="im-widget-btn"

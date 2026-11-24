@@ -5,6 +5,8 @@ import {formatTime as fmtTime, formatDateShort as fmtDate} from '@common/Utils/T
 import {slotFormatLine} from '../../../../Common/booking/slotFormat';
 import type {SlotItem, ExpertInfo} from '../State/types';
 
+const BOOKING_PLACE_LINK_TEMPLATE = <a className="booking-place-link" />;
+
 interface Props {
     slot: SlotItem;
     expert?: ExpertInfo;
@@ -18,7 +20,7 @@ function BookingExpert({slot, expert}: Props) {
     if (!expert) return null;
     return (
         <div className="booking-summary-expert">
-            <UserLink id={slot.expert_id} name={expert.display_name} isExpert className="booking-place-link" onClick={stopClick} />
+            <UserLink id={slot.expert_id} name={expert.display_name} isExpert anchor={BOOKING_PLACE_LINK_TEMPLATE} onClick={stopClick} />
         </div>
     );
 }

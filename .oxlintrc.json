@@ -48,6 +48,25 @@
     "garnet-tsx/max-component-lines": "warn",
     "garnet-tsx/max-component-nesting": "warn",
     "carburetor/no-react-hooks-in-components": "error",
-    "carburetor/require-function-class": "error"
+    "carburetor/require-function-class": "error",
+    "carburetor/no-capturing-hook-selector": "error",
+    "carburetor/no-closure-in-update": "error",
+    "carburetor/require-hoisted-constant": "error",
+    "carburetor/no-direct-data-write": "error",
+    "carburetor/no-escaping-tracked-data": "error",
+    "carburetor/no-function-in-render": "error",
+    "carburetor/no-handler-created-in-render": "error",
+    "carburetor/max-render-depth": "error",
+    "carburetor/max-render-lines": "error",
+    "carburetor/no-unrecognized-base": "error",
+    "carburetor/no-store-read-in-effect-deps": "error",
+    "carburetor/prefer-store-effect": "error",
+    "carburetor/no-memo-over-store-read": "error",
+    "carburetor/no-untrackable-draft-mutation": "error",
+    "carburetor/no-untrackable-store-data": "error",
+    "carburetor/require-effect-deps": "error",
+    "carburetor/require-method-for-closure": "error",
+    "carburetor/require-module-function": "error",
+    "carburetor/require-subscription-disposal": "error"
   }
 }

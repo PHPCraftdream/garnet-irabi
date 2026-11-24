@@ -58,8 +58,8 @@
   .batch-preview-existing { @apply shape-batch-existing layout-batch-warning type-batch-existing tone-batchexisting-soft; }
   .batch-preview-weekday { @apply shape-batch-weekday type-batch-weekday tone-supportmuted-plain; }
   .batch-preview-row-warning { @apply tone-batchrowwarning-soft; }
-  .batch-preview-date-input { @apply shape-batch-compact-input type-batch-compact-input layout-batch-date-input tone-batchneutral-plain; }
-  .slot-time-input { @apply shape-batch-compact-input type-batch-compact-input tone-batchneutral-plain; }
+  .batch-preview-date-input { @apply behavior-date-field focus-date-field motion-date-field shape-batch-compact-input type-batch-compact-input layout-batch-date-input tone-batchneutral-plain; }
+  .slot-time-input { @apply layout-date-field behavior-date-field focus-date-field motion-date-field shape-batch-compact-input type-batch-compact-input tone-batchneutral-plain; }
   .slot-remove-btn { @apply tone-batchremove-outlined layout-compact-action shape-compact-action type-compact-action behavior-compact-action effect-compact-action motion-compact-action; }
   .batch-field-label { @apply shape-batch-label layout-batch-label type-batch-label tone-supportsecondary-plain; }
   .batch-input { @apply tone-garnetfield-outlined shape-native-control shape-native-field layout-native-select type-native-select focus-native-select motion-native-select; }

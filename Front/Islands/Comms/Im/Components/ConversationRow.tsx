@@ -7,6 +7,8 @@ import {formatTs} from '@common/Utils/Time/DateUtils';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {UserAvatar} from '../../../../Common/media/UserAvatar';
 
+const CONVERSATION_PARTNER_NAME_TEMPLATE = <a className="conversation-partner-name" />;
+
 /**
  * Значок скрепки в строке диалога.
  *
@@ -39,7 +41,7 @@ const ConversationHead: React.FC<{conv: ImConversation; partnerName: string}> = 
         <UserLink
             id={conv.partner_id}
             name={partnerName}
-            className="conversation-partner-name"
+            anchor={CONVERSATION_PARTNER_NAME_TEMPLATE}
             onClick={stopClick}
         />
         {conv.unread_count > 0 && (

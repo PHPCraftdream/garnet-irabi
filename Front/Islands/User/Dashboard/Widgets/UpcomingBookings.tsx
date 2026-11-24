@@ -8,6 +8,8 @@ import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {ExternalLink} from '@common/Components/Layout/ExternalLink';
 import {appUrl} from '@common/Utils/Url/appUrl';
 
+const USER_DASH_LINK_TEMPLATE = <a className="user-dash-link" />;
+
 interface BookingItem {
     id: number;
     start_at: number;
@@ -53,7 +55,7 @@ const BookingRow: React.FC<{booking: BookingItem}> = ({booking}) => (
                             id={booking.expert_id}
                             name={booking.expert_name}
                             isExpert
-                            className="user-dash-link"
+                            anchor={USER_DASH_LINK_TEMPLATE}
                             onClick={stopPropagation}
                         />
                     )

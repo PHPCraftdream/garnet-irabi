@@ -4,6 +4,8 @@ import {formatTs} from '@common/Utils/Time/DateUtils';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {getInitials} from './getInitials';
 
+const USER_DASH_LINK_TEMPLATE = <a className="user-dash-link" />;
+
 /** Кто записался и когда занятие. */
 export const BookingPerson: React.FC<{
     userId: number;
@@ -17,7 +19,7 @@ export const BookingPerson: React.FC<{
         <div className="expert-booking-avatar">{getInitials(userName)}</div>
         <div>
             <div className="user-dash-row-title" data-test-id={testId}>
-                <UserLink id={userId} name={userName} className="user-dash-link" />
+                <UserLink id={userId} name={userName} anchor={USER_DASH_LINK_TEMPLATE} />
             </div>
             <div className="user-dash-row-small">
                 {formatTs(startAt)} &middot; {durationMin} {t.Slot_Duration_Min()}

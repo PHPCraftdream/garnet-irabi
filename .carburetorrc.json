@@ -64,7 +64,8 @@
       "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-time-slot.css",
       "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-section.css",
       "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-foreground-modal.css",
-      "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-warning-button.css"
+      "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-warning-button.css",
+      "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-date-input.css"
     ],
     "families": [
       "adminstatusemptyhover",

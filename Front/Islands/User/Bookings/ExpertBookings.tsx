@@ -3,6 +3,8 @@ import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {D} from '@common/Support/Debug/D';
 import {useConfirm} from '@common/hooks/ui/useConfirm';
 
+const BOOKING_PLACE_LINK_TEMPLATE = <a className="booking-place-link" />;
+
 import {ConfirmModal} from '@common/Components/Feedback/ConfirmModal';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
@@ -110,7 +112,7 @@ class ExpertBookingCard extends AntiHookComponent<CardProps> {
                         <p className="booking-list-card-meta">
                             <strong>{t.Booking_UserName()}:</strong>{' '}
                             {booking.user_id
-                                ? <UserLink id={booking.user_id} name={booking.user_name} className="booking-place-link" />
+                                ? <UserLink id={booking.user_id} name={booking.user_name} anchor={BOOKING_PLACE_LINK_TEMPLATE} />
                                 : booking.user_name}
                         </p>
                     )}

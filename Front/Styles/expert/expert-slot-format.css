@@ -61,7 +61,7 @@
   /* carburetor-disable-next-line valid-function-class */
   .section-soft[data-expert-slots="calendar"] { @apply tone-sectioninherit-plain shape-expert-slots-calendar; }
   .expert-slots-actions { @apply tone-batchneutral-plain shape-expert-slots-actions layout-expert-slots-actions; }
-  .is-invalid { @apply tone-batchneutral-plain; }
+  .slot-field-invalid { @apply layout-date-field shape-date-field type-date-field behavior-date-field tone-batchneutral-plain focus-date-field motion-date-field; }
   .invalid-feedback { @apply tone-batchneutral-plain; }
   /* carburetor-disable-next-line valid-function-class */
   .invalid-feedback[data-slot-error="server"] { @apply tone-externaldanger-plain shape-create-slot-error type-create-slot-error; }

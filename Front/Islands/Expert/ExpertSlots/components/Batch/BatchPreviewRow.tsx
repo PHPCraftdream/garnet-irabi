@@ -6,6 +6,9 @@ import {DurationSelect} from '@common/Components/Controls/DurationSelect';
 import {ExistingItem, ProposedSlot} from '../../types';
 import {BatchPreviewWarnings} from './BatchPreviewWarnings';
 
+const BATCH_DATE_FIELD = <input className="batch-preview-date-input" />;
+const SLOT_TIME_FIELD = <input className="slot-time-input" />;
+
 export interface RowWarnings {
     existingOverlap: boolean;
     proposedOverlap: boolean;
@@ -59,7 +62,7 @@ export class BatchPreviewRow extends AntiHookComponent<Props> {
             <td className="batch-preview-cell">
                 <span className="batch-preview-weekday">{weekday}</span>
                 <DateInput
-                    className="batch-preview-date-input"
+                    field={BATCH_DATE_FIELD}
                     value={slot.date}
                     min={startDate}
                     max={endDate}
@@ -76,7 +79,7 @@ export class BatchPreviewRow extends AntiHookComponent<Props> {
             <td className="batch-preview-cell">
                 <DateInput
                     type="time"
-                    className="slot-time-input"
+                    field={SLOT_TIME_FIELD}
                     value={slot.time}
                     data-index={index}
                     onChange={this.changeTime}

@@ -7,6 +7,8 @@ import {IFromFieldsInfo} from '@common/Dom/GridTable/Models';
 import {createSlot} from '../../api';
 import {DateInput} from '@common/Components/ui/DateInput';
 
+const INVALID_FIELD = <input className="slot-field-invalid" />;
+
 import {Slot} from '../../types';
 import {SlotFormatFields} from './SlotFormatFields';
 
@@ -80,7 +82,7 @@ const SlotDateTimeRow: React.FC<SlotRowProps> = ({errors}) => (
     <div className="create-slot-dates">
         <SlotField label={t.Slot_Date()} error={errors.date}>
             <DateInput
-                className={errors.date ? 'is-invalid' : undefined}
+                field={errors.date ? INVALID_FIELD : undefined}
                 aria-invalid={!!errors.date}
                 data-slot-input="date-time"
                 data-test-id="slot-date"
@@ -91,7 +93,7 @@ const SlotDateTimeRow: React.FC<SlotRowProps> = ({errors}) => (
         <SlotField label={t.Slot_Time()} error={errors.time}>
             <DateInput
                 type="time"
-                className={errors.time ? 'is-invalid' : undefined}
+                field={errors.time ? INVALID_FIELD : undefined}
                 aria-invalid={!!errors.time}
                 data-slot-input="date-time"
                 data-test-id="slot-time"

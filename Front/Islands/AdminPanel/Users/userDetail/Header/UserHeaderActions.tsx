@@ -6,6 +6,8 @@ import {flag} from '../../usersFlags';
 import {FlagBtn} from '../../FlagBtn';
 import {AccountData} from '../userDetailTypes';
 
+const ADMIN_USER_SECONDARY_ACTION_TEMPLATE = <button className="admin-user-secondary-action" />;
+
 interface RoleTogglesProps {
     account: AccountData;
     isExpert: boolean;
@@ -161,7 +163,7 @@ export const UserHeaderActions: React.FC<Props> = (props) => {
                 entityId={account.id}
                 label={t.Admin_History()}
                 title={`${t.Admin_History()} — ${displayName}`}
-                className="admin-user-secondary-action"
+                button={ADMIN_USER_SECONDARY_ACTION_TEMPLATE}
                 testIdSuffix={`account-${account.id}`}
             />
             {callerIsOwner && (
