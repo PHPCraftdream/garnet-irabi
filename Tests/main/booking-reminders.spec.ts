@@ -143,11 +143,20 @@ async function seedLessonFor(expertId: number, userId: number, startInSeconds: n
     });
 }
 
-async function queuedBodiesFor(accountId: number): Promise<string[]> {
+/** Highest email_queue id so far — marks the point before the cron under test runs. */
+async function maxQueueId(): Promise<number> {
+    return withConnection(async conn => {
+        const [rows] = await conn.execute<any[]>(`SELECT COALESCE(MAX(id), 0) AS id FROM ${tn('email_queue')}`);
+        return Number(rows[0]?.id ?? 0);
+    });
+}
+
+/** Bodies queued for the account after `afterId` (earlier specs leave their own mail behind). */
+async function queuedBodiesFor(accountId: number, afterId: number): Promise<string[]> {
     return withConnection(async conn => {
         const [rows] = await conn.execute<any[]>(
-            `SELECT body_html FROM ${tn('email_queue')} WHERE account_id = ? ORDER BY id ASC`,
-            [accountId],
+            `SELECT body_html FROM ${tn('email_queue')} WHERE account_id = ? AND id > ? ORDER BY id ASC`,
+            [accountId, afterId],
         );
 
         return rows.map(r => String(r.body_html));
@@ -179,13 +188,14 @@ test('два напоминания в одном тике крона не ск�
     await seedLessonFor(expertAId, studentAId, 3600);
     await seedLessonFor(expertBId, studentBId, 3600);
 
+    const queueMark = await maxQueueId();
     runReminderCron();
 
     const [studentABodies, studentBBodies, expertABodies, expertBBodies] = await Promise.all([
-        queuedBodiesFor(studentAId),
-        queuedBodiesFor(studentBId),
-        queuedBodiesFor(expertAId),
-        queuedBodiesFor(expertBId),
+        queuedBodiesFor(studentAId, queueMark),
+        queuedBodiesFor(studentBId, queueMark),
+        queuedBodiesFor(expertAId, queueMark),
+        queuedBodiesFor(expertBId, queueMark),
     ]);
 
     expect(studentABodies.length).toBeGreaterThan(0);

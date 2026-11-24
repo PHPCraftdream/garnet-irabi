@@ -45,6 +45,9 @@ test.describe('Live nav counters (~counts poll)', () => {
             body: JSON.stringify({ primaryBadgeCount: 7, unreadIm: 3, unreadSupport: 4 }),
         }));
 
+        // The poller shares a fresh-for-20s cache in localStorage across page loads
+        // of one context; an earlier test's load would make it skip the stubbed fetch.
+        await page.addInitScript(() => { try { localStorage.removeItem('garnet:counts:shared'); } catch {} });
         await page.goto('/system/');
 
         // Islands hydrate post-load; the badges update on the first poll (~2s).

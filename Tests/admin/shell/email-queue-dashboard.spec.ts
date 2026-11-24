@@ -143,7 +143,7 @@ test.describe('Email queue dashboard — admin view', () => {
         const row = adminPage.locator(`[data-test-id="email-queue-row-${rowId}"]`);
         await expect(row).toBeVisible({ timeout: 8000 });
         await expect(row).toContainText(viewSubject);
-        await expect(row.locator('.badge')).toHaveText('error');
+        await expect(row.locator('.admin-email-queue-status')).toHaveText('error');
 
         await expect(adminPage.locator('text=/Fatal|Exception/i')).toHaveCount(0);
     });
@@ -276,7 +276,7 @@ test.describe('Email queue dashboard — pagination', () => {
         // use — 10/page by default).
         await expect(adminPage.locator('[data-test-id="admin-email-queue"] tbody tr')).toHaveCount(10, { timeout: 8000 });
 
-        const nextBtn = adminPage.locator('[data-test-id="admin-grid-next"]').first();
+        const nextBtn = adminPage.locator('[data-test-id="pagination-page-2"]').first();
         await expect(nextBtn).toBeEnabled({ timeout: 8000 });
 
         await nextBtn.click();

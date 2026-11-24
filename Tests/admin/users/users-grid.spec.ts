@@ -134,6 +134,9 @@ test.describe('Users — search within tab', () => {
     });
 
     test('clearing search restores all rows', async ({ page }) => {
+        // The server renders 10 rows; every later fetch uses the stored page size
+        // (garnet.pageSize), which earlier specs in this context may have changed.
+        await page.addInitScript(() => { try { localStorage.setItem('garnet.pageSize', '10'); } catch {} });
         await openUsers(page);
         const initial = await page.locator('tbody tr:not(:has(td[colspan]))').count();
 

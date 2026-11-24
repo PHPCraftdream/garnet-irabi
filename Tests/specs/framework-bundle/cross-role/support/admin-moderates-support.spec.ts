@@ -179,7 +179,7 @@ test.describe('Cross-role: admin moderates user support ticket', () => {
 		// Status change fires an XHR; without waiting for it the DB
 		// read below races and gets the prior 'open' value.
 		await Promise.all([
-			adminPage.waitForResponse((r) => r.request().method() === 'POST' && r.status() < 500, { timeout: 10000 }),
+			adminPage.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('~changeStatus') && r.status() < 500, { timeout: 10000 }),
 			statusSelect.selectOption('in_progress'),
 		]);
 
@@ -202,7 +202,7 @@ test.describe('Cross-role: admin moderates user support ticket', () => {
 		// Reply triggers an XHR that sets assignee_id + unread_user;
 		// without the wait the next test reads null for assignee_id.
 		await Promise.all([
-			adminPage.waitForResponse((r) => r.request().method() === 'POST' && r.status() < 500, { timeout: 10000 }),
+			adminPage.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('~reply') && r.status() < 500, { timeout: 10000 }),
 			adminPage.locator('[data-test-id="support-reply-btn"]').click(),
 		]);
 
@@ -278,7 +278,7 @@ test.describe('Cross-role: admin moderates user support ticket', () => {
 		// server; wait for the XHR so the next test reads consistent
 		// state.
 		await Promise.all([
-			userPage.waitForResponse((r) => r.request().method() === 'POST' && r.status() < 500, { timeout: 10000 }),
+			userPage.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('~reply') && r.status() < 500, { timeout: 10000 }),
 			userPage.locator('[data-test-id="support-reply-btn"]').click(),
 		]);
 
@@ -328,7 +328,7 @@ test.describe('Cross-role: admin moderates user support ticket', () => {
 		// Status select fires an XHR; wait for it before reading the
 		// DB so the test catches the persisted value, not 'in_progress'.
 		await Promise.all([
-			adminPage.waitForResponse((r) => r.request().method() === 'POST' && r.status() < 500, { timeout: 10000 }),
+			adminPage.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('~changeStatus') && r.status() < 500, { timeout: 10000 }),
 			adminPage.locator('[data-test-id="support-status-select"]').selectOption('resolved'),
 		]);
 

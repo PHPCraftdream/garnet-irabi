@@ -259,7 +259,7 @@ test.describe('F-02: createSlot boundary around "now"', () => {
 			cost: 500,
 		});
 
-		expect(status).toBe(200);
+		expect(status, JSON.stringify(body)).toBe(200);
 		expect(body?.success).toBe(true);
 
 		const created = await countSlotsForExpert(expertId, markCreatedAt);
