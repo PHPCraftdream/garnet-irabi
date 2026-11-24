@@ -69,6 +69,25 @@ async function deleteSlotsCreatedSince(expertId: number, sinceCreatedAt: number)
 	}
 }
 
+/**
+ * Earlier specs leave unbooked slots of this expert around "now"; a new slot
+ * that overlaps one is refused ("Слот пересекается с существующим занятием").
+ * Drop the unbooked ones in the window so the boundary check is what decides.
+ */
+async function clearFreeSlotsAround(expertId: number, fromTs: number, toTs: number): Promise<void> {
+	const conn = await mysql.createConnection(DB);
+	try {
+		await conn.execute(
+			`DELETE FROM ${tn('time_slots')}
+			 WHERE expert_id = ? AND status = 'free' AND start_at < ? AND end_at > ?
+			   AND NOT EXISTS (SELECT 1 FROM ${tn('bookings')} b WHERE b.bookable_id = ${tn('time_slots')}.id AND b.bookable_type = 'time_slot')`,
+			[expertId, toTs, fromTs]
+		);
+	} finally {
+		await conn.end();
+	}
+}
+
 /** Format a JS Date as `Y-m-d` / `H:i` in the given IANA timezone. */
 function formatInTz(date: Date, tz: string): { dateStr: string; timeStr: string } {
 	const parts = new Intl.DateTimeFormat('en-CA', {
@@ -251,6 +270,8 @@ test.describe('F-02: createSlot boundary around "now"', () => {
 		// `date`/`time` only carry minute resolution, so "30s ahead" isn't
 		// expressible — use a small-but-safe future margin instead to keep
 		// this deterministic against request/DB latency.
+		const nowTs = Math.floor(Date.now() / 1000);
+		await clearFreeSlotsAround(expertId, nowTs - 3600, nowTs + 3 * 3600);
 		const { dateStr, timeStr } = futureDateTime(5 * 60, EXPERT_TZ);
 		const { status, body } = await postCreateSlot(page, {
 			date: dateStr,

@@ -224,11 +224,18 @@ test.describe('User Journey: full end-to-end', () => {
         await expect(firstRecipient).toBeVisible({ timeout: 5000 });
         await firstRecipient.click();
 
-        // Type a message
-        await page.locator('[data-test-id="im-new-message-input"]').fill('Journey test message');
-
-        // Send
-        await page.locator('[data-test-id="im-send-btn"]').click();
+        // Picking someone who already has a thread opens that thread (reply form);
+        // otherwise the new-message form takes the text. Earlier specs decide which.
+        const newInput = page.locator('[data-test-id="im-new-message-input"]');
+        const replyInput = page.locator('[data-test-id="im-reply-input"]');
+        await expect(newInput.or(replyInput)).toBeVisible({ timeout: 5000 });
+        if (await newInput.isVisible()) {
+            await newInput.fill('Journey test message');
+            await page.locator('[data-test-id="im-send-btn"]').click();
+        } else {
+            await replyInput.fill('Journey test message');
+            await page.locator('[data-test-id="im-reply-btn"]').click();
+        }
 
         // After send, the new form should close and conversation should be selected
         // or conversation list should update
