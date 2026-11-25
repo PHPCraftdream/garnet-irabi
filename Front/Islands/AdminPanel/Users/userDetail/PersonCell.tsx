@@ -14,11 +14,13 @@ interface Props {
  * в карточке пользователя пять раз подряд, в каждой из таблиц.
  */
 export class PersonCell extends AntiHookComponent<Props> {
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly open = () => {
         const {id, name, onOpen} = this.props;
         if (id && name) onOpen(id, name);
     };
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {id, name} = this.props;
         if (!id || !name) return <span className="token-registration-ip">—</span>;

@@ -2,10 +2,10 @@ import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/Time/DateUtils';
-import {statusLabel} from '../../../Comms/Support/parts/render/supportStatus';
+import {statusLabel} from '../../Grid/statusLabel';
 import type {SupportStatus} from '../../../Comms/Support/parts/supportTypes';
-import {UniversalBadge} from '../../../../Common/booking/StatusBadge';
-import {AdminUserDualLink} from '../../../../Common/people/AdminUserDualLink';
+import {UniversalBadge} from '../../../../Common/booking/status/StatusBadge';
+import {AdminUserDualLink} from '../../../../Common/people/links/AdminUserDualLink';
 
 interface TicketItem {
     id: number;
@@ -28,6 +28,7 @@ interface Props {
  * строка не показывается вовсе, чтобы не оставлять «Пользователь:» с пустотой.
  */
 class TicketAuthor extends AntiHookComponent<{ticket: TicketItem}> {
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {ticket} = this.props;
         const display = ticket.user_name || ticket.user_login || (ticket.user_id > 0 ? `#${ticket.user_id}` : '');
@@ -37,7 +38,8 @@ class TicketAuthor extends AntiHookComponent<{ticket: TicketItem}> {
             <div className="admin-home-author" data-test-id={`admin-dash-ticket-author-${ticket.id}`}>
                 {t.Booking_User()}:{' '}
                 {ticket.user_id > 0
-                    ? <AdminUserDualLink id={ticket.user_id} name={display} dataTestId={`admin-dash-ticket-user-${ticket.id}`} />
+                    ? <AdminUserDualLink id={ticket.user_id} name={display}
+        dataTestId={`admin-dash-ticket-user-${ticket.id}`} />
                     : <span>{display}</span>}
             </div>
         );
@@ -45,6 +47,7 @@ class TicketAuthor extends AntiHookComponent<{ticket: TicketItem}> {
 }
 
 class TicketRow extends AntiHookComponent<{ticket: TicketItem; supportUrl: string}> {
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {ticket, supportUrl} = this.props;
         return (
@@ -69,8 +72,11 @@ class TicketRow extends AntiHookComponent<{ticket: TicketItem; supportUrl: strin
 }
 
 export class AdminSupportWidget extends AntiHookComponent<Props> {
-    private readonly renderTicket = (ticket: TicketItem) => <TicketRow key={ticket.id} ticket={ticket} supportUrl={this.props.supportUrl} />;
+    /** Формирует представление данных для соответствующего раздела панели. */
+    private readonly renderTicket = (ticket: TicketItem) => <TicketRow key={ticket.id} ticket={ticket}
+        supportUrl={this.props.supportUrl} />;
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {count, tickets, supportUrl} = this.props;
         return (

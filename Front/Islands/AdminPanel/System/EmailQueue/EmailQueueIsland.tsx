@@ -5,7 +5,7 @@ import {formatTs} from '@common/Utils/Time/DateUtils';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {Mailbox} from 'lucide-react';
 import {AdminGrid, AdminGridHandle} from '../../Grid/AdminGrid';
-import {GridConfig, PageResponse} from '../../Shell/types';
+import {GridConfig, PageResponse} from '../../Shell/shared/types';
 
 interface EmailQueueRow {
     id: number;
@@ -45,16 +45,21 @@ interface RetryResponse {
 
 const QUEUE_ICON = <Mailbox size={22} aria-hidden="true" />;
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function rowKey(row: EmailQueueRow) { return row.id; }
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function rowTestId(row: EmailQueueRow) { return 'email-queue-row-' + row.id; }
+    /** Формирует представление данных для соответствующего раздела панели. */
 function renderCreated(row: EmailQueueRow) {
     return <span className="admin-email-queue-time">{formatTs(row.created_at)}</span>;
 }
+    /** Формирует представление данных для соответствующего раздела панели. */
 function renderNext(row: EmailQueueRow) {
     return row.next_attempt_at !== null
         ? <span className="admin-email-queue-time">{formatTs(row.next_attempt_at)}</span>
         : <span className="admin-email-queue-muted">—</span>;
 }
+    /** Формирует представление данных для соответствующего раздела панели. */
 function renderStatus(row: EmailQueueRow) {
     return <span className="admin-email-queue-status" data-status={row.status}>{row.status}</span>;
 }
@@ -67,8 +72,10 @@ interface RetryProps {
 }
 
 class RetryButton extends AntiHookComponent<RetryProps> {
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private readonly retry = () => { void this.props.onRetry(this.props.row.id); };
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {row, retrying, label} = this.props;
         return <button type="button" className="compact-outline-action" data-test-id={'email-queue-retry-' + row.id}
@@ -76,9 +83,11 @@ class RetryButton extends AntiHookComponent<RetryProps> {
     }
 }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
 function createRenders(retryingId: number | null, label: string, onRetry: RetryProps['onRetry']) {
     return {created_at: renderCreated, next_attempt_at: renderNext, status: renderStatus,
-        retry: (row: EmailQueueRow) => <RetryButton row={row} retrying={retryingId === row.id} label={label} onRetry={onRetry} />};
+        retry: (row: EmailQueueRow) => <RetryButton row={row} retrying={retryingId === row.id} label={label}
+        onRetry={onRetry} />};
 }
 
 interface QueueState {
@@ -97,6 +106,7 @@ export class EmailQueueIsland extends AntiHookComponent<Props> {
 
     private cachedRenders?: {retryingId: number | null; label: string; value: ReturnType<typeof createRenders>};
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private getRenders(retryingId: number | null, label: string) {
         const cached = this.cachedRenders;
         if (cached?.retryingId === retryingId && cached.label === label) return cached.value;
@@ -105,6 +115,7 @@ export class EmailQueueIsland extends AntiHookComponent<Props> {
         return value;
     }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly handleRetry = async (id: number): Promise<void> => {
         this.ui.setData({...this.ui.getData(), retryingId: id, error: ''});
         try {
@@ -121,6 +132,7 @@ export class EmailQueueIsland extends AntiHookComponent<Props> {
         }
     };
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {pageUrl, initialData, gridConfig, labels} = this.props;
         const {deadLetterCount, retryingId, error} = this.useCarburetor(this.ui);

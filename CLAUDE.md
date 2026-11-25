@@ -4,6 +4,10 @@
 
 - Перед КАЖДЫМ пушем в этот репозиторий сам прогоняешь локальные проверки качества (`npm run check` — oxlint + carburetor-lint + tsgo, `composer ci` — cs-fixer + phpstan + build) и пушишь только при их зелёном результате. Не полагайся на удалённый CI как на первую линию проверки — GitHub Actions обрезает список аннотаций/warning'ов (видно не более ~10 на джоб) и может создать ложное ощущение, что всё чисто.
 
+- `no-parent-import` включить после релиза фреймворка с поддержкой alias `@/`.
+
+- `Front/I18nGen/` — сгенерированные переводы, поэтому этот каталог исключён из standalone lint.
+
 - После `composer update phpcraftdream/garnet-framework` сразу выполняй
   `npm install` в ТРЁХ каталогах внутри `vendor/phpcraftdream/garnet-framework`:
   `FrontBuilder`, `tooling/mcp/browser`, `tooling/mcp/mysql`, **а затем

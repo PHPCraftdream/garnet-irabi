@@ -6,12 +6,15 @@ import SendButton from '@common/Components/Controls/SendButton';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/Time/DateUtils';
-import {EntityLink} from '../../../../Common/people/EntityLink';
-import {userLinks} from '../../../../Common/people/entityLinkHelpers';
-import {IrabiPreviewProvider} from '../../../../Common/people/IrabiPreviewProvider';
-import {slotPlaceLabel, slotPlaceValue} from '../../../../Common/booking/slotFormat';
+import {EntityLink} from '../../../../Common/people/links/EntityLink';
+import {userLinks} from '../../../../Common/people/links/userLinks';
+import {IrabiPreviewProvider} from '../../../../Common/people/preview/IrabiPreviewProvider';
+import {slotPlaceLabel} from '../../../../Common/booking/formatting/slotPlaceLabel';
+import {slotPlaceValue} from '../../../../Common/booking/formatting/slotPlaceValue';
 import {goTo} from '@common/Dom/Nav/GoTo';
 import {appUrl} from '@common/Utils/Url/appUrl';
+
+const slotExpert = t.Slot_Expert;
 
 interface SlotInfo {
     id: number;
@@ -49,7 +52,7 @@ const ExpertBlock: React.FC<{
     isModerator: boolean;
 }> = ({expert, expertId, isModerator}) => (
     <div className="booking-form-expert">
-        <h5>{t.Slot_Expert()}</h5>
+        <h5>{slotExpert()}</h5>
         <p className="booking-form-expert-name">
             <EntityLink name={expert.display_name} {...userLinks(expertId, true)} isModerator={isModerator} />
         </p>
@@ -57,23 +60,31 @@ const ExpertBlock: React.FC<{
 );
 
 class BookingFormState extends Carburetor<{error: string | null}> {
+    /** Инициализирует состояние ошибки формы бронирования. */
     constructor() { super({error: null}); }
 }
 
-class BookingFormView extends AntiHookComponent<BookingFormProps & {sending: boolean; withSending: ReturnType<typeof useSending>['withSending']}> {
+class BookingFormView extends AntiHookComponent<
+    BookingFormProps & {sending: boolean; withSending: ReturnType<typeof useSending>['withSending']}
+> {
     private readonly ui = new BookingFormState();
 
+    /** Запускает отправку формы через общий индикатор отправки. */
     private readonly submitBooking = () => {
         void this.props.withSending(this.book);
     };
 
+    /** Создаёт бронь на сервере и показывает ошибку или выполняет переход. */
     private readonly book = async () => {
         const {slot} = this.props;
         this.ui.setData({error: null});
         D('booking.submit', {slotId: slot.id, cost: slot.cost, expertId: slot.expert_id});
 
         try {
-            const result = await sendPost(appUrl(`/bookings/id~${slot.id}/~book`), {}) as BookingResponse;
+            const result = await sendPost(
+                appUrl(`/bookings/id~${slot.id}/~book`),
+                {},
+            ) as BookingResponse;
 
             if (result.success) {
                 D('booking.success', {slotId: slot.id});
@@ -89,11 +100,13 @@ class BookingFormView extends AntiHookComponent<BookingFormProps & {sending: boo
         }
     };
 
+    /** Отменяет стандартную отправку формы и запускает бронирование. */
     private readonly handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         this.submitBooking();
     };
 
+    /** Показывает сведения о слоте и преподавателе. */
     private renderDetails() {
         const {slot, expert, isModerator = false} = this.props;
         return (
@@ -119,6 +132,7 @@ class BookingFormView extends AntiHookComponent<BookingFormProps & {sending: boo
         );
     }
 
+    /** Отрисовывает форму с описанием занятия и кнопкой бронирования. */
     render() {
         const {sending} = this.props;
         const {error} = this.useCarburetor(this.ui);
@@ -152,9 +166,14 @@ class BookingFormView extends AntiHookComponent<BookingFormProps & {sending: boo
 
 const BookingFormIslandInner: React.FC<BookingFormProps> = (props) => {
     const {sending, withSending} = useSending();
-    return <BookingFormView {...props} sending={sending} withSending={withSending} />;
+        return <BookingFormView
+            {...props}
+            sending={sending}
+            withSending={withSending}
+        />;
 };
 
+/** Оборачивает форму бронирования контекстом предпросмотра участников. */
 export const BookingFormIsland: React.FC<BookingFormProps> = (props) => (
     <IrabiPreviewProvider>
         <BookingFormIslandInner {...props} />

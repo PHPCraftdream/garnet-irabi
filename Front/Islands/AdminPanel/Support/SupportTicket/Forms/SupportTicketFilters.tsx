@@ -29,10 +29,16 @@ interface FiltersProps {
  * крестик рядом с пустыми фильтрами ничего не значит.
  */
 export class SupportTicketFilters extends AntiHookComponent<FiltersProps> {
-    private readonly changeField = (event: React.ChangeEvent<HTMLSelectElement>) => this.props.onDateField(event.target.value as DateField);
-    private readonly changeFrom = (event: React.ChangeEvent<HTMLInputElement>) => this.props.onDateFrom(event.target.value);
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeField = (event: React.ChangeEvent<HTMLSelectElement>) =>
+        this.props.onDateField(event.target.value as DateField);
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeFrom = (event: React.ChangeEvent<HTMLInputElement>) =>
+        this.props.onDateFrom(event.target.value);
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly changeTo = (event: React.ChangeEvent<HTMLInputElement>) => this.props.onDateTo(event.target.value);
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderPeople() {
         const p = this.props;
         return (
@@ -63,6 +69,7 @@ export class SupportTicketFilters extends AntiHookComponent<FiltersProps> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderDatesAndReset() {
         const p = this.props;
         return (
@@ -104,6 +111,7 @@ export class SupportTicketFilters extends AntiHookComponent<FiltersProps> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         return (
             <div className="admin-bookings-filters" data-support-filters>

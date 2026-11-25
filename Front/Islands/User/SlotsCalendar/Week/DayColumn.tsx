@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {SlotItem, ExpertMap, DayInfo} from '../State/types';
+import {SlotItem, ExpertMap, DayInfo} from '../State/view/types';
 import {SlotCard} from '../Slot/SlotCard';
 
 interface DayColumnProps {
@@ -16,6 +16,7 @@ interface DayColumnProps {
 }
 
 export class DayColumn extends React.Component<DayColumnProps> {
+    /** Формирует разметку компонента. */
     private readonly renderSlot = (slot: SlotItem) => {
         const {experts, bookedIds, slotStatuses, onBookClick, isModerator, canBook} = this.props;
         return (
@@ -32,6 +33,7 @@ export class DayColumn extends React.Component<DayColumnProps> {
         );
     };
 
+    /** Отрисовывает содержимое компонента. */
     public render() {
         const {day, slots, dayLabel} = this.props;
         return (

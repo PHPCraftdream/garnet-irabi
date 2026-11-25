@@ -2,7 +2,7 @@ import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 import ImageLightbox from '../../../../../Common/media/ImageLightbox';
-import {AccountData, BalanceRow} from '../userDetailTypes';
+import {AccountData, BalanceRow} from '../status/userDetailTypes';
 import {UserAvatar} from './UserAvatar';
 import {UserHeaderBadges} from './UserHeaderBadges';
 import {UserHeaderMeta} from './UserHeaderMeta';
@@ -35,9 +35,12 @@ interface Props {
 }
 
 export class UserHeader extends AntiHookComponent<Props> {
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly openPhoto = () => this.props.setLightboxOpen(true);
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly closePhoto = () => this.props.setLightboxOpen(false);
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderIdentity() {
         const props = this.props;
         const {account, displayName, isExpert, photo, showActions} = props;
@@ -72,6 +75,7 @@ export class UserHeader extends AntiHookComponent<Props> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {displayName, photo, fullPhoto, balance, lightboxOpen} = this.props;
         return (

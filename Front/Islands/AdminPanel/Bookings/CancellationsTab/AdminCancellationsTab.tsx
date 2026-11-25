@@ -3,11 +3,12 @@ import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import Pagination from '@common/Components/Layout/Paging/Pagination';
 import {PageResponse} from '@common/hooks/data/usePagination';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {AccountOption, adminPaginationLabels, buildAccountOptions} from '../../Shell/adminShared';
+import {AccountOption, buildAccountOptions} from '../../Shell/shared/adminShared';
+import {adminPaginationLabels} from '../../Shell/navigation/adminPaginationLabels';
 import {AdminPageController} from '../../Shell/AdminPageController';
 import {AdminFilterBar, FilterCell} from '../AdminFilterBar';
 import {AdminCancellationsTable} from './AdminCancellationsTable';
-import {copyRow} from '../bookingsTypes';
+import {copyRow} from '../shared/bookingsTypes';
 
 export interface CancellationRow {
     id: number;
@@ -65,16 +66,20 @@ const buildBody = (f: Filters, page: number, perPage: number) => ({
 });
 
 class FilterStore extends Carburetor<Filters> {
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     constructor() {
         super(EMPTY);
     }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly snapshot = () => this.getData();
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly subscribeSnapshot = (listener: () => void) => {
         const id = this.subscribe(listener);
         return () => this.unsubscribe(id);
     };
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private replace(next: Filters): void {
         const before = this.getData();
         if (next === before) return;
@@ -86,7 +91,9 @@ class FilterStore extends Carburetor<Filters> {
         }
     }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly patch = (patch: Partial<Filters>) => this.replace({...this.getData(), ...patch});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly reset = () => this.replace(EMPTY);
 }
 
@@ -100,6 +107,7 @@ class AdminCancellationsTab extends AntiHookComponent<Props> {
     });
     private unsubscribeFilters?: () => void;
 
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
     componentDidMount(): void {
         super.componentDidMount();
         // Подписка на стор фильтров заменяет прежний эффект с debounce: срабатывает на каждую запись фильтров.
@@ -107,6 +115,7 @@ class AdminCancellationsTab extends AntiHookComponent<Props> {
         this.pagination.start();
     }
 
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
     componentWillUnmount(): void {
         this.unsubscribeFilters?.();
         this.unsubscribeFilters = undefined;
@@ -114,14 +123,21 @@ class AdminCancellationsTab extends AntiHookComponent<Props> {
         super.componentWillUnmount();
     }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private readonly onFiltersChanged = () => this.pagination.setFilters(this.filterStore.getData());
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly changeSearch = (value: string) => this.filterStore.patch({search: value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly changeExpertId = (value: number) => this.filterStore.patch({expertId: value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly changeUserId = (value: number) => this.filterStore.patch({userId: value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly changeDateFrom = (value: string) => this.filterStore.patch({dateFrom: value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly changeDateTo = (value: string) => this.filterStore.patch({dateTo: value});
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private filterCells(testIdPrefix: string, filters: Filters): FilterCell[] {
         const {experts, users} = this.props;
         const expertOptions = buildAccountOptions(experts);
@@ -147,12 +163,16 @@ class AdminCancellationsTab extends AntiHookComponent<Props> {
                 searchPlaceholder: t.Admin_Filter_SearchUser(),
                 onChange: this.changeUserId,
             },
-            {kind: 'date', id: `${testIdPrefix}-date-from`, label: t.Admin_Filter_DateFrom(), value: filters.dateFrom, onChange: this.changeDateFrom},
-            {kind: 'date', id: `${testIdPrefix}-date-to`, label: t.Admin_Filter_DateTo(), value: filters.dateTo, onChange: this.changeDateTo},
-            {kind: 'text', id: `${testIdPrefix}-search`, label: t.Admin_Filter_Reason(), value: filters.search, onChange: this.changeSearch},
+            {kind: 'date', id: `${testIdPrefix}-date-from`, label: t.Admin_Filter_DateFrom(), value:
+        filters.dateFrom, onChange: this.changeDateFrom},
+            {kind: 'date', id: `${testIdPrefix}-date-to`, label: t.Admin_Filter_DateTo(), value:
+        filters.dateTo, onChange: this.changeDateTo},
+            {kind: 'text', id: `${testIdPrefix}-search`, label: t.Admin_Filter_Reason(), value:
+        filters.search, onChange: this.changeSearch},
         ];
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderPager(pager: PagerState) {
         const {page, perPage, totalPages, total, loading} = pager;
         return (
@@ -169,7 +189,9 @@ class AdminCancellationsTab extends AntiHookComponent<Props> {
         );
     }
 
-    private renderTable(items: CancellationRow[], columns: string[], testIdPrefix: string, showExpertColumn: boolean, showUserColumn: boolean) {
+    /** Формирует представление данных для соответствующего раздела панели. */
+    private renderTable(items: CancellationRow[], columns: string[], testIdPrefix: string, showExpertColumn:
+        boolean, showUserColumn: boolean) {
         if (items.length === 0) return null;
         return (
             <AdminCancellationsTable
@@ -183,6 +205,7 @@ class AdminCancellationsTab extends AntiHookComponent<Props> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const filters = this.useCarburetor(this.filterStore);
         const pagination = this.useCarburetor(this.pagination);
@@ -203,7 +226,8 @@ class AdminCancellationsTab extends AntiHookComponent<Props> {
 
         return (
             <div data-test-id={`${testIdPrefix}-tab`}>
-                <AdminFilterBar cells={this.filterCells(testIdPrefix, filters)} loading={loading} resetTestId={`${testIdPrefix}-reset`} onReset={this.filterStore.reset} />
+                <AdminFilterBar cells={this.filterCells(testIdPrefix, filters)} loading={loading}
+        resetTestId={`${testIdPrefix}-reset`} onReset={this.filterStore.reset} />
                 <div className="admin-grid-pagination-top">{pager}</div>
                 {items.length === 0 && <p className="admin-bookings-empty">{t.Cancellations_Empty()}</p>}
                 {this.renderTable(items, columns, testIdPrefix, showExpertColumn, showUserColumn)}

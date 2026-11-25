@@ -1,8 +1,11 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {EntityLink} from '../../../../../Common/people/EntityLink';
-import {userLinks} from '../../../../../Common/people/entityLinkHelpers';
+import {EntityLink} from '../../../../../Common/people/links/EntityLink';
+import {userLinks} from '../../../../../Common/people/links/userLinks';
 import {Booking, ExpertInfo, SlotInfo, UserInfo} from '../bookingCardTypes';
+
+const bookingUserLabel = t.Booking_User;
+const slotExpert = t.Slot_Expert;
 
 interface Props {
     booking: Booking;
@@ -19,7 +22,7 @@ export const BookingParty: React.FC<Props> = ({booking, slot, expert, bookingUse
         if (!bookingUser || !booking.user_id) return null;
         return (
             <p className="booking-party-line" data-test-id={`booking-user-${booking.id}`}>
-                <span className="booking-party-label">{t.Booking_User()}:</span>{' '}
+                <span className="booking-party-label">{bookingUserLabel()}:</span>{' '}
                 <EntityLink name={bookingUser.name} {...userLinks(booking.user_id, false)} isModerator={isModerator} />
             </p>
         );
@@ -28,8 +31,9 @@ export const BookingParty: React.FC<Props> = ({booking, slot, expert, bookingUse
     if (!expert) return null;
     return (
         <p className="booking-party-line" data-test-id={`booking-expert-${booking.id}`}>
-            <span className="booking-party-label">{t.Slot_Expert()}:</span>{' '}
-            <EntityLink name={expert.display_name} {...userLinks(slot?.expert_id ?? 0, true)} isModerator={isModerator} />
+            <span className="booking-party-label">{slotExpert()}:</span>{' '}
+            <EntityLink name={expert.display_name}
+                {...userLinks(slot?.expert_id ?? 0, true)} isModerator={isModerator} />
         </p>
     );
 };

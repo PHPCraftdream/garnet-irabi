@@ -1,6 +1,11 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 
+const a11yRemoveAttachment = t.A11y_RemoveAttachment;
+const actionClose = t.Action_Close;
+const a11yPreviousImage = t.A11y_PreviousImage;
+const a11yNextImage = t.A11y_NextImage;
+
 const stopPropagation = (event: React.MouseEvent) => event.stopPropagation();
 
 interface PreviewFile {
@@ -21,8 +26,8 @@ const LightboxActions: React.FC<ActionsProps> = ({onRemove, onClose}) => (
             type="button"
             className="pick-remove-button"
             onClick={onRemove}
-            title={t.A11y_RemoveAttachment()}
-            aria-label={t.A11y_RemoveAttachment()}
+            title={a11yRemoveAttachment()}
+            aria-label={a11yRemoveAttachment()}
         >
             ×
         </button>
@@ -30,8 +35,8 @@ const LightboxActions: React.FC<ActionsProps> = ({onRemove, onClose}) => (
             type="button"
             className="pick-close-button"
             onClick={onClose}
-            title={t.Action_Close()}
-            aria-label={t.Action_Close()}
+            title={actionClose()}
+            aria-label={actionClose()}
         >
             ✕
         </button>
@@ -49,8 +54,8 @@ const LightboxNav: React.FC<NavProps> = ({onPrev, onNext}) => (
         <button
             type="button"
             className="pick-previous-button"
-            title={t.A11y_PreviousImage()}
-            aria-label={t.A11y_PreviousImage()}
+            title={a11yPreviousImage()}
+            aria-label={a11yPreviousImage()}
             onClick={onPrev}
         >
             ‹
@@ -58,8 +63,8 @@ const LightboxNav: React.FC<NavProps> = ({onPrev, onNext}) => (
         <button
             type="button"
             className="pick-next-button"
-            title={t.A11y_NextImage()}
-            aria-label={t.A11y_NextImage()}
+            title={a11yNextImage()}
+            aria-label={a11yNextImage()}
             onClick={onNext}
         >
             ›
@@ -80,6 +85,7 @@ interface Props {
 
 /** Просмотр выбранной картинки во весь экран, с листанием и удалением. */
 export class AttachmentLightbox extends React.Component<Props> {
+/** Возвращает позицию файла среди доступных превью. */
     private position(): number {
         const {previewFiles, currentIndex} = this.props;
         for (let i = 0; i < previewFiles.length; i++) {
@@ -88,18 +94,21 @@ export class AttachmentLightbox extends React.Component<Props> {
         return -1;
     }
 
+/** Переходит к предыдущему изображению по кругу. */
     private readonly goPrev = () => {
         const {previewFiles, onNavigate} = this.props;
         const pos = this.position();
         onNavigate((pos > 0 ? previewFiles[pos - 1] : previewFiles[previewFiles.length - 1]).index);
     };
 
+/** Переходит к следующему изображению по кругу. */
     private readonly goNext = () => {
         const {previewFiles, onNavigate} = this.props;
         const pos = this.position();
         onNavigate((pos < previewFiles.length - 1 ? previewFiles[pos + 1] : previewFiles[0]).index);
     };
 
+/** Рисует просмотр изображения. */
     public render() {
         const {current, previewFiles, onRemove, onClose} = this.props;
         if (!current?.preview) return null;

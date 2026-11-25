@@ -2,8 +2,15 @@ import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {translateStatus} from '../../../Common/booking/statusHelpers';
-import {SeatsSource, SlotFormatSource, slotFormatLine, slotSeatsLeftLine} from '../../../Common/booking/slotFormat';
+import {translateStatus} from '../../../Common/booking/status/statusHelpers';
+import type {SeatsSource} from '../../../Common/booking/formatting/slotFormat';
+import type {SlotFormatSource} from '../../../Common/booking/formatting/slotFormat';
+import {slotFormatLine} from '../../../Common/booking/formatting/slotFormatLine';
+import {slotSeatsLeftLine} from '../../../Common/booking/formatting/slotSeatsLeftLine';
+
+const slotCost = t.Slot_Cost;
+const slotGroupBadge = t.Slot_GroupBadge;
+const slotType = t.Slot_Type;
 
 interface SlotLike extends SlotFormatSource, SeatsSource {
     id: number;
@@ -25,7 +32,7 @@ const SlotCardTitle: React.FC<{slot: SlotLike}> = ({slot}) => (
         {formatTs(slot.start_at)}
         {(slot.max_users ?? 1) > 1 && (
             <span className="slot-group-badge" data-test-id={`slot-group-badge-${slot.id}`}>
-                {t.Slot_GroupBadge([slot.max_users ?? 1])}
+                {slotGroupBadge([slot.max_users ?? 1])}
             </span>
         )}
         {/* D-200: остаток мест появился в каталоге и не появился
@@ -43,8 +50,10 @@ const SlotCardTitle: React.FC<{slot: SlotLike}> = ({slot}) => (
 type ActionProps = Pick<Props, 'slot' | 'isOwnProfile' | 'canBook' | 'onBook'>;
 
 class SlotBookingAction extends AntiHookComponent<ActionProps> {
+    /** Передаёт идентификатор слота обработчику бронирования. */
     private readonly book = () => this.props.onBook(this.props.slot.id);
 
+    /** Отображает кнопку записи или пояснение её недоступности. */
     render() {
         const {slot, isOwnProfile, canBook} = this.props;
         return (
@@ -89,8 +98,8 @@ export const ExpertSlotCard: React.FC<Props> = ({slot, isOwnProfile, canBook, on
         <div className="booking-card-shell">
             <div className="expert-slot-card-body">
                 <SlotCardTitle slot={slot} />
-                <p className="expert-profile-slot-cost"><strong>{t.Slot_Cost()}:</strong> {slot.cost} &#8381;</p>
-                <p className="expert-profile-slot-format"><strong>{t.Slot_Type()}:</strong> {slotFormatLine(slot)}</p>
+                <p className="expert-profile-slot-cost"><strong>{slotCost()}:</strong> {slot.cost} &#8381;</p>
+                <p className="expert-profile-slot-format"><strong>{slotType()}:</strong> {slotFormatLine(slot)}</p>
                 <SlotBookingAction slot={slot} isOwnProfile={isOwnProfile} canBook={canBook} onBook={onBook} />
             </div>
         </div>

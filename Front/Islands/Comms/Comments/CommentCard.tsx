@@ -5,6 +5,8 @@ import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {Comment} from './commentTypes';
 
+const userAnonymous = t.User_Anonymous;
+
 interface Props {
     comment: Comment;
     /** Подпись состояния — пустая, когда сказать нечего. */
@@ -22,22 +24,28 @@ interface Props {
  */
 const CommentAuthor: React.FC<{comment: Comment}> = ({comment}) => {
     if (comment.author_id > 0) {
-        return <UserLink id={comment.author_id} name={comment.author_name || t.User_Anonymous()} />;
+        return <UserLink id={comment.author_id} name={comment.author_name || userAnonymous()} />;
     }
 
-    return <>{comment.author_name || t.User_Anonymous()}</>;
+    return <>{comment.author_name || userAnonymous()}</>;
 };
 
 export class CommentCard extends AntiHookComponent<Props> {
+    /** Обрабатывает remove. */
     private readonly remove = () => this.props.onDelete(this.props.comment.id);
 
+    /** Рисует содержимое комментария. */
     private renderContent() {
         const {comment, statusLabel} = this.props;
         return (
             <div className="review-content">
                 <div className="review-author">
                     <CommentAuthor comment={comment} />
-                    {statusLabel && <span className="review-status" data-test-id={`comment-status-${comment.id}`}>{statusLabel}</span>}
+                    {statusLabel && (
+                        <span className="review-status" data-test-id={`comment-status-${comment.id}`}>
+                            {statusLabel}
+                        </span>
+                    )}
                 </div>
                 <div className="review-body">{comment.body}</div>
                 <div className="review-time">{formatTs(comment.created_at)}</div>
@@ -45,6 +53,7 @@ export class CommentCard extends AntiHookComponent<Props> {
         );
     }
 
+    /** Рисует содержимое компонента. */
     render() {
         const {comment, canDelete} = this.props;
         return (
@@ -52,7 +61,8 @@ export class CommentCard extends AntiHookComponent<Props> {
                 <div className="review-row">
                     {this.renderContent()}
                     {canDelete && (
-                        <button type="button" data-test-id={`comment-delete-${comment.id}`} className="review-delete" onClick={this.remove}>
+                        <button type="button" data-test-id={`comment-delete-${comment.id}`}
+                            className="review-delete" onClick={this.remove}>
                             {t.Comment_Delete()}
                         </button>
                     )}

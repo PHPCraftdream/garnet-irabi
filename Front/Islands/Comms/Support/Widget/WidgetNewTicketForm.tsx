@@ -21,14 +21,17 @@ interface NewTicketFormProps {
 
 /** Форма нового обращения. */
 export class WidgetNewTicketForm extends React.Component<NewTicketFormProps> {
+    /** Обновляет тему обращения. */
     private readonly changeSubject = (event: React.ChangeEvent<HTMLInputElement>) => {
         this.props.onSubjectChange(event.target.value);
     };
 
+    /** Обновляет текст сообщения. */
     private readonly changeMessage = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
         this.props.onMessageChange(event.target.value);
     };
 
+    /** Отправляет форму по клавиатурному сочетанию. */
     private readonly submitOnKey = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         const {sending, subject, message, onSubmit} = this.props;
         if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !sending && subject.trim() && message.trim()) {
@@ -37,6 +40,7 @@ export class WidgetNewTicketForm extends React.Component<NewTicketFormProps> {
         }
     };
 
+    /** Рисует поля формы. */
     private renderFields() {
         const {subject, message} = this.props;
         return (
@@ -68,6 +72,7 @@ export class WidgetNewTicketForm extends React.Component<NewTicketFormProps> {
         );
     }
 
+    /** Рисует содержимое компонента. */
     public render() {
         const {subject, message, files, onFilesChange, onScreenshot, onSubmit, onBack, sending} = this.props;
         return (

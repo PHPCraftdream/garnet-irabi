@@ -8,7 +8,8 @@ interface Props {
     messages: SupportMessage[];
 }
 
-function collect(messages: SupportMessage[]): AttachmentWithAuthor[] {
+    /** Формирует представление данных для соответствующего раздела панели. */
+function collect(messages: readonly SupportMessage[]): AttachmentWithAuthor[] {
     const attachments: AttachmentWithAuthor[] = [];
     for (const msg of messages) {
         for (const attachment of msg.attachments ?? []) attachments.push({...attachment, author_name: msg.author_name});
@@ -16,14 +17,17 @@ function collect(messages: SupportMessage[]): AttachmentWithAuthor[] {
     return attachments;
 }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
 function renderAttachment(att: AttachmentWithAuthor) {
     return <AttachmentRow key={att.id} att={att} />;
 }
 
 export default class TicketAttachments extends AntiHookComponent<Props> {
     private readonly ui = new Carburetor({expanded: false});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly toggle = () => this.ui.setData({expanded: !this.ui.getData().expanded});
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {expanded} = this.useCarburetor(this.ui);
         const attachments = collect(this.props.messages);

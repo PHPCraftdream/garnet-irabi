@@ -15,16 +15,20 @@ interface Props {
 }
 
 export default class ImageLightbox extends AntiHookComponent<Props> {
+/** Закрывает изображение. */
     private readonly close = () => this.props.onClose();
 
+/** Закрывает просмотр клавишей Escape. */
     private readonly handleKey = (event: KeyboardEvent) => {
         if (event.key === 'Escape') this.props.onClose();
     };
 
+/** Закрывает просмотр при клике по фону. */
     private readonly handleBackdrop = (event: React.MouseEvent<HTMLDivElement>) => {
         if (event.target === event.currentTarget) this.props.onClose();
     };
 
+/** Блокирует прокрутку и подписывает клавиатурный обработчик. */
     private readonly lockBody = () => {
         window.addEventListener('keydown', this.handleKey);
         const previousOverflow = document.body.style.overflow;
@@ -35,10 +39,12 @@ export default class ImageLightbox extends AntiHookComponent<Props> {
         };
     };
 
+/** Подключает обработчики лайтбокса. */
     protected useEffects(): void {
         this.useEffect(this.lockBody, []);
     }
 
+/** Выводит лайтбокс в портале документа. */
     public render() {
         // Portal straight to <body>: a `position: fixed` element rendered as a
         // descendant of ANY ancestor with backdrop-filter/filter/transform/
@@ -51,6 +57,7 @@ export default class ImageLightbox extends AntiHookComponent<Props> {
         return createPortal(this.renderContent(), document.body);
     }
 
+/** Собирает содержимое окна просмотра. */
     private renderContent() {
         const {src, alt, downloadUrl, downloadName} = this.props;
         return (

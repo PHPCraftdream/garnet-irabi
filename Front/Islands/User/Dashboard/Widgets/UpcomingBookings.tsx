@@ -1,12 +1,17 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {isConfirmed} from '../../../../Common/booking/bookingAction';
+import {isConfirmed} from '../../../../Common/booking/status/isConfirmed';
 import {formatTs} from '@common/Utils/Time/DateUtils';
-import {translateStatus} from '../../../../Common/booking/statusHelpers';
-import {UniversalBadge} from '../../../../Common/booking/StatusBadge';
+import {translateStatus} from '../../../../Common/booking/status/statusHelpers';
+import {UniversalBadge} from '../../../../Common/booking/status/StatusBadge';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {ExternalLink} from '@common/Components/Layout/ExternalLink';
 import {appUrl} from '@common/Utils/Url/appUrl';
+
+const dashStartLearning = t.Dash_StartLearning;
+const dashUpcoming = t.Dash_Upcoming;
+const dashViewAll = t.Dash_ViewAll;
+const menuBrowseSlots = t.Menu_BrowseSlots;
 
 const USER_DASH_LINK_TEMPLATE = <a className="user-dash-link" />;
 
@@ -71,18 +76,25 @@ const BookingRow: React.FC<{booking: BookingItem}> = ({booking}) => (
 /** Ближайшие занятия ученика. */
 function renderRow(b: BookingItem) { return <BookingRow key={b.id} booking={b} />; }
 
+/** Отображает ближайшие бронирования ученика и ссылку на расписание. */
 export const UpcomingBookings: React.FC<{bookings: BookingItem[]}> = ({bookings}) => (
     <div data-test-id="upcoming-bookings">
         <div className="user-dash-section-header">
-            <h2 className="user-dash-section-heading">{t.Dash_Upcoming()}</h2>
+            <h2 className="user-dash-section-heading">{dashUpcoming()}</h2>
             {bookings.length > 0 && (
-                <a href={appUrl('/bookings')} className="user-dash-view-all">{t.Dash_ViewAll()}</a>
+                <a href={appUrl('/bookings')} className="user-dash-view-all">{dashViewAll()}</a>
             )}
         </div>
         {bookings.length === 0 && (
             <div className="empty-state-card" data-user-dash-empty>
-                <p className="user-dash-empty-label">{t.Dash_StartLearning()}</p>
-                <a href={appUrl('/slots')} className="primary-action-button" data-user-dash-compact="true">{t.Menu_BrowseSlots()}</a>
+                <p className="user-dash-empty-label">{dashStartLearning()}</p>
+                <a
+                    href={appUrl('/slots')}
+                    className="primary-action-button"
+                    data-user-dash-compact="true"
+                >
+                    {menuBrowseSlots()}
+                </a>
             </div>
         )}
         {bookings.length > 0 && (

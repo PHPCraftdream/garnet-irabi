@@ -2,8 +2,10 @@ import * as React from 'react';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 import {SupportMessage} from '../../../../Comms/Support/parts/supportTypes';
 import AttachmentDisplay from '../../../../../Common/attachments/AttachmentDisplay';
-import {AdminUserLink} from '../../../../../Common/people/EntityLinks';
+import {AdminUserLink} from '../../../../../Common/people/links/EntityLinks';
 import {formatTs} from '@common/Utils/Time/DateUtils';
+
+const support_InternalComment = t.Support_InternalComment;
 
 /**
  * Одно сообщение в переписке по обращению.
@@ -21,6 +23,7 @@ const Author: React.FC<{msg: SupportMessage}> = ({msg}) => {
         : <span className="admin-support-author-muted">{msg.author_name}</span>;
 };
 
+/** Отображает данные раздела и передаёт действия пользователя обработчикам. */
 export const SupportMessageBubble: React.FC<{msg: SupportMessage}> = ({msg}) => {
     if (msg.msg_type === 'system') {
         return (
@@ -39,7 +42,8 @@ export const SupportMessageBubble: React.FC<{msg: SupportMessage}> = ({msg}) => 
             <div className="support-message-bubble" data-own={!isUser && !isInternal} data-admin-internal={isInternal}>
                 <div className="admin-support-message-heading">
                     <Author msg={msg} />
-                    {isInternal && <span className="admin-support-internal-label">({t.Support_InternalComment()})</span>}
+                    {isInternal && <span
+        className="admin-support-internal-label">({support_InternalComment()})</span>}
                 </div>
                 <div className="support-message-body">{msg.body}</div>
                 {msg.attachments && msg.attachments.length > 0 && <AttachmentDisplay attachments={msg.attachments} />}

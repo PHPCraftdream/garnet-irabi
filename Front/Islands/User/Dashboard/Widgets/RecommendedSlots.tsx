@@ -4,8 +4,8 @@ import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {SlotBookingController} from '../../SlotsCalendar/Booking/SlotBookingController';
-import {SlotBookingModalHost} from '../../SlotsCalendar/Booking/SlotBookingModalHost';
+import {SlotBookingController} from '../../SlotsCalendar/Booking/logic/SlotBookingController';
+import {SlotBookingModalHost} from '../../SlotsCalendar/Booking/components/SlotBookingModalHost';
 
 const USER_DASH_LINK_TEMPLATE = <a className="user-dash-link" />;
 
@@ -23,8 +23,10 @@ const stopPropagation = (event: React.MouseEvent) => event.stopPropagation();
 const reloadPage = () => window.location.reload();
 
 class SlotTeaserRow extends AntiHookComponent<{slot: SlotTeaser; onBook: (id: number) => void}> {
+    /** Открывает форму бронирования выбранного занятия. */
     private readonly handleBook = () => this.props.onBook(this.props.slot.id);
 
+    /** Рисует цену и кнопку записи рядом с описанием занятия. */
     private renderAside() {
         const {slot} = this.props;
         return (
@@ -42,16 +44,15 @@ class SlotTeaserRow extends AntiHookComponent<{slot: SlotTeaser; onBook: (id: nu
         );
     }
 
+    /** Отображает занятие с преподавателем, временем и длительностью. */
     render() {
         const {slot} = this.props;
-
-    return (
-        <div>
-            <div className="user-dash-row-main">
-                <div className="user-dash-row-title">{slot.label}</div>
-                <div className="user-dash-row-meta">
-                    {slot.expert_id > 0
-                        ? (
+        return (
+            <div>
+                <div className="user-dash-row-main">
+                    <div className="user-dash-row-title">{slot.label}</div>
+                    <div className="user-dash-row-meta">
+                        {slot.expert_id > 0 ? (
                             <UserLink
                                 id={slot.expert_id}
                                 name={slot.expert_name}
@@ -59,15 +60,18 @@ class SlotTeaserRow extends AntiHookComponent<{slot: SlotTeaser; onBook: (id: nu
                                 anchor={USER_DASH_LINK_TEMPLATE}
                                 onClick={stopPropagation}
                             />
-                        )
-                        : slot.expert_name}
-                    {' '}&middot; {formatTs(slot.start_at, {weekday: true})}
+                        ) : (
+                            slot.expert_name
+                        )}{' '}
+                        &middot; {formatTs(slot.start_at, {weekday: true})}
+                    </div>
+                    <div className="user-dash-row-meta">
+                        {slot.duration_min} {t.Slot_Duration_Min()}
+                    </div>
                 </div>
-                <div className="user-dash-row-meta">{slot.duration_min} {t.Slot_Duration_Min()}</div>
+                {this.renderAside()}
             </div>
-            {this.renderAside()}
-        </div>
-    );
+        );
     }
 }
 
@@ -81,8 +85,10 @@ export class RecommendedSlots extends AntiHookComponent<Props> {
     // отдельную страницу. После успеха страница перезагружается, чтобы
     // ближайшие занятия и баланс показали новую бронь.
     private readonly controller = new SlotBookingController();
+    /** Запускает бронирование из окна рекомендуемых занятий. */
     private readonly book = (slotId: number) => void this.controller.openBooking(slotId);
 
+    /** Показывает карточку с подходящими занятиями. */
     render() {
         const {slots} = this.props;
         if (slots.length === 0) return null;

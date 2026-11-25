@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {PenaltyTerms} from '../../../../Common/booking/bookingAction';
+import type {PenaltyTerms} from '../../../../Common/booking/actions/rules/bookingAction';
 import {Booking, BookingsViewAs, ExpertInfo, SlotInfo, UserInfo} from './bookingCardTypes';
 import {BookingPlaceLine} from './details/BookingPlaceLine';
 import {BookingParty} from './details/BookingParty';
@@ -10,6 +10,9 @@ import {BookingStatus} from './details/BookingStatus';
 import {BookingGroupBadge} from './details/BookingGroupBadge';
 import {BookingCancelCause} from './cancel/BookingCancelCause';
 import {BookingCardActions} from './BookingCardActions';
+
+const bookingCreated = t.Booking_Created;
+const bookingNA = t.Booking_NA;
 
 export interface BookingCardProps {
     booking: Booking;
@@ -27,6 +30,7 @@ export interface BookingCardProps {
     hideCost?: boolean;
 }
 
+/** Описывает строку брони в карточке со сведениями о занятии и участниках. */
 export const BookingCard: React.FC<BookingCardProps> = ({
     booking,
     slots,
@@ -56,7 +60,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
         <div className="booking-card-shell" data-test-id={`booking-card-${booking.id}`}>
             <div className="booking-card-body">
                 <div className="booking-card-header">
-                    <h5 className="booking-card-title">{isSlot && slot ? formatTs(slot.start_at) : t.Booking_NA()}</h5>
+                    <h5 className="booking-card-title">{isSlot && slot ? formatTs(slot.start_at) : bookingNA()}</h5>
                     <BookingStatus booking={booking} />
                 </div>
 
@@ -84,7 +88,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
                 <BookingCancelCause booking={booking} viewAs={viewAs} />
 
                 <p className="booking-created-line">
-                    {t.Booking_Created()}: {formatTs(booking.created_at)}
+                    {bookingCreated()}: {formatTs(booking.created_at)}
                 </p>
 
                 <BookingCardActions

@@ -8,6 +8,7 @@ interface Props {
     onScreenshot: (blob: Blob, name: string) => void;
 }
 
+/** Рисует инструменты работы с вложениями. */
 export const WidgetAttachmentTools: React.FC<Props> = ({files, onFilesChange, onScreenshot}) => (
     <div className="widget-attachment-tools">
         <AttachmentPicker files={files} onChange={onFilesChange} />

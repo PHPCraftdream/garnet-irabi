@@ -9,18 +9,22 @@ import {Carburetor} from '@react-carburetor/core';
 export class SupportSending extends Carburetor<{sending: boolean}> {
     private guard = false;
 
+    /** Создаёт состояние контроллера. */
     constructor() {
         super({sending: false});
     }
 
+    /** Возвращает текущий снимок состояния. */
     readonly snapshot = () => this.getData();
 
+    /** Подписывает слушателя на изменения снимка. */
     readonly subscribeSnapshot = (listener: () => void) => {
         const id = this.subscribe(listener);
 
         return () => this.unsubscribe(id);
     };
 
+    /** Обновляет часть состояния. */
     private patch(changes: Partial<{sending: boolean}>): void {
         const previous = this.getData();
         const version = this.getVersion();
@@ -31,6 +35,7 @@ export class SupportSending extends Carburetor<{sending: boolean}> {
         }
     }
 
+    /** Устанавливает признак отправки. */
     private readonly setSending = (sending: boolean): void => {
         if (this.getData().sending === sending) return;
         this.patch({sending});
@@ -40,6 +45,7 @@ export class SupportSending extends Carburetor<{sending: boolean}> {
     // вызовами (двойной клик/тач) `sending` ещё не успевает обновиться, и оба
     // вызова проходили проверку — один клик отправлял несколько одинаковых
     // запросов подряд.
+    /** Обрабатывает withSending. */
     readonly withSending = async (fn: () => Promise<void>): Promise<void> => {
         if (this.guard) return;
         this.guard = true;

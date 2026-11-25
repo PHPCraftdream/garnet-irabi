@@ -3,11 +3,13 @@ import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import Pagination from '@common/Components/Layout/Paging/Pagination';
 import {PageResponse} from '@common/hooks/data/usePagination';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {translateStatus} from '../../../../Common/booking/statusHelpers';
-import {AccountOption, adminPaginationLabels, buildAccountOptions} from '../../Shell/adminShared';
+import {translateStatus} from '../../../../Common/booking/status/statusHelpers';
+import {AccountOption, buildAccountOptions} from '../../Shell/shared/adminShared';
+import {adminPaginationLabels} from '../../Shell/navigation/adminPaginationLabels';
 import {AdminPageController} from '../../Shell/AdminPageController';
 import {AdminFilterBar, FilterCell} from '../AdminFilterBar';
-import {AdminBookingRow, BookingsFilters, copyRow, EMPTY_FILTERS} from '../bookingsTypes';
+import {AdminBookingRow, BookingsFilters, copyRow} from '../shared/bookingsTypes';
+import {EMPTY_FILTERS} from '../shared/emptyFilters';
 import {AdminBookingsTable} from './AdminBookingsTable';
 
 interface Props {
@@ -26,6 +28,7 @@ interface PagerState {
     loading: boolean;
 }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
 function statusOption(status: string) {
     return {value: status, label: translateStatus(status)};
 }
@@ -42,16 +45,20 @@ const buildBody = (f: BookingsFilters, page: number, perPage: number) => ({
 });
 
 class FilterStore extends Carburetor<BookingsFilters> {
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     constructor() {
         super(EMPTY_FILTERS);
     }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly snapshot = () => this.getData();
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly subscribeSnapshot = (listener: () => void) => {
         const id = this.subscribe(listener);
         return () => this.unsubscribe(id);
     };
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private replace(next: BookingsFilters): void {
         const before = this.getData();
         if (next === before) return;
@@ -63,7 +70,9 @@ class FilterStore extends Carburetor<BookingsFilters> {
         }
     }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly patch = (patch: Partial<BookingsFilters>) => this.replace({...this.getData(), ...patch});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly reset = () => this.replace(EMPTY_FILTERS);
 }
 
@@ -77,6 +86,7 @@ export class AdminBookingsTab extends AntiHookComponent<Props> {
     });
     private unsubscribeFilters?: () => void;
 
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
     componentDidMount(): void {
         super.componentDidMount();
         // Подписка на стор фильтров заменяет прежний эффект с debounce: срабатывает на каждую запись фильтров.
@@ -84,6 +94,7 @@ export class AdminBookingsTab extends AntiHookComponent<Props> {
         this.pagination.start();
     }
 
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
     componentWillUnmount(): void {
         this.unsubscribeFilters?.();
         this.unsubscribeFilters = undefined;
@@ -91,15 +102,23 @@ export class AdminBookingsTab extends AntiHookComponent<Props> {
         super.componentWillUnmount();
     }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private readonly onFiltersChanged = () => this.pagination.setFilters(this.filterStore.getData());
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly changeSearch = (value: string) => this.filterStore.patch({search: value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly changeExpertId = (value: number) => this.filterStore.patch({expertId: value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly changeUserId = (value: number) => this.filterStore.patch({userId: value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly changeDateFrom = (value: string) => this.filterStore.patch({dateFrom: value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly changeDateTo = (value: string) => this.filterStore.patch({dateTo: value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly changeStatus = (value: string) => this.filterStore.patch({status: value});
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private filterCells(filters: BookingsFilters): FilterCell[] {
         const {experts, users, allowedStatuses} = this.props;
         const expertOptions = buildAccountOptions(experts);
@@ -113,7 +132,8 @@ export class AdminBookingsTab extends AntiHookComponent<Props> {
                 options: [{value: '', label: t.Admin_Filter_All()}, ...allowedStatuses.map(statusOption)],
                 onChange: this.changeStatus,
             },
-            {kind: 'text', id: 'admin-bookings-search', label: t.Admin_Filter_SearchID(), value: filters.search, onChange: this.changeSearch},
+            {kind: 'text', id: 'admin-bookings-search', label: t.Admin_Filter_SearchID(), value:
+        filters.search, onChange: this.changeSearch},
             {
                 kind: 'person',
                 id: 'admin-bookings-expert',
@@ -134,11 +154,14 @@ export class AdminBookingsTab extends AntiHookComponent<Props> {
                 searchPlaceholder: t.Admin_Filter_SearchUser(),
                 onChange: this.changeUserId,
             },
-            {kind: 'date', id: 'admin-bookings-date-from', label: t.Admin_Filter_DateFrom(), value: filters.dateFrom, onChange: this.changeDateFrom},
-            {kind: 'date', id: 'admin-bookings-date-to', label: t.Admin_Filter_DateTo(), value: filters.dateTo, onChange: this.changeDateTo},
+            {kind: 'date', id: 'admin-bookings-date-from', label: t.Admin_Filter_DateFrom(), value:
+        filters.dateFrom, onChange: this.changeDateFrom},
+            {kind: 'date', id: 'admin-bookings-date-to', label: t.Admin_Filter_DateTo(), value:
+        filters.dateTo, onChange: this.changeDateTo},
         ];
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderPager(pager: PagerState) {
         const {page, perPage, totalPages, total, loading} = pager;
         return (
@@ -155,6 +178,7 @@ export class AdminBookingsTab extends AntiHookComponent<Props> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const filters = this.useCarburetor(this.filterStore);
         const pagination = this.useCarburetor(this.pagination);
@@ -166,7 +190,8 @@ export class AdminBookingsTab extends AntiHookComponent<Props> {
 
         return (
             <div data-test-id="admin-bookings-tab">
-                <AdminFilterBar cells={cells} loading={loading} resetTestId="admin-bookings-reset" onReset={this.filterStore.reset} />
+                <AdminFilterBar cells={cells} loading={loading} resetTestId="admin-bookings-reset"
+        onReset={this.filterStore.reset} />
                 <div className="admin-grid-pagination-top">{pager}</div>
                 {items.length === 0 && <p className="admin-bookings-empty">{t.Admin_NoBookings()}</p>}
                 {items.length > 0 && <AdminBookingsTable items={items} />}

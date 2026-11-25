@@ -1,8 +1,9 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {TOKEN_FILTER_OPTIONS} from './tokenTypes';
+import {TOKEN_FILTER_OPTIONS} from './config/tokenFilterOptions';
 
+    /** Формирует представление данных для соответствующего раздела панели. */
 function renderStatusOption(option: (typeof TOKEN_FILTER_OPTIONS)[number]) {
     return <option key={option.value} value={option.value}>{option.label()}</option>;
 }
@@ -16,9 +17,14 @@ interface Props {
 }
 
 export class TokenFilters extends AntiHookComponent<Props> {
-    private readonly search = (event: React.ChangeEvent<HTMLInputElement>) => this.props.onSearchChange(event.target.value);
-    private readonly status = (event: React.ChangeEvent<HTMLSelectElement>) => this.props.onStatusChange(event.target.value);
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+    private readonly search = (event: React.ChangeEvent<HTMLInputElement>) =>
+        this.props.onSearchChange(event.target.value);
+    /** Формирует представление данных для соответствующего раздела панели. */
+    private readonly status = (event: React.ChangeEvent<HTMLSelectElement>) =>
+        this.props.onStatusChange(event.target.value);
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderSearch() {
         const {search} = this.props;
         return (
@@ -37,6 +43,7 @@ export class TokenFilters extends AntiHookComponent<Props> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {status, onCreate} = this.props;
         return (
@@ -55,7 +62,8 @@ export class TokenFilters extends AntiHookComponent<Props> {
                     </select>
                 </div>
                 <div className="filter-actions">
-                    <button type="button" className="primary-action-button" onClick={onCreate} data-test-id="tokens-create-btn">
+                    <button type="button" className="primary-action-button" onClick={onCreate}
+                        data-test-id="tokens-create-btn">
                         {t.Admin_Tokens_Create()}
                     </button>
                 </div>

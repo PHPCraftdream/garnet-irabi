@@ -2,6 +2,7 @@ import * as React from 'react';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 
 export class SlotsNoMatch extends React.Component<{onReset: () => void}> {
+    /** Отрисовывает содержимое компонента. */
     public render() {
         return (
             <div className="slots-no-match" data-test-id="slots-no-match">

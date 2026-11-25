@@ -18,9 +18,12 @@ interface ArchiveButtonProps {
 }
 
 class ArchiveToggle extends AntiHookComponent<ArchiveButtonProps> {
+    /** Запускает обработчик архивирования текущего события. */
     private readonly archive = () => this.props.onArchive(this.props.event.id);
+    /** Запускает обработчик восстановления текущего события. */
     private readonly unarchive = () => this.props.onUnarchive(this.props.event.id);
 
+    /** Отображает архивное действие, соответствующее состоянию события. */
     render() {
         const {event} = this.props;
         if (event.is_archived) {
@@ -77,6 +80,7 @@ function unreadIds(group: NewsGroup): number[] {
     return ids;
 }
 
+/** Возвращает, есть ли в группе непрочитанные события. */
 function hasUnread(group: NewsGroup): boolean {
     if (!group.first.is_read) return true;
     for (const event of group.others) {
@@ -86,18 +90,22 @@ function hasUnread(group: NewsGroup): boolean {
 }
 
 export class NewsGroupRow extends AntiHookComponent<Props> {
+    /** Отмечает все непрочитанные события группы прочитанными. */
     private readonly markGroupRead = (): void => {
         const unread = unreadIds(this.props.group);
         if (unread.length > 0) this.props.onMarkRead(unread);
     };
 
-    render() {
-        const {group, detail, message, onArchive, onUnarchive} = this.props;
-        const event = group.first;
-        const groupCount = group.others.length;
-        const anyUnread = hasUnread(group);
+    /** Рисует содержимое группы и связанные с ней действия. */
+    private renderGroupContent(
+        event: NewsEvent,
+        detail: string | null,
+        message: React.ReactNode,
+        groupCount: number,
+        anyUnread: boolean,
+    ) {
         return (
-            <div className={event.is_archived ? 'news-row-archived-item' : 'news-row'} data-unread={anyUnread} data-archived={event.is_archived} data-test-id={`news-event-${event.id}`} onMouseEnter={this.markGroupRead}>
+            <>
                 <div className="news-row-content">
                     <p className={anyUnread ? 'news-row-message-unread' : 'news-row-message'} data-unread={anyUnread}>
                         {message}
@@ -114,8 +122,30 @@ export class NewsGroupRow extends AntiHookComponent<Props> {
                     </p>
                 </div>
                 <div className="news-row-actions">
-                    <ArchiveToggle event={event} onArchive={onArchive} onUnarchive={onUnarchive} />
+                    <ArchiveToggle
+                        event={event}
+                        onArchive={this.props.onArchive}
+                        onUnarchive={this.props.onUnarchive}
+                    />
                 </div>
+            </>
+        );
+    }
+
+    /** Рисует группу событий и связанные с ней действия. */
+    render() {
+        const {group, detail, message} = this.props;
+        const event = group.first;
+        const anyUnread = hasUnread(group);
+        return (
+            <div
+                className={event.is_archived ? 'news-row-archived-item' : 'news-row'}
+                data-unread={anyUnread}
+                data-archived={event.is_archived}
+                data-test-id={`news-event-${event.id}`}
+                onMouseEnter={this.markGroupRead}
+            >
+                {this.renderGroupContent(event, detail, message, group.others.length, anyUnread)}
             </div>
         );
     }

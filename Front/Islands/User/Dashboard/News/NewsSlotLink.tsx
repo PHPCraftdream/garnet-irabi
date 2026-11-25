@@ -9,8 +9,10 @@ interface Props {
 }
 
 export class NewsSlotLink extends AntiHookComponent<Props> {
+    /** Открывает бронирование для связанного занятия. */
     private readonly book = () => this.props.onBookSlot(this.props.slotId);
 
+    /** Выводит ссылку на занятие или кнопку бронирования. */
     public render() {
         const {slotId} = this.props;
         if (slotId <= 0) return <a href={appUrl('/slots')} className="news-event-link">{t.News_NewSlot_Link()}</a>;

@@ -1,7 +1,8 @@
 {
   "$schema": "./vendor/phpcraftdream/garnet-framework/FrontBuilder/node_modules/oxlint/configuration_schema.json",
   "extends": [
-    "./node_modules/@react-carburetor/core/dist/lint/recommended.oxlintrc.json"
+    "./node_modules/@react-carburetor/core/dist/lint/recommended.oxlintrc.json",
+    "./node_modules/@react-carburetor/core/dist/lint/house-style.oxlintrc.json"
   ],
   "jsPlugins": [
     "./vendor/phpcraftdream/garnet-framework/FrontBuilder/oxlint-plugins/garnet-tsx-rules.js",
@@ -48,7 +49,15 @@
     "garnet-tsx/max-component-lines": "warn",
     "garnet-tsx/max-component-nesting": "warn",
     "carburetor/no-react-hooks-in-components": "error",
+    "carburetor/no-parent-import": "off",
     "carburetor/require-function-class": "error",
+    "carburetor/max-line-length": "error",
+    "carburetor/no-blank-line-after-tsdoc": "error",
+    "carburetor/prefer-readonly-array-param": "error",
+    "carburetor/require-tsdoc": "error",
+    "carburetor/tsdoc-blank-line-before-tags": "error",
+    "carburetor/one-export-per-file": "error",
+    "carburetor/no-module-level-store": "error",
     "carburetor/no-capturing-hook-selector": "error",
     "carburetor/no-closure-in-update": "error",
     "carburetor/require-hoisted-constant": "error",

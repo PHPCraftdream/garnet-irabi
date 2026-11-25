@@ -1,13 +1,26 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
-import {LedgerEntry, LedgerParty, LedgerRefData, GridConfig, PageResponse} from '../Shell/types';
+import {LedgerEntry, LedgerParty, LedgerRefData, GridConfig, PageResponse} from '../Shell/shared/types';
 import {AdminGrid} from '../Grid/AdminGrid';
 import {Combobox} from '@common/Components/ui/Combobox';
 import {DateInput} from '@common/Components/ui/DateInput';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/Time/DateUtils';
-import {AdminUserLink} from '../../../Common/people/EntityLinks';
-import {statusLabel, entryTypeLabel} from '../Grid/gridLabels';
+import {AdminUserLink} from '../../../Common/people/links/EntityLinks';
+import {entryTypeLabel} from '../Grid/gridLabels';
+import {statusLabel} from '../Grid/statusLabel';
+
+const ledger_External = t.Ledger_External;
+const ledger_RefBooking = t.Ledger_RefBooking;
+const ledger_System = t.Ledger_System;
+const slot_Cost = t.Slot_Cost;
+const slot_DateTime = t.Slot_DateTime;
+const slot_Duration = t.Slot_Duration;
+const slot_Duration_Min = t.Slot_Duration_Min;
+const slot_Format = t.Slot_Format;
+const slot_Location = t.Slot_Location;
+const slot_Offline = t.Slot_Offline;
+const slot_Online = t.Slot_Online;
 
 interface LedgerFilterOptions {
     fromOptions: {value: string; label: string}[];
@@ -24,37 +37,37 @@ interface Props {
 
 const RefDataPanel: React.FC<{refData: LedgerRefData}> = ({refData}) => (
     <div className="admin-ledger-reference">
-        <div className="token-cell-muted">{t.Ledger_RefBooking()} #{refData.booking_id}</div>
+        <div className="token-cell-muted">{ledger_RefBooking()} #{refData.booking_id}</div>
         <div>
             <span className="admin-ledger-reference-status">{statusLabel(refData.booking_status)}</span>
         </div>
         {refData.slot_start_at != null && (
             <>
-                <div className="token-cell-muted">{t.Slot_DateTime()}</div>
+                <div className="token-cell-muted">{slot_DateTime()}</div>
                 <div>{formatTs(refData.slot_start_at)}</div>
             </>
         )}
         {refData.slot_duration_min != null && (
             <>
-                <div className="token-cell-muted">{t.Slot_Duration()}</div>
-                <div>{refData.slot_duration_min} {t.Slot_Duration_Min()}</div>
+                <div className="token-cell-muted">{slot_Duration()}</div>
+                <div>{refData.slot_duration_min} {slot_Duration_Min()}</div>
             </>
         )}
         {refData.slot_cost != null && (
             <>
-                <div className="token-cell-muted">{t.Slot_Cost()}</div>
+                <div className="token-cell-muted">{slot_Cost()}</div>
                 <div>{refData.slot_cost} &#8381;</div>
             </>
         )}
         {refData.slot_is_online != null && (
             <>
-                <div className="token-cell-muted">{t.Slot_Format()}</div>
-                <div>{refData.slot_is_online ? t.Slot_Online() : t.Slot_Offline()}</div>
+                <div className="token-cell-muted">{slot_Format()}</div>
+                <div>{refData.slot_is_online ? slot_Online() : slot_Offline()}</div>
             </>
         )}
         {refData.slot_location && (
             <>
-                <div className="token-cell-muted">{t.Slot_Location()}</div>
+                <div className="token-cell-muted">{slot_Location()}</div>
                 <div>{refData.slot_location}</div>
             </>
         )}
@@ -63,10 +76,10 @@ const RefDataPanel: React.FC<{refData: LedgerRefData}> = ({refData}) => (
 
 const PartyCell: React.FC<{party: LedgerParty}> = ({party}) => {
     if (party.type === 'external') {
-        return <span className="admin-ledger-party-special">{t.Ledger_External()}</span>;
+        return <span className="admin-ledger-party-special">{ledger_External()}</span>;
     }
     if (party.type === 'system') {
-        return <span className="admin-ledger-party-special">{t.Ledger_System()}</span>;
+        return <span className="admin-ledger-party-special">{ledger_System()}</span>;
     }
     if (party.type === 'slot' || party.account_id == null) {
         return (
@@ -89,12 +102,14 @@ const PartyCell: React.FC<{party: LedgerParty}> = ({party}) => {
     );
 };
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function unixDayStart(dateStr: string): number | null {
     if (!dateStr) return null;
     const ts = new Date(dateStr + 'T00:00:00').getTime();
     return Number.isFinite(ts) ? Math.floor(ts / 1000) : null;
 }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function unixDayEnd(dateStr: string): number | null {
     if (!dateStr) return null;
     const ts = new Date(dateStr + 'T23:59:59').getTime();
@@ -111,9 +126,13 @@ interface LedgerFilters {
 
 const DEFAULT_FILTERS: LedgerFilters = {fromAccountId: 0, toAccountId: 0, dateFrom: '', dateTo: '', entryType: ''};
 
+    /** Формирует представление данных для соответствующего раздела панели. */
 function renderTypeOption(type: string) { return <option key={type} value={type}>{entryTypeLabel(type)}</option>; }
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function rowKey(row: LedgerEntry) { return row.id; }
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function expandable(row: LedgerEntry) { return row.ref_data != null; }
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function expandRenderer(row: LedgerEntry) { return row.ref_data ? <RefDataPanel refData={row.ref_data} /> : null; }
 
 const LEDGER_RENDERS = {
@@ -127,37 +146,55 @@ const LEDGER_RENDERS = {
 
 export class LedgerSection extends AntiHookComponent<Props> {
     private readonly ui = new Carburetor<LedgerFilters>({...DEFAULT_FILTERS});
-    private readonly filterSnapshot = this.connectSelection(this.ui, state => ({fromAccountId: state.fromAccountId, toAccountId: state.toAccountId, dateFrom: state.dateFrom, dateTo: state.dateTo, entryType: state.entryType}));
+    private readonly filterSnapshot = this.connectSelection(this.ui, state => ({fromAccountId:
+        state.fromAccountId, toAccountId: state.toAccountId, dateFrom: state.dateFrom, dateTo: state.dateTo,
+        entryType: state.entryType}));
     private paramsCache?: {filters: Readonly<LedgerFilters>; value: Record<string, unknown>};
     private fromCache?: {source: LedgerFilterOptions['fromOptions']; value: LedgerFilterOptions['fromOptions']};
     private toCache?: {source: LedgerFilterOptions['toOptions']; value: LedgerFilterOptions['toOptions']};
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private update(patch: Partial<LedgerFilters>): void { this.ui.setData({...this.ui.getData(), ...patch}); }
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly changeFrom = (value: string) => this.update({fromAccountId: parseInt(value, 10) || 0});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly changeTo = (value: string) => this.update({toAccountId: parseInt(value, 10) || 0});
-    private readonly changeDateFrom = (event: React.ChangeEvent<HTMLInputElement>) => this.update({dateFrom: event.target.value});
-    private readonly changeDateTo = (event: React.ChangeEvent<HTMLInputElement>) => this.update({dateTo: event.target.value});
-    private readonly changeType = (event: React.ChangeEvent<HTMLSelectElement>) => this.update({entryType: event.target.value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeDateFrom = (event: React.ChangeEvent<HTMLInputElement>) => this.update({dateFrom:
+        event.target.value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeDateTo = (event: React.ChangeEvent<HTMLInputElement>) => this.update({dateTo:
+        event.target.value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeType = (event: React.ChangeEvent<HTMLSelectElement>) => this.update({entryType:
+        event.target.value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly reset = () => this.ui.setData({...DEFAULT_FILTERS});
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private getOptions() {
         const {fromOptions: from, toOptions: to} = this.props.initialFilterOptions;
-        const fromCache = this.fromCache?.source === from ? this.fromCache : {source: from, value: [{value: '0', label: t.Admin_Filter_All()}, ...from]};
-        const toCache = this.toCache?.source === to ? this.toCache : {source: to, value: [{value: '0', label: t.Admin_Filter_All()}, ...to]};
+        const fromCache = this.fromCache?.source === from ? this.fromCache : {source: from, value: [{value:
+        '0', label: t.Admin_Filter_All()}, ...from]};
+        const toCache = this.toCache?.source === to ? this.toCache : {source: to, value: [{value: '0', label:
+        t.Admin_Filter_All()}, ...to]};
         this.fromCache = fromCache;
         this.toCache = toCache;
         return {fromOptions: fromCache.value, toOptions: toCache.value};
     }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private extraParams(filters: Readonly<LedgerFilters>) {
         if (this.paramsCache?.filters === filters) return this.paramsCache.value;
         const {fromAccountId, toAccountId, dateFrom, dateTo, entryType} = filters;
         const value = {fromAccountId: fromAccountId || undefined, toAccountId: toAccountId || undefined,
-            entryType: entryType || undefined, dateFrom: unixDayStart(dateFrom) ?? undefined, dateTo: unixDayEnd(dateTo) ?? undefined};
+            entryType: entryType || undefined, dateFrom: unixDayStart(dateFrom) ?? undefined, dateTo:
+        unixDayEnd(dateTo) ?? undefined};
         this.paramsCache = {filters, value};
         return value;
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderParties({fromAccountId, toAccountId}: Readonly<LedgerFilters>) {
         const {fromOptions, toOptions} = this.getOptions();
         return (
@@ -190,6 +227,7 @@ export class LedgerSection extends AntiHookComponent<Props> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderDates({dateFrom, dateTo}: Readonly<LedgerFilters>) {
         return (
             <>
@@ -215,6 +253,7 @@ export class LedgerSection extends AntiHookComponent<Props> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderType({entryType}: Readonly<LedgerFilters>) {
         const {entryTypes} = this.props.initialFilterOptions;
         return (
@@ -248,6 +287,7 @@ export class LedgerSection extends AntiHookComponent<Props> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {pageUrl, initialData, config} = this.props;
         const filters = this.filterSnapshot();
@@ -258,8 +298,10 @@ export class LedgerSection extends AntiHookComponent<Props> {
                     {this.renderDates(filters)}
                     {this.renderType(filters)}
                 </div>
-                <AdminGrid pageUrl={pageUrl} initialData={initialData} config={config} extraParams={this.extraParams(filters)}
-                    rowKey={rowKey} emptyMessage={t.Admin_NoLedger()} renders={LEDGER_RENDERS} expandable={expandable} expandRenderer={expandRenderer} />
+                <AdminGrid pageUrl={pageUrl} initialData={initialData} config={config}
+        extraParams={this.extraParams(filters)}
+                    rowKey={rowKey} emptyMessage={t.Admin_NoLedger()} renders={LEDGER_RENDERS}
+        expandable={expandable} expandRenderer={expandRenderer} />
             </div>
         );
     }

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
-import {AdminUser, GridConfig, UserTab} from './types';
+import type {AdminUser, GridConfig, UserTab} from './shared/types';
 import {UsersSection} from '../Users/UsersSection';
 import {AdminCommentsSection, AdminCommentRow, CommentsAccountOption} from '../Support/AdminCommentsSection';
 import {AdminTokensSection} from '../System/AdminTokensSection';
@@ -8,7 +8,7 @@ import {UserDetailContext} from '../Users/UserDetailContext';
 import type {UserDetailContextValue} from '../Users/UserDetailContext';
 import {UserDetailTab} from '../Users/UserDetailTab';
 import {UserTabsStore} from './UserTabsStore';
-import {ADMIN_URLS} from './adminShared';
+import {ADMIN_URLS} from './navigation/adminUrls';
 import {TabNav, TabDef} from '@common/Components/Layout/Navigation/TabNav';
 import {PageResponse} from '@common/hooks/data/usePagination';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
@@ -57,16 +57,19 @@ interface Props {
 const STATIC_TABS = ['users', 'comments', 'tokens'] as const;
 type StaticTabId = typeof STATIC_TABS[number];
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function isStaticTab(id: string): id is StaticTabId {
     return (STATIC_TABS as ReadonlyArray<string>).includes(id);
 }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function readTabFromUrl(): StaticTabId | null {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
     return tab !== null && isStaticTab(tab) ? tab : null;
 }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function writeTabToUrl(tab: StaticTabId): void {
     const url = new URL(window.location.href);
     if (tab === 'users') {
@@ -84,18 +87,22 @@ interface PanelProps extends Props {
 class AdminPanel extends AntiHookComponent<PanelProps> {
     private readonly ui = new Carburetor({staticTab: readTabFromUrl() ?? this.props.initialTab ?? 'users'});
 
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
     componentDidMount(): void {
         super.componentDidMount();
         window.addEventListener('popstate', this.onPop);
     }
 
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
     componentWillUnmount(): void {
         window.removeEventListener('popstate', this.onPop);
         super.componentWillUnmount();
     }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly onPop = () => this.ui.setData({staticTab: readTabFromUrl() ?? 'users'});
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly handleSelect = (id: string) => {
         if (isStaticTab(id)) {
             this.props.tabs.setActiveId(null);
@@ -106,10 +113,12 @@ class AdminPanel extends AntiHookComponent<PanelProps> {
         }
     };
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly handleClose = (id: string) => {
         if (this.props.tabs.getData().tabs.some(ut => ut.id === id)) this.props.tabs.closeUser(id);
     };
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderContent(activeId: string, activeAccountId: number | undefined) {
         const {
             usersPageUrl,
@@ -195,6 +204,7 @@ class AdminPanel extends AntiHookComponent<PanelProps> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {staticTab} = this.useCarburetor(this.ui);
         const {tabs: userTabs, activeId: activeUserTabId} = this.useCarburetor(this.props.tabs);
@@ -237,6 +247,7 @@ export class AdminPanelIsland extends AntiHookComponent<Props> {
     private readonly userTabs = new UserTabsStore();
     private readonly contextValue: UserDetailContextValue = {openUser: this.userTabs.openUser};
 
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
     componentDidMount(): void {
         super.componentDidMount();
         const hash = window.location.hash;
@@ -247,6 +258,7 @@ export class AdminPanelIsland extends AntiHookComponent<Props> {
         window.history.replaceState(null, '', window.location.pathname + window.location.search);
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         return (
             <UserDetailContext.Provider value={this.contextValue}>

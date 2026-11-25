@@ -1,8 +1,11 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {EntityLink} from '../../../../Common/people/EntityLink';
-import {userLinks} from '../../../../Common/people/entityLinkHelpers';
+import {EntityLink} from '../../../../Common/people/links/EntityLink';
+import {userLinks} from '../../../../Common/people/links/userLinks';
 import {AdminCommentRow} from './commentTypes';
+
+const comment_AuthorHidden = t.Comment_AuthorHidden;
+const comment_AuthorHiddenHint = t.Comment_AuthorHiddenHint;
 
 /**
  * Автор отзыва — или отсутствие автора на экране.
@@ -22,8 +25,9 @@ export const CommentAuthorCell: React.FC<{row: AdminCommentRow}> = ({row}) => {
     }
 
     return (
-        <span className="admin-comments-author-muted" title={t.Comment_AuthorHiddenHint()} data-test-id={`comment-author-hidden-${row.id}`}>
-            {t.Comment_AuthorHidden()}
+        <span className="admin-comments-author-muted" title={comment_AuthorHiddenHint()}
+        data-test-id={`comment-author-hidden-${row.id}`}>
+            {comment_AuthorHidden()}
         </span>
     );
 };

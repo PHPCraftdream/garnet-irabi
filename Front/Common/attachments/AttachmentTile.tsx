@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
-import {formatSize} from './attachmentHelpers';
+import {formatSize} from './helpers/formatSize';
 
 interface TileFile {
     id: string;
@@ -22,16 +22,19 @@ interface Props {
  * всплытие останавливается.
  */
 export class AttachmentTile extends React.Component<Props> {
+/** Открывает превью файла, если оно доступно. */
     private readonly open = () => {
         const {file, index, onOpen} = this.props;
         if (file.preview) onOpen(index);
     };
 
+/** Удаляет плитку, не открывая её превью. */
     private readonly remove = (event: React.MouseEvent<HTMLButtonElement>) => {
         event.stopPropagation();
         this.props.onRemove(this.props.index);
     };
 
+/** Рисует плитку файла и кнопку удаления. */
     public render() {
         const {file, index} = this.props;
         return (

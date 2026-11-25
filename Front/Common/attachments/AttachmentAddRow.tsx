@@ -14,10 +14,12 @@ interface AttachmentAddRowProps {
 }
 
 export class AttachmentAddRow extends AntiHookComponent<AttachmentAddRowProps> {
+/** Передаёт выбранные файлы владельцу поля. */
     private readonly handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files) this.props.onFiles(event.target.files);
     };
 
+/** Рисует поле выбора, кнопку и подсказку о лимитах. */
     public render() {
         const {inputRef, accept, count, maxFiles, onPick, hint} = this.props;
         return (

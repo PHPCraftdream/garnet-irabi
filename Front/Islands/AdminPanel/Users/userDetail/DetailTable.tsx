@@ -21,6 +21,7 @@ function renderColumn(column: string, index: number) {
     return <th className="admin-user-history-header-cell" key={index}>{column}</th>;
 }
 
+/** Отображает данные раздела и передаёт действия пользователя обработчикам. */
 export const DetailTable: React.FC<Props> = ({title, count, columns, spacing, children}) => (
     <>
         <SectionTitle>{title} ({count})</SectionTitle>

@@ -3,6 +3,9 @@ import {ExternalLink} from '@common/Components/Layout/ExternalLink';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 import {SlotInfo} from '../bookingCardTypes';
 
+const slotLocation = t.Slot_Location;
+const slotOnline = t.Slot_Online;
+
 interface Props {
     slot: SlotInfo;
     bookingId: number;
@@ -36,8 +39,9 @@ function renderPlaceValue(slot: SlotInfo, testId: string) {
     return <span data-test-id={testId}>{slot.platform?.trim() || t.Booking_PlatformUnset()}</span>;
 }
 
+/** Выводит адрес или ссылку площадки, учитывая онлайн-формат занятия. */
 export const BookingPlaceLine: React.FC<Props> = ({slot, bookingId}) => {
-    const label = slot.is_online ? t.Slot_Online() : t.Slot_Location();
+    const label = slot.is_online ? slotOnline() : slotLocation();
     const testId = `booking-meeting-${bookingId}`;
 
     return (

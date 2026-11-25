@@ -15,8 +15,11 @@ interface Props {
 }
 
 export default class TicketInternalForm extends AntiHookComponent<Props> {
-    private readonly changeText = (event: React.ChangeEvent<HTMLTextAreaElement>) => this.props.onInternalTextChange(event.target.value);
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeText = (event: React.ChangeEvent<HTMLTextAreaElement>) =>
+        this.props.onInternalTextChange(event.target.value);
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly submitOnShortcut = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         const {internalText, sending, onSend} = this.props;
         if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !sending && internalText.trim()) {
@@ -25,6 +28,7 @@ export default class TicketInternalForm extends AntiHookComponent<Props> {
         }
     };
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderEditor() {
         const {internalText, internalFiles, onInternalFilesChange, sending, onSend} = this.props;
         return (
@@ -54,6 +58,7 @@ export default class TicketInternalForm extends AntiHookComponent<Props> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         return (
             <div className="admin-support-form" data-test-id="support-internal-form">

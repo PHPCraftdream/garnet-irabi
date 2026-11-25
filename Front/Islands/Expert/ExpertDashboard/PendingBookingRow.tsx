@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {actionLabel} from '../../../Common/booking/bookingAction';
+import {actionLabel} from '../../../Common/booking/actions/labels/actionLabel';
 import {BookingPerson} from './BookingPerson';
 
 export interface PendingBookingItem {
@@ -25,9 +25,12 @@ interface Props {
 
 /** Заявка, ждущая решения преподавателя. */
 export class PendingBookingRow extends AntiHookComponent<Props> {
+    /** Обработать соответствующее действие пользователя. */
     private readonly confirm = () => this.props.onConfirm(this.props.booking.booking_id);
+    /** Подготовить данные для соответствующего интерфейса. */
     private readonly reject = () => this.props.onReject(this.props.booking.booking_id);
 
+    /** Отобразить соответствующую часть интерфейса. */
     render() {
         const {booking, confirming, rejecting} = this.props;
         return (
@@ -41,10 +44,12 @@ export class PendingBookingRow extends AntiHookComponent<Props> {
                     testId={`pending-user-link-${booking.booking_id}`}
                 />
                 <div className="expert-pending-actions">
-                    <button className="compact-success-action" disabled={confirming} onClick={this.confirm} data-test-id={`pending-confirm-${booking.booking_id}`}>
+                    <button className="compact-success-action" disabled={confirming} onClick={this.confirm}
+                    data-test-id={`pending-confirm-${booking.booking_id}`}>
                         {confirming ? '...' : t.Booking_Confirm()}
                     </button>
-                    <button className="slot-remove-btn" disabled={rejecting} onClick={this.reject} data-test-id={`pending-reject-${booking.booking_id}`}>
+                    <button className="slot-remove-btn" disabled={rejecting} onClick={this.reject}
+                    data-test-id={`pending-reject-${booking.booking_id}`}>
                         {actionLabel('expert', 'pending')}
                     </button>
                 </div>

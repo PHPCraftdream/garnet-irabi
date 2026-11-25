@@ -8,6 +8,12 @@ import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {appUrl} from '@common/Utils/Url/appUrl';
 import {ModalShell} from '../../../../Common/Components/ModalShell';
 
+const batchCancel = t.Batch_Cancel;
+const rescheduleNoSlots = t.Reschedule_NoSlots;
+const reschedulePickSlot = t.Reschedule_PickSlot;
+const rescheduleSubmit = t.Reschedule_Submit;
+const userLoading = t.User_Loading;
+
 interface SlotOption {
     id: number;
     start_at: number;
@@ -45,18 +51,23 @@ interface RescheduleState {
 }
 
 class RescheduleModalView extends AntiHookComponent<RescheduleModalProps> {
-    private readonly ui = new Carburetor<RescheduleState>({loading: false, options: [], loadError: '', selectedId: null});
+    private readonly ui = new Carburetor<RescheduleState>({
+        loading: false, options: [], loadError: '', selectedId: null,
+    });
 
+    /** Загружает варианты переноса при открытии окна. */
     componentDidMount() {
         super.componentDidMount();
         this.loadOptions();
     }
 
+    /** Перезагружает варианты при открытии окна или смене брони. */
     componentDidUpdate(previous: RescheduleModalProps) {
         super.componentDidUpdate(previous);
         if (previous.open !== this.props.open || previous.bookingId !== this.props.bookingId) this.loadOptions();
     }
 
+    /** Запрашивает доступные слоты и сохраняет ответ или ошибку загрузки. */
     private readonly loadOptions = () => {
         const {open, bookingId} = this.props;
         if (!open || !bookingId) return;
@@ -81,6 +92,7 @@ class RescheduleModalView extends AntiHookComponent<RescheduleModalProps> {
         })();
     };
 
+    /** Передаёт выбранный слот обработчику переноса. */
     private readonly submit = () => {
         const {selectedId} = this.ui.getData();
         if (selectedId !== null) this.props.onSubmit(selectedId);
@@ -88,9 +100,12 @@ class RescheduleModalView extends AntiHookComponent<RescheduleModalProps> {
 
     private readonly options = this.connectSelection(this.ui, state => state.options);
 
+    /** Частично обновляет локальное состояние окна переноса. */
     private readonly patch = (patch: Partial<RescheduleState>) => this.ui.setData({...this.ui.getData(), ...patch});
+    /** Запоминает идентификатор выбранного варианта. */
     private readonly select = (selectedId: number) => this.patch({selectedId});
 
+    /** Показывает окно выбора, ошибки и доступные временные слоты. */
     render() {
         const {open, sending, error, onClose} = this.props;
         const {loading, loadError, selectedId} = this.useCarburetor(this.ui);
@@ -100,15 +115,20 @@ class RescheduleModalView extends AntiHookComponent<RescheduleModalProps> {
         return (
             <ModalShell title={t.Reschedule_Title()} testId="reschedule-modal" onClose={onClose}>
                 <p className="reschedule-message" data-test-id="reschedule-modal-free">{t.Reschedule_Free()}</p>
-                <p className="reschedule-message" data-tone="warning" data-test-id="reschedule-modal-reconfirm">{t.Reschedule_NeedsReconfirm()}</p>
-                <RescheduleStatus shownError={shownError} loading={loading} optionsCount={options.length} loadError={loadError} />
-                {!loading && options.length > 0 && <RescheduleSlotPicker options={options} selectedId={selectedId} onSelect={this.select} />}
+                <p className="reschedule-message" data-tone="warning"
+                    data-test-id="reschedule-modal-reconfirm">{t.Reschedule_NeedsReconfirm()}</p>
+                <RescheduleStatus shownError={shownError} loading={loading}
+                    optionsCount={options.length} loadError={loadError} />
+                {!loading && options.length > 0 && (
+                    <RescheduleSlotPicker options={options} selectedId={selectedId} onSelect={this.select} />
+                )}
                 <RescheduleActions sending={sending} selectedId={selectedId} onSubmit={this.submit} onClose={onClose} />
             </ModalShell>
         );
     }
 }
 
+/** Отображает окно выбора нового слота, блокируя прокрутку страницы. */
 export const RescheduleModal: React.FC<RescheduleModalProps> = (props) => {
     useBodyScrollLock(props.open);
     return <RescheduleModalView {...props} />;
@@ -124,15 +144,16 @@ interface RescheduleStatusProps {
 const RescheduleStatus: React.FC<RescheduleStatusProps> = ({shownError, loading, optionsCount, loadError}) => (
     <>
         {shownError && (
-            <div className="reschedule-message" data-tone="error" data-test-id="reschedule-modal-error">{shownError}</div>
+            <div className="reschedule-message" data-tone="error"
+                data-test-id="reschedule-modal-error">{shownError}</div>
         )}
 
         {loading && (
-            <p className="reschedule-status" data-test-id="reschedule-modal-loading">{t.User_Loading()}</p>
+            <p className="reschedule-status" data-test-id="reschedule-modal-loading">{userLoading()}</p>
         )}
 
         {!loading && optionsCount === 0 && !loadError && (
-            <p className="reschedule-status" data-test-id="reschedule-modal-empty">{t.Reschedule_NoSlots()}</p>
+            <p className="reschedule-status" data-test-id="reschedule-modal-empty">{rescheduleNoSlots()}</p>
         )}
     </>
 );
@@ -144,8 +165,10 @@ interface RescheduleOptionProps {
 }
 
 class RescheduleOption extends AntiHookComponent<RescheduleOptionProps> {
+    /** Передаёт выбранный идентификатор слота родительскому окну. */
     private readonly select = () => this.props.onSelect(this.props.option.id);
 
+    /** Отображает время и отмечает, выбран ли этот слот. */
     render() {
         const {option, checked} = this.props;
         return (
@@ -163,12 +186,18 @@ interface RescheduleSlotPickerProps {
     onSelect: (id: number) => void;
 }
 
+/** Рендерит список радио-кнопок доступных слотов переноса. */
 function RescheduleSlotPicker({options, selectedId, onSelect}: RescheduleSlotPickerProps) {
     const rows: React.ReactNode[] = [];
-    for (const option of options) rows.push(<RescheduleOption key={option.id} option={option} checked={selectedId === option.id} onSelect={onSelect} />);
+    for (const option of options) {
+        rows.push(
+            <RescheduleOption key={option.id} option={option}
+                checked={selectedId === option.id} onSelect={onSelect} />,
+        );
+    }
     return (
         <fieldset className="reschedule-picker" data-test-id="reschedule-modal-options">
-            <legend className="reschedule-legend">{t.Reschedule_PickSlot()}</legend>
+            <legend className="reschedule-legend">{reschedulePickSlot()}</legend>
             <div className="reschedule-options">{rows}</div>
         </fieldset>
     );
@@ -190,13 +219,13 @@ const RescheduleActions: React.FC<RescheduleActionsProps> = ({sending, selectedI
             disabled={sending}
             data-test-id="reschedule-modal-dismiss"
         >
-            {t.Batch_Cancel()}
+            {batchCancel()}
         </button>
         <SendButton
             onClick={onSubmit}
             sending={sending}
             disabled={selectedId === null}
-            label={t.Reschedule_Submit()}
+            label={rescheduleSubmit()}
             testId="reschedule-modal-submit"
             variant="outline-warning"
         />

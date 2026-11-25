@@ -23,13 +23,24 @@ interface Props {
 }
 
 export class CommentsFilters extends AntiHookComponent<Props> {
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private readonly author = (value: string) => this.props.onChange({authorId: parseInt(value, 10) || 0});
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private readonly expert = (value: string) => this.props.onChange({expertId: parseInt(value, 10) || 0});
-    private readonly dateFrom = (event: React.ChangeEvent<HTMLInputElement>) => this.props.onChange({dateFrom: event.target.value});
-    private readonly dateTo = (event: React.ChangeEvent<HTMLInputElement>) => this.props.onChange({dateTo: event.target.value});
-    private readonly search = (event: React.ChangeEvent<HTMLInputElement>) => this.props.onChange({search: event.target.value});
-    private readonly hidden = (event: React.ChangeEvent<HTMLInputElement>) => this.props.onChange({hiddenOnly: event.target.checked});
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+    private readonly dateFrom = (event: React.ChangeEvent<HTMLInputElement>) => this.props.onChange({dateFrom:
+        event.target.value});
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+    private readonly dateTo = (event: React.ChangeEvent<HTMLInputElement>) => this.props.onChange({dateTo:
+        event.target.value});
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+    private readonly search = (event: React.ChangeEvent<HTMLInputElement>) => this.props.onChange({search:
+        event.target.value});
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+    private readonly hidden = (event: React.ChangeEvent<HTMLInputElement>) => this.props.onChange({hiddenOnly:
+        event.target.checked});
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderPeople() {
         const {state, authorOptions, expertOptions} = this.props;
         return (
@@ -62,6 +73,7 @@ export class CommentsFilters extends AntiHookComponent<Props> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderDates() {
         const {state} = this.props;
         return (
@@ -88,6 +100,7 @@ export class CommentsFilters extends AntiHookComponent<Props> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderSearchAndReset() {
         const {state, loading, onReset} = this.props;
         return (
@@ -132,6 +145,7 @@ export class CommentsFilters extends AntiHookComponent<Props> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         return (
             <div className="admin-bookings-filters">

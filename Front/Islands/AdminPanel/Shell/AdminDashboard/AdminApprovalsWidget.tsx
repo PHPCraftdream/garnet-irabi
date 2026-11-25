@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {AdminUserDualLink} from '../../../../Common/people/AdminUserDualLink';
+import {AdminUserDualLink} from '../../../../Common/people/links/AdminUserDualLink';
 
 interface PendingUser {
     id: number;
@@ -15,6 +15,7 @@ interface Props {
     usersUrl: string;
 }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
 function renderPending(user: Props['names'][number]) {
     return (
         <li key={user.id} className="admin-home-pending" data-test-id={`admin-dash-pending-${user.id}`}>
@@ -24,13 +25,15 @@ function renderPending(user: Props['names'][number]) {
 }
 
 export class AdminApprovalsWidget extends AntiHookComponent<Props> {
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {count, names, usersUrl} = this.props;
         return (
             <div className="admin-dash-card" data-test-id="admin-dash-approvals">
                 <div className="admin-home-card-header">
                     <h2 className="admin-home-card-title">{t.Admin_PendingApprovals()}</h2>
-                    <span className="admin-home-count" data-tone="warning" data-test-id="admin-dash-approvals-count">{count}</span>
+                    <span className="admin-home-count" data-tone="warning"
+        data-test-id="admin-dash-approvals-count">{count}</span>
                 </div>
 
                 {names.length > 0 ? (

@@ -3,7 +3,7 @@ import {AntiHookComponent} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {actionLabel} from '@common/Components/Admin/AdminLog/Sections/actionLabel';
-import {AdminUserDualLink} from '../../../../Common/people/AdminUserDualLink';
+import {AdminUserDualLink} from '../../../../Common/people/links/AdminUserDualLink';
 import {appUrl} from '@common/Utils/Url/appUrl';
 
 interface LogEntry {
@@ -35,6 +35,7 @@ interface Props {
 const COMMENT_TARGET_RE = /^comment#(\d+)$/;
 
 class ActivityPerson extends AntiHookComponent<{id: number; name: string}> {
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {id, name} = this.props;
         if (id > 0) return <AdminUserDualLink id={id} name={name} />;
@@ -53,6 +54,7 @@ class ActivityPerson extends AntiHookComponent<{id: number; name: string}> {
 }
 
 class ActivityItem extends AntiHookComponent<{log: LogEntry}> {
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {log} = this.props;
         return (
@@ -71,11 +73,13 @@ class ActivityItem extends AntiHookComponent<{log: LogEntry}> {
     }
 }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
 function renderActivity(log: LogEntry) {
     return <ActivityItem key={log.id} log={log} />;
 }
 
 export class AdminRecentActivity extends AntiHookComponent<Props> {
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {logs, logsUrl} = this.props;
         return (

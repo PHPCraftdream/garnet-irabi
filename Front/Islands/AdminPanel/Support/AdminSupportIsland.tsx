@@ -2,34 +2,32 @@ import * as React from 'react';
 import {AntiHookComponent, Carburetor, type TReadonly} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {refreshLiveCounts} from '@common/Utils/Data/liveCounts';
-import {GridConfig, PageResponse} from '../Shell/types';
+import {GridConfig, PageResponse} from '../Shell/shared/types';
 import {TabNav, TabDef} from '@common/Components/Layout/Navigation/TabNav';
 import {AdminGrid, AdminGridHandle} from '../Grid/AdminGrid';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {SupportTicket, SupportStatus} from '../../Comms/Support/parts/supportTypes';
 import {StatusBadge} from '../../Comms/Support/parts/supportRenders';
-import {statusLabel, ALL_STATUSES} from '../../Comms/Support/parts/render/supportStatus';
+import {ALL_STATUSES} from '../../Comms/Support/parts/render/ALL_STATUSES';
+import {statusLabel} from '../Grid/statusLabel';
 import SupportTicketTab from './SupportTicketTab';
 import {formatTs} from '@common/Utils/Time/DateUtils';
-import {AdminUserLink} from '../../../Common/people/EntityLinks';
+import {AdminUserLink} from '../../../Common/people/links/EntityLinks';
 import {UserDetailContext, type UserDetailContextValue} from '../Users/UserDetailContext';
 import {UserDetailTab} from '../Users/UserDetailTab';
 import {UserTabsStore} from '../Shell/UserTabsStore';
-import {ADMIN_URLS} from '../Shell/adminShared';
+import {ADMIN_URLS} from '../Shell/navigation/adminUrls';
 import {SupportTicketFilters} from './SupportTicket/Forms/SupportTicketFilters';
 import {SupportStatusBar} from './SupportTicket/Forms/SupportStatusBar';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {LifeBuoy, Paperclip} from 'lucide-react';
-
 const ASSIGNEE_UNASSIGNED = '__none__';
 type DateField = 'created_at' | 'updated_at';
-
 interface Moderator {
     id: number;
     login: string;
     name: string;
 }
-
 interface TicketFilterOptions {
     // Только чтение: опции приходят из снапшота стора и мутировать их нельзя.
     users: readonly {value: string; label: string}[];
@@ -37,7 +35,6 @@ interface TicketFilterOptions {
     hasUnassigned: boolean;
     statusCounts: Partial<Record<SupportStatus, number>>;
 }
-
 interface Props {
     ticketsPageUrl: string;
     ticketsInitialData: PageResponse<SupportTicket> | null;
@@ -53,45 +50,42 @@ interface Props {
     moderators: Moderator[];
     userDetailUrl: string;
 }
-
 interface TicketTabKind {
     kind: 'ticket-detail';
     ticketId: number;
     subject: string;
 }
-
 interface UserTabKind {
     kind: 'user-detail';
     accountId: number;
 }
-
 interface InternalTab extends TabDef {
     tabKind: TicketTabKind | UserTabKind | null;
 }
-
 const MAIN_TAB_ID = 'main';
-
 interface QueueTabs {
     dynamicTabs: InternalTab[];
     activeId: string;
 }
-
 class QueueTabStore extends Carburetor<QueueTabs> {
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     constructor() {
         super({dynamicTabs: [], activeId: MAIN_TAB_ID});
     }
-
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly snapshot = () => this.getData();
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly subscribeSnapshot = (listener: () => void) => {
         const id = this.subscribe(listener);
         return () => this.unsubscribe(id);
     };
-
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly select = (activeId: string) => {
         const state = this.getData();
         if (state.activeId !== activeId) this.setData({...state, activeId});
     };
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     open(ticketId: number, subject: string): void {
         const state = this.getData();
         const activeId = `ticket-${ticketId}`;
@@ -108,6 +102,7 @@ class QueueTabStore extends Carburetor<QueueTabs> {
         }]});
     }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     close(id: string): void {
         const state = this.getData();
         const index = state.dynamicTabs.findIndex(tab => tab.id === id);
@@ -128,17 +123,21 @@ interface QueueFilters {
 }
 
 class QueueFilterStore extends Carburetor<QueueFilters> {
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     constructor() {
         super({statusFilter: 'all', userId: '', assigneeId: '', dateField: 'updated_at', dateFrom: '', dateTo: ''});
     }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly snapshot = () => this.getData();
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly subscribeSnapshot = (listener: () => void) => {
         const id = this.subscribe(listener);
         return () => this.unsubscribe(id);
     };
 
     // Не update: это имя занято методом базы Carburetor.
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private patch(patch: Partial<QueueFilters>): void {
         const before = this.getData();
         const next = {...before, ...patch};
@@ -148,12 +147,19 @@ class QueueFilterStore extends Carburetor<QueueFilters> {
         this.setData(next);
     }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly setStatusFilter = (statusFilter: QueueFilters['statusFilter']) => this.patch({statusFilter});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly setUserId = (userId: string) => this.patch({userId});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly setAssigneeId = (assigneeId: string) => this.patch({assigneeId});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly setDateField = (dateField: DateField) => this.patch({dateField});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly setDateFrom = (dateFrom: string) => this.patch({dateFrom});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly setDateTo = (dateTo: string) => this.patch({dateTo});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly reset = () => this.patch({userId: '', assigneeId: '', dateFrom: '', dateTo: ''});
 }
 
@@ -166,18 +172,21 @@ interface SubjectProps {
 }
 
 class TicketSubject extends AntiHookComponent<SubjectProps> {
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly open = (event: React.MouseEvent<HTMLButtonElement>) => {
         event.stopPropagation();
         const {row, open} = this.props;
         open(row.id, row.subject);
     };
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {row} = this.props;
         const count = row.attachments_count ?? 0;
         return (
             <span className="admin-support-queue-subject">
-                <button type="button" className="admin-support-queue-link" data-test-id={`support-ticket-${row.id}`} onClick={this.open}>
+                <button type="button" className="admin-support-queue-link"
+        data-test-id={`support-ticket-${row.id}`} onClick={this.open}>
                     {row.subject}
                 </button>
                 {count > 0 && (
@@ -217,23 +226,28 @@ const ticketCellRenderers = {
 type UserTabs = ReturnType<UserTabsStore['snapshot']>['tabs'];
 const OPEN_TICKETS_KEY = 'admin-support-open-tickets';
 
-function saveTicketTabs(dynamicTabs: InternalTab[], activeId: string): void {
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+function saveTicketTabs(dynamicTabs: readonly InternalTab[], activeId: string): void {
     const ticketIds: number[] = [];
     for (const tab of dynamicTabs) if (tab.tabKind?.kind === 'ticket-detail') ticketIds.push(tab.tabKind.ticketId);
     if (ticketIds.length === 0) sessionStorage.removeItem(OPEN_TICKETS_KEY);
     else sessionStorage.setItem(OPEN_TICKETS_KEY, JSON.stringify({ticketIds, activeId}));
 }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function totalOf(counts: TicketFilterOptions['statusCounts']): number {
     return Object.values(counts).reduce(addCount, 0);
 }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function addCount(sum: number, value: number | undefined): number { return sum + (value ?? 0); }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function visibleStatuses(counts: TicketFilterOptions['statusCounts']): SupportStatus[] {
     return ALL_STATUSES.filter(status => (counts[status] || 0) > 0);
 }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function userTabDefinition(tab: UserTabs[number]): InternalTab {
     return {...tab, tabKind: {kind: 'user-detail', accountId: tab.tabKind.accountId}};
 }
@@ -253,26 +267,32 @@ function copyTab(tab: TReadonly<InternalTab>): InternalTab {
     };
 }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function hasUserTab(tabs: UserTabs, id: string): boolean {
     return tabs.some(tab => tab.id === id);
 }
 
-function findTab(tabs: InternalTab[], id: string): InternalTab | undefined {
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+function findTab(tabs: readonly InternalTab[], id: string): InternalTab | undefined {
     return tabs.find(tab => tab.id === id);
 }
 
 type UserTabControls = UserTabsStore;
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
 function openQueueTicket(tabs: QueueTabStore, setActive: UserTabControls['setActiveId'], id: number, subject: string) {
     tabs.open(id, subject);
     setActive(null);
 }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function keepFilterOptions(): void {
     // Повторим обновление при следующем действии модератора.
 }
 
-function restoreTicketTabs(tabs: QueueTabStore, openUser: UserTabControls['openUser'], setActive: UserTabControls['setActiveId']): void {
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+function restoreTicketTabs(tabs: QueueTabStore, openUser: UserTabControls['openUser'], setActive:
+    UserTabControls['setActiveId']): void {
     const hash = window.location.hash;
     if (hash.includes('ticket=')) {
         const ticketId = parseInt(hash.split('ticket=')[1]?.split('&')[0] || '0', 10);
@@ -298,6 +318,7 @@ function restoreTicketTabs(tabs: QueueTabStore, openUser: UserTabControls['openU
     } catch { /* Устаревшие данные вкладок не восстанавливаем. */ }
 }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function queueParams({statusFilter, userId, assigneeId, dateField, dateFrom, dateTo}: QueueFilters) {
     return {
         status: statusFilter === 'all' ? undefined : statusFilter,
@@ -317,21 +338,27 @@ export class AdminSupportIsland extends AntiHookComponent<Props> {
     private readonly gridRef = React.createRef<AdminGridHandle<SupportTicket>>();
     private readonly filterOptions = new Carburetor({value: this.props.initialFilterOptions});
     private readonly optionsSnapshot = this.connectSelection(this.filterOptions, state => state.value);
-    // AdminGrid перезапрашивает данные при смене identity extraParams: держим объект, пока не сменился снапшот фильтров.
+    // AdminGrid перезапрашивает данные при смене identity extraParams: кэшируем
+    // объект до смены снапшота фильтров.
     private paramsCache?: {filters: Readonly<QueueFilters>; value: ReturnType<typeof queueParams>};
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private readonly applyOptions = (response: Awaited<ReturnType<typeof sendPost<{}, TicketFilterOptions>>>) => {
-        const value = ('data' in response && response.data) ? response.data : (response as unknown as TicketFilterOptions);
+        const value = ('data' in response && response.data) ? response.data : (response as unknown as
+        TicketFilterOptions);
         this.filterOptions.setData({value});
     };
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly reloadTickets = () => {
         this.gridRef.current?.refresh();
         const {filterOptionsUrl} = this.props;
-        if (filterOptionsUrl) void sendPost<{}, TicketFilterOptions>(filterOptionsUrl, {}).then(this.applyOptions).catch(keepFilterOptions);
+        if (filterOptionsUrl) void sendPost<{}, TicketFilterOptions>(filterOptionsUrl,
+        {}).then(this.applyOptions).catch(keepFilterOptions);
         refreshLiveCounts();
     };
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private extraParams(filters: Readonly<QueueFilters>): ReturnType<typeof queueParams> {
         if (this.paramsCache?.filters === filters) return this.paramsCache.value;
         const value = queueParams(filters);
@@ -339,12 +366,15 @@ export class AdminSupportIsland extends AntiHookComponent<Props> {
         return value;
     }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly openTicket = (id: number, subject: string) =>
         openQueueTicket(this.tabs, this.userTabs.setActiveId, id, subject);
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private readonly renderSubject = (row: SupportTicket) => <TicketSubject row={row} open={this.openTicket} />;
     private readonly ticketRenders = {...ticketCellRenderers, subject: this.renderSubject};
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly handleSelect = (id: string) => {
         const {tabs, userTabs} = this;
         if (hasUserTab(userTabs.snapshot().tabs, id)) userTabs.setActiveId(id);
@@ -354,12 +384,14 @@ export class AdminSupportIsland extends AntiHookComponent<Props> {
         }
     };
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly handleClose = (id: string) => {
         const {tabs, userTabs} = this;
         if (hasUserTab(userTabs.snapshot().tabs, id)) userTabs.closeUser(id);
         else tabs.close(id);
     };
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderContent(activeTab: InternalTab | undefined, filterOptions: TicketFilterOptions,
         filterState: Readonly<QueueFilters>, extraParams: ReturnType<typeof queueParams>) {
         const {userDetailUrl, ticketDetailUrl, clientContextUrl, replyUrl, internalCommentUrl,
@@ -400,6 +432,7 @@ export class AdminSupportIsland extends AntiHookComponent<Props> {
         return null;
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderQueue(options: TicketFilterOptions, filterState: Readonly<QueueFilters>,
         extraParams: ReturnType<typeof queueParams>) {
         const {ticketsPageUrl, ticketsInitialData, gridConfig} = this.props;
@@ -413,11 +446,14 @@ export class AdminSupportIsland extends AntiHookComponent<Props> {
         return (
             <div>
                 <SupportStatusBar total={totalOf(statusCounts)} statuses={visibleStatuses(statusCounts)}
-                    counts={statusCounts} active={statusFilter} statusLabel={statusLabel} onSelect={this.filters.setStatusFilter} />
+                    counts={statusCounts} active={statusFilter} statusLabel={statusLabel}
+        onSelect={this.filters.setStatusFilter} />
                 <SupportTicketFilters userOptions={userOptions} assigneeOptions={assigneeOptions}
                     userId={userId} assigneeId={assigneeId} dateField={dateField} dateFrom={dateFrom} dateTo={dateTo}
-                    onUserId={this.filters.setUserId} onAssigneeId={this.filters.setAssigneeId} onDateField={this.filters.setDateField}
-                    onDateFrom={this.filters.setDateFrom} onDateTo={this.filters.setDateTo} onReset={this.filters.reset} />
+                    onUserId={this.filters.setUserId} onAssigneeId={this.filters.setAssigneeId}
+        onDateField={this.filters.setDateField}
+                    onDateFrom={this.filters.setDateFrom} onDateTo={this.filters.setDateTo}
+        onReset={this.filters.reset} />
                 <AdminGrid<SupportTicket> ref={this.gridRef} pageUrl={ticketsPageUrl} initialData={ticketsInitialData}
                     extraParams={extraParams} config={gridConfig} rowKey={rowKey} renders={this.ticketRenders}
                     emptyMessage={t.Support_NoTickets()} />
@@ -425,6 +461,7 @@ export class AdminSupportIsland extends AntiHookComponent<Props> {
         );
     }
 
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
     protected override useEffects(): void {
         const {dynamicTabs, activeId} = this.tabs.snapshot();
         this.useEffect('restore', () => {
@@ -435,6 +472,7 @@ export class AdminSupportIsland extends AntiHookComponent<Props> {
         }, [dynamicTabs, activeId]);
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const options = this.optionsSnapshot();
         const tabState = this.useCarburetor(this.tabs);
@@ -450,8 +488,10 @@ export class AdminSupportIsland extends AntiHookComponent<Props> {
             <UserDetailContext.Provider value={this.userDetail}>
                 <PageHeader title={t.Admin_Support()} icon={SUPPORT_ICON} />
                 <div className="section-soft">
-                    <TabNav tabs={allTabs} activeId={activeId} onSelect={this.handleSelect} onClose={this.handleClose} />
-                    {this.renderContent(findTab(allTabs, activeId), options, filterState, this.extraParams(filterState))}
+                    <TabNav tabs={allTabs} activeId={activeId} onSelect={this.handleSelect}
+        onClose={this.handleClose} />
+                    {this.renderContent(findTab(allTabs, activeId), options, filterState,
+        this.extraParams(filterState))}
                 </div>
             </UserDetailContext.Provider>
         );

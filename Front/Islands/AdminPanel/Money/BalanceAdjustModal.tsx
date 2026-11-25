@@ -6,7 +6,17 @@ import {useBodyScrollLock} from '@common/hooks/ui/useBodyScrollLock';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {Portal} from '@common/Components/Layout/Portal';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {AccountBalanceRow} from '../Shell/types';
+import {AccountBalanceRow} from '../Shell/shared/types';
+
+const admin_Balance_AdjustAmount = t.Admin_Balance_AdjustAmount;
+const admin_Balance_AdjustCancel = t.Admin_Balance_AdjustCancel;
+const admin_Balance_AdjustCredit = t.Admin_Balance_AdjustCredit;
+const admin_Balance_AdjustDebit = t.Admin_Balance_AdjustDebit;
+const admin_Balance_AdjustDirection = t.Admin_Balance_AdjustDirection;
+const admin_Balance_AdjustNote = t.Admin_Balance_AdjustNote;
+const admin_Balance_AdjustNoteHint = t.Admin_Balance_AdjustNoteHint;
+const admin_Balance_AdjustNoteRequired = t.Admin_Balance_AdjustNoteRequired;
+const admin_Balance_AdjustSave = t.Admin_Balance_AdjustSave;
 
 interface AdjustResponse {
     success?: boolean;
@@ -40,10 +50,10 @@ const ModalFooter: React.FC<{canSubmit: boolean; sending: boolean; onClose: () =
                 ? (
                     <span className="admin-money-spinner-wrap">
                         <span className="admin-money-spinner" aria-hidden="true" />
-                        {t.Admin_Balance_AdjustSave()}
+                        {admin_Balance_AdjustSave()}
                     </span>
                 )
-                : t.Admin_Balance_AdjustSave()}
+                : admin_Balance_AdjustSave()}
         </button>
         <button
             type="button"
@@ -51,7 +61,7 @@ const ModalFooter: React.FC<{canSubmit: boolean; sending: boolean; onClose: () =
             onClick={onClose}
             data-test-id="balance-adjust-cancel"
         >
-            {t.Admin_Balance_AdjustCancel()}
+            {admin_Balance_AdjustCancel()}
         </button>
     </div>
 );
@@ -68,10 +78,11 @@ const ReadonlyRow: React.FC<{label: string; testId: string; value: string; stron
     </div>
 );
 
-const AmountField: React.FC<{value: string; onChange: React.ChangeEventHandler<HTMLInputElement>}> = ({value, onChange}) => (
+const AmountField: React.FC<{value: string; onChange: React.ChangeEventHandler<HTMLInputElement>}> = ({value,
+        onChange}) => (
     <div>
         <label htmlFor="balance-adjust-amount" className="admin-ticket-control-label">
-            {t.Admin_Balance_AdjustAmount()}
+            {admin_Balance_AdjustAmount()}
         </label>
         <input
             id="balance-adjust-amount"
@@ -93,22 +104,23 @@ const AmountField: React.FC<{value: string; onChange: React.ChangeEventHandler<H
  * Правка чужого баланса руками — действие, за которое кто-то потом будет
  * отвечать; без объяснения в журнале останется только сумма и имя.
  */
-const NoteField: React.FC<{value: string; valid: boolean; onChange: React.ChangeEventHandler<HTMLTextAreaElement>}> = ({value, valid, onChange}) => (
+const NoteField: React.FC<{value: string; valid: boolean; onChange:
+        React.ChangeEventHandler<HTMLTextAreaElement>}> = ({value, valid, onChange}) => (
     <div>
         <label htmlFor="balance-adjust-note" className="admin-ticket-control-label">
-            {t.Admin_Balance_AdjustNote()}
+            {admin_Balance_AdjustNote()}
         </label>
         <textarea
             id="balance-adjust-note"
             className="admin-filter-field"
             rows={3}
-            placeholder={t.Admin_Balance_AdjustNoteHint()}
+            placeholder={admin_Balance_AdjustNoteHint()}
             value={value}
             onChange={onChange}
             data-test-id="balance-adjust-note"
         />
         {!valid && value.length > 0 && (
-            <div className="admin-money-note-hint">{t.Admin_Balance_AdjustNoteRequired()}</div>
+            <div className="admin-money-note-hint">{admin_Balance_AdjustNoteRequired()}</div>
         )}
     </div>
 );
@@ -139,21 +151,22 @@ const DirectionOption: React.FC<{
  * Цвет здесь не украшение: зачисление и списание с чужого счёта — разные по
  * последствиям действия, и различать их надо до нажатия, а не по результату.
  */
-const DirectionPicker: React.FC<{isCredit: boolean; onCredit: () => void; onDebit: () => void}> = ({isCredit, onCredit, onDebit}) => (
+const DirectionPicker: React.FC<{isCredit: boolean; onCredit: () => void; onDebit: () => void}> = ({isCredit,
+        onCredit, onDebit}) => (
     <div>
-        <div className="admin-money-field-caption">{t.Admin_Balance_AdjustDirection()}</div>
+        <div className="admin-money-field-caption">{admin_Balance_AdjustDirection()}</div>
         <div className="slot-format-options">
             <DirectionOption
                 checked={isCredit}
                 testId="balance-adjust-direction-credit"
-                label={t.Admin_Balance_AdjustCredit()}
+                label={admin_Balance_AdjustCredit()}
                 credit
                 onSelect={onCredit}
             />
             <DirectionOption
                 checked={!isCredit}
                 testId="balance-adjust-direction-debit"
-                label={t.Admin_Balance_AdjustDebit()}
+                label={admin_Balance_AdjustDebit()}
                 credit={false}
                 onSelect={onDebit}
             />
@@ -163,12 +176,15 @@ const DirectionPicker: React.FC<{isCredit: boolean; onCredit: () => void; onDebi
 
 interface AdjustState {amountStr: string; isCredit: boolean; note: string; error: string}
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function validate({amountStr, note}: AdjustState) {
     const amount = parseInt(amountStr, 10);
     const noteTrimmed = note.trim();
-    return {amount, noteTrimmed, amountValid: !isNaN(amount) && amount > 0, noteValid: noteTrimmed.length >= 3 && noteTrimmed.length <= 500};
+    return {amount, noteTrimmed, amountValid: !isNaN(amount) && amount > 0, noteValid: noteTrimmed.length >= 3
+        && noteTrimmed.length <= 500};
 }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function stopDialogClick(event: React.MouseEvent<HTMLFormElement>): void {
     event.stopPropagation();
 }
@@ -176,22 +192,32 @@ function stopDialogClick(event: React.MouseEvent<HTMLFormElement>): void {
 class BalanceAdjustView extends AntiHookComponent<Props & ReturnType<typeof useSending>> {
     private readonly ui = new Carburetor<AdjustState>({amountStr: '', isCredit: true, note: '', error: ''});
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private update(patch: Partial<AdjustState>): void {
         this.ui.setData({...this.ui.getData(), ...patch});
     }
 
-    private readonly setAmount = (event: React.ChangeEvent<HTMLInputElement>) => this.update({amountStr: event.target.value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly setAmount = (event: React.ChangeEvent<HTMLInputElement>) => this.update({amountStr:
+        event.target.value});
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private readonly credit = () => this.update({isCredit: true});
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private readonly debit = () => this.update({isCredit: false});
-    private readonly setNote = (event: React.ChangeEvent<HTMLTextAreaElement>) => this.update({note: event.target.value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly setNote = (event: React.ChangeEvent<HTMLTextAreaElement>) => this.update({note:
+        event.target.value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private setError(error: string): void { this.update({error}); }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly submit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const {amountValid, noteValid} = validate(this.ui.getData());
         if (amountValid && noteValid && !this.props.sending) void this.props.withSending(this.save);
     };
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private readonly save = async () => {
         const {row, adjustUrl, onClose, onAdjusted} = this.props;
         const state = this.ui.getData();
@@ -223,9 +249,11 @@ class BalanceAdjustView extends AntiHookComponent<Props & ReturnType<typeof useS
         }
     };
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderFields({amountStr, isCredit, note, error}: AdjustState, noteValid: boolean) {
         const {row} = this.props;
-        const accountLabel = row.name ? `${row.name}${row.login ? ` (${row.login})` : ''}` : (row.login || `#${row.account_id}`);
+        const accountLabel = row.name ? `${row.name}${row.login ? ` (${row.login})` : ''}` : (row.login ||
+        `#${row.account_id}`);
         return (
             <div className="admin-money-modal-fields">
                 <ReadonlyRow label={t.Admin_Balance_Account()} testId="balance-adjust-account" value={accountLabel} />
@@ -243,6 +271,7 @@ class BalanceAdjustView extends AntiHookComponent<Props & ReturnType<typeof useS
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {onClose, sending} = this.props;
         const state = this.useCarburetor(this.ui);
@@ -264,8 +293,8 @@ class BalanceAdjustView extends AntiHookComponent<Props & ReturnType<typeof useS
                         <button
                             type="button"
                             className="booking-dialog-close"
-                            title={t.Admin_Balance_AdjustCancel()}
-                            aria-label={t.Admin_Balance_AdjustCancel()}
+                            title={admin_Balance_AdjustCancel()}
+                            aria-label={admin_Balance_AdjustCancel()}
                             onClick={onClose}
                         >&times;</button>
                     </div>
@@ -278,6 +307,7 @@ class BalanceAdjustView extends AntiHookComponent<Props & ReturnType<typeof useS
     }
 }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 export function BalanceAdjustModal(props: Props) {
     useBodyScrollLock(true);
     return <BalanceAdjustView {...props} {...useSending()} />;

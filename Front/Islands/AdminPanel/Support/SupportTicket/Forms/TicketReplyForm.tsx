@@ -15,8 +15,11 @@ interface Props {
 }
 
 export default class TicketReplyForm extends AntiHookComponent<Props> {
-    private readonly changeText = (event: React.ChangeEvent<HTMLTextAreaElement>) => this.props.onReplyTextChange(event.target.value);
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeText = (event: React.ChangeEvent<HTMLTextAreaElement>) =>
+        this.props.onReplyTextChange(event.target.value);
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly submitOnShortcut = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         const {replyText, sending, onSend} = this.props;
         if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !sending && replyText.trim()) {
@@ -25,6 +28,7 @@ export default class TicketReplyForm extends AntiHookComponent<Props> {
         }
     };
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {replyText, replyFiles, onReplyFilesChange, sending, onSend} = this.props;
         return (

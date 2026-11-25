@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {SlotItem, ExpertMap, DayInfo} from '../State/types';
+import {SlotItem, ExpertMap, DayInfo} from '../State/view/types';
 import {WeekEmptyNotice} from './WeekEmptyNotice';
 import {DayColumn} from './DayColumn';
 
@@ -26,6 +26,7 @@ const DAY_LABELS: (() => string)[] = [
 ];
 
 export class WeekGrid extends React.Component<WeekGridProps> {
+    /** Формирует разметку компонента. */
     private readonly renderDay = (day: DayInfo) => {
         const {slotsByDay, experts, bookedIds, slotStatuses, onBookClick, isModerator, canBook} = this.props;
         const key = day.dateStr;
@@ -47,6 +48,7 @@ export class WeekGrid extends React.Component<WeekGridProps> {
         );
     };
 
+    /** Обновляет данные календаря. */
     private hasSlots(): boolean {
         const {days, slotsByDay} = this.props;
         for (const day of days) {
@@ -55,6 +57,7 @@ export class WeekGrid extends React.Component<WeekGridProps> {
         return false;
     }
 
+    /** Отрисовывает содержимое компонента. */
     public render() {
         const {days} = this.props;
         return (

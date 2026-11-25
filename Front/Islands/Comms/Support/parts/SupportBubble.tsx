@@ -31,7 +31,9 @@ export const SupportBubble: React.FC<{msg: SupportMessage; tight?: boolean}> = (
     return (
         <div className="support-message-row" data-tight={tight} data-own={isUser}>
             <div className="support-message-bubble" data-tight={tight} data-own={isUser}>
-                {!isUser && msg.author_name && <div className="support-message-author" data-tight={tight}>{msg.author_name}</div>}
+                {!isUser && msg.author_name && (
+                    <div className="support-message-author" data-tight={tight}>{msg.author_name}</div>
+                )}
                 <div className="support-message-body">{msg.body}</div>
                 {msg.attachments && msg.attachments.length > 0 && <AttachmentDisplay attachments={msg.attachments} />}
                 <div className="support-message-time">{formatTs(msg.created_at)}</div>

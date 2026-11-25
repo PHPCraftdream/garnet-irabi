@@ -3,6 +3,9 @@ import {AntiHookComponent} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {BookingCounts, StatusFilter} from './bookingCardTypes';
 
+const bookingsHidePast = t.Bookings_HidePast;
+const bookingsShowPast = t.Bookings_ShowPast;
+
 const TABS: {key: StatusFilter; label: () => string; testId: string}[] = [
     {key: 'all', label: () => t.Bookings_FilterAll(), testId: 'bookings-filter-all'},
     {key: 'pending', label: () => t.Bookings_FilterPending(), testId: 'bookings-filter-pending'},
@@ -20,9 +23,12 @@ interface Props {
     onTogglePast: () => void;
 }
 
-class FilterTab extends AntiHookComponent<{tab: typeof TABS[number]; count: number; selected: boolean; onStatusChange: (s: StatusFilter) => void}> {
+class FilterTab extends AntiHookComponent<{tab: typeof TABS[number]; count: number; selected: boolean;
+    onStatusChange: (s: StatusFilter) => void}> {
+    /** Выбирает статус, связанный с этой вкладкой. */
     private readonly select = () => this.props.onStatusChange(this.props.tab.key);
 
+    /** Отрисовывает кнопку фильтра и число броней выбранного статуса. */
     render() {
         const {tab, count, selected} = this.props;
         return (
@@ -58,7 +64,10 @@ export const BookingsFilterTabs: React.FC<Props> = ({
     const tabs: React.ReactNode[] = [];
     for (const tab of TABS) {
         if (tab.key !== 'all' && counts[tab.key] <= 0) continue;
-        tabs.push(<FilterTab key={tab.key} tab={tab} count={counts[tab.key]} selected={statusFilter === tab.key} onStatusChange={onStatusChange} />);
+        tabs.push(
+            <FilterTab key={tab.key} tab={tab} count={counts[tab.key]}
+                selected={statusFilter === tab.key} onStatusChange={onStatusChange} />,
+        );
     }
     return (
     <div className="section-soft" data-bookings-filters>
@@ -73,7 +82,7 @@ export const BookingsFilterTabs: React.FC<Props> = ({
                     data-test-id="bookings-toggle-past"
                     aria-pressed={showPast}
                 >
-                    {showPast ? t.Bookings_HidePast() : t.Bookings_ShowPast()}
+                    {showPast ? bookingsHidePast() : bookingsShowPast()}
                     {!showPast && counts.past > 0 && <span className="slot-status-count">{counts.past}</span>}
                 </button>
             )}

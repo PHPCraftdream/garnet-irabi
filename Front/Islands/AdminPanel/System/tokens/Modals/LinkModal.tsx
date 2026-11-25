@@ -14,15 +14,18 @@ function copied(): void {
     showToast(t.Admin_Tokens_Copied(), 'success');
 }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
 function selectLink(event: React.MouseEvent<HTMLInputElement>): void {
     (event.target as HTMLInputElement).select();
 }
 
 export class LinkModal extends AntiHookComponent<Props> {
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private readonly copy = () => {
         void navigator.clipboard.writeText(this.props.url).then(copied);
     };
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {url, onClose} = this.props;
         return (
@@ -38,10 +41,12 @@ export class LinkModal extends AntiHookComponent<Props> {
                     />
                 </div>
                 <div className="token-link-actions">
-                    <button type="button" className="primary-action-button" onClick={this.copy} data-test-id="token-link-copy">
+                    <button type="button" className="primary-action-button" onClick={this.copy}
+                        data-test-id="token-link-copy">
                         {t.Admin_Tokens_CopyLink()}
                     </button>
-                    <a href={url} target="_blank" rel="noopener noreferrer" className="confirm-modal-cancel" data-test-id="token-link-open">
+                    <a href={url} target="_blank" rel="noopener noreferrer" className="confirm-modal-cancel"
+        data-test-id="token-link-open">
                         {t.Admin_Tokens_OpenLink()}
                     </a>
                     <button type="button" className="confirm-modal-cancel" onClick={onClose}>

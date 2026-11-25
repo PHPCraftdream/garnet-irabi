@@ -6,6 +6,7 @@ interface Props {
     onView?: () => void;
 }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
 function initial(word: string): string | undefined {
     return word[0];
 }

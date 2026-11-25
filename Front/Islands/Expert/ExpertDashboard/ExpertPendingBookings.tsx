@@ -6,7 +6,11 @@ import {useSending} from '@common/hooks/data/useSending';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {D} from '@common/Support/Debug/D';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {actionImpact, actionReasonLabel, actionReasonPlaceholder, actionSubmitLabel, actionTitle} from '../../../Common/booking/bookingAction';
+import {actionImpact} from '../../../Common/booking/actions/labels/actionImpact';
+import {actionReasonLabel} from '../../../Common/booking/actions/labels/actionReasonLabel';
+import {actionReasonPlaceholder} from '../../../Common/booking/actions/labels/actionReasonPlaceholder';
+import {actionSubmitLabel} from '../../../Common/booking/actions/labels/actionSubmitLabel';
+import {actionTitle} from '../../../Common/booking/actions/labels/actionTitle';
 import {ReasonModal} from '../../../Common/Components/ReasonModal';
 import {PendingBookingItem, PendingBookingRow} from './PendingBookingRow';
 
@@ -30,13 +34,17 @@ interface PendingState {activeId: number | null; rejectId: number | null}
 class PendingBookingsView extends AntiHookComponent<ViewProps> {
     private readonly ui = new Carburetor<PendingState>({activeId: null, rejectId: null});
 
+    /** Обработать соответствующее действие пользователя. */
     private patch(changes: Partial<PendingState>) {
         this.ui.setData({...this.ui.getData(), ...changes});
     }
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly openReject = (rejectId: number) => this.patch({rejectId});
+    /** Обработать соответствующее действие пользователя. */
     private readonly closeReject = () => this.patch({rejectId: null});
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly handleConfirm = (bookingId: number) => {
         const {bookings, onConfirmed, withConfirmSending} = this.props;
         this.patch({activeId: bookingId});
@@ -56,6 +64,7 @@ class PendingBookingsView extends AntiHookComponent<ViewProps> {
         });
     };
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly handleReject = (reason: string) => {
         const bookingId = this.ui.getData().rejectId;
         if (bookingId === null) return;
@@ -77,6 +86,7 @@ class PendingBookingsView extends AntiHookComponent<ViewProps> {
         });
     };
 
+    /** Отобразить соответствующую часть интерфейса. */
     private renderList(activeId: number | null) {
         const {bookings, confirmSending, rejectSending} = this.props;
         const rows: React.ReactNode[] = [];
@@ -100,6 +110,7 @@ class PendingBookingsView extends AntiHookComponent<ViewProps> {
         );
     }
 
+    /** Отобразить соответствующую часть интерфейса. */
     render() {
         const {bookings, rejectSending} = this.props;
         const {activeId, rejectId} = this.useCarburetor(this.ui);
@@ -108,7 +119,8 @@ class PendingBookingsView extends AntiHookComponent<ViewProps> {
                 <div className="user-dash-section-header">
                     <h2 className="user-dash-section-heading">
                         {t.Teaching_PendingBookingsTitle()}
-                        {bookings.length > 0 && <span className="expert-bookings-count-warning">{bookings.length}</span>}
+                        {bookings.length > 0 && <span
+                        className="expert-bookings-count-warning">{bookings.length}</span>}
                     </h2>
                 </div>
                 {this.renderList(activeId)}
@@ -133,5 +145,6 @@ class PendingBookingsView extends AntiHookComponent<ViewProps> {
 export const ExpertPendingBookings: React.FC<Props> = props => {
     const {sending: confirmSending, withSending: withConfirmSending} = useSending();
     const {sending: rejectSending, withSending: withRejectSending} = useSending();
-    return <PendingBookingsView {...props} {...{confirmSending, rejectSending, withConfirmSending, withRejectSending}} />;
+    return <PendingBookingsView {...props} {...{confirmSending, rejectSending, withConfirmSending,
+    withRejectSending}} />;
 };

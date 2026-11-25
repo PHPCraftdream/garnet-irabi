@@ -24,13 +24,19 @@ interface State {
 export class WriteToUserModal extends AntiHookComponent<Props> {
     private readonly ui = new Carburetor<State>({subject: '', body: '', sending: false, error: null});
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private update(patch: Partial<State>): void {
         this.ui.setData({...this.ui.getData(), ...patch});
     }
 
-    private readonly changeSubject = (event: React.ChangeEvent<HTMLInputElement>) => this.update({subject: event.target.value});
-    private readonly changeBody = (event: React.ChangeEvent<HTMLTextAreaElement>) => this.update({body: event.target.value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeSubject = (event: React.ChangeEvent<HTMLInputElement>) => this.update({subject:
+        event.target.value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeBody = (event: React.ChangeEvent<HTMLTextAreaElement>) => this.update({body:
+        event.target.value});
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly send = async () => {
         const {subject, body, sending} = this.ui.getData();
         if (sending || !subject.trim() || !body.trim()) return;
@@ -49,21 +55,25 @@ export class WriteToUserModal extends AntiHookComponent<Props> {
         }
     };
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderFields({subject, body, sending}: State) {
         return (
             <>
                 <div className="token-field">
                     <label className="admin-user-message-label">{t.Admin_MessageSubject()}</label>
-                    <input type="text" className="admin-filter-field" value={subject} onChange={this.changeSubject} disabled={sending} />
+                    <input type="text" className="admin-filter-field" value={subject}
+        onChange={this.changeSubject} disabled={sending} />
                 </div>
                 <div className="admin-support-form">
                     <label className="admin-user-message-label">{t.Admin_MessageBody()}</label>
-                    <textarea className="admin-filter-field" rows={5} value={body} onChange={this.changeBody} disabled={sending} />
+                    <textarea className="admin-filter-field" rows={5} value={body} onChange={this.changeBody}
+        disabled={sending} />
                 </div>
             </>
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {accountId, accountName, onClose} = this.props;
         const state = this.useCarburetor(this.ui);
@@ -74,9 +84,11 @@ export class WriteToUserModal extends AntiHookComponent<Props> {
                 {error && <div className="admin-user-message-error">{error}</div>}
                 {this.renderFields(state)}
                 <div className="booking-cancel-actions">
-                    <button type="button" className="admin-user-message-cancel" onClick={onClose} disabled={sending}>{t.Action_Cancel()}</button>
+                    <button type="button" className="admin-user-message-cancel" onClick={onClose}
+        disabled={sending}>{t.Action_Cancel()}</button>
                     <SendButton onClick={this.send} sending={sending} disabled={!subject.trim() || !body.trim()}
-                        label={sending ? t.User_Loading() : t.Support_Send()} testId={`write-to-user-send-${accountId}`} size="sm" />
+                        label={sending ? t.User_Loading() : t.Support_Send()}
+        testId={`write-to-user-send-${accountId}`} size="sm" />
                 </div>
             </ModalShell>
         );

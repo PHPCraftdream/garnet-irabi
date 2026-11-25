@@ -13,6 +13,7 @@ interface Props {
 }
 
 export class SlotsList extends AntiHookComponent<Props> {
+    /** Отобразить соответствующую часть интерфейса. */
     private renderCards() {
         const {slots, onCancel, onEdit, onComplete, onDelete} = this.props;
         const cards: React.ReactNode[] = [];
@@ -23,6 +24,7 @@ export class SlotsList extends AntiHookComponent<Props> {
         return cards;
     }
 
+    /** Отобразить соответствующую часть интерфейса. */
     render() {
         return (
             <>

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {TokenRow} from './tokenTypes';
+import {TokenRow} from './config/tokenTypes';
 import {TokenTableRow} from './TokenTableRow';
 
 const COLUMNS = [
@@ -15,6 +15,7 @@ const COLUMNS = [
     () => t.Admin_Tokens_Actions(),
 ];
 
+    /** Формирует представление данных для соответствующего раздела панели. */
 function renderColumn(label: () => string, index: number) {
     return <th key={index} className="admin-grid-heading">{label()}</th>;
 }
@@ -36,6 +37,7 @@ interface Props {
     onDelete: (row: TokenRow) => void;
 }
 
+/** Отображает данные раздела и передаёт действия пользователя обработчикам. */
 export const TokenTable: React.FC<Props> = ({tokens, ...handlers}) => {
     const rows: React.ReactNode[] = [];
     for (const row of tokens) rows.push(<TokenTableRow key={row.id} row={row} {...handlers} />);

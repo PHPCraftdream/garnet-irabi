@@ -1,14 +1,6 @@
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 
-function initial(word: string): string {
-    return word[0]?.toUpperCase() || '';
-}
-
-export function getInitials(name: string): string {
-    return (name || '?').split(' ').slice(0, 2).map(initial).join('');
-}
-
-/**
+/** Помечает роль кратким текстовым описанием. *//**
  * Пометка роли говорит, чем человек занимается.
  *
  * Раньше здесь стояли значки, и они говорили больше: значок преподавателя нёс

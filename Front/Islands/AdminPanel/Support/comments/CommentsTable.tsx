@@ -13,10 +13,12 @@ const COLUMNS = [
     () => t.Comment_Actions(),
 ];
 
+    /** Формирует представление данных для соответствующего раздела панели. */
 function renderHeading(label: () => string, index: number) {
     return <th key={index} className="admin-grid-heading">{label()}</th>;
 }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function CommentsTableHead() {
     return <thead><tr>{COLUMNS.map(renderHeading)}</tr></thead>;
 }
@@ -29,6 +31,7 @@ interface Props {
     onToggleHidden: (row: AdminCommentRow, hide: boolean) => void;
 }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 export function CommentsTable({items, ...handlers}: Props) {
     const rows: React.ReactNode[] = [];
     for (const row of items) rows.push(<CommentTableRow key={row.id} row={row} {...handlers} />);

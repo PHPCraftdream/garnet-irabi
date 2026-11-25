@@ -5,9 +5,11 @@ import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {Slot} from '../types';
 import {CalendarStatusFilter, StatusFilter} from './calendar/CalendarStatusFilter';
 import {CalendarPager, PagerKind} from './calendar/CalendarPager';
-import {ExpertCalendarWeeks} from './calendar/Weeks/ExpertCalendarWeeks';
+import {ExpertCalendarWeeks} from './calendar/CalendarWeeks/ExpertCalendarWeeks';
 import {CalendarDragController} from './calendar/CalendarDragController';
-import {buildCalendarWindow, countCalendarSlots, PAGE_WEEKS} from './calendar/Weeks/calendarWeeks';
+import {buildCalendarWindow} from './calendar/CalendarWeeks/calendarWeeks';
+import {countCalendarSlots} from './calendar/CalendarWeeks/countCalendarSlots';
+import {PAGE_WEEKS} from './calendar/CalendarWeeks/PAGE_WEEKS';
 
 interface Props {
     slots: Slot[];
@@ -38,27 +40,35 @@ const filterSlots = (slots: Slot[], statusFilter: StatusFilter) => {
  * отступов.
  */
 export class ExpertCalendar extends AntiHookComponent<Props> {
-    private readonly calendarState = new Carburetor<{statusFilter: StatusFilter; weekOffset: number}>({statusFilter: 'all', weekOffset: 0});
+    private readonly calendarState = new Carburetor<{statusFilter: StatusFilter; weekOffset:
+    number}>({statusFilter: 'all', weekOffset: 0});
     private readonly drag = new CalendarDragController(() => this.props);
     private filteredCache?: {slots: Slot[]; statusFilter: StatusFilter; value: Slot[]};
-    private windowCache?: {slots: Slot[]; nowSec: number; todayIso: string; weekOffset: number; value: ReturnType<typeof buildCalendarWindow>};
+    private windowCache?: {slots: Slot[]; nowSec: number; todayIso: string; weekOffset: number; value:
+    ReturnType<typeof buildCalendarWindow>};
     private countsCache?: {slots: Slot[]; start: number; end: number; value: ReturnType<typeof countCalendarSlots>};
 
+    /** Получить или вычислить соответствующие данные. */
     private getFilteredSlots(slots: Slot[], statusFilter: StatusFilter) {
-        if (!this.filteredCache || this.filteredCache.slots !== slots || this.filteredCache.statusFilter !== statusFilter) {
+        if (!this.filteredCache || this.filteredCache.slots !== slots || this.filteredCache.statusFilter !==
+        statusFilter) {
             this.filteredCache = {slots, statusFilter, value: filterSlots(slots, statusFilter)};
         }
         return this.filteredCache.value;
     }
 
+    /** Получить или вычислить соответствующие данные. */
     private getWindow(slots: Slot[], nowSec: number, todayIso: string, weekOffset: number) {
         const cache = this.windowCache;
-        if (!cache || cache.slots !== slots || cache.nowSec !== nowSec || cache.todayIso !== todayIso || cache.weekOffset !== weekOffset) {
-            this.windowCache = {slots, nowSec, todayIso, weekOffset, value: buildCalendarWindow(slots, weekOffset, nowSec, todayIso)};
+        if (!cache || cache.slots !== slots || cache.nowSec !== nowSec || cache.todayIso !== todayIso ||
+        cache.weekOffset !== weekOffset) {
+            this.windowCache = {slots, nowSec, todayIso, weekOffset, value: buildCalendarWindow(slots, weekOffset,
+            nowSec, todayIso)};
         }
         return this.windowCache!.value;
     }
 
+    /** Получить или вычислить соответствующие данные. */
     private getCounts(slots: Slot[], start: number, end: number) {
         const cache = this.countsCache;
         if (!cache || cache.slots !== slots || cache.start !== start || cache.end !== end) {
@@ -67,22 +77,28 @@ export class ExpertCalendar extends AntiHookComponent<Props> {
         return this.countsCache!.value;
     }
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly setStatusFilter = (statusFilter: StatusFilter) => {
         this.calendarState.setData({...this.calendarState.getData(), statusFilter});
     };
+    /** Обработать соответствующее действие пользователя. */
     private readonly handlePrevPage = () => {
         const state = this.calendarState.getData();
         this.calendarState.setData({...state, weekOffset: state.weekOffset - PAGE_WEEKS});
     };
+    /** Обработать соответствующее действие пользователя. */
     private readonly handleNextPage = () => {
         const state = this.calendarState.getData();
         this.calendarState.setData({...state, weekOffset: state.weekOffset + PAGE_WEEKS});
     };
+    /** Обработать соответствующее действие пользователя. */
     private readonly handleToday = () => {
         this.calendarState.setData({...this.calendarState.getData(), weekOffset: 0});
     };
 
-    private renderPager(rangeLabel: string, weekOffset: number, counts: ReturnType<typeof countCalendarSlots>, activeKind: PagerKind | undefined) {
+    /** Отобразить соответствующую часть интерфейса. */
+    private renderPager(rangeLabel: string, weekOffset: number, counts: ReturnType<typeof countCalendarSlots>,
+    activeKind: PagerKind | undefined) {
         return (
             <CalendarPager
                 rangeLabel={rangeLabel}
@@ -98,7 +114,9 @@ export class ExpertCalendar extends AntiHookComponent<Props> {
         );
     }
 
-    private renderWeeks(weeks: ReturnType<typeof buildCalendarWindow>['weeks'], dragOverDay: string | null, draggingSlotId: number | null) {
+    /** Отобразить соответствующую часть интерфейса. */
+    private renderWeeks(weeks: ReturnType<typeof buildCalendarWindow>['weeks'], dragOverDay: string | null,
+    draggingSlotId: number | null) {
         const {onEdit, onCancelBooking, onConfirmBooking, onDelete, onUserClick, onSlotDrop} = this.props;
         return (
             <ExpertCalendarWeeks
@@ -116,6 +134,7 @@ export class ExpertCalendar extends AntiHookComponent<Props> {
         );
     }
 
+    /** Отобразить соответствующую часть интерфейса. */
     public render() {
         const {slots, onSlotDrop} = this.props;
         const {statusFilter, weekOffset} = this.useCarburetor(this.calendarState);
@@ -128,7 +147,8 @@ export class ExpertCalendar extends AntiHookComponent<Props> {
 
         const hasFreeSlots = slots.some(hasFreeSlot);
         const activeKind: PagerKind | undefined =
-            statusFilter === 'free' || statusFilter === 'pending' || statusFilter === 'booked' || statusFilter === 'completed'
+            statusFilter === 'free' || statusFilter === 'pending' || statusFilter === 'booked' || statusFilter ===
+            'completed'
                 ? statusFilter
                 : undefined;
 

@@ -2,6 +2,9 @@ import * as React from 'react';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {BookingPerson} from './BookingPerson';
 
+const teachingConfirmedBookingsTitle = t.Teaching_ConfirmedBookingsTitle;
+const teachingNoConfirmedBookings = t.Teaching_NoConfirmedBookings;
+
 export interface ConfirmedBookingItem {
     booking_id: number;
     user_id: number;
@@ -39,18 +42,19 @@ function renderBooking(b: Props['bookings'][number]) {
     );
 }
 
+/** Подготовить данные для соответствующего интерфейса. */
 export const ExpertConfirmedBookings: React.FC<Props> = ({bookings}) => (
     <div data-test-id="expert-confirmed-bookings">
         <div className="user-dash-section-header">
             <h2 className="user-dash-section-heading">
-                {t.Teaching_ConfirmedBookingsTitle()}
+                {teachingConfirmedBookingsTitle()}
                 {bookings.length > 0 && <span className="expert-bookings-count-success">{bookings.length}</span>}
             </h2>
         </div>
 
         {bookings.length === 0 && (
             <div className="empty-state-card">
-                <p className="expert-bookings-empty-label">{t.Teaching_NoConfirmedBookings()}</p>
+                <p className="expert-bookings-empty-label">{teachingNoConfirmedBookings()}</p>
             </div>
         )}
         {bookings.length > 0 && (

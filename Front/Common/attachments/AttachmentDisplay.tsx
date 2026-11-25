@@ -2,7 +2,7 @@ import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import type {SupportAttachment} from '../../Islands/Comms/Support/parts/supportTypes';
 import ImageLightbox from '../media/ImageLightbox';
-import {formatSize} from './attachmentHelpers';
+import {formatSize} from './helpers/formatSize';
 
 interface Props {
     attachments: SupportAttachment[];
@@ -20,6 +20,7 @@ interface ItemProps {
     onOpen: (att: SupportAttachment) => void;
 }
 
+/** Рисует ссылку скачивания для файла, не являющегося изображением. */
 function renderFile(att: SupportAttachment) {
     return (
         <a
@@ -42,8 +43,10 @@ function renderFile(att: SupportAttachment) {
 
 /** Картинка открывается просмотром, остальное скачивается по ссылке. */
 class AttachmentItem extends AntiHookComponent<ItemProps> {
+    /** Открывает просмотр изображения вложения. */
     private readonly open = () => this.props.onOpen(this.props.att);
 
+    /** Рисует картинку или ссылку на файл. */
     public render() {
         const {att} = this.props;
         if (att.mime_type.startsWith('image/')) {
@@ -72,14 +75,22 @@ export default class AttachmentDisplay extends AntiHookComponent<Props> {
         name: '',
     });
 
+    /** Открывает просмотр вложения. */
     private readonly open = (attachment: SupportAttachment) => this.lightboxState.setData({
         open: true,
         url: attachment.download_url,
         name: attachment.original_name,
     });
-    private readonly close = () => this.lightboxState.setData({open: false, url: '', name: ''});
-    private readonly renderItem = (att: SupportAttachment) => <AttachmentItem key={att.id} att={att} onOpen={this.open} />;
 
+    /** Закрывает просмотр вложения. */
+    private readonly close = () => this.lightboxState.setData({open: false, url: '', name: ''});
+
+    /** Рисует одно вложение в списке. */
+    private readonly renderItem = (att: SupportAttachment) => (
+        <AttachmentItem key={att.id} att={att} onOpen={this.open} />
+    );
+
+    /** Рисует список вложений и выбранное изображение. */
     public render() {
         const {attachments} = this.props;
         const {open, url, name} = this.useCarburetor(this.lightboxState);

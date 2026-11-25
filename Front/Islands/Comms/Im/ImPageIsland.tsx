@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {AntiHookComponent, type TReadonly} from '@react-carburetor/core';
-import {fetchMessages, refreshConversations} from './ImPageRequests';
+import {fetchMessages} from './fetchMessages';
+import {refreshConversations} from './ImPageRequests';
 import {sendPostFormData, ApiError} from '@common/Api/Send/sendPostFormData';
 import {D} from '@common/Support/Debug/D';
 import {useSending} from '@common/hooks/data/useSending';
@@ -11,7 +12,7 @@ import type {ImMessage, ImConversation, ImAttachment} from './imTypes';
 import {ImPageState} from './ImPageState';
 import type {ImPageSnapshot} from './ImPageState';
 import {PendingFile} from '../../../Common/attachments/AttachmentPicker';
-import {reportAttachmentErrors} from '../../../Common/attachments/attachmentHelpers';
+import {reportAttachmentErrors} from '../../../Common/attachments/helpers/reportAttachmentErrors';
 
 const getSendErrorMessage = (err: unknown): string => {
     if (err instanceof ApiError) {
@@ -27,7 +28,7 @@ const getSendErrorMessage = (err: unknown): string => {
 import ConversationList from './Components/ConversationList';
 import MessageThread from './Components/MessageThread';
 import NewMessageForm from './Components/NewMessageForm';
-import {IrabiPreviewProvider} from '../../../Common/people/IrabiPreviewProvider';
+import {IrabiPreviewProvider} from '../../../Common/people/preview/IrabiPreviewProvider';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {MessagesSquare, ChevronLeft} from 'lucide-react';
 
@@ -48,6 +49,7 @@ const PAGE_ICON = <MessagesSquare size={22} aria-hidden="true" />;
 
 // Подписка = пути, прочитанные в этом render: поля строк читаем здесь, иначе их
 // изменение не разбудит остров (см. RULES.md, «Подписки useCarburetor»).
+/** Преобразует данные вложения в типизированное вложение. */
 function readAttachment(row: TReadonly<ImAttachment>): ImAttachment {
     return {
         id: row.id,
@@ -60,6 +62,7 @@ function readAttachment(row: TReadonly<ImAttachment>): ImAttachment {
     };
 }
 
+/** Преобразует данные сервера в сообщение. */
 function readMessage(row: TReadonly<ImMessage>): ImMessage {
     return {
         id: row.id,
@@ -72,6 +75,7 @@ function readMessage(row: TReadonly<ImMessage>): ImMessage {
     };
 }
 
+/** Преобразует данные сервера в переписку. */
 function readConversation(row: TReadonly<ImConversation>): ImConversation {
     return {
         id: row.id,
@@ -88,7 +92,9 @@ function readConversation(row: TReadonly<ImConversation>): ImConversation {
     };
 }
 
-function findConversation(conversations: readonly ImConversation[], selectedId: number | null): ImConversation | undefined {
+/** Находит переписку по идентификатору. */
+function findConversation(conversations: readonly ImConversation[],
+    selectedId: number | null): ImConversation | undefined {
     return conversations.find(conversation => conversation.id === selectedId);
 }
 
@@ -100,16 +106,19 @@ class ImPageView extends AntiHookComponent<IslandProps> {
     private newFiles: PendingFile[] = [];
     private replyFiles: PendingFile[] = [];
 
+    /** Обновляет вложения нового сообщения. */
     private readonly setNewFiles = (files: PendingFile[]) => {
         this.newFiles = files;
         this.forceUpdate();
     };
 
+    /** Обновляет вложения ответа. */
     private readonly setReplyFiles = (files: PendingFile[]) => {
         this.replyFiles = files;
         this.forceUpdate();
     };
 
+    /** Запускает действия после монтирования компонента. */
     componentDidMount(): void {
         super.componentDidMount();
         this.previous = this.ui.getData();
@@ -121,34 +130,41 @@ class ImPageView extends AntiHookComponent<IslandProps> {
         window.history.replaceState?.(null, '', window.location.pathname);
     }
 
+    /** Обновляет данные после изменения свойств. */
     componentDidUpdate(previousProps: Readonly<IslandProps>): void {
         super.componentDidUpdate(previousProps);
         const state = this.ui.getData();
         const previous = this.previous;
         this.previous = state;
-        if (previous && previous.messages !== state.messages) this.messagesEndRef.current?.scrollIntoView({behavior: 'smooth'});
-        if (!previous || previous.selectedId !== state.selectedId || previousProps.messagesUrl !== this.props.messagesUrl) {
+        if (previous && previous.messages !== state.messages)
+            this.messagesEndRef.current?.scrollIntoView({behavior: 'smooth'});
+        if (!previous || previous.selectedId !== state.selectedId
+            || previousProps.messagesUrl !== this.props.messagesUrl) {
             clearInterval(this.timer);
             if (state.selectedId) this.timer = setInterval(this.poll, 15000);
         }
     }
 
+    /** Останавливает ресурсы перед размонтированием. */
     componentWillUnmount(): void {
         clearInterval(this.timer);
         super.componentWillUnmount();
     }
 
+    /** Запускает периодическое обновление. */
     private readonly poll = () => {
         const {messagesUrl} = this.props;
         const {selectedId} = this.ui.getData();
         if (selectedId && !document.hidden) void fetchMessages(this.ui, messagesUrl, selectedId);
     };
 
+    /** Возвращает к списку обращений. */
     private readonly back = () => {
         this.ui.setSelectedId(null);
         this.ui.setShowNewForm(false);
     };
 
+    /** Выбирает переписку. */
     private readonly selectConversation = (conversationId: number) => {
         const {ui} = this;
         const {messagesUrl} = this.props;
@@ -161,6 +177,7 @@ class ImPageView extends AntiHookComponent<IslandProps> {
         void fetchMessages(ui, messagesUrl, conversationId);
     };
 
+    /** Отправляет новое сообщение. */
     private readonly handleSendNew = () => {
         const {ui} = this;
         const {sendUrl, messagesUrl, conversationsUrl, withSending} = this.props;
@@ -178,7 +195,8 @@ class ImPageView extends AntiHookComponent<IslandProps> {
                 for (const f of newFiles) {
                     fd.append('attachments[]', f.file, f.name);
                 }
-                const r = await sendPostFormData<FormData, {success?: boolean; conversation_id?: number; error?: string}>(sendUrl, fd);
+                const r = await sendPostFormData<FormData,
+                    {success?: boolean; conversation_id?: number; error?: string}>(sendUrl, fd);
                 if (!r?.success) {
                     D('im.error', {action: 'sendNew', error: r?.error});
                     showToast(r?.error || t.General_Error(), 'danger');
@@ -203,6 +221,7 @@ class ImPageView extends AntiHookComponent<IslandProps> {
         });
     };
 
+    /** Обрабатывает отправку ответа. */
     private readonly handleReply = () => {
         const {ui} = this;
         const {sendUrl, messagesUrl, conversationsUrl, withSending} = this.props;
@@ -240,6 +259,7 @@ class ImPageView extends AntiHookComponent<IslandProps> {
         });
     };
 
+    /** Обрабатывает создание переписки. */
     private readonly handleNewMessage = () => {
         const {ui} = this;
         const {setShowNewForm, setSelectedId, setRecipientId, setNewMessage} = ui;
@@ -259,6 +279,7 @@ class ImPageView extends AntiHookComponent<IslandProps> {
      * list) and this form gave no hint it existed. The `#to=` deep-link path
      * already checked for this (lines above); the picker didn't.
      */
+    /** Выбирает получателя и открывает переписку. */
     private readonly handleRecipientPicked = (id: string) => {
         const {ui} = this;
         const {conversations} = ui.getData();
@@ -272,6 +293,7 @@ class ImPageView extends AntiHookComponent<IslandProps> {
         setRecipientId(id);
     };
 
+    /** Рисует форму нового сообщения. */
     private renderNew(state: TReadonly<ImPageSnapshot>) {
         const {searchRecipientsUrl, sending} = this.props;
         const {recipientId, newMessage} = state;
@@ -290,7 +312,9 @@ class ImPageView extends AntiHookComponent<IslandProps> {
         );
     }
 
-    private renderThread(state: TReadonly<ImPageSnapshot>, messages: ImMessage[], selectedConversation: ImConversation) {
+    /** Рисует выбранную переписку. */
+    private renderThread(state: TReadonly<ImPageSnapshot>, messages: ImMessage[],
+        selectedConversation: ImConversation) {
         const {sending, currentAccountId, isModerator = false} = this.props;
         const {loadingMessages, replyText} = state;
         return (
@@ -311,6 +335,7 @@ class ImPageView extends AntiHookComponent<IslandProps> {
         );
     }
 
+    /** Рисует панель сообщений. */
     private renderPanel(
         state: TReadonly<ImPageSnapshot>,
         conversations: readonly ImConversation[],
@@ -330,7 +355,8 @@ class ImPageView extends AntiHookComponent<IslandProps> {
                         {t.Support_BackToList()}
                     </button>
                 )}
-                {showNewForm ? this.renderNew(state) : selectedConversation ? this.renderThread(state, messages, selectedConversation) : (
+                {showNewForm ? this.renderNew(state) : selectedConversation ? this.renderThread(state, messages,
+                    selectedConversation) : (
                     <div className="comms-page-empty">
                         {conversations.length === 0 ? t.IM_NoConversations() : t.IM_NoMessages()}
                     </div>
@@ -339,6 +365,7 @@ class ImPageView extends AntiHookComponent<IslandProps> {
         );
     }
 
+    /** Рисует содержимое компонента. */
     render() {
         // Подписка = пути, прочитанные в этом render: поля строк копируем здесь, иначе
         // их изменение не разбудит остров (см. RULES.md, «Подписки useCarburetor»).
@@ -367,6 +394,7 @@ class ImPageView extends AntiHookComponent<IslandProps> {
     }
 }
 
+/** Создаёт островок страницы личных сообщений. */
 export const ImPageIsland: React.FC<Props> = (props) => {
     const sending = useSending();
     return (

@@ -5,7 +5,7 @@ import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {AttachmentAddRow} from './AttachmentAddRow';
 import {AttachmentTile} from './AttachmentTile';
 import {AttachmentLightbox} from './AttachmentLightbox';
-import {MAX_ATTACHMENTS} from './attachmentHelpers';
+import {MAX_ATTACHMENTS} from './helpers/MAX_ATTACHMENTS';
 
 export interface PendingFile {
     id: string;
@@ -26,6 +26,7 @@ interface PickerSelectionData {
 }
 
 class PickerSelection extends Carburetor<PickerSelectionData> {
+/** Выбирает файл для просмотра или закрывает его. */
     public readonly setIndex = (index: number | null): void => {
         this.setData({index});
     };
@@ -66,16 +67,24 @@ const addPreviewIndex = (file: PendingFile, index: number) => ({...file, index})
 const hasPreview = (file: PendingFile) => !!file.preview;
 
 interface AttachmentThumbsProps {
-    files: PendingFile[];
+    files: readonly PendingFile[];
     onOpen: (index: number) => void;
     onRemove: (index: number) => void;
 }
 
 class AttachmentThumbs extends React.Component<AttachmentThumbsProps> {
+/** Рисует плитку выбранного файла. */
     private readonly renderTile = (file: PendingFile, index: number) => (
-        <AttachmentTile key={file.id} file={file} index={index} onOpen={this.props.onOpen} onRemove={this.props.onRemove} />
+        <AttachmentTile
+            key={file.id}
+            file={file}
+            index={index}
+            onOpen={this.props.onOpen}
+            onRemove={this.props.onRemove}
+        />
     );
 
+    /** Рисует сетку миниатюр. */
     public render() {
         return <div className="pick-file-grid">{this.props.files.map(this.renderTile)}</div>;
     }
@@ -86,22 +95,26 @@ export default class AttachmentPicker extends AntiHookComponent<Props> {
     private readonly selection = new PickerSelection({index: null});
     private unlockBody: (() => void) | undefined;
 
+/** Синхронизирует блокировку прокрутки после монтирования. */
     public componentDidMount(): void {
         super.componentDidMount();
         this.syncBodyLock();
     }
 
+/** Обновляет блокировку прокрутки после изменения состояния. */
     public componentDidUpdate(previousProps: Readonly<Props>): void {
         super.componentDidUpdate(previousProps);
         this.syncBodyLock();
     }
 
+/** Снимает блокировку прокрутки перед размонтированием. */
     public componentWillUnmount(): void {
         this.unlockBody?.();
         this.unlockBody = undefined;
         super.componentWillUnmount();
     }
 
+/** Запирает страницу, пока открыт просмотр картинки. */
     private syncBodyLock(): void {
         const locked = this.selection.getData().index !== null;
         if (locked && !this.unlockBody) {
@@ -114,6 +127,7 @@ export default class AttachmentPicker extends AntiHookComponent<Props> {
         }
     }
 
+/** Проверяет и добавляет выбранные файлы к текущему списку. */
     private readonly addFiles = (newFiles: FileList | File[]) => {
         const {files, onChange} = this.props;
         const maxFiles = this.props.maxFiles === undefined ? MAX_ATTACHMENTS : this.props.maxFiles;
@@ -147,6 +161,7 @@ export default class AttachmentPicker extends AntiHookComponent<Props> {
         onChange([...files, ...pending]);
     };
 
+/** Удаляет файл и освобождает URL его превью. */
     private readonly remove = (index: number) => {
         const {files, onChange} = this.props;
         const lightboxIndex = this.selection.getData().index;
@@ -159,13 +174,45 @@ export default class AttachmentPicker extends AntiHookComponent<Props> {
         if (lightboxIndex === index) this.selection.setIndex(null);
     };
 
+/** Открывает системный диалог выбора файлов. */
     private readonly openPicker = () => this.inputRef.current?.click();
+/** Закрывает окно просмотра. */
     private readonly closeLightbox = () => this.selection.setIndex(null);
+/** Удаляет файл, выбранный в окне просмотра. */
     private readonly removeCurrent = () => {
         const index = this.selection.getData().index;
         if (index !== null) this.remove(index);
     };
 
+    /** Рисует прикреплённые файлы, если они выбраны. */
+    private renderThumbs(files: readonly PendingFile[]) {
+        if (!files.length) return null;
+        return (
+            <AttachmentThumbs
+                files={files}
+                onOpen={this.selection.setIndex}
+                onRemove={this.remove}
+            />
+        );
+    }
+
+    /** Рисует кнопку добавления, пока не достигнут лимит файлов. */
+    private renderAddRow(files: readonly PendingFile[], maxFiles: number, accept?: string) {
+        if (files.length >= maxFiles) return null;
+        return (
+            <AttachmentAddRow
+                inputRef={this.inputRef}
+                accept={accept}
+                onFiles={this.addFiles}
+                count={files.length}
+                maxFiles={maxFiles}
+                onPick={this.openPicker}
+                hint={t.Attach_Hint([maxFiles, MAX_FILE_SIZE_MB])}
+            />
+        );
+    }
+
+    /** Рисует плитки, кнопку добавления и просмотр. */
     public render() {
         const {files, accept} = this.props;
         const maxFiles = this.props.maxFiles === undefined ? MAX_ATTACHMENTS : this.props.maxFiles;
@@ -174,18 +221,8 @@ export default class AttachmentPicker extends AntiHookComponent<Props> {
 
         return (
             <div>
-                {files.length > 0 && <AttachmentThumbs files={files} onOpen={this.selection.setIndex} onRemove={this.remove} />}
-                {files.length < maxFiles && (
-                    <AttachmentAddRow
-                        inputRef={this.inputRef}
-                        accept={accept}
-                        onFiles={this.addFiles}
-                        count={files.length}
-                        maxFiles={maxFiles}
-                        onPick={this.openPicker}
-                        hint={t.Attach_Hint([maxFiles, MAX_FILE_SIZE_MB])}
-                    />
-                )}
+                {this.renderThumbs(files)}
+                {this.renderAddRow(files, maxFiles, accept)}
                 <AttachmentLightbox
                     current={index !== null ? files[index] : null}
                     previewFiles={previewFiles}

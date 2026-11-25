@@ -13,16 +13,22 @@ interface Props {
 }
 
 export class SlotFormatFields extends AntiHookComponent<Props> {
+    /** Подготовить данные для соответствующего интерфейса. */
     private readonly chooseOnline = () => this.props.onIsOnlineChange(true);
+    /** Подготовить данные для соответствующего интерфейса. */
     private readonly chooseOffline = () => this.props.onIsOnlineChange(false);
+    /** Обработать соответствующее действие пользователя. */
     private readonly changeLocation = (event: React.ChangeEvent<HTMLInputElement>) => {
         this.props.onLocationChange(event.target.value);
     };
 
+    /** Отобразить соответствующую часть интерфейса. */
     private renderLabel(text: string) {
-        return <label className={this.props.labelVariant === 'edit' ? 'slot-format-label-edit' : 'slot-format-label'}>{text}</label>;
+        return <label className={this.props.labelVariant === 'edit' ? 'slot-format-label-edit' :
+        'slot-format-label'}>{text}</label>;
     }
 
+    /** Отобразить соответствующую часть интерфейса. */
     private renderOption(online: boolean) {
         const {idPrefix, isOnline, formatLocked = false} = this.props;
         return (
@@ -41,6 +47,7 @@ export class SlotFormatFields extends AntiHookComponent<Props> {
         );
     }
 
+    /** Отобразить соответствующую часть интерфейса. */
     private renderLocation() {
         const {isOnline, location, idPrefix} = this.props;
         return (
@@ -59,6 +66,7 @@ export class SlotFormatFields extends AntiHookComponent<Props> {
         );
     }
 
+    /** Отобразить соответствующую часть интерфейса. */
     render() {
         return (
             <>

@@ -9,6 +9,7 @@ interface Props {
     isExpert?: boolean;
 }
 
+/** Ссылка на пользователя с переходом в предпросмотр профиля. */
 export function PersonLink({id, name, isExpert}: Props) {
     if (!id) return <>{name}</>;
     return <UserLink id={id} name={name} isExpert={isExpert} anchor={NEWS_EVENT_LINK_TEMPLATE} />;

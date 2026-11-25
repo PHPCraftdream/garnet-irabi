@@ -22,10 +22,12 @@ const renderMessage = (msg: SupportMessage) => <SupportBubble key={msg.id} msg={
 
 /** Переписка по обращению. */
 export class WidgetConversation extends React.Component<ConversationProps> {
+    /** Обновляет текст ответа. */
     private readonly changeReply = (event: React.ChangeEvent<HTMLInputElement>) => {
         this.props.onReplyTextChange(event.target.value);
     };
 
+    /** Обрабатывает replyOnKey. */
     private readonly replyOnKey = (event: React.KeyboardEvent<HTMLInputElement>) => {
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
@@ -33,6 +35,7 @@ export class WidgetConversation extends React.Component<ConversationProps> {
         }
     };
 
+    /** Рисует поле ответа. */
     private renderReply() {
         const {replyText, onReply, sending} = this.props;
         return (
@@ -60,6 +63,7 @@ export class WidgetConversation extends React.Component<ConversationProps> {
         );
     }
 
+    /** Рисует содержимое компонента. */
     public render() {
         const {loading, messages, endRef, selectedTicket, onBack} = this.props;
         return (

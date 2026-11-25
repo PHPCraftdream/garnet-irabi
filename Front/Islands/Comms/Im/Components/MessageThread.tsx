@@ -7,8 +7,8 @@ import {ImConversation, ImMessage} from '../imTypes';
 import MessageBubble from './MessageBubble';
 import AttachmentPicker, {PendingFile} from '../../../../Common/attachments/AttachmentPicker';
 import SendButton from '@common/Components/Controls/SendButton';
-import {EntityLink} from '../../../../Common/people/EntityLink';
-import {userLinks} from '../../../../Common/people/entityLinkHelpers';
+import {EntityLink} from '../../../../Common/people/links/EntityLink';
+import {userLinks} from '../../../../Common/people/links/userLinks';
 import {UserAvatar} from '../../../../Common/media/UserAvatar';
 
 interface Props {
@@ -27,8 +27,11 @@ interface Props {
 }
 
 export default class MessageThread extends AntiHookComponent<Props> {
-    private readonly changeReply = (event: React.ChangeEvent<HTMLTextAreaElement>) => this.props.onReplyTextChange(event.target.value);
+    /** Обновляет текст ответа. */
+    private readonly changeReply = (event: React.ChangeEvent<HTMLTextAreaElement>) =>
+        this.props.onReplyTextChange(event.target.value);
 
+    /** Отправляет форму по клавиатурному сочетанию. */
     private readonly submitOnShortcut = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         const {replyText, sending, onReply} = this.props;
         if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !sending && replyText.trim()) {
@@ -37,6 +40,7 @@ export default class MessageThread extends AntiHookComponent<Props> {
         }
     };
 
+    /** Рисует заголовок переписки. */
     private renderHeading() {
         const {conversation, isModerator} = this.props;
         return (
@@ -58,13 +62,20 @@ export default class MessageThread extends AntiHookComponent<Props> {
         );
     }
 
+    /** Рисует сообщения переписки. */
     private renderMessages() {
         const {messages, currentAccountId} = this.props;
         const rows: React.ReactNode[] = [];
-        for (const message of messages) rows.push(<MessageBubble key={message.id} message={message} isMine={message.sender_id === currentAccountId} />);
+        for (const message of messages) {
+            rows.push(
+                <MessageBubble key={message.id} message={message}
+                    isMine={message.sender_id === currentAccountId} />,
+            );
+        }
         return rows;
     }
 
+    /** Рисует временную шкалу сообщений. */
     private renderTimeline() {
         const {loadingMessages, messages, messagesEndRef} = this.props;
         return (
@@ -81,6 +92,7 @@ export default class MessageThread extends AntiHookComponent<Props> {
         );
     }
 
+    /** Рисует поле ответа. */
     private renderReply() {
         const {replyText, replyFiles, onReplyFilesChange, sending, onReply} = this.props;
         return (
@@ -109,6 +121,7 @@ export default class MessageThread extends AntiHookComponent<Props> {
         );
     }
 
+    /** Рисует содержимое компонента. */
     render() {
         return <>{this.renderHeading()}{this.renderTimeline()}{this.renderReply()}</>;
     }

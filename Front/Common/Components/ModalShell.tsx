@@ -3,6 +3,8 @@ import {AntiHookComponent} from '@react-carburetor/core';
 import {Portal} from '@common/Components/Layout/Portal';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 
+const actionClose = t.Action_Close;
+
 /**
  * Оболочка модального окна: затемнение, карточка, шапка с крестиком.
  *
@@ -24,8 +26,8 @@ const ModalHeader: React.FC<HeaderProps> = ({title, titleTone, testId, onClose})
             type="button"
             className="modal-shell-close"
             onClick={onClose}
-            title={t.Action_Close()}
-            aria-label={t.Action_Close()}
+            title={actionClose()}
+            aria-label={actionClose()}
             data-test-id={`${testId}-close`}
         >
             &times;
@@ -44,16 +46,23 @@ interface Props {
 }
 
 export class ModalShell extends AntiHookComponent<Props> {
+/** Закрывает окно по клику на затемнённый фон. */
     private readonly closeFromBackdrop = (event: React.MouseEvent<HTMLDivElement>) => {
         if (event.target === event.currentTarget) this.props.onClose();
     };
 
+/** Рисует модальное окно и его содержимое. */
     render() {
         const {title, titleTone, testId, onClose, size = 'md', children} = this.props;
         return (
             <Portal>
                 <div className="modal-shell-overlay" onClick={this.closeFromBackdrop} data-test-id={testId}>
-                    <div role="dialog" aria-modal="true" aria-label={title} className={size === 'lg' ? 'modal-shell-card-lg' : 'modal-shell-card-md'}>
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label={title}
+                        className={size === 'lg' ? 'modal-shell-card-lg' : 'modal-shell-card-md'}
+                    >
                         <ModalHeader title={title} titleTone={titleTone} testId={testId} onClose={onClose} />
                         {children}
                     </div>

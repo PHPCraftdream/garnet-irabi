@@ -2,7 +2,8 @@ import * as React from 'react';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {ExternalLink} from '@common/Components/Layout/ExternalLink';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {statusLabel, entryTypeLabel} from './gridLabels';
+import {entryTypeLabel} from './gridLabels';
+import {statusLabel} from './statusLabel';
 
 // UserCell removed — use AdminUserLink from EntityLinks instead
 
@@ -13,8 +14,10 @@ import {statusLabel, entryTypeLabel} from './gridLabels';
 export const globalRenders: Record<string, (val: unknown) => React.ReactNode> = {
     created_at: val => <span className="token-cell-time">{formatTs(val as number)}</span>,
     updated_at: val => <span className="token-cell-time">{formatTs(val as number)}</span>,
-    confirmed_at: val => val ? <span className="token-cell-time">{formatTs(val as number)}</span> : <span className="token-cell-muted">—</span>,
-    cancelled_at: val => val ? <span className="token-cell-time">{formatTs(val as number)}</span> : <span className="token-cell-muted">—</span>,
+    confirmed_at: val => val ? <span className="token-cell-time">{formatTs(val as number)}</span> : <span
+        className="token-cell-muted">—</span>,
+    cancelled_at: val => val ? <span className="token-cell-time">{formatTs(val as number)}</span> : <span
+        className="token-cell-muted">—</span>,
     start_at: val => <span className="admin-grid-value-time">{formatTs(val as number)}</span>,
 
     amount: val => <>{String(val)} &#8381;</>,

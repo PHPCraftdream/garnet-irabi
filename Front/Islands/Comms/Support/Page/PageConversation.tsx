@@ -23,6 +23,7 @@ interface ConversationProps {
     sending: boolean;
 }
 
+/** Рисует заголовок обращения и его статус. */
 function renderHeader(selectedTicket: SupportTicket) {
     return (
         <div className="support-conv-header">
@@ -31,7 +32,8 @@ function renderHeader(selectedTicket: SupportTicket) {
                 <StatusBadge status={selectedTicket.status} />
             </div>
             <div className="support-conv-meta">
-                {t.Support_Created()}: {formatTs(selectedTicket.created_at)} &middot; {t.Support_Updated()}: {formatTs(selectedTicket.updated_at)}
+                {t.Support_Created()}: {formatTs(selectedTicket.created_at)}{' '}
+                &middot; {t.Support_Updated()}: {formatTs(selectedTicket.updated_at)}
             </div>
         </div>
     );
@@ -39,8 +41,11 @@ function renderHeader(selectedTicket: SupportTicket) {
 
 /** Переписка по обращению. */
 export class PageConversation extends AntiHookComponent<ConversationProps> {
-    private readonly changeReply = (event: React.ChangeEvent<HTMLTextAreaElement>) => this.props.onReplyTextChange(event.target.value);
+    /** Обновляет текст ответа. */
+    private readonly changeReply = (event: React.ChangeEvent<HTMLTextAreaElement>) =>
+        this.props.onReplyTextChange(event.target.value);
 
+    /** Отправляет форму по клавиатурному сочетанию. */
     private readonly submitOnShortcut = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         const {replyText, sending, onReply} = this.props;
         if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !sending && replyText.trim()) {
@@ -49,6 +54,7 @@ export class PageConversation extends AntiHookComponent<ConversationProps> {
         }
     };
 
+    /** Рисует поле ответа. */
     private renderReply() {
         const {replyText, replyFiles, onReplyFilesChange, onReply, sending} = this.props;
         return (
@@ -77,6 +83,7 @@ export class PageConversation extends AntiHookComponent<ConversationProps> {
         );
     }
 
+    /** Рисует содержимое компонента. */
     render() {
         const {selectedTicket, messages, loading, endRef} = this.props;
         if (!selectedTicket) return null;

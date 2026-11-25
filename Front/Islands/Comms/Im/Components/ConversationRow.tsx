@@ -7,6 +7,9 @@ import {formatTs} from '@common/Utils/Time/DateUtils';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {UserAvatar} from '../../../../Common/media/UserAvatar';
 
+const supportHasAttachments = t.Support_HasAttachments;
+const imYouPrefix = t.IM_YouPrefix;
+
 const CONVERSATION_PARTNER_NAME_TEMPLATE = <a className="conversation-partner-name" />;
 
 /**
@@ -22,7 +25,7 @@ const AttachmentsMark: React.FC<{count: number; convId: number}> = ({count, conv
         <span
             className="conversation-attachments"
             data-test-id={`im-conv-attachments-${convId}`}
-            title={t.Support_HasAttachments([count])}
+            title={supportHasAttachments([count])}
         >
             <Paperclip size={12} aria-hidden="true" />
             {count}
@@ -30,6 +33,7 @@ const AttachmentsMark: React.FC<{count: number; convId: number}> = ({count, conv
     );
 };
 
+/** Обрабатывает stopClick. */
 function stopClick(event: React.MouseEvent<HTMLAnchorElement>): void {
     event.stopPropagation();
 }
@@ -55,7 +59,7 @@ const ConversationHead: React.FC<{conv: ImConversation; partnerName: string}> = 
 const ConversationMeta: React.FC<{conv: ImConversation}> = ({conv}) => (
     <div className="support-ticket-metadata">
         <span className="conversation-snippet">
-            {conv.last_message_is_mine && <span className="conversation-you">{t.IM_YouPrefix()}</span>}
+            {conv.last_message_is_mine && <span className="conversation-you">{imYouPrefix()}</span>}
             {conv.last_message_snippet}
         </span>
         <AttachmentsMark count={conv.attachments_count ?? 0} convId={conv.id} />
@@ -71,8 +75,10 @@ interface Props {
 
 /** Строка диалога: собеседник, последнее сообщение, непрочитанное, время. */
 export class ConversationRow extends AntiHookComponent<Props> {
+    /** Выбирает строку списка. */
     private readonly select = () => this.props.onSelect(this.props.conv.id);
 
+    /** Рисует содержимое компонента. */
     render() {
         const {conv, active} = this.props;
         const partnerName = conv.partner_name || t.User_Anonymous();

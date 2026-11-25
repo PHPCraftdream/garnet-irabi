@@ -15,11 +15,13 @@ interface Props {
 export class ImWidgetIsland extends AntiHookComponent<Props> {
     private readonly badge = this.props.unreadCount;
 
+    /** Запускает действия после монтирования компонента. */
     componentDidMount(): void {
         super.componentDidMount();
         D('im.widget', {unreadCount: this.badge});
     }
 
+    /** Рисует содержимое компонента. */
     render() {
         const {pageUrl} = this.props;
         const {badge} = this;

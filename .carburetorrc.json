@@ -369,6 +369,16 @@
   },
   "rules": {
     "no-react-hooks-in-components": "error",
-    "require-function-class": "error"
-  }
+    "require-function-class": "error",
+    "max-line-length": "error",
+    "no-blank-line-after-tsdoc": "error",
+    "prefer-readonly-array-param": "error",
+    "require-tsdoc": "error",
+    "tsdoc-blank-line-before-tags": "error",
+    "one-export-per-file": "error",
+    "no-module-level-store": "error"
+  },
+  "ignore": [
+    "**/I18nGen/**"
+  ]
 }

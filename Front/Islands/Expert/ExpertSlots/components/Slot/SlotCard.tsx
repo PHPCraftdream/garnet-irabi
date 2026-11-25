@@ -12,6 +12,7 @@ interface Props {
     onDelete?: (id: number) => void;
 }
 
+/** Получить или вычислить соответствующие данные. */
 function statusText(status: string): string {
     switch (status) {
         case 'free': return t.Slot_Status_Free();
@@ -39,10 +40,12 @@ interface ActionProps {
     onClick: () => void;
 }
 
+/** Подготовить данные для соответствующего интерфейса. */
 function ActionButton({action, testId, label, onClick}: ActionProps) {
     return (
         <button
-            className={action === 'edit' ? 'compact-outline-action' : action === 'cancel' ? 'btn-outline-warning-full' : action === 'delete' ? 'slot-remove-btn' : 'compact-success-action'}
+            className={action === 'edit' ? 'compact-outline-action' : action === 'cancel' ? 'btn-outline-warning-full'
+            : action === 'delete' ? 'slot-remove-btn' : 'compact-success-action'}
             data-slot-card-action="compact"
             data-test-id={testId}
             onClick={onClick}
@@ -60,26 +63,35 @@ function ActionButton({action, testId, label, onClick}: ActionProps) {
  * началось, — иначе занятие «состоялось» до того, как состоялось.
  */
 class SlotActions extends AntiHookComponent<ActionsProps> {
+    /** Обработать соответствующее действие пользователя. */
     private readonly edit = () => this.props.onEdit?.(this.props.slot);
+    /** Обработать соответствующее действие пользователя. */
     private readonly cancel = () => this.props.onCancel?.(this.props.slot.id);
+    /** Обработать соответствующее действие пользователя. */
     private readonly remove = () => this.props.onDelete?.(this.props.slot.id);
+    /** Подготовить данные для соответствующего интерфейса. */
     private readonly complete = () => this.props.onComplete?.(this.props.slot.id);
 
+    /** Отобразить соответствующую часть интерфейса. */
     private renderCancel() {
         const {slot, onCancel} = this.props;
         if (!onCancel) return null;
-        return <ActionButton action="cancel" testId={`slot-cancel-${slot.id}`} label={t.Slot_Cancel()} onClick={this.cancel} />;
+        return <ActionButton action="cancel" testId={`slot-cancel-${slot.id}`} label={t.Slot_Cancel()}
+        onClick={this.cancel} />;
     }
 
+    /** Отобразить соответствующую часть интерфейса. */
     render() {
         const {slot, canComplete, onCancel, onEdit, onComplete, onDelete} = this.props;
         if (slot.status === 'free') {
             if (!onEdit && !onCancel && !onDelete) return null;
             return (
                 <div className="expert-slot-card-actions">
-                    {onEdit && <ActionButton action="edit" testId={`slot-edit-${slot.id}`} label={t.Slot_Edit()} onClick={this.edit} />}
+                    {onEdit && <ActionButton action="edit" testId={`slot-edit-${slot.id}`} label={t.Slot_Edit()}
+                    onClick={this.edit} />}
                     {this.renderCancel()}
-                    {onDelete && <ActionButton action="delete" testId={`slot-delete-${slot.id}`} label={t.Slot_Delete()} onClick={this.remove} />}
+                    {onDelete && <ActionButton action="delete" testId={`slot-delete-${slot.id}`} label={t.Slot_Delete()}
+                    onClick={this.remove} />}
                 </div>
             );
         }
@@ -89,7 +101,8 @@ class SlotActions extends AntiHookComponent<ActionsProps> {
             <div className="expert-slot-card-actions">
                 {this.renderCancel()}
                 {onComplete && canComplete && (
-                    <ActionButton action="complete" testId={`slot-complete-${slot.id}`} label={t.Slot_Complete()} onClick={this.complete} />
+                    <ActionButton action="complete" testId={`slot-complete-${slot.id}`} label={t.Slot_Complete()}
+                    onClick={this.complete} />
                 )}
             </div>
         );
@@ -97,6 +110,7 @@ class SlotActions extends AntiHookComponent<ActionsProps> {
 }
 
 export class SlotCard extends AntiHookComponent<Props> {
+    /** Отобразить соответствующую часть интерфейса. */
     private renderDetails() {
         const {slot} = this.props;
         const formattedDate = formatTs(slot.start_at, {dateOnly: true});
@@ -126,13 +140,15 @@ export class SlotCard extends AntiHookComponent<Props> {
         );
     }
 
+    /** Отобразить соответствующую часть интерфейса. */
     render() {
         const {slot, onCancel, onEdit, onComplete, onDelete} = this.props;
         const canComplete = slot.status === 'booked' && slot.start_at <= Date.now() / 1000;
 
         return (
             <div>
-                <div className="booking-card-shell" data-test-id="slot-item" data-slot-id={slot.id} data-slot-status={slot.status}>
+                <div className="booking-card-shell" data-test-id="slot-item" data-slot-id={slot.id}
+                data-slot-status={slot.status}>
                     <div className="expert-slot-card-body">
                         {this.renderDetails()}
                         <SlotActions

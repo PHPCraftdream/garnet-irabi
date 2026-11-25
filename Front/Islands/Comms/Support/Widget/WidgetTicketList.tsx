@@ -13,6 +13,7 @@ interface TicketListProps {
 
 /** Список обращений. */
 export class WidgetTicketList extends React.Component<TicketListProps> {
+    /** Рисует строку обращения. */
     private readonly renderTicket = (ticket: SupportTicket) => (
         <SupportTicketRow
             key={ticket.id}
@@ -23,6 +24,7 @@ export class WidgetTicketList extends React.Component<TicketListProps> {
         />
     );
 
+    /** Рисует содержимое компонента. */
     public render() {
         const {loadingTickets, tickets, onNew} = this.props;
         return (

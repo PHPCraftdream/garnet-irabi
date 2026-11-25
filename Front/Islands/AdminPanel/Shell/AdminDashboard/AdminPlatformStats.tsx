@@ -13,8 +13,10 @@ interface Props {
 }
 
 export class AdminPlatformStats extends AntiHookComponent<Props> {
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
-        const {totalUsers, totalExperts, bookingsThisMonth, revenueThisMonth, usersUrl, bookingsUrl, financeUrl} = this.props;
+        const {totalUsers, totalExperts, bookingsThisMonth, revenueThisMonth, usersUrl, bookingsUrl,
+        financeUrl} = this.props;
         return (
             <div className="admin-dash-card" data-test-id="admin-dash-stats">
                 <h2 className="admin-home-card-title-mb">{t.Admin_PlatformStats()}</h2>
@@ -23,7 +25,8 @@ export class AdminPlatformStats extends AntiHookComponent<Props> {
                         <div className="admin-home-stat-value">{totalUsers}</div>
                         <div className="admin-home-stat-label">{t.Dash_TotalUsers()}</div>
                     </a>
-                    <a href={`${usersUrl}#filter=experts`} className="admin-home-stat-tile" data-test-id="admin-dash-stat-experts">
+                    <a href={`${usersUrl}#filter=experts`} className="admin-home-stat-tile"
+                        data-test-id="admin-dash-stat-experts">
                         <div className="admin-home-stat-value">{totalExperts}</div>
                         <div className="admin-home-stat-label">{t.Admin_TotalExperts()}</div>
                     </a>
@@ -32,7 +35,8 @@ export class AdminPlatformStats extends AntiHookComponent<Props> {
                         <div className="admin-home-stat-label">{t.Dash_BookingsThisMonth()}</div>
                     </a>
                     <a href={financeUrl} className="admin-home-stat-tile" data-test-id="admin-dash-stat-revenue">
-                        <div className="admin-home-stat-value" data-tone="success">{revenueThisMonth.toLocaleString()} &#8381;</div>
+                        <div className="admin-home-stat-value"
+        data-tone="success">{revenueThisMonth.toLocaleString()} &#8381;</div>
                         <div className="admin-home-stat-label">{t.Admin_MonthlyRevenue()}</div>
                     </a>
                 </div>

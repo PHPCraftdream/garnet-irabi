@@ -2,8 +2,15 @@ import * as React from 'react';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {appUrl} from '@common/Utils/Url/appUrl';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {TicketRow, TICKET_STATUS_TONE, ticketStatusLabel} from '../userDetailTypes';
+import {TicketRow} from '../status/userDetailTypes';
+import {ticketStatusLabel} from '../status/ticketStatusLabel';
+import {TICKET_STATUS_TONE} from '../status/ticketStatusTone';
 import {DetailTable} from '../DetailTable';
+
+const user_SupportTickets = t.User_SupportTickets;
+const user_TicketStatus = t.User_TicketStatus;
+const user_TicketSubject = t.User_TicketSubject;
+const user_TicketUpdated = t.User_TicketUpdated;
 
 const TicketTr: React.FC<{tk: TicketRow}> = ({tk}) => {
     const href = appUrl(`/admin/support/#ticket=${tk.id}`);
@@ -28,6 +35,7 @@ const TicketTr: React.FC<{tk: TicketRow}> = ({tk}) => {
     );
 };
 
+/** Отображает данные раздела и передаёт действия пользователя обработчикам. */
 export const TicketsSection: React.FC<{tickets: TicketRow[]}> = ({tickets}) => {
     if (tickets.length === 0) return null;
 
@@ -36,9 +44,9 @@ export const TicketsSection: React.FC<{tickets: TicketRow[]}> = ({tickets}) => {
 
     return (
         <DetailTable
-            title={t.User_SupportTickets()}
+            title={user_SupportTickets()}
             count={tickets.length}
-            columns={['ID', t.User_TicketSubject(), t.User_TicketStatus(), t.User_TicketUpdated()]}
+            columns={['ID', user_TicketSubject(), user_TicketStatus(), user_TicketUpdated()]}
         >
             {rows}
         </DetailTable>

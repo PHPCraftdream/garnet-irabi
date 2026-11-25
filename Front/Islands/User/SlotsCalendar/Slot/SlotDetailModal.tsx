@@ -3,9 +3,9 @@ import {AntiHookComponent} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {Portal} from '@common/Components/Layout/Portal';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {canActNow} from '../../../../Common/booking/bookingAction';
-import {SlotCancelForm} from '../Booking/SlotCancelForm';
-import {SlotItem, ExpertMap} from '../State/types';
+import {canActNow} from '../../../../Common/booking/actions/rules/canActNow';
+import {SlotCancelForm} from '../Booking/components/SlotCancelForm';
+import {SlotItem, ExpertMap} from '../State/view/types';
 import {SlotDateTimeBlock} from './Blocks/SlotDateTimeBlock';
 import {SlotExpertBlock} from './Blocks/SlotExpertBlock';
 import {SlotFormatBlock} from './Blocks/SlotFormatBlock';
@@ -15,6 +15,11 @@ import {CancelReasonNotice} from './Blocks/CancelReasonNotice';
 import {SlotModalHeader} from './Blocks/SlotModalHeader';
 import {SlotDetailUIStore} from './SlotDetailUIStore';
 import {appUrl} from '@common/Utils/Url/appUrl';
+
+const slotCancelBooking = t.Slot_CancelBooking;
+const userCancelReasonRequired = t.User_Cancel_ReasonRequired;
+const generalError = t.General_Error;
+const slotDetails = t.Slot_Details;
 
 interface Props {
     slot: SlotItem;
@@ -30,9 +35,20 @@ interface Props {
     onCancelled: (slotId: number) => void;
 }
 
+/** Рисует блок управления отменой брони. */
 function CancelBookingSection({
-    canCancel, showCancelForm, bookingStatus, slot, reason, reasonError, cancelError, sending,
-    onShow, onReasonChange, onSubmit, onDismiss,
+    canCancel,
+    showCancelForm,
+    bookingStatus,
+    slot,
+    reason,
+    reasonError,
+    cancelError,
+    sending,
+    onShow,
+    onReasonChange,
+    onSubmit,
+    onDismiss,
 }: {
     canCancel: boolean;
     showCancelForm: boolean;
@@ -56,7 +72,7 @@ function CancelBookingSection({
                     onClick={onShow}
                     data-test-id="slot-detail-cancel-btn"
                 >
-                    {t.Slot_CancelBooking()}
+                    {slotCancelBooking()}
                 </button>
             )}
 
@@ -79,6 +95,7 @@ function CancelBookingSection({
     );
 }
 
+/** Останавливает всплытие клика внутри модального окна. */
 function stopClick(event: React.MouseEvent<HTMLDivElement>): void {
     event.stopPropagation();
 }
@@ -86,43 +103,57 @@ function stopClick(event: React.MouseEvent<HTMLDivElement>): void {
 export default class SlotDetailModal extends AntiHookComponent<Props> {
     private readonly ui = new SlotDetailUIStore();
 
+    /** Закрывает окно по клавише Escape. */
     private readonly handleEscape = (event: KeyboardEvent) => {
         if (event.key === 'Escape') this.props.onClose();
     };
 
+    /** Подписывается на клавишу закрытия модального окна. */
     componentDidMount(): void {
         super.componentDidMount();
         document.addEventListener('keydown', this.handleEscape);
     }
 
+    /** Удаляет обработчик клавиши закрытия окна. */
     componentWillUnmount(): void {
         document.removeEventListener('keydown', this.handleEscape);
         super.componentWillUnmount();
     }
 
+    /** Блокирует прокрутку страницы при открытом окне. */
     protected useEffects(): void {
-        this.useEffect('bodyScrollLock', () => {
-            const previous = document.body.style.overflow;
-            document.body.style.overflow = 'hidden';
-            return () => {
-                document.body.style.overflow = previous;
-            };
-        }, []);
+        this.useEffect(
+            'bodyScrollLock',
+            () => {
+                const previous = document.body.style.overflow;
+                document.body.style.overflow = 'hidden';
+                return () => {
+                    document.body.style.overflow = previous;
+                };
+            },
+            [],
+        );
     }
 
+    /** Отправляет запрос на отмену бронирования. */
     private readonly submitCancel = async () => {
         const {reason, sending} = this.ui.getData();
         const {bookingId, slot, onCancelled, onClose} = this.props;
         const trimmed = reason.trim();
         if (!trimmed) {
-            this.ui.setReasonError(t.User_Cancel_ReasonRequired());
+            this.ui.setReasonError(userCancelReasonRequired());
             return;
         }
         if (sending) return;
         this.ui.setSending(true);
         this.ui.setCancelError('');
         try {
-            const res = await sendPost(appUrl(`/bookings/id~${bookingId}/~cancel`), {reason: trimmed}) as any;
+            const res = (await sendPost(
+                appUrl(`/bookings/id~${bookingId}/~cancel`),
+                {
+                    reason: trimmed,
+                },
+            )) as any;
             if (res?.error) {
                 this.ui.setCancelError(res.error);
             } else {
@@ -130,31 +161,61 @@ export default class SlotDetailModal extends AntiHookComponent<Props> {
                 onClose();
             }
         } catch {
-            this.ui.setCancelError(t.General_Error());
+            this.ui.setCancelError(generalError());
         } finally {
             this.ui.setSending(false);
         }
     };
 
+    /** Рисует сведения о выбранном занятии. */
     private renderDetails() {
-        const {slot, experts, quickChatUrl, sendUrl, currentAccountId, cancelReason} = this.props;
+        const {
+            slot,
+            experts,
+            quickChatUrl,
+            sendUrl,
+            currentAccountId,
+            cancelReason,
+        } = this.props;
         const expert = experts[slot.expert_id];
-        const endTs = slot.end_at || (slot.start_at + (slot.duration_min || 60) * 60);
+        const endTs =
+            slot.end_at || slot.start_at + (slot.duration_min || 60) * 60;
         return (
             <>
-                <SlotDateTimeBlock startAt={slot.start_at} endTs={endTs} durationMin={slot.duration_min || 60} />
+                <SlotDateTimeBlock
+                    startAt={slot.start_at}
+                    endTs={endTs}
+                    durationMin={slot.duration_min || 60}
+                />
                 <SlotPriceBlock cost={slot.cost} />
                 <SlotFormatBlock slot={slot} />
-                {expert && <SlotExpertBlock expertId={slot.expert_id} expert={expert} />}
+                {expert && (
+                    <SlotExpertBlock
+                        expertId={slot.expert_id}
+                        expert={expert}
+                    />
+                )}
                 {quickChatUrl && sendUrl && currentAccountId && expert && (
-                    <QuickChatSection slot={slot} quickChatUrl={quickChatUrl} sendUrl={sendUrl} currentAccountId={currentAccountId} />
+                    <QuickChatSection
+                        slot={slot}
+                        quickChatUrl={quickChatUrl}
+                        sendUrl={sendUrl}
+                        currentAccountId={currentAccountId}
+                    />
                 )}
                 {cancelReason && <CancelReasonNotice reason={cancelReason} />}
             </>
         );
     }
 
-    private renderCancel({showCancelForm, reason, reasonError, cancelError, sending}: ReturnType<SlotDetailUIStore['getData']>) {
+    /** Рисует форму отмены с текущим состоянием. */
+    private renderCancel({
+        showCancelForm,
+        reason,
+        reasonError,
+        cancelError,
+        sending,
+    }: ReturnType<SlotDetailUIStore['getData']>) {
         const {slot, bookingStatus} = this.props;
         return (
             <CancelBookingSection
@@ -174,15 +235,29 @@ export default class SlotDetailModal extends AntiHookComponent<Props> {
         );
     }
 
+    /** Рисует модальное окно с подробностями брони. */
     render() {
         const {bookingStatus, onClose} = this.props;
         const state = this.useCarburetor(this.ui);
         return (
             <Portal>
-                <div className="fg-modal-overlay-high" onClick={onClose} data-test-id="slot-detail-overlay">
-                    <div role="dialog" aria-modal="true" aria-label={t.Slot_Details()} className="fg-modal-card-flush-lg"
-                        onClick={stopClick} data-test-id="slot-detail-modal">
-                        <SlotModalHeader bookingStatus={bookingStatus} onClose={onClose} />
+                <div
+                    className="fg-modal-overlay-high"
+                    onClick={onClose}
+                    data-test-id="slot-detail-overlay"
+                >
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label={slotDetails()}
+                        className="fg-modal-card-flush-lg"
+                        onClick={stopClick}
+                        data-test-id="slot-detail-modal"
+                    >
+                        <SlotModalHeader
+                            bookingStatus={bookingStatus}
+                            onClose={onClose}
+                        />
                         <div className="slot-modal-body">
                             {this.renderDetails()}
                             {this.renderCancel(state)}

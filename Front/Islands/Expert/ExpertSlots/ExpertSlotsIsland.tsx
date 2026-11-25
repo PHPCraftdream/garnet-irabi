@@ -13,34 +13,35 @@ import {appUrl} from '@common/Utils/Url/appUrl';
 import {tsToInputTime} from '@common/Utils/Time/DateUtils';
 import {TimezoneNotice} from '@common/Components/Feedback/TimezoneNotice';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {
-    actionImpact,
-    actionReasonLabel,
-    actionReasonPlaceholder,
-    actionSubmitLabel,
-    actionTitle,
-} from '../../../Common/booking/bookingAction';
+import {actionImpact} from '../../../Common/booking/actions/labels/actionImpact';
+import {actionReasonLabel} from '../../../Common/booking/actions/labels/actionReasonLabel';
+import {actionReasonPlaceholder} from '../../../Common/booking/actions/labels/actionReasonPlaceholder';
+import {actionSubmitLabel} from '../../../Common/booking/actions/labels/actionSubmitLabel';
+import {actionTitle} from '../../../Common/booking/actions/labels/actionTitle';
 import {ReasonModal} from '../../../Common/Components/ReasonModal';
 import {EditSlotModal} from './components/Slot/EditSlotModal';
 import {Slot, ExpertSlotsProps} from './types';
 import {CreateSlotModal} from './components/Slot/CreateSlotModal';
-import {BatchSlotModal} from './components/Batch/BatchSlotModal';
+import {BatchSlotModal} from './components/Batch/forms/BatchSlotModal';
 import {ExpertCalendar} from './components/ExpertCalendar';
-import {IrabiPreviewProvider} from '../../../Common/people/IrabiPreviewProvider';
+import {IrabiPreviewProvider} from '../../../Common/people/preview/IrabiPreviewProvider';
 import {usePreview} from '@common/Components/UserPreviewModal/PreviewContext';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {CalendarClock} from 'lucide-react';
 import {ExpertSlotsUIState, type State} from './ExpertSlotsUIState';
 
-function findSlot(slots: Slot[], id: number | null): Slot | undefined {
+/** Получить или вычислить соответствующие данные. */
+function findSlot(slots: readonly Slot[], id: number | null): Slot | undefined {
     return slots.find(slot => slot.id === id);
 }
 
 // Копия слота читает каждое поле прокси в render острова — см. render().
+/** Обработать соответствующее действие пользователя. */
 function copySlot(slot: Slot): Slot {
     return {...slot};
 }
 
+/** Подготовить данные для соответствующего интерфейса. */
 function showSlotError(message: string): void {
     showToast(message, 'danger');
 }
@@ -88,41 +89,50 @@ const selectShowBatchModal = (state: State) => state.showBatchModal;
 class ExpertSlotsView extends AntiHookComponent<ViewProps> {
     private readonly ui = new ExpertSlotsUIState(this.props.slots || []);
 
+    /** Подготовить данные для соответствующего интерфейса. */
     protected useEffects(): void {
         this.useStoreEffect('escapeCreate', this.ui, selectShowCreateModal, this.escapeCreate);
         this.useStoreEffect('escapeBatch', this.ui, selectShowBatchModal, this.escapeBatch);
     }
 
     // Close create modal on Escape
+    /** Обработать соответствующее действие пользователя. */
     private readonly detachCreateKey = () => document.removeEventListener('keydown', this.escapeCreateKey);
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly escapeCreate = (open: boolean) => {
         if (!open) return;
         document.addEventListener('keydown', this.escapeCreateKey);
         return this.detachCreateKey;
     };
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly escapeCreateKey = (event: KeyboardEvent) => {
         if (event.key === 'Escape') this.ui.closeCreateModal();
     };
 
     // Close batch modal on Escape
+    /** Обработать соответствующее действие пользователя. */
     private readonly detachBatchKey = () => document.removeEventListener('keydown', this.escapeBatchKey);
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly escapeBatch = (open: boolean) => {
         if (!open) return;
         document.addEventListener('keydown', this.escapeBatchKey);
         return this.detachBatchKey;
     };
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly escapeBatchKey = (event: KeyboardEvent) => {
         if (event.key === 'Escape') this.ui.closeBatchModal();
     };
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly handleUserClick = (userId: number, userName: string) => {
         this.props.preview?.openPreview(userId, userName);
     };
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly handleSlotCreated = (newSlot?: Slot) => {
         if (newSlot) {
             this.ui.appendSlots([newSlot]);
@@ -134,6 +144,7 @@ class ExpertSlotsView extends AntiHookComponent<ViewProps> {
         showToast(t.Slot_Created(), 'success');
     };
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly handleBatchSuccess = (msg: string, newSlots?: Slot[]) => {
         showToast(msg, 'success');
         if (newSlots && newSlots.length > 0) {
@@ -142,8 +153,10 @@ class ExpertSlotsView extends AntiHookComponent<ViewProps> {
         this.ui.closeBatchModal();
     };
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly handleCancelSlot = async (id: number) => {
-        const ok = await this.props.confirm(t.Slot_CancelConfirm(), {confirmLabel: t.Action_Cancel(), variant: 'danger'});
+        const ok = await this.props.confirm(t.Slot_CancelConfirm(), {confirmLabel: t.Action_Cancel(), variant:
+        'danger'});
         if (!ok) return;
         D('teaching.slot.cancel', {slotId: id});
         try {
@@ -157,8 +170,10 @@ class ExpertSlotsView extends AntiHookComponent<ViewProps> {
         }
     };
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly handleDeleteSlot = async (id: number) => {
-        const ok = await this.props.confirm(t.Slot_DeleteConfirm(), {confirmLabel: t.Action_Delete(), variant: 'danger'});
+        const ok = await this.props.confirm(t.Slot_DeleteConfirm(), {confirmLabel: t.Action_Delete(), variant:
+        'danger'});
         if (!ok) return;
         D('teaching.slot.delete', {slotId: id});
         try {
@@ -171,6 +186,7 @@ class ExpertSlotsView extends AntiHookComponent<ViewProps> {
         }
     };
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly handleConfirmBooking = async (slot: Slot) => {
         if (!slot.booking_id) return;
         D('teaching.slot.confirmBooking', {slotId: slot.id, bookingId: slot.booking_id});
@@ -185,9 +201,12 @@ class ExpertSlotsView extends AntiHookComponent<ViewProps> {
         }
     };
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly handleCancelBookingOpen = (id: number) => this.ui.setCancelBookingSlotId(id);
+    /** Обработать соответствующее действие пользователя. */
     private readonly handleCancelBookingClose = () => this.ui.setCancelBookingSlotId(null);
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly handleCancelBookingSubmit = (reason: string) => {
         const {slots, cancelBookingSlotId} = this.ui.getData();
         const {withCancelSending} = this.props;
@@ -217,10 +236,12 @@ class ExpertSlotsView extends AntiHookComponent<ViewProps> {
         });
     };
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly handleEditSlot = (slot: Slot) => {
         this.ui.setEditingSlot(slot);
     };
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly handleEditSaved = (updated: Slot, original: Slot) => {
         // Сервер отдаёт сырую строку слота — без имени записавшегося и без
         // статуса его брони, которые подмешиваются при выборке списка. Если
@@ -234,10 +255,12 @@ class ExpertSlotsView extends AntiHookComponent<ViewProps> {
         showToast(original.status === 'booked' ? t.Slot_PlaceUpdated() : t.Slot_Saved(), 'success');
     };
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly handleEditClose = () => {
         this.ui.setEditingSlot(null);
     };
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly handleSlotDrop = async (slotId: number, newDateStr: string) => {
         const slot = this.ui.getData().slots.find(s => s.id === slotId);
         if (!slot || slot.status !== 'free') return;
@@ -273,11 +296,13 @@ class ExpertSlotsView extends AntiHookComponent<ViewProps> {
         } catch (e: any) {
             D('teaching.error', {action: 'dropSlot', slotId, error: e?.message});
             const resp = e?.response;
-            const msg = (resp && typeof resp === 'object' && resp.error) ? resp.error : (e?.message || t.General_Error());
+            const msg = (resp && typeof resp === 'object' && resp.error) ? resp.error : (e?.message ||
+            t.General_Error());
             showToast(msg, 'danger');
         }
     };
 
+    /** Отобразить соответствующую часть интерфейса. */
     private renderHeading() {
         const props = this.props;
         return (
@@ -293,6 +318,7 @@ class ExpertSlotsView extends AntiHookComponent<ViewProps> {
         );
     }
 
+    /** Отобразить соответствующую часть интерфейса. */
     private renderActions() {
         const ui = this.ui;
         return (
@@ -319,6 +345,7 @@ class ExpertSlotsView extends AntiHookComponent<ViewProps> {
         );
     }
 
+    /** Отобразить соответствующую часть интерфейса. */
     private renderCreateModals(state: State) {
         const props = this.props;
         const confirm = this.props.confirm;
@@ -348,6 +375,7 @@ class ExpertSlotsView extends AntiHookComponent<ViewProps> {
         );
     }
 
+    /** Отобразить соответствующую часть интерфейса. */
     private renderCalendar(slots: Slot[]) {
         return (
             <>
@@ -369,6 +397,7 @@ class ExpertSlotsView extends AntiHookComponent<ViewProps> {
         );
     }
 
+    /** Отобразить соответствующую часть интерфейса. */
     private renderEditModal(editingSlot: Slot | null) {
         return (
             <>
@@ -384,6 +413,7 @@ class ExpertSlotsView extends AntiHookComponent<ViewProps> {
         );
     }
 
+    /** Отобразить соответствующую часть интерфейса. */
     private renderConfirmations(state: State, slots: Slot[]) {
         const {cancelBookingSlotId} = state;
         const {confirmState, handleConfirm, handleCancel, cancelSending} = this.props;
@@ -414,6 +444,7 @@ class ExpertSlotsView extends AntiHookComponent<ViewProps> {
         );
     }
 
+    /** Отобразить соответствующую часть интерфейса. */
     render() {
         // Вид из useCarburetor — TReadonly; детям нужны прежние мутабельные типы.
         const state = this.useCarburetor(this.ui) as State;
@@ -439,6 +470,7 @@ class ExpertSlotsView extends AntiHookComponent<ViewProps> {
 }
 
 export class ExpertSlotsIsland extends AntiHookComponent<ExpertSlotsProps> {
+    /** Отобразить соответствующую часть интерфейса. */
     render() {
         return (
             <IrabiPreviewProvider currentAccountId={this.props.currentAccountId}>

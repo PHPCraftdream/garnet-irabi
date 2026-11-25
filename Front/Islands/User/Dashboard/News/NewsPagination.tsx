@@ -10,12 +10,26 @@ interface Props {
     loading: boolean;
 }
 
+/** Выводит постраничную навигацию над или под событиями ленты. */
 export const NewsPagination: React.FC<Props> = ({position, page, totalPages, onPageChange, total, loading}) => (
     <div className={position === 'top' ? 'news-pagination-top' : 'news-pagination-bottom'}>
         {position === 'top' ? (
-            <Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} total={total} loading={loading} compact />
+            <Pagination
+                page={page}
+                totalPages={totalPages}
+                onPageChange={onPageChange}
+                total={total}
+                loading={loading}
+                compact
+            />
         ) : (
-            <Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} loading={loading} compact />
+            <Pagination
+                page={page}
+                totalPages={totalPages}
+                onPageChange={onPageChange}
+                loading={loading}
+                compact
+            />
         )}
     </div>
 );

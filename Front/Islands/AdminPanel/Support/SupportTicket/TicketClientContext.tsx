@@ -4,7 +4,7 @@ import {sendPost} from '@common/Api/Send/sendPost';
 import {D} from '@common/Support/Debug/D';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {translateStatus} from '../../../../Common/booking/statusHelpers';
+import {translateStatus} from '../../../../Common/booking/status/statusHelpers';
 
 export interface ClientBooking {
     id: number;
@@ -63,6 +63,7 @@ function renderBooking(b: ClientBooking) {
     );
 }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
 function renderEntry(e: ClientLedgerEntry) {
     return (
         <li key={e.id} className="admin-client-context-line" data-test-id={`ticket-client-ledger-${e.id}`}>
@@ -78,34 +79,41 @@ export default class TicketClientContext extends AntiHookComponent<Props> {
     private readonly ui = new Carburetor<{data: ClientContextData | null}>({data: null});
     private requestId = 0;
 
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
     componentDidMount(): void {
         super.componentDidMount();
         void this.load();
     }
 
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
     componentDidUpdate(previous: Readonly<Props>): void {
         super.componentDidUpdate(previous);
-        if (previous.ticketId !== this.props.ticketId || previous.clientContextUrl !== this.props.clientContextUrl) void this.load();
+        if (previous.ticketId !== this.props.ticketId || previous.clientContextUrl !==
+        this.props.clientContextUrl) void this.load();
     }
 
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
     componentWillUnmount(): void {
         this.requestId++;
         super.componentWillUnmount();
     }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private async load(): Promise<void> {
         const requestId = ++this.requestId;
         const {ticketId, clientContextUrl} = this.props;
         this.ui.setData({data: null});
         if (!clientContextUrl) return;
         try {
-            const result = await sendPost(clientContextUrl, {ticket_id: ticketId}) as unknown as (ClientContextData & {error?: string}) | null;
+            const result = await sendPost(clientContextUrl, {ticket_id: ticketId}) as unknown as
+        (ClientContextData & {error?: string}) | null;
             if (requestId === this.requestId && result && !result.error) this.ui.setData({data: result});
         } catch (error) {
             if (requestId === this.requestId) D('support.error', {action: 'clientContext', ticketId, error});
         }
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {data} = this.useCarburetor(this.ui);
         if (!this.props.clientContextUrl || !data) return null;

@@ -1,7 +1,12 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {PenaltyTerms, actionCostHint, actionLabel, canActNow, isActionable, pendingTerms} from '../../../../Common/booking/bookingAction';
+import type {PenaltyTerms} from '../../../../Common/booking/actions/rules/bookingAction';
+import {actionCostHint} from '../../../../Common/booking/actions/outcomes/actionCostHint';
+import {actionLabel} from '../../../../Common/booking/actions/labels/actionLabel';
+import {canActNow} from '../../../../Common/booking/actions/rules/canActNow';
+import {isActionable} from '../../../../Common/booking/actions/rules/isActionable';
+import {pendingTerms} from '../../../../Common/booking/actions/rules/pendingTerms';
 import {Booking, BookingsViewAs} from './bookingCardTypes';
 
 interface Props {
@@ -24,11 +29,16 @@ interface Props {
 function renderTerm(term: string) { return <li key={term}>{term}</li>; }
 
 export class BookingCardActions extends AntiHookComponent<Props> {
+    /** Открывает окно отмены для этой брони. */
     private readonly cancel = () => this.props.onCancelOpen(this.props.booking.id);
+    /** Запускает подтверждение этой брони. */
     private readonly confirm = () => this.props.onConfirm(this.props.booking.id);
+    /** Открывает окно отказа для этой брони. */
     private readonly reject = () => this.props.onReject(this.props.booking.id);
+    /** Открывает выбор нового времени для этой брони. */
     private readonly reschedule = () => this.props.onRescheduleOpen(this.props.booking.id);
 
+    /** Формирует кнопки действий, доступные с учётом роли и статуса. */
     private renderActions(isExpertView: boolean, cancellable: boolean) {
         const {booking, confirmingId} = this.props;
         const isPending = booking.status === 'pending';
@@ -77,6 +87,7 @@ export class BookingCardActions extends AntiHookComponent<Props> {
         );
     }
 
+    /** Показывает доступные действия, подсказку стоимости и условия брони. */
     render() {
         const {booking, viewAs, terms} = this.props;
         const isExpertView = viewAs === 'expert';

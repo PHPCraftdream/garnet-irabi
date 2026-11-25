@@ -1,8 +1,8 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {translateStatus} from '../../../../../Common/booking/statusHelpers';
+import {translateStatus} from '../../../../../Common/booking/status/statusHelpers';
 import {Slot} from '../../types';
-import {STATUS_FILTERS} from './calendarHelpers';
+import {STATUS_FILTERS} from './logic/STATUS_FILTERS';
 
 export type StatusFilter = typeof STATUS_FILTERS[number];
 
@@ -37,8 +37,10 @@ interface StatusOptionProps {
 }
 
 class StatusOption extends React.Component<StatusOptionProps> {
+    /** Обработать соответствующее действие пользователя. */
     private readonly select = () => this.props.onChange(this.props.filter);
 
+    /** Отобразить соответствующую часть интерфейса. */
     public render() {
         const {filter, active, count} = this.props;
         return (
@@ -57,6 +59,7 @@ class StatusOption extends React.Component<StatusOptionProps> {
 
 /** Фильтр по состоянию — показываются только те кнопки, за которыми что-то есть. */
 export class CalendarStatusFilter extends React.Component<Props> {
+    /** Отобразить соответствующую часть интерфейса. */
     private readonly renderFilter = (filter: StatusFilter) => (
         <StatusOption
             key={filter}
@@ -67,11 +70,13 @@ export class CalendarStatusFilter extends React.Component<Props> {
         />
     );
 
+    /** Отобразить соответствующую часть интерфейса. */
     public render() {
         const visible: StatusFilter[] = [];
         for (const filter of STATUS_FILTERS) {
             if (filter === 'all' || countFor(this.props.slots, filter) > 0) visible.push(filter);
         }
-        return <div className="expert-calendar-filters" data-test-id="expert-status-filter">{visible.map(this.renderFilter)}</div>;
+        return <div className="expert-calendar-filters"
+        data-test-id="expert-status-filter">{visible.map(this.renderFilter)}</div>;
     }
 }

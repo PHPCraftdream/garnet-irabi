@@ -29,12 +29,16 @@ function matchesLogin(typed: string, login: string): boolean {
 export class ClearUserModal extends AntiHookComponent<Props> {
     private readonly ui = new Carburetor({typed: '', sending: false, error: null as string | null});
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private update(patch: Partial<ReturnType<typeof this.ui.getData>>): void {
         this.ui.setData({...this.ui.getData(), ...patch});
     }
 
-    private readonly changeConfirmation = (event: React.ChangeEvent<HTMLInputElement>) => this.update({typed: event.target.value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeConfirmation = (event: React.ChangeEvent<HTMLInputElement>) => this.update({typed:
+        event.target.value});
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly send = async () => {
         const {typed, sending} = this.ui.getData();
         const {accountLogin, accountId, onSuccess} = this.props;
@@ -60,6 +64,7 @@ export class ClearUserModal extends AntiHookComponent<Props> {
         }
     };
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderConfirmation({typed, sending}: ReturnType<typeof this.ui.getData>, matches: boolean) {
         const {accountId} = this.props;
         return (
@@ -87,6 +92,7 @@ export class ClearUserModal extends AntiHookComponent<Props> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderActions(matches: boolean, sending: boolean) {
         const {accountId, onClose} = this.props;
         return (
@@ -106,6 +112,7 @@ export class ClearUserModal extends AntiHookComponent<Props> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {accountId, accountLogin, accountName, onClose} = this.props;
         const state = this.useCarburetor(this.ui);

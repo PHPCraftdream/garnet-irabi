@@ -2,9 +2,16 @@ import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {EntityHistoryButton} from '@common/Components/Admin/EntityHistory/EntityHistoryButton';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {flag} from '../../usersFlags';
-import {FlagBtn} from '../../FlagBtn';
-import {AccountData} from '../userDetailTypes';
+import {flag} from '../../flags/flag';
+import {FlagBtn} from '../../flags/FlagBtn';
+import {AccountData} from '../status/userDetailTypes';
+
+const admin_ClearUser = t.Admin_ClearUser;
+const admin_ClearUserTitle = t.Admin_ClearUserTitle;
+const admin_History = t.Admin_History;
+const admin_PublicProfile = t.Admin_PublicProfile;
+const admin_RemovePhoto = t.Admin_RemovePhoto;
+const admin_WriteToUser = t.Admin_WriteToUser;
 
 const ADMIN_USER_SECONDARY_ACTION_TEMPLATE = <button className="admin-user-secondary-action" />;
 
@@ -26,17 +33,24 @@ interface RoleTogglesProps {
  * с 400.
  */
 class RoleToggles extends AntiHookComponent<RoleTogglesProps> {
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private toggle(name: "IS_APPROVED" | "IS_DISABLED" | "IS_MODERATOR" | "IS_OWNER" | "IS_ADMIN"): void {
         const {account, onSetFlag} = this.props;
         onSetFlag(name, flag(account[name]) ? 0 : 1);
     }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly toggleIS_APPROVED = () => this.toggle('IS_APPROVED');
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly toggleIS_DISABLED = () => this.toggle('IS_DISABLED');
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly toggleIS_MODERATOR = () => this.toggle('IS_MODERATOR');
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly toggleIS_OWNER = () => this.toggle('IS_OWNER');
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly toggleIS_ADMIN = () => this.toggle('IS_ADMIN');
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderFlags() {
         const {account, isExpert, flagPending, callerIsOwner, callerIsAdmin} = this.props;
         return (
@@ -68,7 +82,8 @@ class RoleToggles extends AntiHookComponent<RoleTogglesProps> {
                         title={
                             flag(account.IS_ADMIN) ? t.Admin_Flag_RemoveAdminFirst()
                                 : flag(account.IS_OWNER) ? t.Admin_Flag_OwnerHasModeratorRights()
-                                    : flag(account.IS_MODERATOR) ? t.Admin_Flag_RevokeModerator() : t.Admin_Flag_GrantModerator()
+                                    : flag(account.IS_MODERATOR) ? t.Admin_Flag_RevokeModerator() :
+        t.Admin_Flag_GrantModerator()
                         }
                         active={flag(account.IS_MODERATOR)}
                         cls={['btn-success', 'btn-outline-secondary']}
@@ -105,6 +120,7 @@ class RoleToggles extends AntiHookComponent<RoleTogglesProps> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         return this.renderFlags();
     }
@@ -120,6 +136,7 @@ interface Props extends RoleTogglesProps {
     onClear: () => void;
 }
 
+/** Отображает данные раздела и передаёт действия пользователя обработчикам. */
 export const UserHeaderActions: React.FC<Props> = (props) => {
     const {account, isExpert, displayName, photo, createTicketUrl, photoRemovePending, callerIsOwner} = props;
     const publicHref = isExpert ? `/expert/id~${account.id}` : `/user/id~${account.id}`;
@@ -134,7 +151,7 @@ export const UserHeaderActions: React.FC<Props> = (props) => {
                     data-test-id={`write-to-user-${account.id}`}
                     onClick={props.onWrite}
                 >
-                    {t.Admin_WriteToUser()}
+                    {admin_WriteToUser()}
                 </button>
             )}
             {photo && (
@@ -145,7 +162,7 @@ export const UserHeaderActions: React.FC<Props> = (props) => {
                     onClick={props.onRemovePhoto}
                     disabled={photoRemovePending}
                 >
-                    {t.Admin_RemovePhoto()}
+                    {admin_RemovePhoto()}
                 </button>
             )}
             <a
@@ -154,15 +171,15 @@ export const UserHeaderActions: React.FC<Props> = (props) => {
                 rel="noreferrer"
                 className="admin-user-secondary-action"
                 data-test-id={`view-public-profile-${account.id}`}
-                title={t.Admin_PublicProfile()}
+                title={admin_PublicProfile()}
             >
-                {t.Admin_PublicProfile()}
+                {admin_PublicProfile()}
             </a>
             <EntityHistoryButton
                 entityType="account"
                 entityId={account.id}
-                label={t.Admin_History()}
-                title={`${t.Admin_History()} — ${displayName}`}
+                label={admin_History()}
+                title={`${admin_History()} — ${displayName}`}
                 button={ADMIN_USER_SECONDARY_ACTION_TEMPLATE}
                 testIdSuffix={`account-${account.id}`}
             />
@@ -171,10 +188,10 @@ export const UserHeaderActions: React.FC<Props> = (props) => {
                     type="button"
                     className="admin-user-clear-action"
                     data-test-id={`clear-user-${account.id}`}
-                    title={t.Admin_ClearUserTitle()}
+                    title={admin_ClearUserTitle()}
                     onClick={props.onClear}
                 >
-                    {t.Admin_ClearUser()}
+                    {admin_ClearUser()}
                 </button>
             )}
         </div>

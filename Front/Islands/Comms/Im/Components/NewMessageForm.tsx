@@ -28,10 +28,12 @@ interface State {
 
 // Селектор читает поля строк: иначе изменение имени/роли получателя не попадёт
 // в подписку (RULES.md, «Подписки useCarburetor»).
+/** Обрабатывает readRecipient. */
 function readRecipient(row: TReadonly<Recipient>): Recipient {
     return {id: row.id, name: row.name, role: row.role};
 }
 
+/** Обрабатывает selectRecipients. */
 function selectRecipients(state: TReadonly<State>): Recipient[] {
     return state.recipients.map(readRecipient);
 }
@@ -41,21 +43,25 @@ export default class NewMessageForm extends AntiHookComponent<Props> {
     private readonly recipients = this.connectSelection(this.store, selectRecipients);
     private requestId = 0;
 
+    /** Запускает действия после монтирования компонента. */
     componentDidMount(): void {
         super.componentDidMount();
         void this.load();
     }
 
+    /** Обновляет данные после изменения свойств. */
     componentDidUpdate(previous: Readonly<Props>): void {
         super.componentDidUpdate(previous);
         if (previous.searchRecipientsUrl !== this.props.searchRecipientsUrl) void this.load();
     }
 
+    /** Останавливает ресурсы перед размонтированием. */
     componentWillUnmount(): void {
         this.requestId++;
         super.componentWillUnmount();
     }
 
+    /** Загружает список получателей. */
     private async load(): Promise<void> {
         const request = ++this.requestId;
         D('im.loadRecipients');
@@ -69,14 +75,17 @@ export default class NewMessageForm extends AntiHookComponent<Props> {
         }
     }
 
+    /** Обновляет текст сообщения. */
     private readonly changeMessage = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
         this.props.onNewMessageChange(event.target.value);
     };
 
+    /** Проверяет готовность формы к отправке. */
     private canSend(): boolean {
         return !!this.props.recipientId.trim() && !!this.props.newMessage.trim();
     }
 
+    /** Отправляет форму по клавиатурному сочетанию. */
     private readonly submitOnShortcut = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !this.props.sending && this.canSend()) {
             event.preventDefault();
@@ -84,6 +93,7 @@ export default class NewMessageForm extends AntiHookComponent<Props> {
         }
     };
 
+    /** Обрабатывает renderMessage. */
     private renderMessage() {
         return (
             <div>
@@ -95,6 +105,7 @@ export default class NewMessageForm extends AntiHookComponent<Props> {
         );
     }
 
+    /** Рисует действия формы. */
     private renderActions() {
         const {newFiles, onNewFilesChange, sending, onSend} = this.props;
         return (
@@ -105,6 +116,7 @@ export default class NewMessageForm extends AntiHookComponent<Props> {
         );
     }
 
+    /** Рисует содержимое компонента. */
     render() {
         const {recipientId, onRecipientIdChange} = this.props;
         const {loading} = this.useCarburetor(this.store);
@@ -114,7 +126,8 @@ export default class NewMessageForm extends AntiHookComponent<Props> {
                 <h3 className="im-new-title">{t.IM_NewMessage()}</h3>
                 <div>
                     <label className="support-form-label">{t.IM_Recipient()}</label>
-                    <RecipientCombobox recipients={recipients} loading={loading} value={recipientId} onChange={onRecipientIdChange} />
+                    <RecipientCombobox recipients={recipients} loading={loading} value={recipientId}
+                        onChange={onRecipientIdChange} />
                 </div>
                 {this.renderMessage()}
                 {this.renderActions()}

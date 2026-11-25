@@ -1,7 +1,9 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {cancelActorLabel} from '../../../../../Common/booking/bookingAction';
+import {cancelActorLabel} from '../../../../../Common/booking/actions/outcomes/cancelActorLabel';
 import {Booking, BookingsViewAs} from '../bookingCardTypes';
+
+const bookingCancelReason = t.Booking_CancelReason;
 
 /**
  * Кто отменил бронь и почему.
@@ -36,7 +38,7 @@ export const BookingCancelCause: React.FC<{booking: Booking; viewAs: BookingsVie
     return (
         <div className="booking-cancel-cause" data-test-id={`booking-cancel-cause-${booking.id}`}>
             <div>{who}</div>
-            {reason && <div className="booking-cancel-reason">{t.Booking_CancelReason()}: {reason}</div>}
+            {reason && <div className="booking-cancel-reason">{bookingCancelReason()}: {reason}</div>}
         </div>
     );
 };

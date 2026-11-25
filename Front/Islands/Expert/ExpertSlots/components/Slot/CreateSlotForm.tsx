@@ -4,7 +4,7 @@ import {D} from '@common/Support/Debug/D';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 import {zodFromFieldsInfo, getFieldRegisterOptions} from '@common/Utils/Data/zodFromFieldsInfo';
 import {IFromFieldsInfo} from '@common/Dom/GridTable/Models';
-import {createSlot} from '../../api';
+import {createSlot} from '../../api/createSlot';
 import {DateInput} from '@common/Components/ui/DateInput';
 
 const INVALID_FIELD = <input className="slot-field-invalid" />;
@@ -18,6 +18,13 @@ type FieldErrors = Partial<Record<Name, string>>;
 
 const FIELD_NAMES: Name[] = ['date', 'time', 'duration', 'cost', 'max_users', 'cancellation_penalty_percent'];
 
+const slotDate = t.Slot_Date;
+const slotTime = t.Slot_Time;
+const slotDuration = t.Slot_Duration;
+const slotCost = t.Slot_Cost;
+const slotMaxUsers = t.Slot_MaxUsers;
+
+/** Подготовить данные для соответствующего интерфейса. */
 function toNumber(raw: string): number {
     // Как valueAsNumber в master: пустая строка — NaN, а не 0.
     return raw === '' ? NaN : Number(raw);
@@ -35,6 +42,7 @@ function readErrors(errors: FieldErrors): FieldErrors {
     };
 }
 
+/** Подготовить данные для соответствующего интерфейса. */
 function focusFirstError(form: HTMLFormElement, errors: FieldErrors): void {
     for (const name of FIELD_NAMES) {
         if (!errors[name]) continue;
@@ -52,6 +60,7 @@ interface FormState {
     submitted: boolean;
 }
 
+/** Получить или вычислить соответствующие данные. */
 function getTomorrow(): string {
     const d = new Date();
     d.setDate(d.getDate() + 1);
@@ -80,7 +89,7 @@ interface SlotRowProps {
 
 const SlotDateTimeRow: React.FC<SlotRowProps> = ({errors}) => (
     <div className="create-slot-dates">
-        <SlotField label={t.Slot_Date()} error={errors.date}>
+        <SlotField label={slotDate()} error={errors.date}>
             <DateInput
                 field={errors.date ? INVALID_FIELD : undefined}
                 aria-invalid={!!errors.date}
@@ -90,7 +99,7 @@ const SlotDateTimeRow: React.FC<SlotRowProps> = ({errors}) => (
                 defaultValue={getTomorrow()}
             />
         </SlotField>
-        <SlotField label={t.Slot_Time()} error={errors.time}>
+        <SlotField label={slotTime()} error={errors.time}>
             <DateInput
                 type="time"
                 field={errors.time ? INVALID_FIELD : undefined}
@@ -106,13 +115,14 @@ const SlotDateTimeRow: React.FC<SlotRowProps> = ({errors}) => (
 
 const DURATION_OPTIONS = [30, 45, 60, 90, 120].map(renderDurationOption);
 
+/** Отобразить соответствующую часть интерфейса. */
 function renderDurationOption(value: number) {
     return <option key={value} value={value}>{value}</option>;
 }
 
 const SlotParamsRow: React.FC<SlotRowProps> = ({errors}) => (
     <div className="create-slot-params">
-        <SlotField label={t.Slot_Duration()} error={errors.duration}>
+        <SlotField label={slotDuration()} error={errors.duration}>
             <select
                 className="create-slot-select"
                 aria-invalid={!!errors.duration}
@@ -123,7 +133,7 @@ const SlotParamsRow: React.FC<SlotRowProps> = ({errors}) => (
                 {DURATION_OPTIONS}
             </select>
         </SlotField>
-        <SlotField label={t.Slot_Cost()} error={errors.cost}>
+        <SlotField label={slotCost()} error={errors.cost}>
             <input
                 type="number"
                 className="slot-format-location"
@@ -134,7 +144,7 @@ const SlotParamsRow: React.FC<SlotRowProps> = ({errors}) => (
                 defaultValue={500}
             />
         </SlotField>
-        <SlotField label={t.Slot_MaxUsers()} error={errors.max_users}>
+        <SlotField label={slotMaxUsers()} error={errors.max_users}>
             <input
                 type="number"
                 className="slot-format-location"
@@ -167,16 +177,21 @@ export class CreateSlotForm extends AntiHookComponent<Props> {
         submitted: false,
     });
 
+    /** Обработать соответствующее действие пользователя. */
     private patch(changes: Partial<FormState>): void {
         this.ui.setData({...this.ui.getData(), ...changes});
     }
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly changeOnline = (isOnline: boolean) => this.patch({isOnline});
+    /** Обработать соответствующее действие пользователя. */
     private readonly changeLocation = (location: string) => this.patch({location});
 
+    /** Подготовить данные для соответствующего интерфейса. */
     private readValues(form: HTMLFormElement): Values {
         const data = new FormData(form);
-        const values: Values = {date: '', time: '', duration: 0, cost: 0, max_users: 0, cancellation_penalty_percent: 0};
+        const values: Values = {date: '', time: '', duration: 0, cost: 0, max_users: 0,
+        cancellation_penalty_percent: 0};
         for (const name of FIELD_NAMES) {
             const raw = String(data.get(name) ?? '');
             // Как в master: у поля штрафа опции регистрации брались с этим fallback.
@@ -187,6 +202,7 @@ export class CreateSlotForm extends AntiHookComponent<Props> {
         return values;
     }
 
+    /** Подготовить данные для соответствующего интерфейса. */
     private validate(values: Values): FieldErrors {
         const parsed = this.schema.safeParse(values);
         if (parsed.success) return {};
@@ -198,6 +214,7 @@ export class CreateSlotForm extends AntiHookComponent<Props> {
         return out;
     }
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const form = event.currentTarget;
@@ -211,12 +228,14 @@ export class CreateSlotForm extends AntiHookComponent<Props> {
         void this.send(values);
     };
 
+    /** Обработать соответствующее действие пользователя. */
     private readonly handleChange = (event: React.FormEvent<HTMLFormElement>) => {
         if (!this.ui.getData().submitted) return;
         const values = this.readValues(event.currentTarget);
         this.patch({errors: this.validate(values)});
     };
 
+    /** Подготовить данные для соответствующего интерфейса. */
     private async send(values: Values): Promise<void> {
         const {onSuccess, onError} = this.props;
         const {isOnline, location} = this.ui.getData();
@@ -254,9 +273,11 @@ export class CreateSlotForm extends AntiHookComponent<Props> {
         }
     }
 
+    /** Отобразить соответствующую часть интерфейса. */
     private renderPenaltyField(errors: FieldErrors) {
         return (
-            <SlotField label={t.Slot_PenaltyPercent()} error={errors.cancellation_penalty_percent} hint={t.Slot_PenaltyHelp()}>
+            <SlotField label={t.Slot_PenaltyPercent()} error={errors.cancellation_penalty_percent}
+            hint={t.Slot_PenaltyHelp()}>
                 <input
                     type="number"
                     className="slot-format-location"
@@ -271,6 +292,7 @@ export class CreateSlotForm extends AntiHookComponent<Props> {
         );
     }
 
+    /** Отобразить соответствующую часть интерфейса. */
     private renderActions(submitting: boolean) {
         const {onCancel} = this.props;
         return (
@@ -280,13 +302,15 @@ export class CreateSlotForm extends AntiHookComponent<Props> {
                         {t.Batch_Cancel()}
                     </button>
                 )}
-                <button type="submit" className="confirm-modal-success" data-test-id="create-slot-btn" disabled={submitting}>
+                <button type="submit" className="confirm-modal-success" data-test-id="create-slot-btn"
+                disabled={submitting}>
                     {t.Slot_Create()}
                 </button>
             </div>
         );
     }
 
+    /** Отобразить соответствующую часть интерфейса. */
     render() {
         const state = this.useCarburetor(this.ui);
         const errors = readErrors(state.errors);
@@ -304,7 +328,8 @@ export class CreateSlotForm extends AntiHookComponent<Props> {
                         idPrefix="slot"
                     />
                 </div>
-                {state.serverError && <div className="invalid-feedback" data-slot-error="server">{state.serverError}</div>}
+                {state.serverError && <div className="invalid-feedback"
+                data-slot-error="server">{state.serverError}</div>}
                 {this.renderActions(state.submitting)}
             </form>
         );

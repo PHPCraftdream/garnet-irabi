@@ -3,6 +3,8 @@ import {Combobox} from '@common/Components/ui/Combobox';
 import {DateInput} from '@common/Components/ui/DateInput';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 
+const admin_Filter_ResetAll = t.Admin_Filter_ResetAll;
+
 /**
  * Панель фильтров разделов админки.
  *
@@ -11,7 +13,8 @@ import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
  * одинаково, и каждое повторение добавляло уровень вложенности.
  */
 export type FilterCell =
-    | {kind: 'select'; id: string; label: string; value: string; options: {value: string; label: string}[]; onChange: (v: string) => void}
+    | {kind: 'select'; id: string; label: string; value: string; options: {value: string; label: string}[];
+        onChange: (v: string) => void}
     | {kind: 'text'; id: string; label: string; value: string; onChange: (v: string) => void}
     | {kind: 'date'; id: string; label: string; value: string; onChange: (v: string) => void}
     | {
@@ -25,19 +28,23 @@ export type FilterCell =
           onChange: (v: number) => void;
       };
 
-const renderOption = (option: {value: string; label: string}) => <option key={option.value} value={option.value}>{option.label}</option>;
+const renderOption = (option: {value: string; label: string}) => <option key={option.value}
+        value={option.value}>{option.label}</option>;
 
 class Cell extends React.Component<{cell: FilterCell}> {
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly changePerson = (value: string) => {
         const {cell} = this.props;
         if (cell.kind === 'person') cell.onChange(parseInt(value, 10) || 0);
     };
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly changeValue = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const {cell} = this.props;
         if (cell.kind !== 'person') cell.onChange(event.target.value);
     };
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderPerson(cell: Extract<FilterCell, {kind: 'person'}>) {
         return (
             <div className="filter-cell">
@@ -55,6 +62,7 @@ class Cell extends React.Component<{cell: FilterCell}> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderSelect(cell: Extract<FilterCell, {kind: 'select'}>) {
         return (
             <div className="filter-cell">
@@ -72,6 +80,7 @@ class Cell extends React.Component<{cell: FilterCell}> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderDate(cell: Extract<FilterCell, {kind: 'date'}>) {
         return (
             <div className="filter-cell">
@@ -81,6 +90,7 @@ class Cell extends React.Component<{cell: FilterCell}> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderText(cell: Extract<FilterCell, {kind: 'text'}>) {
         return (
             <div className="filter-cell">
@@ -97,6 +107,7 @@ class Cell extends React.Component<{cell: FilterCell}> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     public render() {
         const {cell} = this.props;
         if (cell.kind === 'person') return this.renderPerson(cell);
@@ -115,6 +126,7 @@ interface Props {
     onReset: () => void;
 }
 
+/** Отображает данные раздела и передаёт действия пользователя обработчикам. */
 export const AdminFilterBar: React.FC<Props> = ({cells, loading, resetTestId, onReset}) => (
     <div className="admin-bookings-filters">
         {cells.map(renderCell)}
@@ -125,10 +137,10 @@ export const AdminFilterBar: React.FC<Props> = ({cells, loading, resetTestId, on
                 onClick={onReset}
                 disabled={loading}
                 data-test-id={resetTestId}
-                aria-label={t.Admin_Filter_ResetAll()}
-                title={t.Admin_Filter_ResetAll()}
+                aria-label={admin_Filter_ResetAll()}
+                title={admin_Filter_ResetAll()}
             >
-                {'× '}{t.Admin_Filter_ResetAll()}
+                {'× '}{admin_Filter_ResetAll()}
             </button>
         </div>
     </div>

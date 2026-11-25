@@ -3,7 +3,8 @@ import * as Popover from '@radix-ui/react-popover';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 import {Recipient} from '../RecipientCombobox';
-import {getInitials, roleLabel} from './recipientHelpers';
+import {getInitials} from './getInitials';
+import {roleLabel} from './recipientHelpers';
 
 interface OptionProps {
     r: Recipient;
@@ -12,14 +13,19 @@ interface OptionProps {
 }
 
 class Option extends AntiHookComponent<OptionProps> {
+    /** Выбирает получателя. */
     private readonly pick = () => this.props.onPick(this.props.r);
 
+    /** Рисует вариант получателя. */
     render() {
         const {r, active} = this.props;
         return (
-            <button type="button" className="im-recipient-option" data-active={active} onClick={this.pick} data-test-id={`im-recipient-${r.id}`}>
+            <button type="button" className="im-recipient-option" data-active={active}
+                onClick={this.pick} data-test-id={`im-recipient-${r.id}`}>
                 <span className="im-recipient-avatar">{getInitials(r.name)}</span>
-                <span className="im-recipient-option-label"><span className="im-recipient-option-name">{r.name || t.User_Anonymous()}</span></span>
+                <span className="im-recipient-option-label">
+                    <span className="im-recipient-option-name">{r.name || t.User_Anonymous()}</span>
+                </span>
                 <span className="im-recipient-role">{roleLabel(r.role)}</span>
             </button>
         );
@@ -44,15 +50,23 @@ interface Props {
  * счёт заново.
  */
 export class RecipientDropdown extends AntiHookComponent<Props> {
-    private readonly changeSearch = (event: React.ChangeEvent<HTMLInputElement>) => this.props.onSearchChange(event.target.value);
+    /** Обновляет строку поиска. */
+    private readonly changeSearch = (event: React.ChangeEvent<HTMLInputElement>) =>
+        this.props.onSearchChange(event.target.value);
 
+    /** Рисует варианты получателей. */
     private renderOptions() {
         const {filtered, value, onPick} = this.props;
         const options: React.ReactNode[] = [];
-        for (const r of filtered) options.push(<Option key={r.id} r={r} active={String(r.id) === value} onPick={onPick} />);
+        for (const r of filtered) {
+            options.push(
+                <Option key={r.id} r={r} active={String(r.id) === value} onPick={onPick} />,
+            );
+        }
         return options;
     }
 
+    /** Рисует вариант получателя. */
     render() {
         const {search, filtered, loading} = this.props;
         return (

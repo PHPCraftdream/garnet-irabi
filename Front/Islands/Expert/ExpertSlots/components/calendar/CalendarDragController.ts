@@ -17,19 +17,23 @@ export class CalendarDragController {
     public readonly state = new Carburetor<DragState>({dragOverDay: null, draggingSlotId: null});
     private readonly counters = new Map<string, number>();
 
+    /** Подготовить данные для соответствующего интерфейса. */
     public constructor(private readonly getProps: () => DragProps) {}
 
+    /** Обработать соответствующее действие пользователя. */
     public readonly handleDragStart = (e: React.DragEvent<HTMLDivElement>, slot: Slot) => {
         e.dataTransfer.setData('text/plain', String(slot.id));
         e.dataTransfer.effectAllowed = 'move';
         this.state.setData({...this.state.getData(), draggingSlotId: slot.id});
     };
 
+    /** Обработать соответствующее действие пользователя. */
     public readonly handleDragEnd = () => {
         this.state.setData({dragOverDay: null, draggingSlotId: null});
         this.counters.clear();
     };
 
+    /** Обработать соответствующее действие пользователя. */
     public readonly handleDragEnter = (e: React.DragEvent<HTMLDivElement>, dayIso: string) => {
         e.preventDefault();
         const counter = (this.counters.get(dayIso) || 0) + 1;
@@ -37,6 +41,7 @@ export class CalendarDragController {
         if (counter === 1) this.state.setData({...this.state.getData(), dragOverDay: dayIso});
     };
 
+    /** Обработать соответствующее действие пользователя. */
     public readonly handleDragLeave = (e: React.DragEvent<HTMLDivElement>, dayIso: string) => {
         e.preventDefault();
         const counter = (this.counters.get(dayIso) || 0) - 1;
@@ -48,11 +53,13 @@ export class CalendarDragController {
         }
     };
 
+    /** Обработать соответствующее действие пользователя. */
     public readonly handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
     };
 
+    /** Обработать соответствующее действие пользователя. */
     public readonly handleDrop = (e: React.DragEvent<HTMLDivElement>, dayIso: string) => {
         e.preventDefault();
         this.state.setData({dragOverDay: null, draggingSlotId: null});

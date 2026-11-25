@@ -12,10 +12,12 @@ interface Props {
 }
 
 export class ExpertSlotModalShell extends AntiHookComponent<Props> {
+    /** Обработать соответствующее действие пользователя. */
     private readonly closeOnBackdrop = (event: React.MouseEvent<HTMLDivElement>) => {
         if (event.target === event.currentTarget) this.props.onClose();
     };
 
+    /** Отобразить соответствующую часть интерфейса. */
     private renderHeader() {
         const {title, onClose, testId} = this.props;
         return (
@@ -32,6 +34,7 @@ export class ExpertSlotModalShell extends AntiHookComponent<Props> {
         );
     }
 
+    /** Отобразить соответствующую часть интерфейса. */
     render() {
         const {size, testId, children} = this.props;
         return (

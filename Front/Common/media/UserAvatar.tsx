@@ -12,10 +12,12 @@ interface Props {
     disabled?: boolean;
 }
 
+/** Возвращает заглавную букву слова. */
 function initialOf(word: string): string {
     return word[0]?.toUpperCase() || '';
 }
 
+/** Собирает инициалы максимум из двух слов. */
 function initialsOf(name: string): string {
     return (name || '?')
         .split(' ')
@@ -29,6 +31,7 @@ function initialsOf(name: string): string {
  * initials circle. Same footprint either way (see avatar-circle* CSS).
  */
 export class UserAvatar extends AntiHookComponent<Props> {
+/** Рисует фото, нейтральную заглушку или инициалы. */
     render() {
         const {name, avatar, size = 'sm', testId, disabled} = this.props;
 

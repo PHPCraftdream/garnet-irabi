@@ -6,10 +6,11 @@ import {D} from '@common/Support/Debug/D';
 
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {SupportTicket, SupportMessage, SupportStatus, AssignmentLogEntry, AutoContext} from '../../Comms/Support/parts/supportTypes';
+import {SupportTicket, SupportMessage, SupportStatus, AssignmentLogEntry, AutoContext} from
+    '../../Comms/Support/parts/supportTypes';
 import {SupportSending} from '../../Comms/Support/parts/thread/supportSending';
 import {PendingFile} from '../../../Common/attachments/AttachmentPicker';
-import {reportAttachmentErrors} from '../../../Common/attachments/attachmentHelpers';
+import {reportAttachmentErrors} from '../../../Common/attachments/helpers/reportAttachmentErrors';
 import TicketHeader from './SupportTicket/TicketHeader';
 import TicketContext from './SupportTicket/TicketContext';
 import TicketClientContext from './SupportTicket/TicketClientContext';
@@ -62,16 +63,20 @@ interface TicketUI {
 }
 
 class TicketUIStore extends Carburetor<TicketUI> {
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     constructor() {
         super({data: null, error: null, replyText: '', internalText: '', staleWarning: false, staleReplySent: false});
     }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly snapshot = () => this.getData();
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly subscribeSnapshot = (listener: () => void) => {
         const id = this.subscribe(listener);
         return () => this.unsubscribe(id);
     };
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private change<K extends keyof TicketUI>(key: K, value: TicketUI[K]): void {
         const before = this.getData();
         if (Object.is(before[key], value)) return;
@@ -83,12 +88,19 @@ class TicketUIStore extends Carburetor<TicketUI> {
         }
     }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly setDataSnapshot = (data: TicketDetailData | null) => this.change('data', data);
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly setError = (error: string | null) => this.change('error', error);
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly setReplyText = (text: string) => this.change('replyText', text);
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly setInternalText = (text: string) => this.change('internalText', text);
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly setStaleWarning = (value: boolean) => this.change('staleWarning', value);
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly setStaleReplySent = (value: boolean) => this.change('staleReplySent', value);
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     readonly dismissStaleReply = () => this.setStaleReplySent(false);
 }
 
@@ -103,20 +115,27 @@ export default class SupportTicketTab extends AntiHookComponent<Props> {
      * идентичность только вместе с содержимым (RULES.md, «Подписки useCarburetor»).
      */
     private readonly detailSnapshot = this.connectSelection(this.ui, state => state.data);
-    private readonly filesSnapshot = this.connectSelection(this.files, state => ({reply: state.reply, internal: state.internal}));
+    private readonly filesSnapshot = this.connectSelection(this.files, state => ({reply: state.reply,
+        internal: state.internal}));
     private timer?: number;
     private messageCount: number | null = null;
     // replyText предыдущего рендера: раньше его давал snapshot в props.
     private lastReplyText = '';
 
-    private readonly setReplyFiles = (files: PendingFile[]) => this.files.setData({...this.files.getData(), reply: files});
-    private readonly setInternalFiles = (files: PendingFile[]) => this.files.setData({...this.files.getData(), internal: files});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly setReplyFiles = (files: PendingFile[]) => this.files.setData({...this.files.getData(),
+        reply: files});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly setInternalFiles = (files: PendingFile[]) => this.files.setData({...this.files.getData(),
+        internal: files});
 
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
     componentDidMount(): void {
         super.componentDidMount();
         this.openTicket();
     }
 
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
     componentDidUpdate(previous: Readonly<Props>): void {
         super.componentDidUpdate(previous);
         const {ticketId, ticketDetailUrl} = this.props;
@@ -126,11 +145,13 @@ export default class SupportTicketTab extends AntiHookComponent<Props> {
         if (ticketId !== previous.ticketId || ticketDetailUrl !== previous.ticketDetailUrl) this.openTicket();
     }
 
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
     componentWillUnmount(): void {
         window.clearInterval(this.timer);
         super.componentWillUnmount();
     }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private openTicket(): void {
         window.clearInterval(this.timer);
         this.messageCount = null;
@@ -141,10 +162,12 @@ export default class SupportTicketTab extends AntiHookComponent<Props> {
         this.timer = window.setInterval(this.poll, 15000);
     }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private readonly poll = () => {
         if (!document.hidden) this.loadDetail();
     };
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private loadDetail(notify = false, target: Props = this.props): void {
         const {ticketId, ticketDetailUrl, onTicketChanged} = target;
         const {setError, setDataSnapshot: setData, setStaleWarning} = this.ui;
@@ -168,13 +191,16 @@ export default class SupportTicketTab extends AntiHookComponent<Props> {
                 setData(newData);
                 if (notify) onTicketChanged?.();
             }
-        }).catch((err) => { D('support.error', {action: 'loadDetail', ticketId, error: err}); setError(t.User_LoadError()); });
+        }).catch((err) => { D('support.error', {action: 'loadDetail', ticketId, error: err});
+        setError(t.User_LoadError()); });
     }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly handleReply = () => {
         if (this.ui.getData().replyText.trim()) void this.sending.withSending(this.sendReply);
     };
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly sendReply = async () => {
         const target = this.props;
         const {ticketId, replyUrl} = target;
@@ -204,10 +230,12 @@ export default class SupportTicketTab extends AntiHookComponent<Props> {
         }
     };
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly handleInternalComment = () => {
         if (this.ui.getData().internalText.trim()) void this.sending.withSending(this.sendInternal);
     };
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly sendInternal = async () => {
         const target = this.props;
         const {ticketId, internalCommentUrl} = target;
@@ -231,6 +259,7 @@ export default class SupportTicketTab extends AntiHookComponent<Props> {
         }
     };
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly handleStatusChange = async (newStatus: SupportStatus) => {
         const target = this.props;
         const {ticketId, changeStatusUrl} = target;
@@ -245,6 +274,7 @@ export default class SupportTicketTab extends AntiHookComponent<Props> {
         }
     };
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly handleAssign = async (assigneeId: number | null) => {
         const target = this.props;
         const {ticketId, assignUrl} = target;
@@ -258,6 +288,7 @@ export default class SupportTicketTab extends AntiHookComponent<Props> {
         }
     };
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderNotices(notices: {staleWarning: boolean; staleReplySent: boolean}) {
         const {staleWarning, staleReplySent} = notices;
         return (
@@ -285,7 +316,9 @@ export default class SupportTicketTab extends AntiHookComponent<Props> {
         );
     }
 
-    private renderForms(forms: {replyText: string; internalText: string; replyFiles: PendingFile[]; internalFiles: PendingFile[]; sending: boolean}) {
+    /** Формирует представление данных для соответствующего раздела панели. */
+    private renderForms(forms: {replyText: string; internalText: string; replyFiles: PendingFile[];
+        internalFiles: PendingFile[]; sending: boolean}) {
         const {replyText, internalText, replyFiles, internalFiles, sending} = forms;
         const {setReplyText, setInternalText} = this.ui;
         return (
@@ -311,12 +344,14 @@ export default class SupportTicketTab extends AntiHookComponent<Props> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {ticketId, clientContextUrl, moderators} = this.props;
         // Вид из useCarburetor — TReadonly; детям нужны те же мутабельные типы, что и раньше.
         const {error, replyText, internalText, staleWarning, staleReplySent} = this.useCarburetor(this.ui);
         const data = this.detailSnapshot() as TicketDetailData | null;
-        const {reply: replyFiles, internal: internalFiles} = this.filesSnapshot() as {reply: PendingFile[]; internal: PendingFile[]};
+        const {reply: replyFiles, internal: internalFiles} = this.filesSnapshot() as {reply: PendingFile[];
+        internal: PendingFile[]};
         const {sending} = this.useCarburetor(this.sending);
         if (error) return <div className="admin-support-detail-error">{error}</div>;
         if (!data) return <div className="admin-support-detail-loading">{t.User_Loading()}</div>;

@@ -90,7 +90,8 @@ type ConfirmView = ReturnType<ConfirmController['snapshot']>;
 export class CommentsSection extends AntiHookComponent<CommentsSectionProps> {
     // Кэш params объявлен до pagination: контролёр сравнивает params по ссылке.
     private paramsCache: {entityType: 'expert'; entityId: number; value: Record<string, unknown>} | null = null;
-    private readonly pagination = new PaginationController<Comment>({url: this.props.listUrl, params: this.cachedParams()});
+    private readonly pagination = new PaginationController<Comment>({url: this.props.listUrl,
+        params: this.cachedParams()});
     private readonly ui = new Carburetor<{body: string}>({body: ''});
     private readonly sending = new SupportSending();
     private readonly confirm = new ConfirmController();
@@ -103,6 +104,7 @@ export class CommentsSection extends AntiHookComponent<CommentsSectionProps> {
     private readonly rows = this.connectSelection(this.pagination, state => state.items);
 
     // Обёртки как в usePagination: его сторожа отличаются от сторожа контролёра.
+    /** Обрабатывает goToPage. */
     private readonly goToPage = (p: number) => {
         const {page, totalPages} = this.pagination.snapshot();
         if (p < 1 || p > totalPages || p === page) return;
@@ -111,6 +113,7 @@ export class CommentsSection extends AntiHookComponent<CommentsSectionProps> {
     private readonly setPerPage = this.pagination.setPerPage;
 
     // Уборка вынесена в поле: ссылка на неё должна быть стабильной.
+    /** Освобождает контроллер пагинации. */
     private readonly disposePagination = () => this.pagination.dispose();
 
     /**
@@ -126,6 +129,7 @@ export class CommentsSection extends AntiHookComponent<CommentsSectionProps> {
         return value;
     }
 
+    /** Подписывает компонент на необходимые эффекты. */
     protected override useEffects(): void {
         this.useEffect('pagination', () => {
             this.pagination.start();
@@ -139,20 +143,25 @@ export class CommentsSection extends AntiHookComponent<CommentsSectionProps> {
         }, [this.props.listUrl, this.props.entityType, this.props.entityId]);
     }
 
+    /** Обновляет текст комментария. */
     private readonly changeBody = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
         this.ui.setData({body: event.target.value});
     };
 
+    /** Отправляет форму по клавиатурному сочетанию. */
     private readonly submitOnShortcut = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (event.key !== 'Enter' || (!event.ctrlKey && !event.metaKey) || this.sending.snapshot().sending || !this.ui.getData().body.trim()) return;
+        if (event.key !== 'Enter' || (!event.ctrlKey && !event.metaKey)
+            || this.sending.snapshot().sending || !this.ui.getData().body.trim()) return;
         event.preventDefault();
         this.handleCreate();
     };
 
+    /** Обрабатывает отправку нового обращения. */
     private readonly handleCreate = () => {
         if (this.ui.getData().body.trim()) void this.sending.withSending(this.create);
     };
 
+    /** Обрабатывает создание обращения. */
     private readonly create = async () => {
         // Страница запоминается до await: usePagination замыкал её по рендеру,
         // а чтение после await перенацеливало действие на новую страницу.
@@ -176,6 +185,7 @@ export class CommentsSection extends AntiHookComponent<CommentsSectionProps> {
         }
     };
 
+    /** Обрабатывает удаление комментария. */
     private readonly handleDelete = async (commentId: number) => {
         // Страница запоминается до await: usePagination замыкал её по рендеру,
         // а чтение после await перенацеливало действие на новую страницу.
@@ -196,18 +206,23 @@ export class CommentsSection extends AntiHookComponent<CommentsSectionProps> {
         }
     };
 
+    /** Рисует переключатель страниц. */
     private renderPager(pager: PagerView, withSize: boolean) {
         const {page, totalPages, total, loading, perPage} = pager;
         if (totalPages <= 1) return null;
-        const labels: PaginationLabels = {prev: t.Pagination_Prev(), next: t.Pagination_Next(), of: t.Pagination_Of(), items: t.Pagination_Items()};
+        const labels: PaginationLabels = {prev: t.Pagination_Prev(), next: t.Pagination_Next(),
+            of: t.Pagination_Of(), items: t.Pagination_Items()};
         return (
             <div className="admin-support-form">
-                <Pagination page={page} totalPages={totalPages} total={total} loading={loading} compact onPageChange={this.goToPage}
-                    labels={labels} pageSize={withSize ? perPage : undefined} onPageSizeChange={withSize ? this.setPerPage : undefined} />
+                <Pagination page={page} totalPages={totalPages} total={total} loading={loading} compact
+                    onPageChange={this.goToPage}
+                    labels={labels} pageSize={withSize ? perPage : undefined}
+                    onPageSizeChange={withSize ? this.setPerPage : undefined} />
             </div>
         );
     }
 
+    /** Рисует список обращений. */
     private renderList(items: readonly Comment[], loading: boolean) {
         const {currentAccountId, isModerator} = this.props;
         if (loading || items.length === 0) {
@@ -215,29 +230,36 @@ export class CommentsSection extends AntiHookComponent<CommentsSectionProps> {
         }
         const cards: React.ReactNode[] = [];
         for (const comment of items) {
-            cards.push(<CommentCard key={comment.id} comment={comment} statusLabel={statusLabel(comment, currentAccountId, isModerator)}
+            cards.push(<CommentCard key={comment.id} comment={comment} statusLabel={statusLabel(comment,
+                currentAccountId, isModerator)}
                 canDelete={isMine(comment, currentAccountId) || isModerator} onDelete={this.handleDelete} />);
         }
         return <div className="review-list">{cards}</div>;
     }
 
+    /** Обрабатывает renderForm. */
     private renderForm(body: string, sending: boolean) {
         const {canCreate = true} = this.props;
         if (!canCreate) return null;
         return (
             <>
-                <div className="review-notice" data-accent="true" data-test-id="comment-moderation-notice">{t.Comment_ModerationNotice()}</div>
+                <div className="review-notice" data-accent="true"
+                    data-test-id="comment-moderation-notice">{t.Comment_ModerationNotice()}</div>
                 <div className="review-form">
-                    <textarea data-test-id="comment-input" className="review-input" rows={2} aria-label={t.A11y_WriteComment()}
-                        placeholder={t.Comment_Write() + CTRL_ENTER_HINT} value={body} onChange={this.changeBody} onKeyDown={this.submitOnShortcut} />
+                    <textarea data-test-id="comment-input" className="review-input" rows={2}
+                        aria-label={t.A11y_WriteComment()}
+                        placeholder={t.Comment_Write() + CTRL_ENTER_HINT}
+                        value={body} onChange={this.changeBody} onKeyDown={this.submitOnShortcut} />
                     <div className="review-send">
-                        <SendButton onClick={this.handleCreate} disabled={!body.trim()} sending={sending} label={t.Comment_Send()} testId="comment-submit-btn" />
+                        <SendButton onClick={this.handleCreate} disabled={!body.trim()} sending={sending}
+                            label={t.Comment_Send()} testId="comment-submit-btn" />
                     </div>
                 </div>
             </>
         );
     }
 
+    /** Рисует содержимое компонента. */
     render() {
         const {body} = this.useCarburetor(this.ui);
         const {page, perPage, totalPages, total, loading} = this.useCarburetor(this.pagination);
@@ -248,13 +270,15 @@ export class CommentsSection extends AntiHookComponent<CommentsSectionProps> {
         return (
             <div data-test-id="comments-section" className="review-section">
                 <h3 className="review-heading">{t.Comment_Title()}</h3>
-                {isModerator && <div className="review-notice" data-test-id="comments-moderator-notice">{t.Comment_ModeratorViewNotice()}</div>}
+                {isModerator && <div className="review-notice"
+                    data-test-id="comments-moderator-notice">{t.Comment_ModeratorViewNotice()}</div>}
                 {this.renderPager({page, totalPages, total, loading, perPage}, true)}
                 {this.renderList(items, loading)}
                 {this.renderPager({page, totalPages, total, loading, perPage}, false)}
                 {this.renderForm(body, sending)}
                 {/* Плоская копия: поле, прочитанное здесь, и есть подписка — прокси в state её не даёт. */}
-                <ConfirmModal state={{...confirmState, items: [...confirmState.items]}} onConfirm={this.confirm.handleConfirm} onCancel={this.confirm.handleCancel} />
+                <ConfirmModal state={{...confirmState, items: [...confirmState.items]}}
+                    onConfirm={this.confirm.handleConfirm} onCancel={this.confirm.handleCancel} />
             </div>
         );
     }

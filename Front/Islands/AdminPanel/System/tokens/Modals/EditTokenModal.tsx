@@ -6,7 +6,7 @@ import SendButton from '@common/Components/Controls/SendButton';
 import {LogDetailModal} from '@common/Components/Admin/AdminLog/LogDetailModal';
 import {tsToInputDateTime} from '@common/Utils/Time/DateUtils';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {TokenRow} from '../tokenTypes';
+import {TokenRow} from '../config/tokenTypes';
 import {TokenField} from '../TokenField';
 
 export interface TokenUpdate {
@@ -24,12 +24,15 @@ interface Props {
     onClose: () => void;
 }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function showPicker(event: React.MouseEvent<HTMLInputElement>): void {
     (event.target as HTMLInputElement).showPicker?.();
 }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
 function initialForm(token: TokenRow) {
-    return {label: token.label, maxUses: token.max_uses, expiresAt: token.expires_at ? tsToInputDateTime(token.expires_at) : '', sending: false};
+    return {label: token.label, maxUses: token.max_uses, expiresAt: token.expires_at ?
+        tsToInputDateTime(token.expires_at) : '', sending: false};
 }
 
 type Form = ReturnType<typeof initialForm>;
@@ -37,14 +40,22 @@ type Form = ReturnType<typeof initialForm>;
 export class EditTokenModal extends AntiHookComponent<Props> {
     private readonly form = new Carburetor(initialForm(this.props.token));
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private update(patch: Partial<Form>): void {
         this.form.setData({...this.form.getData(), ...patch});
     }
 
-    private readonly changeLabel = (event: React.ChangeEvent<HTMLInputElement>) => this.update({label: event.target.value});
-    private readonly changeMaxUses = (event: React.ChangeEvent<HTMLInputElement>) => this.update({maxUses: Math.max(1, parseInt(event.target.value, 10) || 1)});
-    private readonly changeExpiry = (event: React.ChangeEvent<HTMLInputElement>) => this.update({expiresAt: event.target.value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeLabel = (event: React.ChangeEvent<HTMLInputElement>) => this.update({label:
+        event.target.value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeMaxUses = (event: React.ChangeEvent<HTMLInputElement>) => this.update({maxUses:
+        Math.max(1, parseInt(event.target.value, 10) || 1)});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeExpiry = (event: React.ChangeEvent<HTMLInputElement>) => this.update({expiresAt:
+        event.target.value});
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly submit = async () => {
         const {sending, label, maxUses, expiresAt} = this.form.getData();
         if (sending) return;
@@ -57,7 +68,8 @@ export class EditTokenModal extends AntiHookComponent<Props> {
                 {id: number; label: string; max_uses: number; expires_at: string},
                 {success: boolean; expires_at: number | null}
             >(updateUrl, {id: token.id, label, max_uses: maxUses, expires_at: expiresAt});
-            const data = ('data' in resp && resp.data) ? resp.data : (resp as unknown as {success: boolean; expires_at: number | null});
+            const data = ('data' in resp && resp.data) ? resp.data : (resp as unknown as {success: boolean;
+        expires_at: number | null});
             if (!data?.success) {
                 showToast(t.General_Error(), 'danger');
                 return;
@@ -78,11 +90,13 @@ export class EditTokenModal extends AntiHookComponent<Props> {
         }
     };
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly submitForm = (event: React.FormEvent) => {
         event.preventDefault();
         void this.submit();
     };
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderFields({label, maxUses, expiresAt}: Form) {
         const {token} = this.props;
         const used = token.max_uses - token.uses_left;
@@ -99,7 +113,8 @@ export class EditTokenModal extends AntiHookComponent<Props> {
                         data-test-id="token-edit-label"
                     />
                 </TokenField>
-                <TokenField id="edit-token-expires" label={t.Admin_Tokens_ExpiresAt()} hint={t.Admin_Tokens_EditExpiresHint()}>
+                <TokenField id="edit-token-expires" label={t.Admin_Tokens_ExpiresAt()}
+        hint={t.Admin_Tokens_EditExpiresHint()}>
                     <input
                         id="edit-token-expires"
                         type="datetime-local"
@@ -110,7 +125,8 @@ export class EditTokenModal extends AntiHookComponent<Props> {
                         data-test-id="token-edit-expires"
                     />
                 </TokenField>
-                <TokenField id="edit-token-max-uses" label={t.Admin_Tokens_MaxUses()} hint={t.Admin_Tokens_EditUsedInfo([used])}>
+                <TokenField id="edit-token-max-uses" label={t.Admin_Tokens_MaxUses()}
+        hint={t.Admin_Tokens_EditUsedInfo([used])}>
                     <input
                         id="edit-token-max-uses"
                         type="number"
@@ -125,6 +141,7 @@ export class EditTokenModal extends AntiHookComponent<Props> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {onClose} = this.props;
         const state = this.useCarburetor(this.form);

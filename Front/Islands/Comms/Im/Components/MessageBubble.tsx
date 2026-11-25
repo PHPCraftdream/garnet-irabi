@@ -9,6 +9,7 @@ interface Props {
     isMine: boolean;
 }
 
+/** Рисует сообщение переписки. */
 export default function MessageBubble({message, isMine}: Props) {
     return (
         <div

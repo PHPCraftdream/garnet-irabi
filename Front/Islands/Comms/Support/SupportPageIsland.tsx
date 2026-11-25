@@ -16,7 +16,7 @@ import {PageEmpty} from './Page/PageEmpty';
 import {PageNewTicketForm} from './Page/PageNewTicketForm';
 import {PageConversation} from './Page/PageConversation';
 import {PendingFile} from '../../../Common/attachments/AttachmentPicker';
-import {initAutoContext} from './parts/thread/autoContext';
+import {initAutoContext} from './parts/thread/context/autoContext';
 import {SupportThreadController} from './parts/thread/SupportThreadController';
 import {SupportSending} from './parts/thread/supportSending';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
@@ -34,8 +34,22 @@ interface Props {
 
 const PAGE_ICON = <LifeBuoy size={22} aria-hidden="true" />;
 
+/** Находит обращение по идентификатору. */
 function findTicket(tickets: readonly SupportTicket[], id: number): SupportTicket | undefined {
     return tickets.find(ticket => ticket.id === id);
+}
+
+/** Находит выбранное обращение по его идентификатору. */
+function getSelectedTicket(
+    selectedId: number | null,
+    selectedTicketData: SupportTicket | null,
+    items: SupportTicket[],
+): SupportTicket | null {
+    return selectedId
+        ? (selectedTicketData?.id === selectedId
+            ? selectedTicketData
+            : findTicket(items, selectedId) ?? null)
+        : null;
 }
 
 /** Подпись переписки: прокрутка срабатывает на смену содержимого, а не на каждый опрос. */
@@ -44,9 +58,11 @@ function messagesSignature(messages: readonly SupportMessage[]): string {
 }
 
 export class SupportPageIsland extends AntiHookComponent<Props> {
-    private readonly pagination = new PaginationController<SupportTicket>({url: this.props.ticketPageUrl, initialData: this.props.ticketsPagination});
+    private readonly pagination = new PaginationController<SupportTicket>({url: this.props.ticketPageUrl,
+        initialData: this.props.ticketsPagination});
     private readonly ui = new SupportPageState();
-    private readonly thread = new SupportThreadController({messagesUrl: this.props.messagesUrl, createUrl: this.props.createUrl, replyUrl: this.props.replyUrl});
+    private readonly thread = new SupportThreadController({messagesUrl: this.props.messagesUrl,
+        createUrl: this.props.createUrl, replyUrl: this.props.replyUrl});
     private readonly files = new Carburetor<{create: PendingFile[]; reply: PendingFile[]}>({create: [], reply: []});
     private readonly sending = new SupportSending();
     private readonly messagesEnd = React.createRef<HTMLDivElement>();
@@ -58,12 +74,14 @@ export class SupportPageIsland extends AntiHookComponent<Props> {
      * (RULES.md, «Подписки useCarburetor»).
      */
     private readonly ticketsSnapshot = this.connectSelection(this.pagination, state => state.items);
-    private readonly threadSnapshot = this.connectSelection(this.thread, state => ({messages: state.messages, loading: state.loading}));
+    private readonly threadSnapshot = this.connectSelection(this.thread, state => ({messages: state.messages,
+        loading: state.loading}));
     /*
      * Выбранные файлы тоже заменяются массивом целиком: подписка на маркер `files.~p` записи
      * вглубь не замечает, поэтому берём их снимком (RULES.md, «Подписки useCarburetor»).
      */
-    private readonly filesSnapshot = this.connectSelection(this.files, state => ({create: state.create, reply: state.reply}));
+    private readonly filesSnapshot = this.connectSelection(this.files, state => ({create: state.create,
+        reply: state.reply}));
     /*
      * Заголовок переписки (`subject`/`status`/`created_at`/`updated_at`) рисует
      * `PageConversation` в своём рендере, а ответ на обращение заменяет тикет с тем же id:
@@ -73,19 +91,27 @@ export class SupportPageIsland extends AntiHookComponent<Props> {
     private readonly selectedTicketSnapshot = this.connectSelection(this.ui, state => state.selectedTicketData);
 
     // Обёртки как в usePagination: его сторожа отличаются от сторожа контроллера.
+    /** Обрабатывает ticketGoToPage. */
     private readonly ticketGoToPage = (p: number) => {
         if (p < 1 || p > this.pagination.snapshot().totalPages || p === this.pagination.snapshot().page) return;
         void this.pagination.fetchPage(p);
     };
     private readonly ticketSetPerPage = this.pagination.setPerPage;
 
-    private readonly setCreateFiles = (files: PendingFile[]) => this.files.setData({...this.files.getData(), create: files});
-    private readonly setReplyFiles = (files: PendingFile[]) => this.files.setData({...this.files.getData(), reply: files});
+    /** Обновляет вложения нового обращения. */
+    private readonly setCreateFiles = (files: PendingFile[]) => this.files.setData({...this.files.getData(),
+        create: files});
+    /** Обновляет вложения ответа. */
+    private readonly setReplyFiles = (files: PendingFile[]) => this.files.setData({...this.files.getData(),
+        reply: files});
 
     // Уборки вынесены в поля: ссылка на них должна быть стабильной.
+    /** Освобождает контроллер пагинации. */
     private readonly disposePagination = () => this.pagination.dispose();
+    /** Останавливает опрос переписки. */
     private readonly stopThreadPolling = () => this.thread.stopPolling();
 
+    /** Подписывает компонент на необходимые эффекты. */
     protected override useEffects(): void {
         const {selectedId} = this.ui.snapshot();
         const scrollSignature = messagesSignature(this.thread.snapshot().messages);
@@ -110,10 +136,12 @@ export class SupportPageIsland extends AntiHookComponent<Props> {
             return this.stopThreadPolling;
         }, [selectedId]);
 
-        // selectedId в зависимостях: повторное открытие той же переписки заново создаёт якорь и должно прокручивать вниз.
-        this.useEffect('scroll', () => { this.messagesEnd.current?.scrollIntoView({behavior: 'smooth'}); }, [scrollSignature, selectedId]);
+        // Повторное открытие переписки должно прокручивать её к концу.
+        this.useEffect('scroll', () => { this.messagesEnd.current?.scrollIntoView({behavior: 'smooth'}); },
+            [scrollSignature, selectedId]);
     }
 
+    /** Загружает сообщения переписки. */
     private readonly fetchMessages = (ticketId: number) => {
         void this.thread.loadMessages(ticketId).then((r: any) => {
             if (!r) return;
@@ -128,6 +156,7 @@ export class SupportPageIsland extends AntiHookComponent<Props> {
         });
     };
 
+    /** Выбирает обращение и загружает переписку. */
     private readonly selectTicket = (ticketId: number) => {
         D('support.click', {action: 'selectTicket', ticketId});
         const ticketFromList = findTicket(this.pagination.snapshot().items, ticketId);
@@ -137,12 +166,14 @@ export class SupportPageIsland extends AntiHookComponent<Props> {
         this.fetchMessages(ticketId);
     };
 
+    /** Обрабатывает отправку нового обращения. */
     private readonly handleCreate = () => {
         const {subject, message} = this.ui.snapshot();
         if (!subject.trim() || !message.trim()) return;
         void this.sending.withSending(this.createTicket);
     };
 
+    /** Создаёт обращение. */
     private readonly createTicket = async () => {
         // Страница запоминается до await: usePagination замыкал её по рендеру,
         // а чтение после await перенацеливало действие на новую страницу.
@@ -171,12 +202,14 @@ export class SupportPageIsland extends AntiHookComponent<Props> {
         }
     };
 
+    /** Обрабатывает отправку ответа. */
     private readonly handleReply = () => {
         const {selectedId, replyText} = this.ui.snapshot();
         if (!replyText.trim() || !selectedId) return;
         void this.sending.withSending(this.replyToTicket);
     };
 
+    /** Отправляет ответ на обращение. */
     private readonly replyToTicket = async () => {
         // Страница запоминается до await: usePagination замыкал её по рендеру,
         // а чтение после await перенацеливало действие на новую страницу.
@@ -199,11 +232,13 @@ export class SupportPageIsland extends AntiHookComponent<Props> {
         }
     };
 
+    /** Открывает форму нового обращения. */
     private readonly openNew = () => {
         this.ui.patch({showNewForm: true, selectedId: null, subject: '', message: ''});
         this.setCreateFiles([]);
     };
 
+    /** Рисует список обращений. */
     private renderList(list: {
         sortedTickets: SupportTicket[];
         selectedId: number | null;
@@ -241,6 +276,7 @@ export class SupportPageIsland extends AntiHookComponent<Props> {
         );
     }
 
+    /** Выбирает и рисует форму или переписку. */
     private renderBody(selectedTicket: SupportTicket | null, body: {
         tickets: TReadonly<SupportTicket[]>;
         showNewForm: boolean;
@@ -255,9 +291,37 @@ export class SupportPageIsland extends AntiHookComponent<Props> {
     }) {
         const {tickets, showNewForm, subject, message, replyText, createFiles,
             replyFiles, sending, messages, loadingMessages} = body;
-        return showNewForm ? <PageNewTicketForm subject={subject} onSubjectChange={this.ui.setSubject} message={message} onMessageChange={this.ui.setMessage} files={createFiles as PendingFile[]} onFilesChange={this.setCreateFiles} onSubmit={this.handleCreate} onCancel={this.ui.closeForm} sending={sending} /> : selectedTicket ? <PageConversation selectedTicket={selectedTicket} messages={messages as SupportMessage[]} loading={loadingMessages} endRef={this.messagesEnd} replyText={replyText} onReplyTextChange={this.ui.setReplyText} replyFiles={replyFiles as PendingFile[]} onReplyFilesChange={this.setReplyFiles} onReply={this.handleReply} sending={sending} /> : <PageEmpty ticketsCount={tickets.length} />;
+        return (
+            showNewForm
+                ? <PageNewTicketForm
+                    subject={subject}
+                    onSubjectChange={this.ui.setSubject}
+                    message={message}
+                    onMessageChange={this.ui.setMessage}
+                    files={createFiles as PendingFile[]}
+                    onFilesChange={this.setCreateFiles}
+                    onSubmit={this.handleCreate}
+                    onCancel={this.ui.closeForm}
+                    sending={sending}
+                />
+                : selectedTicket
+                    ? <PageConversation
+                        selectedTicket={selectedTicket}
+                        messages={messages as SupportMessage[]}
+                        loading={loadingMessages}
+                        endRef={this.messagesEnd}
+                        replyText={replyText}
+                        onReplyTextChange={this.ui.setReplyText}
+                        replyFiles={replyFiles as PendingFile[]}
+                        onReplyFilesChange={this.setReplyFiles}
+                        onReply={this.handleReply}
+                        sending={sending}
+                    />
+                    : <PageEmpty ticketsCount={tickets.length} />
+        );
     }
 
+    /** Рисует содержимое компонента. */
     render() {
         const {page: ticketPage, totalPages: ticketTotalPages, total: ticketTotal,
             loading: ticketsLoading, perPage: ticketPerPage} = this.useCarburetor(this.pagination);
@@ -265,30 +329,56 @@ export class SupportPageIsland extends AntiHookComponent<Props> {
         const {selectedId, readIds, showNewForm, subject, message, replyText} = this.useCarburetor(this.ui);
         const selectedTicketData = this.selectedTicketSnapshot() as SupportTicket | null;
         const {messages, loading: loadingMessages} = this.threadSnapshot();
-        const {create: createFiles, reply: replyFiles} = this.filesSnapshot() as {create: PendingFile[]; reply: PendingFile[]};
+        const filesSnapshot = this.filesSnapshot() as {create: PendingFile[]; reply: PendingFile[]};
+        const {create: createFiles, reply: replyFiles} = filesSnapshot;
         const {sending} = this.useCarburetor(this.sending);
         const readTicketIds = new Set(readIds);
-        const selectedTicket = selectedId ? (selectedTicketData?.id === selectedId ? selectedTicketData : findTicket(items, selectedId) ?? null) : null;
+        const selectedTicket = getSelectedTicket(selectedId, selectedTicketData, items);
+        return this.renderPage({items, selectedId, readTicketIds, ticketPage, ticketTotalPages,
+            ticketTotal, ticketsLoading, ticketPerPage, selectedTicket, showNewForm, subject, message,
+            replyText, createFiles, replyFiles, sending, messages, loadingMessages});
+    }
+
+    /** Рисует страницу списка и переписки обращений. */
+    private renderPage(data: {
+        items: SupportTicket[];
+        selectedId: number | null;
+        readTicketIds: Set<number>;
+        ticketPage: number;
+        ticketTotalPages: number;
+        ticketTotal: number;
+        ticketsLoading: boolean;
+        ticketPerPage: number;
+        selectedTicket: SupportTicket | null;
+        showNewForm: boolean;
+        subject: string;
+        message: string;
+        replyText: string;
+        createFiles: PendingFile[];
+        replyFiles: PendingFile[];
+        sending: boolean;
+        messages: TReadonly<SupportMessage[]>;
+        loadingMessages: boolean;
+    }) {
+        const {items, selectedId, readTicketIds, ticketPage, ticketTotalPages, ticketTotal,
+            ticketsLoading, ticketPerPage, selectedTicket, showNewForm, subject, message, replyText,
+            createFiles, replyFiles, sending, messages, loadingMessages} = data;
         return (
             <div className="comms-page">
                 <PageHeader title={t.Support_Title()} icon={PAGE_ICON} />
 
                 <div className="comms-page-layout" data-detail={Boolean(selectedTicket || showNewForm)}>
                     {/* Left: ticket list */}
-                    {this.renderList({sortedTickets: items as SupportTicket[], selectedId, readTicketIds, ticketPage,
+                    {this.renderList({sortedTickets: items, selectedId, readTicketIds, ticketPage,
                         ticketTotalPages, ticketTotal, ticketsLoading, ticketPerPage})}
 
                     {/* Right: conversation or new form */}
                     <div className="comms-page-thread">
-                        {(selectedTicket || showNewForm) && (
-                            <PageBackButton onBack={this.ui.back} />
-                        )}
-                        {this.renderBody(selectedTicket, {tickets: items, showNewForm, subject, message, replyText,
-                            createFiles, replyFiles, sending, messages, loadingMessages})}
+                        {(selectedTicket || showNewForm) && <PageBackButton onBack={this.ui.back} />}
+                        {this.renderBody(selectedTicket, {tickets: items, showNewForm, subject, message,
+                            replyText, createFiles, replyFiles, sending, messages, loadingMessages})}
                     </div>
                 </div>
-
-
             </div>
         );
     }

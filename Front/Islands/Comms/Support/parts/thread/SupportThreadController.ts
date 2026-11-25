@@ -7,8 +7,8 @@ import {D} from '@common/Support/Debug/D';
 import {PendingFile} from '../../../../../Common/attachments/AttachmentPicker';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 import {SupportMessage} from '../supportTypes';
-import {collectContext} from './autoContext';
-import {reportAttachmentErrors} from '../../../../../Common/attachments/attachmentHelpers';
+import {collectContext} from './context/autoContext';
+import {reportAttachmentErrors} from '../../../../../Common/attachments/helpers/reportAttachmentErrors';
 
 export interface ThreadState {
     messages: SupportMessage[];
@@ -21,7 +21,8 @@ export interface SupportThreadOptions {
     replyUrl: string;
 }
 
-function appendFiles(fd: FormData, files: PendingFile[]): void {
+/** Добавляет файлы к данным запроса. */
+function appendFiles(fd: FormData, files: readonly PendingFile[]): void {
     for (const f of files) {
         fd.append('attachments[]', f.file, f.name);
     }
@@ -45,6 +46,7 @@ export class SupportThreadController extends Carburetor<ThreadState> {
     private pollTicketId: number | null = null;
     private pollIntervalMs: number | null = null;
 
+    /** Создаёт состояние контроллера. */
     constructor(options: SupportThreadOptions) {
         super({messages: [], loading: false});
         this.messagesUrl = options.messagesUrl;
@@ -52,14 +54,17 @@ export class SupportThreadController extends Carburetor<ThreadState> {
         this.replyUrl = options.replyUrl;
     }
 
+    /** Возвращает текущий снимок состояния. */
     readonly snapshot = () => this.getData();
 
+    /** Подписывает слушателя на изменения снимка. */
     readonly subscribeSnapshot = (listener: () => void) => {
         const id = this.subscribe(listener);
 
         return () => this.unsubscribe(id);
     };
 
+    /** Обновляет часть состояния. */
     private patch(changes: Partial<ThreadState>): void {
         const previous = this.getData();
         const version = this.getVersion();
@@ -70,11 +75,13 @@ export class SupportThreadController extends Carburetor<ThreadState> {
         }
     }
 
+    /** Обрабатывает setMessages. */
     readonly setMessages: React.Dispatch<React.SetStateAction<SupportMessage[]>> = value => {
         const current = this.getData().messages;
         this.patch({messages: typeof value === 'function' ? value(current) : value});
     };
 
+    /** Обрабатывает setLoading. */
     readonly setLoading = (value: boolean): void => this.patch({loading: value});
 
     /**
@@ -153,6 +160,7 @@ export class SupportThreadController extends Carburetor<ThreadState> {
         }, intervalMs);
     }
 
+    /** Останавливает опрос переписки. */
     stopPolling(): void {
         if (this.pollTimer !== null) {
             window.clearInterval(this.pollTimer);
@@ -162,6 +170,7 @@ export class SupportThreadController extends Carburetor<ThreadState> {
         this.pollIntervalMs = null;
     }
 
+    /** Проверяет, освобождён ли контроллер. */
     protected didDispose(): void {
         super.didDispose();
         this.stopPolling();

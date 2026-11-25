@@ -65,10 +65,12 @@ export interface BookingGroupData {
     sortKey: number;
 }
 
+/** Сортирует брони одного занятия от недавно созданных к старым. */
 function compareBookings(a: Booking, b: Booking): number {
     return b.created_at - a.created_at;
 }
 
+/** Сортирует группы по времени занятия или дате создания брони. */
 function compareGroups(a: BookingGroupData, b: BookingGroupData): number {
     return b.sortKey - a.sortKey;
 }
@@ -79,7 +81,7 @@ function compareGroups(a: BookingGroupData, b: BookingGroupData): number {
  * Групповое занятие показывается одной карточкой со списком записавшихся, а не
  * россыпью одинаковых карточек с одним и тем же временем.
  */
-export function groupBookings(bookings: Booking[], slots: Record<number, SlotInfo>): BookingGroupData[] {
+export function groupBookings(bookings: readonly Booking[], slots: Record<number, SlotInfo>): BookingGroupData[] {
     const map = new Map<string, BookingGroupData>();
 
     for (const b of bookings) {

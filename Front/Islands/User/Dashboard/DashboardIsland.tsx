@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import type {TReadonly} from '@react-carburetor/core';
-import {IrabiPreviewProvider} from '../../../Common/people/IrabiPreviewProvider';
+import {IrabiPreviewProvider} from '../../../Common/people/preview/IrabiPreviewProvider';
 import {WelcomeCard} from './Widgets/WelcomeCard';
 import {NotificationsWidget} from './Widgets/NotificationsWidget';
 import {UpcomingBookings} from './Widgets/UpcomingBookings';
@@ -88,6 +88,7 @@ interface DashboardState {
     missed: number;
 }
 
+/** Сравнивает подтверждённые записи по времени начала. */
 function compareBookingStart(a: ConfirmedBookingItem, b: ConfirmedBookingItem): number {
     return a.start_at - b.start_at;
 }
@@ -105,15 +106,20 @@ export class DashboardIsland extends AntiHookComponent<DashboardProps> {
     private readonly pending = this.connectSelection(this.ui, state => state.pending);
     private readonly confirmed = this.connectSelection(this.ui, state => state.confirmed);
 
+    /** Применяет частичные обновления к данным дашборда. */
     private patch(changes: Partial<DashboardState>): void {
         this.ui.setData({...this.ui.getData(), ...changes});
     }
 
+    /** Повторно загружает статистику преподавателя с сервера. */
     private readonly reloadStats = async (): Promise<void> => {
         const {expertStatsUrl} = this.props;
         if (!expertStatsUrl) return;
         try {
-            const response = await fetch(expertStatsUrl, {headers: {Accept: 'application/json'}, credentials: 'same-origin'});
+            const response = await fetch(expertStatsUrl, {
+                headers: {Accept: 'application/json'},
+                credentials: 'same-origin',
+            });
             const r: any = response.ok ? await response.json() : null;
             if (!r || typeof r !== 'object' || r.error) return;
             this.patch({
@@ -128,6 +134,7 @@ export class DashboardIsland extends AntiHookComponent<DashboardProps> {
         }
     };
 
+    /** Переносит подтверждённую заявку из ожидания в список записей. */
     private readonly handleConfirmed = (booking: PendingBookingItem): void => {
         const {pending, confirmed} = this.ui.getData();
         // Сортируем только новую копию списка.
@@ -139,28 +146,47 @@ export class DashboardIsland extends AntiHookComponent<DashboardProps> {
         void this.reloadStats();
     };
 
+    /** Удаляет отклонённую заявку и обновляет статистику. */
     private readonly handleRejected = (bookingId: number): void => {
         this.patch({pending: this.ui.getData().pending.filter(b => b.booking_id !== bookingId)});
         void this.reloadStats();
     };
 
-    private renderExpert({usersThisMonth, earningsThisMonth, declines, cancellations, missed}: TReadonly<DashboardState>) {
+    /** Показывает статистику и списки преподавателя для экспертной роли. */
+    private renderExpert({
+        usersThisMonth,
+        earningsThisMonth,
+        declines,
+        cancellations,
+        missed,
+    }: TReadonly<DashboardState>) {
         const {isExpert, expertPendingBookingsList, expertConfirmedBookingsList} = this.props;
         const pending = this.pending() as PendingBookingItem[];
         const confirmed = this.confirmed() as ConfirmedBookingItem[];
         if (!isExpert) return null;
         return (
             <>
-                <ExpertStats pendingBookings={pending.length} usersThisMonth={usersThisMonth}
-                    earningsThisMonth={earningsThisMonth} declines={declines} cancellations={cancellations} missed={missed} />
+                <ExpertStats
+                    pendingBookings={pending.length}
+                    usersThisMonth={usersThisMonth}
+                    earningsThisMonth={earningsThisMonth}
+                    declines={declines}
+                    cancellations={cancellations}
+                    missed={missed}
+                />
                 {expertPendingBookingsList && (
-                    <ExpertPendingBookings bookings={pending} onConfirmed={this.handleConfirmed} onRejected={this.handleRejected} />
+                    <ExpertPendingBookings
+                        bookings={pending}
+                        onConfirmed={this.handleConfirmed}
+                        onRejected={this.handleRejected}
+                    />
                 )}
                 {expertConfirmedBookingsList && <ExpertConfirmedBookings bookings={confirmed} />}
             </>
         );
     }
 
+    /** Собирает блоки предстоящих и рекомендуемых занятий. */
     private renderBookings() {
         const {isExpert, isModerator, upcomingBookings, expertSlots, recommendedSlots} = this.props;
         return (
@@ -176,6 +202,7 @@ export class DashboardIsland extends AntiHookComponent<DashboardProps> {
         );
     }
 
+    /** Отображает карточки, уведомления, ленту и данные дашборда. */
     render() {
         const state = this.useCarburetor(this.ui);
         const {name, avatar, avatar_full, role, isModerator, balance, unreadSupport, unreadIm,

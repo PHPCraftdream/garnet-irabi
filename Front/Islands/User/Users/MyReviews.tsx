@@ -7,6 +7,8 @@ import {PaginationController} from '@common/hooks/data/PaginationController';
 import type {PageResponse} from '@common/hooks/data/usePagination';
 import Pagination, {PaginationLabels} from '@common/Components/Layout/Paging/Pagination';
 
+const bookingNA = t.Booking_NA;
+
 interface MyReview {
     id: number;
     expert_id: number;
@@ -27,7 +29,7 @@ const MyReviewItem: React.FC<{review: MyReview}> = ({review: r}) => (
     <div className="my-review-item" data-test-id={`my-review-${r.id}`}>
         <div className="my-review-item-heading">
             <a href={appUrl(`/expert/id~${r.expert_id}`)} className="my-review-expert">
-                {r.expert_name || t.Booking_NA()}
+                {r.expert_name || bookingNA()}
             </a>
             <span className="support-ticket-time">{STATUS_LABEL[r.moderation_status]()}</span>
         </div>
@@ -36,6 +38,7 @@ const MyReviewItem: React.FC<{review: MyReview}> = ({review: r}) => (
     </div>
 );
 
+/** Возвращает строку отзыва для отображения. */
 function renderReview(review: MyReview) {
     return <MyReviewItem key={review.id} review={review} />;
 }
@@ -45,8 +48,7 @@ interface MyReviewsProps {
     initialData?: PageResponse<MyReview>;
 }
 
-// Подписка = пути, прочитанные в этом render: поля отзыва копируем здесь,
-// иначе их изменение не разбудит компонент (RULES.md, «Подписки useCarburetor»).
+/** Копирует поля отзыва для подписки Carburetor на их изменения. */
 function readReview(row: TReadonly<MyReview>): MyReview {
     return {
         id: row.id,
@@ -58,6 +60,7 @@ function readReview(row: TReadonly<MyReview>): MyReview {
     };
 }
 
+/** Формирует переведённые подписи пагинации. */
 function paginationLabels(): PaginationLabels {
     return {prev: t.Pagination_Prev(), next: t.Pagination_Next(), of: t.Pagination_Of(), items: t.Pagination_Items()};
 }
@@ -73,22 +76,25 @@ export class MyReviews extends AntiHookComponent<MyReviewsProps> {
         initialData: this.props.initialData,
     });
 
+    /** Запускает загрузку отзывов после монтирования компонента. */
     componentDidMount(): void {
         super.componentDidMount();
         this.pagination.start();
     }
 
-    // Как setUrl в usePagination: смена listUrl подхватывается без немедленного перезапроса.
+    /** Обновляет URL загрузки при смене адреса списка. */
     componentDidUpdate(previous: Readonly<MyReviewsProps>): void {
         super.componentDidUpdate(previous);
         if (this.props.listUrl !== previous.listUrl) this.pagination.setUrl(this.props.listUrl);
     }
 
+    /** Останавливает загрузчик при размонтировании компонента. */
     componentWillUnmount(): void {
         this.pagination.dispose();
         super.componentWillUnmount();
     }
 
+    /** Рисует панель отзывов и элементы пагинации. */
     private renderBody(rows: MyReview[], pager: {
         page: number;
         totalPages: number;
@@ -127,6 +133,7 @@ export class MyReviews extends AntiHookComponent<MyReviewsProps> {
         );
     }
 
+    /** Отображает отзывы, полученные контроллером пагинации. */
     render() {
         const {items, page, perPage, totalPages, total, loading} = this.useCarburetor(this.pagination);
         if (!loading && total === 0) return null;

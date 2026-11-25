@@ -5,6 +5,9 @@ import {SupportTicket} from '../parts/supportTypes';
 import {SupportTicketRow} from '../parts/SupportTicketRow';
 import Pagination, {PaginationLabels} from '@common/Components/Layout/Paging/Pagination';
 
+const supportNewTicket = t.Support_NewTicket;
+const supportNoTickets = t.Support_NoTickets;
+
 interface ListPanelProps {
     tickets: SupportTicket[];
     selectedId: number | null;
@@ -52,7 +55,7 @@ export const PageTicketListPanel: React.FC<ListPanelProps> = ({
                     className="im-conversation-create"
                     onClick={onNew}
                 >
-                    + {t.Support_NewTicket()}
+                    + {supportNewTicket()}
                 </button>
             </div>
             <div className="support-list-pagination">
@@ -69,7 +72,7 @@ export const PageTicketListPanel: React.FC<ListPanelProps> = ({
                 />
             </div>
             <div className="support-list-scroll">
-                {tickets.length === 0 && <div className="support-empty">{t.Support_NoTickets()}</div>}
+                {tickets.length === 0 && <div className="support-empty">{supportNoTickets()}</div>}
                 {rows}
             </div>
             {totalPages > 1 && (

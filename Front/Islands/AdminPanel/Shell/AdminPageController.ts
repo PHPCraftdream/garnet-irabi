@@ -40,6 +40,7 @@ export class AdminPageController<TRow, TFilters, TBody extends object = Record<s
     private generation = 0;
     private debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     constructor(opts: AdminPageOptions<TRow, TFilters, TBody>) {
         super({
             items: opts.initialData?.items ?? [],
@@ -56,13 +57,16 @@ export class AdminPageController<TRow, TFilters, TBody extends object = Record<s
         this.loadedOnce = opts.initialData !== null;
     }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly snapshot = () => this.getData();
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly subscribeSnapshot = (listener: () => void) => {
         const id = this.subscribe(listener);
         return () => this.unsubscribe(id);
     };
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private patch(changes: Partial<AdminPageState<TRow>>): void {
         const previous = this.getData();
         const version = this.getVersion();
@@ -73,6 +77,7 @@ export class AdminPageController<TRow, TFilters, TBody extends object = Record<s
         }
     }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     readonly start = (): void => {
         if (this.active) return;
         this.active = true;
@@ -81,6 +86,7 @@ export class AdminPageController<TRow, TFilters, TBody extends object = Record<s
         if (!this.loadedOnce) void this.fetchPage(1);
     };
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     readonly stop = (): void => {
         if (!this.active) return;
         this.active = false;
@@ -90,20 +96,24 @@ export class AdminPageController<TRow, TFilters, TBody extends object = Record<s
         window.removeEventListener('storage', this.onStorageChange);
     };
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private schedulePageOne(): void {
         if (!this.active) return;
         clearTimeout(this.debounceTimer);
         this.debounceTimer = setTimeout(() => void this.fetchPage(1), this.debounceMs);
     }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private readonly onPageSizeChange = (event: Event) => {
         const detail = (event as CustomEvent<number>).detail;
         if (typeof detail !== 'number' || detail === this.getData().perPage) return;
-        // Размер страницы входит в тело запроса, поэтому его смена перезапрашивает первую страницу — в хуке это делал effect по зависимостям.
+        // Размер страницы входит в тело запроса, поэтому его смена перезапрашивает
+        // первую страницу — раньше это делал effect по зависимостям.
         this.patch({perPage: detail});
         this.schedulePageOne();
     };
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private readonly onStorageChange = (event: StorageEvent) => {
         if (event.key !== null && event.key !== 'garnet.pageSize') return;
         const size = readPageSize();
@@ -112,6 +122,7 @@ export class AdminPageController<TRow, TFilters, TBody extends object = Record<s
         this.schedulePageOne();
     };
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     readonly fetchPage = async (targetPage: number, targetPerPage: number = this.getData().perPage): Promise<void> => {
         if (!this.active) return;
         // Поколение на каждый запрос: поздний ответ устаревшего запроса не затирает свежий.
@@ -131,6 +142,7 @@ export class AdminPageController<TRow, TFilters, TBody extends object = Record<s
         }
     };
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly setFilters = (filters: TFilters, debounceMs: number = this.debounceMs): void => {
         if (Object.is(filters, this.filters) && debounceMs === this.debounceMs) return;
         this.filters = filters;
@@ -138,24 +150,29 @@ export class AdminPageController<TRow, TFilters, TBody extends object = Record<s
         this.schedulePageOne();
     };
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     readonly goToPage = (target: number): void => {
         const {page, totalPages, loading} = this.getData();
         if (target < 1 || target > totalPages || (target === page && !loading)) return;
         void this.fetchPage(target);
     };
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly setPerPage = (size: number): void => {
         writePageSize(size);
         this.patch({perPage: size});
-        // writePageSize синхронно шлёт garnet:pageSizeChange и планирует отложенный запрос; немедленный ниже его замещает — то же состояние и тело, дубль не нужен.
+        // writePageSize синхронно шлёт garnet:pageSizeChange и планирует отложенный
+        // запрос; немедленный ниже замещает его, дубль не нужен.
         clearTimeout(this.debounceTimer);
         void this.fetchPage(1, size);
     };
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly reload = (): void => {
         void this.fetchPage(this.getData().page);
     };
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly setItems = (value: TRow[] | ((previous: TRow[]) => TRow[])): void => {
         const previous = this.getData().items;
         const items = typeof value === 'function' ? value(previous) : value;

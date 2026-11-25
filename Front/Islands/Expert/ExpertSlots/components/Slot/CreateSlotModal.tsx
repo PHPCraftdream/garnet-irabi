@@ -5,6 +5,8 @@ import type {Slot} from '../../types';
 import {CreateSlotForm} from './CreateSlotForm';
 import {ExpertSlotModalShell} from './ExpertSlotModalShell';
 
+const slotCreate = t.Slot_Create;
+
 interface Props {
     open: boolean;
     onClose: () => void;
@@ -14,10 +16,11 @@ interface Props {
     defaultPenaltyPercent: number;
 }
 
+/** Обработать соответствующее действие пользователя. */
 export function CreateSlotModal({open, onClose, onSuccess, onError, fieldsInfo, defaultPenaltyPercent}: Props) {
     if (!open) return null;
     return (
-        <ExpertSlotModalShell title={t.Slot_Create()} testId="create-slot-modal" size="single" onClose={onClose}>
+        <ExpertSlotModalShell title={slotCreate()} testId="create-slot-modal" size="single" onClose={onClose}>
             <CreateSlotForm
                 onSuccess={onSuccess}
                 onError={onError}

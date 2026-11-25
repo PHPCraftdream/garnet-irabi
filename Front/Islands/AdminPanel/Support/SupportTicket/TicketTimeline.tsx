@@ -10,6 +10,7 @@ interface Props {
     assignmentLog: AssignmentLogEntry[];
 }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
 function renderMessage(msg: SupportMessage) {
     return <SupportMessageBubble key={msg.id} msg={msg} />;
 }
@@ -18,16 +19,19 @@ export default class TicketTimeline extends AntiHookComponent<Props> {
     private readonly boxRef = React.createRef<HTMLDivElement>();
     private lastCount = -1;
 
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
     componentDidMount(): void {
         super.componentDidMount();
         this.scrollIfCountChanged();
     }
 
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
     componentDidUpdate(previous: Readonly<Props>): void {
         super.componentDidUpdate(previous);
         this.scrollIfCountChanged();
     }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private scrollIfCountChanged(): void {
         const count = this.props.messages.length;
         if (this.lastCount === count) return;
@@ -36,13 +40,16 @@ export default class TicketTimeline extends AntiHookComponent<Props> {
         if (box) box.scrollTop = box.scrollHeight;
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {messages, assignmentLog} = this.props;
         return (
             <>
                 <div className="admin-support-timeline" data-test-id="support-timeline">
-                    <div className="admin-support-timeline-scroll" ref={this.boxRef} data-test-id="support-timeline-scroll">
-                        {messages.length === 0 && <div className="admin-support-timeline-empty">{t.Support_NoMessages()}</div>}
+                    <div className="admin-support-timeline-scroll" ref={this.boxRef}
+                        data-test-id="support-timeline-scroll">
+                        {messages.length === 0 && <div
+        className="admin-support-timeline-empty">{t.Support_NoMessages()}</div>}
                         {messages.map(renderMessage)}
                     </div>
                 </div>

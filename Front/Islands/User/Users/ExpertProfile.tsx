@@ -3,12 +3,24 @@ import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {UserX} from 'lucide-react';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {CommentsSection} from '../../Comms/Comments/CommentsSection';
-import {IrabiPreviewProvider} from '../../../Common/people/IrabiPreviewProvider';
+import {IrabiPreviewProvider} from '../../../Common/people/preview/IrabiPreviewProvider';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {SlotBookingController} from '../SlotsCalendar/Booking/SlotBookingController';
-import {SlotBookingModalHost} from '../SlotsCalendar/Booking/SlotBookingModalHost';
+import {SlotBookingController} from '../SlotsCalendar/Booking/logic/SlotBookingController';
+import {SlotBookingModalHost} from '../SlotsCalendar/Booking/components/SlotBookingModalHost';
 import ImageLightbox from '../../../Common/media/ImageLightbox';
 import {ExpertSlotCard} from './ExpertSlotCard';
+
+const actionEdit = t.Action_Edit;
+const expertAllSlotsShown = t.Expert_AllSlotsShown;
+const expertCancellations = t.Expert_Cancellations;
+const expertConducted = t.Expert_Conducted;
+const expertDeclines = t.Expert_Declines;
+const expertMissed = t.Expert_Missed;
+const expertMissedHint = t.Expert_MissedHint;
+const expertShowMoreSlots = t.Expert_ShowMoreSlots;
+const expertUpcoming = t.Expert_Upcoming;
+const iMWriteMessage = t.IM_WriteMessage;
+const slotAbout = t.Slot_About;
 
 interface Expert {
     display_name: string;
@@ -56,7 +68,11 @@ interface ExpertProfileProps {
 
 const SLOTS_PAGE_SIZE = 6;
 
-const ExpertAvatar: React.FC<{expert: Expert; initials: string; onOpenLightbox: () => void}> = ({expert, initials, onOpenLightbox}) => {
+const ExpertAvatar: React.FC<{
+    expert: Expert;
+    initials: string;
+    onOpenLightbox: () => void;
+}> = ({expert, initials, onOpenLightbox}) => {
     if (expert.is_disabled) {
         return (
             <div
@@ -104,7 +120,7 @@ const ExpertActions: React.FC<{expertId: number; isOwnProfile: boolean}> = ({exp
                 data-profile-size="compact"
                 data-test-id="expert-profile-edit-btn"
             >
-                {t.Action_Edit()}
+                {actionEdit()}
             </a>
         ) : (
             <a
@@ -113,7 +129,7 @@ const ExpertActions: React.FC<{expertId: number; isOwnProfile: boolean}> = ({exp
                 data-profile-size="compact"
                 data-test-id="expert-profile-message-btn"
             >
-                {t.IM_WriteMessage()}
+                {iMWriteMessage()}
             </a>
         )}
     </div>
@@ -121,7 +137,12 @@ const ExpertActions: React.FC<{expertId: number; isOwnProfile: boolean}> = ({exp
 
 type StatTone = 'success' | 'accent' | 'warning' | 'muted';
 
-const ExpertStatCell: React.FC<{testId: string; tone: StatTone; value: number; label: string}> = ({testId, tone, value, label}) => (
+const ExpertStatCell: React.FC<{
+    testId: string;
+    tone: StatTone;
+    value: number;
+    label: string;
+}> = ({testId, tone, value, label}) => (
     <div className="expert-profile-stat">
         <div className="expert-profile-stat-value" data-tone={tone} data-test-id={testId}>{value}</div>
         <div className="expert-profile-stat-label">{label}</div>
@@ -131,15 +152,20 @@ const ExpertStatCell: React.FC<{testId: string; tone: StatTone; value: number; l
 const ExpertStats: React.FC<{expert: Expert}> = ({expert}) => (
     <div className="booking-card-shell" data-test-id="expert-stats">
         <div className="expert-profile-stats-grid">
-            <ExpertStatCell testId="expert-stat-conducted" tone="success" value={expert.conducted_count ?? 0} label={t.Expert_Conducted()} />
-            <ExpertStatCell testId="expert-stat-upcoming" tone="accent" value={expert.upcoming_count ?? 0} label={t.Expert_Upcoming()} />
-            <ExpertStatCell testId="expert-stat-declines" tone="warning" value={expert.decline_count ?? 0} label={t.Expert_Declines()} />
-            <ExpertStatCell testId="expert-stat-cancellations" tone="warning" value={expert.cancellation_count ?? 0} label={t.Expert_Cancellations()} />
+            <ExpertStatCell testId="expert-stat-conducted" tone="success"
+                value={expert.conducted_count ?? 0} label={expertConducted()} />
+            <ExpertStatCell testId="expert-stat-upcoming" tone="accent"
+                value={expert.upcoming_count ?? 0} label={expertUpcoming()} />
+            <ExpertStatCell testId="expert-stat-declines" tone="warning"
+                value={expert.decline_count ?? 0} label={expertDeclines()} />
+            <ExpertStatCell testId="expert-stat-cancellations" tone="warning"
+                value={expert.cancellation_count ?? 0} label={expertCancellations()} />
             {/* D-190: два соседних счётчика — решения преподавателя.
                 Этот — их отсутствие: заявка истекла без ответа. Раньше
                 она не попадала ни в один счётчик на его стороне, хотя
                 у ученика была видна. */}
-            <ExpertStatCell testId="expert-stat-missed" tone="muted" value={expert.missed_count ?? 0} label={t.Expert_Missed()} />
+            <ExpertStatCell testId="expert-stat-missed" tone="muted"
+                value={expert.missed_count ?? 0} label={expertMissed()} />
         </div>
 
         {/* D-197: объяснение жило в атрибуте title, а на телефоне
@@ -149,12 +175,16 @@ const ExpertStats: React.FC<{expert: Expert}> = ({expert}) => (
             вместо всплывающей подсказки — тот же урок, что D-122 и
             D-131, где на телефоне терялось именно объяснение. */}
         <p className="expert-profile-stats-hint" data-test-id="expert-stat-missed-hint">
-            {t.Expert_MissedHint()}
+            {expertMissedHint()}
         </p>
     </div>
 );
 
-const SlotsShowMore: React.FC<{hasMore: boolean; remaining: number; onShowMore: () => void}> = ({hasMore, remaining, onShowMore}) => (
+const SlotsShowMore: React.FC<{
+    hasMore: boolean;
+    remaining: number;
+    onShowMore: () => void;
+}> = ({hasMore, remaining, onShowMore}) => (
     <div className="expert-profile-more">
         {hasMore ? (
             <button
@@ -163,10 +193,10 @@ const SlotsShowMore: React.FC<{hasMore: boolean; remaining: number; onShowMore: 
                 data-test-id="expert-slots-show-more"
                 onClick={onShowMore}
             >
-                {t.Expert_ShowMoreSlots()} ({remaining})
+                {expertShowMoreSlots()} ({remaining})
             </button>
         ) : (
-            <span className="expert-profile-muted">{t.Expert_AllSlotsShown()}</span>
+            <span className="expert-profile-muted">{expertAllSlotsShown()}</span>
         )}
     </div>
 );
@@ -177,10 +207,12 @@ interface ProfileState {
 }
 
 class ProfileStore extends Carburetor<ProfileState> {
+    /** Увеличивает число отображаемых слотов на одну страницу. */
     showMore(): void {
         this.setData({...this.getData(), visibleCount: this.getData().visibleCount + SLOTS_PAGE_SIZE});
     }
 
+    /** Устанавливает состояние фотолайтбокса. */
     setLightbox(open: boolean): void {
         this.setData({...this.getData(), lightboxOpen: open});
     }
@@ -188,7 +220,12 @@ class ProfileStore extends Carburetor<ProfileState> {
 
 const initialOf = (word: string) => word[0]?.toUpperCase() || '';
 
-const ProfileHeader: React.FC<{expert: Expert; expertId: number; isOwnProfile: boolean; onOpen: () => void}> = ({expert, expertId, isOwnProfile, onOpen}) => {
+const ProfileHeader: React.FC<{
+    expert: Expert;
+    expertId: number;
+    isOwnProfile: boolean;
+    onOpen: () => void;
+}> = ({expert, expertId, isOwnProfile, onOpen}) => {
     const initials = (expert.display_name || '?').split(' ').map(initialOf).slice(0, 2).join('');
     return (
         <div className="expert-profile-header">
@@ -203,7 +240,7 @@ const ProfileHeader: React.FC<{expert: Expert; expertId: number; isOwnProfile: b
 
 const ProfileBio: React.FC<{bio?: string}> = ({bio}) => bio ? (
     <div className="section-soft" data-profile-about="true">
-        <h4 className="expert-profile-bio-heading">{t.Slot_About()}</h4>
+        <h4 className="expert-profile-bio-heading">{slotAbout()}</h4>
         <p className="expert-profile-bio-text">{bio}</p>
     </div>
 ) : null;
@@ -218,11 +255,13 @@ interface ProfileSlotsProps {
 }
 
 class ProfileSlots extends AntiHookComponent<ProfileSlotsProps> {
+    /** Преобразует слот в карточку. */
     private readonly renderSlot = (slot: ExpertSlot) => (
         <ExpertSlotCard key={slot.id} slot={slot} isOwnProfile={this.props.isOwnProfile}
             canBook={this.props.canBook} onBook={this.props.onBook} />
     );
 
+    /** Рисует список доступных слотов и кнопку показа следующих. */
     render() {
         const {slots, visibleCount, onShowMore} = this.props;
         return (
@@ -244,11 +283,16 @@ class ProfileSlots extends AntiHookComponent<ProfileSlotsProps> {
 export class ExpertProfileIsland extends AntiHookComponent<ExpertProfileProps> {
     private readonly store = new ProfileStore({visibleCount: SLOTS_PAGE_SIZE, lightboxOpen: false});
     private readonly controller = new SlotBookingController();
+    /** Открывает фото профиля. */
     private readonly openLightbox = () => this.store.setLightbox(true);
+    /** Закрывает фото профиля. */
     private readonly closeLightbox = () => this.store.setLightbox(false);
+    /** Показывает следующую порцию слотов. */
     private readonly showMore = () => this.store.showMore();
+    /** Запускает бронирование слота. */
     private readonly book = (slotId: number) => void this.controller.openBooking(slotId);
 
+    /** Отображает фотографию в лайтбоксе, если она доступна. */
     private renderLightbox(open: boolean) {
         const {expert} = this.props;
         const photo = expert.avatar_full || expert.avatar;
@@ -256,34 +300,59 @@ export class ExpertProfileIsland extends AntiHookComponent<ExpertProfileProps> {
         return <ImageLightbox src={photo} alt={expert.display_name} onClose={this.closeLightbox} />;
     }
 
-    render() {
-        const {expert, expertId, slots, commentsListUrl, commentsCreateUrl, commentsDeleteUrl,
-            currentAccountId, isModerator, isOwnProfile = false, canBook = false, canReview} = this.props;
-        const {visibleCount, lightboxOpen} = this.useCarburetor(this.store);
+    /** Рисует данные профиля под заголовком. */
+    private renderProfileDetails(
+        expert: Expert,
+        expertId: number,
+        slots: ExpertSlot[],
+        isOwnProfile: boolean,
+        canBook: boolean,
+        visibleCount: number,
+        currentAccountId: number,
+        isModerator: boolean,
+        canReview: boolean,
+        lightboxOpen: boolean,
+    ) {
+        return (
+            <>
+                {this.renderLightbox(lightboxOpen)}
+                <ProfileBio bio={expert.bio} />
+                <ExpertStats expert={expert} />
+                <ProfileSlots slots={slots} visibleCount={visibleCount} isOwnProfile={isOwnProfile}
+                    canBook={canBook} onBook={this.book} onShowMore={this.showMore} />
+                <CommentsSection
+                    entityType="expert"
+                    entityId={expertId}
+                    listUrl={this.props.commentsListUrl}
+                    createUrl={this.props.commentsCreateUrl}
+                    deleteUrl={this.props.commentsDeleteUrl}
+                    currentAccountId={currentAccountId}
+                    isModerator={isModerator}
+                    canCreate={canReview}
+                />
+                <SlotBookingModalHost controller={this.controller} onBooked={reloadAfterBooking} />
+            </>
+        );
+    }
 
+    /** Собирает публичный профиль преподавателя. */
+    render() {
+        const {expert, expertId, slots, currentAccountId, isModerator, isOwnProfile = false,
+            canBook = false, canReview} = this.props;
+        const {visibleCount, lightboxOpen} = this.useCarburetor(this.store);
         return (
             <IrabiPreviewProvider>
                 <div className="comms-page" data-test-id="expert-profile">
-                    <ProfileHeader expert={expert} expertId={expertId} isOwnProfile={isOwnProfile} onOpen={this.openLightbox} />
-
-                    {this.renderLightbox(lightboxOpen)}
-
-                    <ProfileBio bio={expert.bio} />
-                    <ExpertStats expert={expert} />
-                    <ProfileSlots slots={slots} visibleCount={visibleCount} isOwnProfile={isOwnProfile}
-                        canBook={canBook} onBook={this.book} onShowMore={this.showMore} />
-
-                    <CommentsSection
-                        entityType="expert"
-                        entityId={expertId}
-                        listUrl={commentsListUrl}
-                        createUrl={commentsCreateUrl}
-                        deleteUrl={commentsDeleteUrl}
-                        currentAccountId={currentAccountId}
-                        isModerator={isModerator}
-                        canCreate={canReview}
+                    <ProfileHeader
+                        expert={expert}
+                        expertId={expertId}
+                        isOwnProfile={isOwnProfile}
+                        onOpen={this.openLightbox}
                     />
-                    <SlotBookingModalHost controller={this.controller} onBooked={reloadAfterBooking} />
+                    {this.renderProfileDetails(
+                        expert, expertId, slots, isOwnProfile, canBook, visibleCount,
+                        currentAccountId, isModerator, canReview, lightboxOpen,
+                    )}
                 </div>
             </IrabiPreviewProvider>
         );

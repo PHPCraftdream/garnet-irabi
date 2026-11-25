@@ -1,7 +1,9 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import QuickChat from '../../../../../Common/people/QuickChat';
-import {SlotItem} from '../../State/types';
+import QuickChat from '../../../../../Common/people/chat/QuickChat';
+import {SlotItem} from '../../State/view/types';
+
+const quickChatTitle = t.QuickChat_Title;
 
 interface Props {
     slot: SlotItem;
@@ -10,11 +12,12 @@ interface Props {
     currentAccountId: number;
 }
 
+/** Обновляет данные календаря. */
 export function QuickChatSection({slot, quickChatUrl, sendUrl, currentAccountId}: Props) {
     return (
         <div className="slot-chat-panel" data-test-id="slot-detail-quickchat">
             <div className="slot-chat-heading">
-                {t.QuickChat_Title()}
+                {quickChatTitle()}
             </div>
             <QuickChat
                 partnerId={slot.expert_id}

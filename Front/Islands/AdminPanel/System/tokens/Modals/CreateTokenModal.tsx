@@ -4,8 +4,13 @@ import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {LogDetailModal} from '@common/Components/Admin/AdminLog/LogDetailModal';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {TokenRow, TTL_OPTIONS} from '../tokenTypes';
+import {TokenRow} from '../config/tokenTypes';
+import {TTL_OPTIONS} from '../config/ttlOptions';
 import {TokenField} from '../TokenField';
+
+const action_Close = t.Action_Close;
+const admin_Tokens_CopyLink = t.Admin_Tokens_CopyLink;
+const admin_Tokens_Link = t.Admin_Tokens_Link;
 
 interface CreatedProps {
     url: string;
@@ -16,7 +21,7 @@ interface CreatedProps {
 /** Готовая ссылка сразу после создания — её нужно куда-то унести. */
 const CreatedLink: React.FC<CreatedProps> = ({url, onCopy, onClose}) => (
     <div data-test-id="token-created-result">
-        <label className="token-field-label">{t.Admin_Tokens_Link()}</label>
+        <label className="token-field-label">{admin_Tokens_Link()}</label>
         <div className="token-created-link">
             <input type="text" className="admin-filter-field" readOnly value={url} data-test-id="token-created-url" />
             {/*
@@ -24,10 +29,10 @@ const CreatedLink: React.FC<CreatedProps> = ({url, onCopy, onClose}) => (
               * слово «Ссылка», и было непонятно, копирует она или открывает.
               */}
             <button type="button" className="primary-action-button" onClick={onCopy} data-test-id="token-created-copy">
-                {t.Admin_Tokens_CopyLink()}
+                {admin_Tokens_CopyLink()}
             </button>
         </div>
-        <button type="button" className="confirm-modal-cancel" onClick={onClose}>{t.Action_Close()}</button>
+        <button type="button" className="confirm-modal-cancel" onClick={onClose}>{action_Close()}</button>
     </div>
 );
 
@@ -37,16 +42,20 @@ interface Props {
     onClose: () => void;
 }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
 function renderTtlOption(option: (typeof TTL_OPTIONS)[number]) {
     return <option key={option.value} value={option.value}>{option.label()}</option>;
 }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function copied(): void {
     showToast(t.Admin_Tokens_Copied(), 'success');
 }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
 function initialForm() {
-    return {label: '', maxUses: 1, ttl: 604800, accountType: 'user' as 'user' | 'expert', createdToken: null as TokenRow | null, sending: false};
+    return {label: '', maxUses: 1, ttl: 604800, accountType: 'user' as 'user' | 'expert',
+        createdToken: null as TokenRow | null, sending: false};
 }
 
 type Form = ReturnType<typeof initialForm>;
@@ -54,15 +63,25 @@ type Form = ReturnType<typeof initialForm>;
 export class CreateTokenModal extends AntiHookComponent<Props> {
     private readonly form = new Carburetor(initialForm());
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private update(patch: Partial<Form>): void {
         this.form.setData({...this.form.getData(), ...patch});
     }
 
-    private readonly changeLabel = (event: React.ChangeEvent<HTMLInputElement>) => this.update({label: event.target.value});
-    private readonly changeMaxUses = (event: React.ChangeEvent<HTMLInputElement>) => this.update({maxUses: Math.max(1, parseInt(event.target.value, 10) || 1)});
-    private readonly changeTtl = (event: React.ChangeEvent<HTMLSelectElement>) => this.update({ttl: Number(event.target.value)});
-    private readonly changeAccountType = (event: React.ChangeEvent<HTMLSelectElement>) => this.update({accountType: event.target.value as 'user' | 'expert'});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeLabel = (event: React.ChangeEvent<HTMLInputElement>) => this.update({label:
+        event.target.value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeMaxUses = (event: React.ChangeEvent<HTMLInputElement>) => this.update({maxUses:
+        Math.max(1, parseInt(event.target.value, 10) || 1)});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeTtl = (event: React.ChangeEvent<HTMLSelectElement>) => this.update({ttl:
+        Number(event.target.value)});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeAccountType = (event: React.ChangeEvent<HTMLSelectElement>) =>
+        this.update({accountType: event.target.value as 'user' | 'expert'});
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly submit = async (event: React.FormEvent) => {
         event.preventDefault();
         const {sending, label, maxUses, ttl, accountType} = this.form.getData();
@@ -74,7 +93,8 @@ export class CreateTokenModal extends AntiHookComponent<Props> {
                 {label: string; max_uses: number; ttl: number; account_type: string},
                 {success: boolean; token: TokenRow}
             >(createUrl, {label, max_uses: maxUses, ttl, account_type: accountType});
-            const data = ('data' in resp && resp.data) ? resp.data : (resp as unknown as {success: boolean; token: TokenRow});
+            const data = ('data' in resp && resp.data) ? resp.data : (resp as unknown as {success: boolean;
+        token: TokenRow});
             if (data?.success && data.token) {
                 this.update({createdToken: data.token});
                 onCreated(data.token);
@@ -89,11 +109,13 @@ export class CreateTokenModal extends AntiHookComponent<Props> {
         }
     };
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private readonly copyCreated = () => {
         const token = this.form.getData().createdToken;
         if (token) void navigator.clipboard.writeText(token.url).then(copied);
     };
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderFields({label, maxUses, ttl, accountType}: Form) {
         return (
             <>
@@ -146,6 +168,7 @@ export class CreateTokenModal extends AntiHookComponent<Props> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {onClose} = this.props;
         const state = this.useCarburetor(this.form);
@@ -162,7 +185,8 @@ export class CreateTokenModal extends AntiHookComponent<Props> {
                 <form onSubmit={this.submit} data-test-id="token-create-form">
                     {this.renderFields(state)}
                     <div className="token-link-actions">
-                        <button type="submit" className="primary-action-button" disabled={sending} data-test-id="token-create-submit">
+                        <button type="submit" className="primary-action-button" disabled={sending}
+                            data-test-id="token-create-submit">
                             {t.Admin_Tokens_Create()}
                         </button>
                         <button type="button" className="confirm-modal-cancel" onClick={onClose} disabled={sending}>

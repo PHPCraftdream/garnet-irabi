@@ -58,6 +58,7 @@ interface Props {
 const DASHBOARD_ICON = <LayoutDashboard size={22} aria-hidden="true" />;
 
 export class AdminDashboardIsland extends AntiHookComponent<Props> {
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderInbox() {
         const {openTickets, pendingApprovals, supportUrl, usersUrl} = this.props;
         return (
@@ -76,6 +77,7 @@ export class AdminDashboardIsland extends AntiHookComponent<Props> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {platformStats, recentActivity, usersUrl, logsUrl, bookingsUrl, financeUrl} = this.props;
 

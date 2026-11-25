@@ -9,14 +9,12 @@ import Pagination from '@common/Components/Layout/Paging/Pagination';
 import {appUrl} from '@common/Utils/Url/appUrl';
 import {refreshLiveCounts} from '@common/Utils/Data/liveCounts';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {
-    actionImpact,
-    actionReasonLabel,
-    actionReasonPlaceholder,
-    actionSubmitLabel,
-    actionSuccessToast,
-    actionTitle,
-} from '../../../Common/booking/bookingAction';
+import {actionImpact} from '../../../Common/booking/actions/labels/actionImpact';
+import {actionReasonLabel} from '../../../Common/booking/actions/labels/actionReasonLabel';
+import {actionReasonPlaceholder} from '../../../Common/booking/actions/labels/actionReasonPlaceholder';
+import {actionSubmitLabel} from '../../../Common/booking/actions/labels/actionSubmitLabel';
+import {actionSuccessToast} from '../../../Common/booking/actions/labels/actionSuccessToast';
+import {actionTitle} from '../../../Common/booking/actions/labels/actionTitle';
 import {ReasonModal} from '../../../Common/Components/ReasonModal';
 import {RescheduleModal} from './forms/RescheduleModal';
 import {CancelRefundDetails} from './card/cancel/CancelRefundDetails';
@@ -31,10 +29,12 @@ import {
     groupBookings,
 } from './card/bookingCardTypes';
 import {BookingGroup} from './card/BookingGroup';
-import {
-    BookingsNavigation, BookingsStateStore, readBookingsPage,
-    type BookingsPageData, type BookingsState,
-} from './bookingsTabState';
+import type {BookingsState, BookingsPageData} from './state/bookingsTabStateTypes';
+import {BookingsStateStore} from './state/bookingsTabState';
+import {BookingsViewSwitch} from './BookingsViewSwitch';
+
+import {BookingsNavigation} from './state/bookingsNavigation';
+import {readBookingsPage} from './state/readBookingsPage';
 import {BookingsFilterTabs} from './card/BookingsFilterTabs';
 
 export type {SlotInfo, ExpertInfo, UserInfo, BookingCounts, BookingsViewAs} from './card/bookingCardTypes';
@@ -64,6 +64,7 @@ const paginationLabels = {
     items: t.Pagination_Items(),
 };
 
+/** Возвращает бронь из набора по идентификатору, если она загружена. */
 function findBooking(bookings: readonly Booking[], id: number | null): Booking | undefined {
     return bookings.find(booking => booking.id === id);
 }
@@ -114,6 +115,7 @@ interface ViewProps extends StaticProps, SendingProps {
     navigation: BookingsNavigation;
 }
 
+/** Формирует начальное состояние вкладки из данных серверного рендера. */
 function initialState(props: InitialProps): BookingsState {
     const {bookingsPagination, slots, experts, users, viewAs, statusFilter, showPast, counts} = props;
     return {
@@ -133,6 +135,10 @@ function initialState(props: InitialProps): BookingsState {
  * три действия над бронью.
  */
 class BookingsView extends AntiHookComponent<ViewProps> {
+    /** Передаёт переключение на список броней эксперта навигации. */
+    private readonly showExpertBookings = () => this.props.navigation.handleViewChange('expert');
+    /** Передаёт переключение на список броней пользователя навигации. */
+    private readonly showUserBookings = () => this.props.navigation.handleViewChange('user');
     /**
      * После действия страница перечитывается целиком, а не правится на месте.
      *
@@ -148,6 +154,7 @@ class BookingsView extends AntiHookComponent<ViewProps> {
         refreshLiveCounts();
     }
 
+    /** Отправляет запрос отмены с причиной и обновляет список после успеха. */
     private readonly handleCancelSubmit = (reason: string) => {
         const {store, withCancelSending} = this.props;
         const {cancelBookingId, bookings} = store.getData();
@@ -174,6 +181,7 @@ class BookingsView extends AntiHookComponent<ViewProps> {
         });
     };
 
+    /** Отправляет отказ преподавателя с причиной и перечитывает список. */
     private readonly handleRejectSubmit = (reason: string) => {
         const {store, rejectUrl, withRejectSending} = this.props;
         const {rejectBookingId, bookings} = store.getData();
@@ -181,7 +189,10 @@ class BookingsView extends AntiHookComponent<ViewProps> {
         withRejectSending(async () => {
             try {
                 const csrf = (window as any).__GARNET_CSRF__ ?? '';
-                const res = await sendPost<{booking_id: number | null; reason: string; CSRF_TOKEN: string}, {error?: string}>(
+                const res = await sendPost<
+                    {booking_id: number | null; reason: string; CSRF_TOKEN: string},
+                    {error?: string}
+                >(
                     rejectUrl,
                     {booking_id: rejectBookingId, reason, CSRF_TOKEN: csrf},
                 );
@@ -200,17 +211,22 @@ class BookingsView extends AntiHookComponent<ViewProps> {
         });
     };
 
+    /** Отправляет выбранный слот переноса и показывает ошибки сервера в окне. */
     private readonly handleRescheduleSubmit = (slotId: number) => {
         const {store, withRescheduleSending} = this.props;
         const bookingId = store.getData().rescheduleBookingId;
         store.setRescheduleError(undefined);
         withRescheduleSending(async () => {
             try {
-                const res = await sendPost<{slot_id: number}, {error?: string; message?: string}>(
+                const res = await sendPost<
+                    {slot_id: number},
+                    {error?: string; message?: string}
+                >(
                     appUrl(`/bookings/id~${bookingId}/~reschedule`),
                     {slot_id: slotId},
                 );
-                const data = ('data' in res && res.data) ? res.data : (res as unknown as {error?: string; message?: string});
+                const data = ('data' in res && res.data) ? res.data :
+                    (res as unknown as {error?: string; message?: string});
                 if (data?.error) {
                     store.setRescheduleError(data.error);
                     return;
@@ -225,6 +241,7 @@ class BookingsView extends AntiHookComponent<ViewProps> {
         });
     };
 
+    /** Подтверждает бронь на сервере и обновляет текущую страницу. */
     private readonly handleConfirm = async (bookingId: number) => {
         const {store, confirmUrl} = this.props;
         if (store.getData().confirmingId !== null) return;
@@ -250,10 +267,9 @@ class BookingsView extends AntiHookComponent<ViewProps> {
         }
     };
 
-    private readonly viewExpert = () => this.props.navigation.handleViewChange('expert');
-    private readonly viewUser = () => this.props.navigation.handleViewChange('user');
-
-    private renderGroup(state: TReadonly<BookingsState>, page: BookingsPageData, group: ReturnType<typeof groupBookings>[number]) {
+    /** Создаёт группу карточек и передаёт обработчики действий. */
+    private renderGroup(state: TReadonly<BookingsState>, page: BookingsPageData,
+        group: ReturnType<typeof groupBookings>[number]) {
         const {store, isModerator} = this.props;
         const {viewAs, confirmingId} = state;
         return (
@@ -274,6 +290,7 @@ class BookingsView extends AntiHookComponent<ViewProps> {
         );
     }
 
+    /** Показывает пустое состояние либо группы текущей страницы. */
     private renderGroups(state: TReadonly<BookingsState>, page: BookingsPageData) {
         const groups = groupBookings(page.bookings, page.slots);
         return (
@@ -284,6 +301,7 @@ class BookingsView extends AntiHookComponent<ViewProps> {
         );
     }
 
+    /** Формирует окна отмены, отказа и переноса для выбранных броней. */
     private renderModals(state: TReadonly<BookingsState>, page: BookingsPageData) {
         const {store, cancelSending, rejectSending, rescheduleSending} = this.props;
         const {cancelBookingId, rejectBookingId, rescheduleBookingId, rescheduleError} = state;
@@ -331,34 +349,6 @@ class BookingsView extends AntiHookComponent<ViewProps> {
         );
     }
 
-    private renderViewSwitch(state: TReadonly<BookingsState>) {
-        const {canSwitchView} = this.props;
-        const {viewAs} = state;
-        if (!canSwitchView) return null;
-        return (
-            <div className="bookings-view-switch" data-test-id="bookings-view-switch">
-                <button
-                    type="button"
-                    className="bookings-view-button" data-tone={viewAs === 'expert' ? 'active' : 'neutral'}
-                    aria-pressed={viewAs === 'expert'}
-                    data-test-id="bookings-view-expert"
-                    onClick={this.viewExpert}
-                >
-                    {t.Bookings_IncomingTitle()}
-                </button>
-                <button
-                    type="button"
-                    className="bookings-view-button" data-tone={viewAs === 'user' ? 'active' : 'neutral'}
-                    aria-pressed={viewAs === 'user'}
-                    data-test-id="bookings-view-user"
-                    onClick={this.viewUser}
-                >
-                    {t.Bookings_Title()}
-                </button>
-            </div>
-        );
-    }
-
     /**
      * Заголовок приходит с сервера для первой отрисовки, но после переключения
      * стороны он обязан меняться вместе с содержимым — иначе «Входящие брони»
@@ -370,6 +360,7 @@ class BookingsView extends AntiHookComponent<ViewProps> {
         return state.viewAs === 'expert' ? t.Bookings_IncomingTitle() : t.Bookings_Title();
     }
 
+    /** Строит пагинацию текущего списка броней. */
     private renderPager(state: TReadonly<BookingsState>) {
         const {page, totalPages, total, pageLoading} = state;
         return (
@@ -384,6 +375,7 @@ class BookingsView extends AntiHookComponent<ViewProps> {
         );
     }
 
+    /** Отрисовывает список, фильтры, пагинацию и окна действий. */
     render() {
         const state = this.useCarburetor(this.props.store);
         const page = readBookingsPage(state);
@@ -392,7 +384,13 @@ class BookingsView extends AntiHookComponent<ViewProps> {
         const pager = this.renderPager(state);
         return (
             <div data-test-id="bookings-tab">
-                {this.renderViewSwitch(state)}
+                {this.props.canSwitchView && (
+                    <BookingsViewSwitch
+                        viewAs={state.viewAs}
+                        onExpert={this.showExpertBookings}
+                        onUser={this.showUserBookings}
+                    />
+                )}
 
                 <BookingsFilterTabs
                     title={this.currentTitle(state)}
@@ -425,6 +423,7 @@ class BookingsTabView extends AntiHookComponent<TabProps> {
     private readonly store = new BookingsStateStore(initialState(this.props));
     private readonly navigation = new BookingsNavigation(this.store, this.props.bookingsPageUrl);
 
+    /** Передаёт состояние вкладки и обработчики в компонент списка. */
     render() {
         const {
             cancelSending, rejectSending, rescheduleSending,
@@ -433,8 +432,10 @@ class BookingsTabView extends AntiHookComponent<TabProps> {
         } = this.props;
         return (
             <BookingsView {...{
-                store: this.store, navigation: this.navigation, title, canSwitchView, isModerator, confirmUrl, rejectUrl,
-                cancelSending, rejectSending, rescheduleSending, withCancelSending, withRejectSending, withRescheduleSending,
+                store: this.store, navigation: this.navigation, title, canSwitchView,
+                isModerator, confirmUrl, rejectUrl,
+                cancelSending, rejectSending, rescheduleSending,
+                withCancelSending, withRejectSending, withRescheduleSending,
             }} />
         );
     }

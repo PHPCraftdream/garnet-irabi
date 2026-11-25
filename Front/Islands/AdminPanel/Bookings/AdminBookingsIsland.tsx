@@ -4,13 +4,13 @@ import {PageResponse} from '@common/hooks/data/usePagination';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {CalendarRange} from 'lucide-react';
 import AdminCancellationsTab, {CancellationRow} from './CancellationsTab/AdminCancellationsTab';
-import {AccountOption} from '../Shell/adminShared';
+import {AccountOption} from '../Shell/shared/adminShared';
 import {AdminSlotsTab} from './SlotsTab/AdminSlotsTab';
 import {AdminBookingsTab} from './BookingsTab/AdminBookingsTab';
-import {AdminBookingRow, AdminSlotRow} from './bookingsTypes';
+import {AdminBookingRow, AdminSlotRow} from './shared/bookingsTypes';
 import {AdminBookingsTabNav, TabKey} from './AdminBookingsTabNav';
 
-export type {AccountOption} from '../Shell/adminShared';
+export type {AccountOption} from '../Shell/shared/adminShared';
 
 interface Props {
     pageTitle: string;
@@ -31,6 +31,7 @@ interface Props {
     allowedSlotStatuses: string[];
 }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
 function pushTabToUrl(tab: TabKey): void {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
@@ -42,16 +43,19 @@ function pushTabToUrl(tab: TabKey): void {
 export class AdminBookingsIsland extends AntiHookComponent<Props> {
     private readonly ui = new Carburetor({activeTab: this.props.activeTab});
 
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
     componentDidMount(): void {
         super.componentDidMount();
         window.addEventListener('popstate', this.onPopState);
     }
 
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
     componentWillUnmount(): void {
         window.removeEventListener('popstate', this.onPopState);
         super.componentWillUnmount();
     }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly onPopState = () => {
         if (typeof window === 'undefined') return;
         const {tabs} = this.props;
@@ -59,12 +63,14 @@ export class AdminBookingsIsland extends AntiHookComponent<Props> {
         this.ui.setData({activeTab: requested && tabs.includes(requested) ? requested : tabs[0]});
     };
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly handleTabClick = (tab: TabKey) => {
         if (tab === this.ui.getData().activeTab || !this.props.tabs.includes(tab)) return;
         this.ui.setData({activeTab: tab});
         pushTabToUrl(tab);
     };
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderTab(activeTab: TabKey) {
         const {
             experts, users,
@@ -118,6 +124,7 @@ export class AdminBookingsIsland extends AntiHookComponent<Props> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {pageTitle, tabs, tabLabels} = this.props;
         const {activeTab} = this.useCarburetor(this.ui);
@@ -125,7 +132,8 @@ export class AdminBookingsIsland extends AntiHookComponent<Props> {
             <div>
                 <PageHeader title={pageTitle} icon={<CalendarRange size={22} aria-hidden="true" />} />
                 <div className="section-soft">
-                    <AdminBookingsTabNav tabs={tabs} tabLabels={tabLabels} activeTab={activeTab} onSelect={this.handleTabClick} />
+                    <AdminBookingsTabNav tabs={tabs} tabLabels={tabLabels} activeTab={activeTab}
+        onSelect={this.handleTabClick} />
 
                     {this.renderTab(activeTab)}
                 </div>

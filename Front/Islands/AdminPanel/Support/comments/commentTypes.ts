@@ -1,4 +1,4 @@
-import {AccountOption} from '../../Shell/adminShared';
+import {AccountOption} from '../../Shell/shared/adminShared';
 
 /** Историческое имя: раздел отзывов знает людей под ним. */
 export type CommentsAccountOption = AccountOption;
@@ -43,8 +43,7 @@ export interface ModerationResponse {
     moderation_status: AdminCommentRow['moderation_status'];
 }
 
-export const COMMENT_BODY_TRUNC = 160;
-
+/** Отображает данные раздела и передаёт действия пользователя обработчикам. */
 export function truncate(s: string, n: number): string {
     if (s.length <= n) return s;
     return s.slice(0, n).trimEnd() + '…';

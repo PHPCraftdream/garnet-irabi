@@ -13,12 +13,8 @@ const statusLabels: Record<SupportStatus, () => string> = {
     rejected: () => t.Support_Status_Rejected(),
 };
 
+/** Возвращает подпись статуса обращения. */
 export function statusLabel(status: SupportStatus): string {
     const label = statusLabels[status];
     return label ? label() : status;
 }
-
-export const ALL_STATUSES: SupportStatus[] = [
-    'open', 'investigation', 'in_progress', 'waiting_user', 'waiting_support',
-    'escalated', 'on_hold', 'resolved', 'rejected',
-];

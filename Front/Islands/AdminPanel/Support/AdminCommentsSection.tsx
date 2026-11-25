@@ -14,7 +14,8 @@ import {
     ModerationResponse,
     ToggleResponse,
 } from './comments/commentTypes';
-import {adminPaginationLabels, buildAccountOptions} from '../Shell/adminShared';
+import {buildAccountOptions} from '../Shell/shared/adminShared';
+import {adminPaginationLabels} from '../Shell/navigation/adminPaginationLabels';
 import {CommentsFilterState, CommentsFilters} from './comments/CommentsFilters';
 import {CommentsTable} from './comments/CommentsTable';
 import {AdminPageController} from '../Shell/AdminPageController';
@@ -44,16 +45,20 @@ const EMPTY_FILTERS: CommentsFilterState = {
 };
 
 class CommentsUI extends Carburetor<{filters: CommentsFilterState; bodyModal: AdminCommentRow | null}> {
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     constructor() {
         super({filters: EMPTY_FILTERS, bodyModal: null});
     }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly snapshot = () => this.getData();
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly subscribeSnapshot = (listener: () => void) => {
         const id = this.subscribe(listener);
         return () => this.unsubscribe(id);
     };
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private patch(patch: Partial<ReturnType<CommentsUI['snapshot']>>): void {
         const before = this.getData();
         const version = this.getVersion();
@@ -64,15 +69,22 @@ class CommentsUI extends Carburetor<{filters: CommentsFilterState; bodyModal: Ad
         }
     }
 
-    readonly changeFilters = (patch: Partial<CommentsFilterState>) => this.patch({filters: {...this.getData().filters, ...patch}});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    readonly changeFilters = (patch: Partial<CommentsFilterState>) => this.patch({filters:
+        {...this.getData().filters, ...patch}});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly resetFilters = () => this.patch({filters: EMPTY_FILTERS});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly openBody = (bodyModal: AdminCommentRow) => this.patch({bodyModal});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     readonly closeBody = () => this.patch({bodyModal: null});
 }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
 function buildBody(filters: CommentsFilterState, page: number, perPage: number): CommentsFetchBody {
     return {page, perPage, author_id: filters.authorId, expert_id: filters.expertId,
-        date_from: filters.dateFrom, date_to: filters.dateTo, search: filters.search, hidden_only: filters.hiddenOnly ? '1' : '0'};
+        date_from: filters.dateFrom, date_to: filters.dateTo, search: filters.search, hidden_only:
+            filters.hiddenOnly ? '1' : '0'};
 }
 
 /** Поля, которые таблица получает от пагинатора; плюс подписи фильтров из props. */
@@ -137,6 +149,7 @@ export class AdminCommentsSection extends AntiHookComponent<AdminCommentsSection
         expertOptions: ReturnType<typeof buildAccountOptions>;
     } | null = null;
 
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
     componentDidMount(): void {
         super.componentDidMount();
         // Подписка на стор заменяет прежний эффект с debounce: срабатывает на каждую запись фильтров.
@@ -144,6 +157,7 @@ export class AdminCommentsSection extends AntiHookComponent<AdminCommentsSection
         this.pager.start();
     }
 
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
     componentWillUnmount(): void {
         this.unsubscribeFilters?.();
         this.unsubscribeFilters = undefined;
@@ -151,8 +165,10 @@ export class AdminCommentsSection extends AntiHookComponent<AdminCommentsSection
         super.componentWillUnmount();
     }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private readonly onFiltersChanged = () => this.pager.setFilters(this.ui.getData().filters);
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private accountOptions() {
         const {experts, authors} = this.props;
         const cache = this.accountOptionsCache;
@@ -167,6 +183,7 @@ export class AdminCommentsSection extends AntiHookComponent<AdminCommentsSection
         return built;
     }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private patchRow(id: number, patch: Partial<AdminCommentRow>): void {
         this.pager.setItems(previous => {
             const index = previous.findIndex(row => row.id === id);
@@ -177,6 +194,7 @@ export class AdminCommentsSection extends AntiHookComponent<AdminCommentsSection
         });
     }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
     private readonly toggleHidden = async (row: AdminCommentRow, hide: boolean) => {
         const {hideUrl, unhideUrl} = this.props;
         const ok = await this.confirm.confirm(hide ? t.Comment_HideConfirm() : t.Comment_UnhideConfirm(), {
@@ -212,7 +230,8 @@ export class AdminCommentsSection extends AntiHookComponent<AdminCommentsSection
         });
         if (!ok) return;
         try {
-            const resp = await sendPost<{id: number}, ModerationResponse>(approve ? approveUrl : rejectUrl, {id: row.id});
+            const resp = await sendPost<{id: number}, ModerationResponse>(approve ? approveUrl : rejectUrl,
+        {id: row.id});
             const data = ('data' in resp && resp.data) ? resp.data : (resp as unknown as ModerationResponse);
             if (!data?.success) {
                 showToast(t.General_Error(), 'danger');
@@ -231,7 +250,8 @@ export class AdminCommentsSection extends AntiHookComponent<AdminCommentsSection
      */
     private readonly flagComment = async (row: AdminCommentRow) => {
         const {flagUrl} = this.props;
-        const ok = await this.confirm.confirm(t.Comment_FlagConfirm(), {confirmLabel: t.Comment_Flag(), variant: 'danger'});
+        const ok = await this.confirm.confirm(t.Comment_FlagConfirm(), {confirmLabel: t.Comment_Flag(),
+            variant: 'danger'});
         if (!ok) return;
         try {
             const resp = await sendPost<{id: number}, ModerationResponse>(flagUrl, {id: row.id});
@@ -247,6 +267,7 @@ export class AdminCommentsSection extends AntiHookComponent<AdminCommentsSection
     };
 
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderTable(view: CommentsTableView) {
         const {page, perPage, totalPages, total, loading, filters, items, authorOptions, expertOptions} = view;
         const {goToPage, setPerPage} = this.pager;
@@ -289,6 +310,7 @@ export class AdminCommentsSection extends AntiHookComponent<AdminCommentsSection
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {page, perPage, totalPages, total, loading} = this.useCarburetor(this.pager);
         const items = this.rows() as AdminCommentRow[];
@@ -307,7 +329,8 @@ export class AdminCommentsSection extends AntiHookComponent<AdminCommentsSection
                     </LogDetailModal>
                 )}
 
-                <ConfirmModal state={{...confirmState, items: [...confirmState.items]}} onConfirm={this.confirm.handleConfirm} onCancel={this.confirm.handleCancel} />
+                <ConfirmModal state={{...confirmState, items: [...confirmState.items]}}
+        onConfirm={this.confirm.handleConfirm} onCancel={this.confirm.handleCancel} />
             </div>
         );
     }

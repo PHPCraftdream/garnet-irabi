@@ -5,8 +5,8 @@ import {sendPostFormData} from '@common/Api/Send/sendPostFormData';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {NewsPagination} from './NewsPagination';
-import {SlotBookingController} from '../../SlotsCalendar/Booking/SlotBookingController';
-import {SlotBookingModalHost} from '../../SlotsCalendar/Booking/SlotBookingModalHost';
+import {SlotBookingController} from '../../SlotsCalendar/Booking/logic/SlotBookingController';
+import {SlotBookingModalHost} from '../../SlotsCalendar/Booking/components/SlotBookingModalHost';
 import {NewsEvent} from './newsTypes';
 import {NewsGroup, NewsGroupRow} from './NewsGroupRow';
 import {EventMessage} from './EventMessage';
@@ -25,6 +25,7 @@ interface Props {
     initialUnreadCount: number;
 }
 
+/** Формирует ключ событий, которые можно объединить в ленте. */
 function groupKey(event: NewsEvent): string | null {
     const p = event.payload || {};
     switch (event.event_type) {
@@ -48,6 +49,7 @@ function groupKey(event: NewsEvent): string | null {
     }
 }
 
+/** Объединяет соседние события с одинаковым ключом в группы. */
 function groupConsecutive(items: readonly NewsEvent[]): NewsGroup[] {
     const out: NewsGroup[] = [];
     let current: NewsGroup | null = null;
@@ -101,18 +103,22 @@ export class NewsFeed extends AntiHookComponent<Props> {
     private loadedArchived = false;
     private unmounted = false;
     private readonly controller = new SlotBookingController();
+    /** Открывает бронирование занятия из события ленты. */
     private readonly handleBookSlot = (slotId: number) => void this.controller.openBooking(slotId);
 
+    /** Загружает первую страницу ленты при монтировании. */
     componentDidMount(): void {
         super.componentDidMount();
         void this.loadFeed(1, false);
     }
 
+    /** Помечает компонент размонтированным перед очисткой базового класса. */
     componentWillUnmount(): void {
         this.unmounted = true;
         super.componentWillUnmount();
     }
 
+    /** Перезагружает ленту при изменении режима архива. */
     componentDidUpdate(previous: Readonly<Props>): void {
         super.componentDidUpdate(previous);
         const {showArchived} = this.ui.getData();
@@ -122,10 +128,12 @@ export class NewsFeed extends AntiHookComponent<Props> {
         }
     }
 
+    /** Применяет изменения к состоянию ленты. */
     private patch(changes: Partial<FeedState>): void {
         this.ui.setData({...this.ui.getData(), ...changes});
     }
 
+    /** Загружает выбранную страницу событий и обновляет счётчики. */
     private async loadFeed(p: number, archived: boolean): Promise<void> {
         this.patch({loading: true});
         const fd = new FormData();
@@ -134,27 +142,37 @@ export class NewsFeed extends AntiHookComponent<Props> {
         if (archived) fd.append('includeArchived', '1');
         try {
             const res = await sendPostFormData<FormData, FeedResponse>(this.props.feedUrl + '/~feed', fd);
-            this.patch({items: res.items, page: res.page, totalPages: res.totalPages, total: res.total, unreadCount: res.unreadCount});
+            this.patch({
+                items: res.items,
+                page: res.page,
+                totalPages: res.totalPages,
+                total: res.total,
+                unreadCount: res.unreadCount,
+            });
         } catch {
         } finally {
             this.patch({loading: false});
         }
     }
 
+    /** Обновляет ленту после завершившегося бронирования. */
     public readonly reloadAfterBooking = (): void => {
         if (this.unmounted) return;
         const {page, showArchived} = this.ui.getData();
         void this.loadFeed(page, showArchived);
     };
 
+    /** Загружает выбранную страницу ленты. */
     private readonly handlePageChange = (p: number): void => {
         void this.loadFeed(p, this.ui.getData().showArchived);
     };
 
+    /** Переключает отображение архивных событий. */
     private readonly toggleArchived = (): void => {
         this.patch({showArchived: !this.ui.getData().showArchived});
     };
 
+    /** Отмечает все загруженные события прочитанными. */
     private readonly markAllRead = async (): Promise<void> => {
         const fd = new FormData();
         await sendPostFormData<FormData, {success: boolean}>(this.props.feedUrl + '/~markAllRead', fd);
@@ -163,6 +181,7 @@ export class NewsFeed extends AntiHookComponent<Props> {
         this.patch({unreadCount: 0, items});
     };
 
+    /** Отмечает выбранные события прочитанными на сервере и в интерфейсе. */
     private readonly markRead = async (ids: number[]): Promise<void> => {
         const fd = new FormData();
         fd.append('event_ids', JSON.stringify(ids));
@@ -174,6 +193,7 @@ export class NewsFeed extends AntiHookComponent<Props> {
         this.patch({unreadCount: res.unreadCount, items});
     };
 
+    /** Архивирует событие и убирает его из обычной ленты. */
     private readonly archiveEvent = async (id: number): Promise<void> => {
         const {showArchived} = this.ui.getData();
         const fd = new FormData();
@@ -188,6 +208,7 @@ export class NewsFeed extends AntiHookComponent<Props> {
         showToast(t.News_ArchivedHint(), 'primary');
     };
 
+    /** Меняет архивный признак события в локальном списке. */
     private setArchived(id: number, isArchived: boolean): void {
         const items = this.ui.getData().items.slice();
         for (let i = 0; i < items.length; i++) {
@@ -196,6 +217,7 @@ export class NewsFeed extends AntiHookComponent<Props> {
         this.patch({items});
     }
 
+    /** Возвращает событие из архива. */
     private readonly unarchiveEvent = async (id: number): Promise<void> => {
         const fd = new FormData();
         fd.append('event_ids', JSON.stringify([id]));
@@ -203,6 +225,7 @@ export class NewsFeed extends AntiHookComponent<Props> {
         this.setArchived(id, false);
     };
 
+    /** Рисует заголовок ленты и действия над событиями. */
     private renderHeader(unreadCount: number, showArchived: boolean) {
         return (
             <div className="news-feed-header">
@@ -229,12 +252,14 @@ export class NewsFeed extends AntiHookComponent<Props> {
         );
     }
 
+    /** Создаёт строку для одной сгруппированной записи ленты. */
     private readonly renderGroup = (group: NewsGroup) => (
         <NewsGroupRow key={group.first.id} group={group} detail={eventDetail(group.first)}
             message={<EventMessage event={group.first} onBookSlot={this.handleBookSlot} />}
             onMarkRead={this.markRead} onArchive={this.archiveEvent} onUnarchive={this.unarchiveEvent} />
     );
 
+    /** Отображает сгруппированные события или пустое состояние. */
     private renderRows(loading: boolean) {
         const items = this.items();
         return (
@@ -245,17 +270,32 @@ export class NewsFeed extends AntiHookComponent<Props> {
         );
     }
 
+    /** Собирает заголовок, страницы и строки ленты. */
     render() {
         const {page, totalPages, total, unreadCount, loading, showArchived} = this.useCarburetor(this.ui);
         return (
             <div className="news-feed" data-test-id="news-feed">
                 {this.renderHeader(unreadCount, showArchived)}
                 {totalPages > 1 && (
-                    <NewsPagination position="top" page={page} totalPages={totalPages} onPageChange={this.handlePageChange} total={total} loading={loading} />
+                    <NewsPagination
+                        position="top"
+                        page={page}
+                        totalPages={totalPages}
+                        onPageChange={this.handlePageChange}
+                        total={total}
+                        loading={loading}
+                    />
                 )}
                 {this.renderRows(loading)}
                 {totalPages > 1 && (
-                    <NewsPagination position="bottom" page={page} totalPages={totalPages} onPageChange={this.handlePageChange} total={total} loading={loading} />
+                    <NewsPagination
+                        position="bottom"
+                        page={page}
+                        totalPages={totalPages}
+                        onPageChange={this.handlePageChange}
+                        total={total}
+                        loading={loading}
+                    />
                 )}
                 <SlotBookingModalHost controller={this.controller} onBooked={this.reloadAfterBooking} />
             </div>

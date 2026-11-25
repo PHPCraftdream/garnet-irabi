@@ -2,14 +2,14 @@ import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {D} from '@common/Support/Debug/D';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {SlotsCalendarProps, SlotItem, SlotStatusFilter} from './State/types';
-import type {ReadonlyFiltersState} from './State/slotsCalendarSelectors';
-import {SlotsCalendarFilterStore} from './State/SlotsCalendarFilterStore';
-import {SlotsCalendarBookingStore} from './State/SlotsCalendarBookingStore';
-import {SlotsCalendarBookingActions} from './State/SlotsCalendarBookingActions';
-import {SlotsCalendarView} from './State/slotsCalendarView';
-import type {CalendarDerived} from './State/slotsCalendarView';
-import {SlotBookingController} from './Booking/SlotBookingController';
+import {SlotsCalendarProps, SlotItem, SlotStatusFilter} from './State/view/types';
+import type {ReadonlyFiltersState} from './State/filters/slotsCalendarSelectors';
+import {SlotsCalendarFilterStore} from './State/filters/SlotsCalendarFilterStore';
+import {SlotsCalendarBookingStore} from './State/calendar/SlotsCalendarBookingStore';
+import {SlotsCalendarBookingActions} from './State/calendar/SlotsCalendarBookingActions';
+import {SlotsCalendarView} from './State/view/slotsCalendarView';
+import type {CalendarDerived} from './State/view/slotsCalendarView';
+import {SlotBookingController} from './Booking/logic/SlotBookingController';
 import {OwnSlotsHiddenNotice} from './OwnSlotsHiddenNotice';
 import {SlotsNoMatch} from './SlotsNoMatch';
 import {SlotsFilters} from './Slot/Filters/SlotsFilters';
@@ -17,24 +17,31 @@ import {SlotsStatusFilter} from './Slot/Filters/SlotsStatusFilter';
 import {WeekGrid} from './Week/WeekGrid';
 import {WeekNavigation} from './Week/WeekNavigation';
 import {WeekSlotCount} from './Week/WeekSlotCount';
-import BookingModal from './Booking/BookingModal';
+import BookingModal from './Booking/components/BookingModal';
 import SlotDetailModal from './Slot/SlotDetailModal';
-import {IrabiPreviewProvider} from '../../../Common/people/IrabiPreviewProvider';
+import {IrabiPreviewProvider} from '../../../Common/people/preview/IrabiPreviewProvider';
 import {TimezoneNotice} from '@common/Components/Feedback/TimezoneNotice';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
+
 import {CalendarDays} from 'lucide-react';
 
-type CalendarWeekGridProps = Omit<React.ComponentProps<typeof WeekGrid>, 'onBookClick'> & {
+const slotsPageHint = t.Slots_PageHint;
+type CalendarWeekGridProps = Omit<
+    React.ComponentProps<typeof WeekGrid>,
+    'onBookClick'
+> & {
     controller: SlotBookingController;
 };
 
 class CalendarWeekGrid extends AntiHookComponent<CalendarWeekGridProps> {
+    /** Открывает бронь или карточку выбранного слота. */
     private readonly selectSlot = (slot: SlotItem) => {
         const {controller, bookedIds, canBook} = this.props;
         if (canBook && !bookedIds?.has(slot.id)) controller.showBooking(slot);
         else controller.showDetail(slot);
     };
 
+    /** Отрисовывает сетку недели с обработчиком выбора слота. */
     render() {
         const {controller: _controller, ...week} = this.props;
         return <WeekGrid {...week} onBookClick={this.selectSlot} />;
@@ -56,8 +63,13 @@ export class SlotsCalendarIsland extends AntiHookComponent<SlotsCalendarProps> {
     // клиенте, а тем, что там на самом деле, — иначе чужая параллельная бронь
     // всё равно осталась бы незамеченной.
     private readonly booking = new SlotsCalendarBookingStore(this.props);
-    private readonly bookingActions = new SlotsCalendarBookingActions(this.booking);
-    private readonly controller = new SlotBookingController({booking: this.booking, actions: this.bookingActions});
+    private readonly bookingActions = new SlotsCalendarBookingActions(
+        this.booking,
+    );
+    private readonly controller = new SlotBookingController({
+        booking: this.booking,
+        actions: this.bookingActions,
+    });
     private readonly filterStore = new SlotsCalendarFilterStore();
     private readonly view = new SlotsCalendarView();
     // Данные острова — снимки сторов, а не вью-прокси useCarburetor:
@@ -66,24 +78,47 @@ export class SlotsCalendarIsland extends AntiHookComponent<SlotsCalendarProps> {
     // Снимок `connectSelection` меняет идентичность только вместе с
     // содержимым, поэтому производные значения и счётчики переживают и переход
     // по неделе, и модалку, пока сами слоты, брони и фильтры не изменились.
-    private readonly bookingSnapshot = this.connectSelection(this.booking, state => ({slots: state.slots, bookedIds: state.bookedIds, slotStatuses: state.slotStatuses, bookingSlot: state.bookingSlot, detailSlot: state.detailSlot}));
-    private readonly filterSnapshot = this.connectSelection(this.filterStore, state => ({filters: state.filters, statusFilter: state.statusFilter, weekOffset: state.weekOffset}));
+    private readonly bookingSnapshot = this.connectSelection(
+        this.booking,
+        state => ({
+            slots: state.slots,
+            bookedIds: state.bookedIds,
+            slotStatuses: state.slotStatuses,
+            bookingSlot: state.bookingSlot,
+            detailSlot: state.detailSlot,
+        }),
+    );
+    private readonly filterSnapshot = this.connectSelection(
+        this.filterStore,
+        state => ({
+            filters: state.filters,
+            statusFilter: state.statusFilter,
+            weekOffset: state.weekOffset,
+        }),
+    );
     private readonly initialBooking = {
         bookingIds: {...this.props.bookedSlotBookingIds},
         currentBalance: this.props.balance ?? 0,
     };
 
+    /** Формирует заголовок календаря. */
     private renderHeader() {
         return (
             <PageHeader
                 title={this.props.title}
-                subtitle={t.Slots_PageHint()}
+                subtitle={slotsPageHint()}
                 icon={CALENDAR_ICON}
             />
         );
     }
 
-    private renderStatus(propertyFilteredSlots: SlotItem[], effectiveBookedIds: Set<number>, slotStatuses: SlotStatusesView, statusFilter: SlotStatusFilter) {
+    /** Формирует фильтр статуса слотов. */
+    private renderStatus(
+        propertyFilteredSlots: SlotItem[],
+        effectiveBookedIds: Set<number>,
+        slotStatuses: SlotStatusesView,
+        statusFilter: SlotStatusFilter,
+    ) {
         const {isModerator = false, currentAccountId} = this.props;
         return (
             <div className="slots-calendar-status">
@@ -100,7 +135,14 @@ export class SlotsCalendarIsland extends AntiHookComponent<SlotsCalendarProps> {
         );
     }
 
-    private renderWeek(weekData: WeekData, pagerCounts: PagerCounts, filters: ReadonlyFiltersState, effectiveBookedIds: Set<number>, slotStatuses: SlotStatusesView) {
+    /** Формирует фильтры и сетку календарной недели. */
+    private renderWeek(
+        weekData: WeekData,
+        pagerCounts: PagerCounts,
+        filters: ReadonlyFiltersState,
+        effectiveBookedIds: Set<number>,
+        slotStatuses: SlotStatusesView,
+    ) {
         const {experts, isModerator = false, canBook = false, isExpertViewer = false} = this.props;
         return (
             <div className="section-soft" data-slots-calendar-section>
@@ -121,8 +163,8 @@ export class SlotsCalendarIsland extends AntiHookComponent<SlotsCalendarProps> {
                     onToday={this.filterStore.today}
                     prevCounts={pagerCounts.prev}
                     nextCounts={pagerCounts.next}
-                    weekCounts={pagerCounts.now}
-                />
+                        weekCounts={pagerCounts.now}
+                    />
 
                 <CalendarWeekGrid
                     days={weekData.days}
@@ -144,8 +186,23 @@ export class SlotsCalendarIsland extends AntiHookComponent<SlotsCalendarProps> {
         );
     }
 
-    private renderModals(bookingSlot: SlotItem | null, detailSlot: SlotItem | null, slots: readonly SlotItem[], effectiveBookedIds: Set<number>, slotStatuses: SlotStatusesView) {
-        const {experts, csrf = '', bookUrl = '/slots/~book', quickChatUrl, sendUrl, currentAccountId, cancelReasons = {}} = this.props;
+    /** Отрисовывает модальные окна брони и подробностей. */
+    private renderModals(
+        bookingSlot: SlotItem | null,
+        detailSlot: SlotItem | null,
+        slots: readonly SlotItem[],
+        effectiveBookedIds: Set<number>,
+        slotStatuses: SlotStatusesView,
+    ) {
+        const {
+            experts,
+            csrf = '',
+            bookUrl = '/slots/~book',
+            quickChatUrl,
+            sendUrl,
+            currentAccountId,
+            cancelReasons = {},
+        } = this.props;
         const {bookingIds, currentBalance} = this.initialBooking;
         return (
             <>
@@ -168,7 +225,9 @@ export class SlotsCalendarIsland extends AntiHookComponent<SlotsCalendarProps> {
                     <SlotDetailModal
                         slot={detailSlot}
                         experts={experts}
-                        bookingStatus={slotStatuses[String(detailSlot.id)] || 'pending'}
+                        bookingStatus={
+                            slotStatuses[String(detailSlot.id)] || 'pending'
+                        }
                         bookingId={bookingIds[String(detailSlot.id)] || 0}
                         csrf={csrf}
                         cancelReason={cancelReasons[String(detailSlot.id)]}
@@ -183,11 +242,20 @@ export class SlotsCalendarIsland extends AntiHookComponent<SlotsCalendarProps> {
         );
     }
 
+    /** Передаёт отрисовку календаря отдельному методу. */
     render() {
+        return this.renderCalendar();
+    }
+
+    /** Рисует календарь, фильтры и выбранные модальные окна. */
+    private renderCalendar() {
         const {slots, bookedIds, slotStatuses, bookingSlot, detailSlot} = this.bookingSnapshot();
         const {filters, statusFilter, weekOffset} = this.filterSnapshot();
 
-        D('slots-calendar.init', {slotCount: slots.length, expertCount: Object.keys(this.props.experts).length});
+        D('slots-calendar.init', {
+            slotCount: slots.length,
+            expertCount: Object.keys(this.props.experts).length,
+        });
 
         // D-159: `bookedIds` (from `bookedSlotIds`) is deliberately a full
         // lifetime history — the server includes cancelled/completed bookings so
@@ -200,7 +268,13 @@ export class SlotsCalendarIsland extends AntiHookComponent<SlotsCalendarProps> {
         // expert's public profile (which never remembers the cancellation at
         // all). Any other status (pending/confirmed/completed) still blocks —
         // those really do own the slot right now.
-        const {effectiveBookedIds, propertyFilteredSlots, weekData, pagerCounts, hasAnyFilteredSlots} = this.view.derive(
+        const {
+            effectiveBookedIds,
+            propertyFilteredSlots,
+            weekData,
+            pagerCounts,
+            hasAnyFilteredSlots,
+        } = this.view.derive(
             slots, bookedIds, slotStatuses, filters, statusFilter, weekOffset,
         );
 
@@ -208,15 +282,32 @@ export class SlotsCalendarIsland extends AntiHookComponent<SlotsCalendarProps> {
             <IrabiPreviewProvider>
                 <div data-test-id="slots-calendar">
                     {this.renderHeader()}
-                    {this.renderStatus(propertyFilteredSlots, effectiveBookedIds, slotStatuses, statusFilter)}
-                    {this.renderWeek(weekData, pagerCounts, filters, effectiveBookedIds, slotStatuses)}
+                    {this.renderStatus(
+                        propertyFilteredSlots,
+                        effectiveBookedIds,
+                        slotStatuses,
+                        statusFilter,
+                    )}
+                    {this.renderWeek(
+                        weekData,
+                        pagerCounts,
+                        filters,
+                        effectiveBookedIds,
+                        slotStatuses,
+                    )}
 
                     {/* No filtered slots at all */}
                     {!hasAnyFilteredSlots && (
                         <SlotsNoMatch onReset={this.filterStore.resetFilters} />
                     )}
 
-                    {this.renderModals(bookingSlot, detailSlot, slots, effectiveBookedIds, slotStatuses)}
+                    {this.renderModals(
+                        bookingSlot,
+                        detailSlot,
+                        slots,
+                        effectiveBookedIds,
+                        slotStatuses,
+                    )}
                 </div>
             </IrabiPreviewProvider>
         );

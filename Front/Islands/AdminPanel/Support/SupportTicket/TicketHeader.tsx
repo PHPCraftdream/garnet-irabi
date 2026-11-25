@@ -3,8 +3,9 @@ import {AntiHookComponent} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {SupportTicket, SupportStatus, UserRole} from '../../../Comms/Support/parts/supportTypes';
 import {StatusBadge} from '../../../Comms/Support/parts/supportRenders';
-import {ALL_STATUSES, statusLabel} from '../../../Comms/Support/parts/render/supportStatus';
-import {AdminUserLink} from '../../../../Common/people/EntityLinks';
+import {ALL_STATUSES} from '../../../Comms/Support/parts/render/ALL_STATUSES';
+import {statusLabel} from '../../Grid/statusLabel';
+import {AdminUserLink} from '../../../../Common/people/links/EntityLinks';
 import {UserAvatar} from '../../../../Common/media/UserAvatar';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 
@@ -32,18 +33,25 @@ const roleLabel = (role?: UserRole): string => {
     return role ? (map[role] || role) : '';
 };
 
+    /** Формирует представление данных для соответствующего раздела панели. */
 function statusOption(status: SupportStatus) {
     return <option key={status} value={status}>{statusLabel(status)}</option>;
 }
 
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
 function moderatorOption(moderator: Moderator) {
     return <option key={moderator.id} value={moderator.id}>{moderator.name || moderator.login}</option>;
 }
 
 export default class TicketHeader extends AntiHookComponent<Props> {
-    private readonly changeStatus = (event: React.ChangeEvent<HTMLSelectElement>) => this.props.onStatusChange(event.target.value as SupportStatus);
-    private readonly changeAssignee = (event: React.ChangeEvent<HTMLSelectElement>) => this.props.onAssign(event.target.value ? Number(event.target.value) : null);
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeStatus = (event: React.ChangeEvent<HTMLSelectElement>) =>
+        this.props.onStatusChange(event.target.value as SupportStatus);
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeAssignee = (event: React.ChangeEvent<HTMLSelectElement>) =>
+        this.props.onAssign(event.target.value ? Number(event.target.value) : null);
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderPerson() {
         const {ticket} = this.props;
         const userName = ticket.user_name || ticket.account_name || '';
@@ -76,6 +84,7 @@ export default class TicketHeader extends AntiHookComponent<Props> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     private renderControls() {
         const {ticket, moderators} = this.props;
         return (
@@ -107,6 +116,7 @@ export default class TicketHeader extends AntiHookComponent<Props> {
         );
     }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
     render() {
         const {ticket} = this.props;
         return (
@@ -119,7 +129,8 @@ export default class TicketHeader extends AntiHookComponent<Props> {
 
                 {/* Timestamps */}
                 <div className="admin-ticket-meta">
-                    <span>{t.Support_Assignee()}: {ticket.assignee_name || ticket.assignee_login || t.Support_Unassigned()}</span>
+                    <span>{t.Support_Assignee()}: {ticket.assignee_name || ticket.assignee_login ||
+        t.Support_Unassigned()}</span>
                     <span>{t.Support_Created()}: {formatTs(ticket.created_at)}</span>
                     <span>{t.Support_Updated()}: {formatTs(ticket.updated_at)}</span>
                 </div>

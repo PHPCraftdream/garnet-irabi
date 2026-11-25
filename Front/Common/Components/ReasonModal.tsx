@@ -4,6 +4,8 @@ import SendButton from '@common/Components/Controls/SendButton';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {ModalShell} from './ModalShell';
 
+const batchCancel = t.Batch_Cancel;
+
 /**
  * Окно «подтвердите действие и напишите причину».
  *
@@ -15,7 +17,7 @@ import {ModalShell} from './ModalShell';
  *
  * Компонент отвечает только за причину и за кнопки. Что написано в заголовке
  * и в предупреждении, решает вызывающий — обычно через
- * `Front/Common/booking/bookingAction`.
+ * `Front/Common/booking/actions/rules/bookingAction`.
  */
 
 interface FieldProps {
@@ -69,7 +71,7 @@ const ReasonFooter: React.FC<FooterProps> = ({submitLabel, sending, testId, onSu
             disabled={sending}
             data-test-id={`${testId}-dismiss`}
         >
-            {t.Batch_Cancel()}
+            {batchCancel()}
         </button>
         <SendButton
             onClick={onSubmit}
@@ -104,13 +106,35 @@ export interface ReasonModalProps {
 
 interface ReasonState {reason: string; reasonError: string}
 
+/** Рисует уведомление о последствиях действия. */
+function renderImpact(impact: React.ReactNode, testId: string) {
+    if (!impact) return null;
+    return (
+        <div className="reason-modal-notice" data-tone="warning" data-test-id={`${testId}-impact`}>
+            {impact}
+        </div>
+    );
+}
+
+/** Рисует сообщение об ошибке формы. */
+function renderError(error: string | undefined, testId: string) {
+    if (!error) return null;
+    return (
+        <div className="reason-modal-notice" data-tone="error" data-test-id={`${testId}-error`}>
+            {error}
+        </div>
+    );
+}
+
 class ReasonModalView extends AntiHookComponent<ReasonModalProps> {
     private readonly ui = new Carburetor<ReasonState>({reason: '', reasonError: ''});
 
+    /** Обновляет причину и очищает сообщение об ошибке. */
     private readonly handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
         this.ui.setData({reason: event.currentTarget.value, reasonError: ''});
     };
 
+    /** Проверяет причину и вызывает обработчик отправки. */
     private readonly handleSubmit = () => {
         const {reasonRequired = true, requiredMessage, onSubmit} = this.props;
         const state = this.ui.getData();
@@ -122,17 +146,33 @@ class ReasonModalView extends AntiHookComponent<ReasonModalProps> {
         onSubmit(trimmed);
     };
 
+    /** Рисует форму подтверждения действия и её пояснения. */
     render() {
-        const {title, impact, details, reasonLabel, reasonPlaceholder, submitLabel, sending = false, error, testId, onClose} = this.props;
+        const {
+            title, impact, details, reasonLabel, reasonPlaceholder, submitLabel,
+            sending = false, error, testId, onClose,
+        } = this.props;
         const {reason, reasonError} = this.useCarburetor(this.ui);
         const shownError = reasonError || error;
         return (
             <ModalShell title={title} testId={testId} onClose={onClose}>
-                {impact && <div className="reason-modal-notice" data-tone="warning" data-test-id={`${testId}-impact`}>{impact}</div>}
+                {renderImpact(impact, testId)}
                 {details}
-                {shownError && <div className="reason-modal-notice" data-tone="error" data-test-id={`${testId}-error`}>{shownError}</div>}
-                <ReasonField label={reasonLabel} placeholder={reasonPlaceholder} value={reason} testId={testId} onChange={this.handleChange} />
-                <ReasonFooter submitLabel={submitLabel} sending={sending} testId={testId} onSubmit={this.handleSubmit} onClose={onClose} />
+                {renderError(shownError, testId)}
+                <ReasonField
+                    label={reasonLabel}
+                    placeholder={reasonPlaceholder}
+                    value={reason}
+                    testId={testId}
+                    onChange={this.handleChange}
+                />
+                <ReasonFooter
+                    submitLabel={submitLabel}
+                    sending={sending}
+                    testId={testId}
+                    onSubmit={this.handleSubmit}
+                    onClose={onClose}
+                />
             </ModalShell>
         );
     }
@@ -145,6 +185,7 @@ class ReasonModalView extends AntiHookComponent<ReasonModalProps> {
  * `'hidden'`, поэтому при закрытии вернёт `'hidden'`, а не исходное значение.
  */
 export class ReasonModal extends AntiHookComponent<ReasonModalProps> {
+    /** Блокирует прокрутку, пока окно открыто. */
     private readonly lockBody = () => {
         if (!this.props.open) return;
         const previous = document.body.style.overflow;
@@ -154,10 +195,12 @@ export class ReasonModal extends AntiHookComponent<ReasonModalProps> {
         };
     };
 
+/** Подключает блокировку прокрутки к состоянию окна. */
     protected useEffects(): void {
         this.useEffect(this.lockBody, [this.props.open]);
     }
 
+/** Показывает содержимое только при открытом окне. */
     render() {
         return this.props.open ? <ReasonModalView {...this.props} /> : null;
     }

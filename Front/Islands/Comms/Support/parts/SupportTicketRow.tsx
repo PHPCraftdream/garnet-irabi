@@ -16,8 +16,10 @@ interface Props {
 
 /** Строка обращения в списке: тема, счётчик непрочитанного, статус, время. */
 export class SupportTicketRow extends AntiHookComponent<Props> {
+    /** Выбирает строку списка. */
     private readonly select = () => this.props.onSelect(this.props.ticket.id);
 
+    /** Рисует содержимое компонента. */
     render() {
         const {ticket, active, readLocally = false, variant} = this.props;
         return (
