@@ -17,6 +17,7 @@ import * as path from 'node:path';
 import { newScopedContext } from '../../../../helpers/scoped-test';
 import { DB } from '../../../../helpers/db/db';
 import { tickPdConsent } from '../../../../helpers/auth/auth';
+import { EXCLUSIVE_RUN_LOCK, acquireExclusive, releaseExclusive } from '../../../../helpers/db/process-lock';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -106,6 +107,9 @@ test.describe('Registration gate — registrations_enabled toggle', () => {
     test.skip(process.env.PW_PROD === '1', 'local-only: toggles local app.ini, no effect on the remote server');
 
     test.beforeAll(async ({ browser }) => {
+        // registrations_enabled lives in one app.ini for every worker: while it is 0, another
+        // worker's new (non-.test) user gets 403. Run alone: other workers' tests wait at the door.
+        if (process.env.PW_PROD !== '1') acquireExclusive(EXCLUSIVE_RUN_LOCK);
         await cleanup();
         await ensureAccount(EXISTING_EMAIL);
         context = await newScopedContext(browser, {
@@ -128,6 +132,7 @@ test.describe('Registration gate — registrations_enabled toggle', () => {
         setRegistrationsEnabled(true);
         await cleanup();
         await context.close();
+        if (process.env.PW_PROD !== '1') releaseExclusive(EXCLUSIVE_RUN_LOCK);
     });
 
     test('with registrations OFF: unknown email is blocked with 403', async () => {

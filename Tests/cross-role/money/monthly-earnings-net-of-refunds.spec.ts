@@ -46,13 +46,24 @@ async function deleteLedgerRows(refIds: number[]): Promise<void> {
 	});
 }
 
+/**
+ * A widget value like "-500 ₽" or "−500 ₽" (U+2212). The month nets refunds against
+ * payments, so it is negative whenever earlier specs left refunds without payments in
+ * this worker's DB; dropping the sign turned +300 into -300 in the delta.
+ */
+function parseMoney(text: string): number {
+	const digits = text.replace(/\D/g, '');
+	const negative = /[-−–]\s*\d/.test(text);
+	return (digits ? parseInt(digits, 10) : 0) * (negative ? -1 : 1);
+}
+
 async function readExpertEarnings(browser: any): Promise<number> {
 	const ctx: BrowserContext = await newScopedContext(browser, { storageState: resolveStorageStatePath('expert') });
 	const page: Page = await ctx.newPage();
 	try {
 		await page.goto('/system/', { waitUntil: 'domcontentloaded' });
 		const text = await page.locator('[data-test-id="expert-stat-earnings"]').innerText();
-		return parseInt(text.replace(/\D/g, ''), 10) || 0;
+		return parseMoney(text);
 	} finally {
 		await ctx.close();
 	}
@@ -64,7 +75,7 @@ async function readPlatformRevenue(browser: any): Promise<number> {
 	try {
 		await page.goto('/admin/dashboard/', { waitUntil: 'domcontentloaded' });
 		const text = await page.locator('[data-test-id="admin-dash-stat-revenue"]').innerText();
-		return parseInt(text.replace(/\D/g, ''), 10) || 0;
+		return parseMoney(text);
 	} finally {
 		await ctx.close();
 	}

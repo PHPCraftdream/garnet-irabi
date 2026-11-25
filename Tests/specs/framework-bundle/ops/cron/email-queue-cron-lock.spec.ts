@@ -26,7 +26,8 @@
  */
 
 import { test, expect, tn, getDbPrefix } from '../../../../helpers/scoped-test';
-import { runServerCommand } from '../../../../helpers/db/server-command';
+import { runServerCommand, cronProcessLockName } from '../../../../helpers/db/server-command';
+import { acquireProcessLock, releaseProcessLock } from '../../../../helpers/db/process-lock';
 import { acquireTestMode, releaseTestMode } from '../../../../helpers/db/test-mode-lease';
 import { isProd, remoteRuntimeDir } from '../../../../helpers/db/ssh-bridge';
 import { execFileSync } from 'node:child_process';
@@ -157,6 +158,9 @@ test.describe('email-queue cron: named-lock serialises overlapping ticks', () =>
                 { cwd: APP_ROOT, encoding: 'utf8', timeout: 30000 },
             );
         } else {
+            // The MySQL lock is server-wide: while this test holds it, a cron run of another
+            // worker would be refused too, so the other workers' runs wait on the process lock.
+            acquireProcessLock(cronProcessLockName('email-queue'));
             const holder = await mysql.createConnection(DB);
             try {
                 const [acq] = await holder.execute<any[]>(`SELECT GET_LOCK(?, 5) AS got`, [LOCK_NAME]);
@@ -169,6 +173,7 @@ test.describe('email-queue cron: named-lock serialises overlapping ticks', () =>
                 // explicitly so the next test can acquire deterministically.
                 await holder.execute(`SELECT RELEASE_LOCK(?)`, [LOCK_NAME]).catch(() => {});
                 await holder.end();
+                releaseProcessLock(cronProcessLockName('email-queue'));
             }
         }
 

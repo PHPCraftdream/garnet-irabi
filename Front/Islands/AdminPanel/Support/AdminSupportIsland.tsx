@@ -11,6 +11,7 @@ import {StatusBadge} from '../../Comms/Support/parts/supportRenders';
 import {ALL_STATUSES} from '../../Comms/Support/parts/render/ALL_STATUSES';
 import {statusLabel} from '../Grid/statusLabel';
 import SupportTicketTab from './SupportTicketTab';
+import {QueueFilterStore, type QueueFilters} from './QueueFilterStore';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {AdminUserLink} from '../../../Common/people/links/EntityLinks';
 import {UserDetailContext, type UserDetailContextValue} from '../Users/UserDetailContext';
@@ -22,7 +23,6 @@ import {SupportStatusBar} from './SupportTicket/Forms/SupportStatusBar';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {LifeBuoy, Paperclip} from 'lucide-react';
 const ASSIGNEE_UNASSIGNED = '__none__';
-type DateField = 'created_at' | 'updated_at';
 interface Moderator {
     id: number;
     login: string;
@@ -111,56 +111,6 @@ class QueueTabStore extends Carburetor<QueueTabs> {
         const activeId = state.activeId === id ? state.dynamicTabs[index - 1]?.id ?? MAIN_TAB_ID : state.activeId;
         this.setData({dynamicTabs, activeId});
     }
-}
-
-interface QueueFilters {
-    statusFilter: SupportStatus | 'all';
-    userId: string;
-    assigneeId: string;
-    dateField: DateField;
-    dateFrom: string;
-    dateTo: string;
-}
-
-class QueueFilterStore extends Carburetor<QueueFilters> {
-    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
-    constructor() {
-        super({statusFilter: 'all', userId: '', assigneeId: '', dateField: 'updated_at', dateFrom: '', dateTo: ''});
-    }
-
-    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
-    readonly snapshot = () => this.getData();
-    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
-    readonly subscribeSnapshot = (listener: () => void) => {
-        const id = this.subscribe(listener);
-        return () => this.unsubscribe(id);
-    };
-
-    // Не update: это имя занято методом базы Carburetor.
-    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
-    private patch(patch: Partial<QueueFilters>): void {
-        const before = this.getData();
-        const next = {...before, ...patch};
-        if (before.statusFilter === next.statusFilter && before.userId === next.userId &&
-            before.assigneeId === next.assigneeId && before.dateField === next.dateField &&
-            before.dateFrom === next.dateFrom && before.dateTo === next.dateTo) return;
-        this.setData(next);
-    }
-
-    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
-    readonly setStatusFilter = (statusFilter: QueueFilters['statusFilter']) => this.patch({statusFilter});
-    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
-    readonly setUserId = (userId: string) => this.patch({userId});
-    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
-    readonly setAssigneeId = (assigneeId: string) => this.patch({assigneeId});
-    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
-    readonly setDateField = (dateField: DateField) => this.patch({dateField});
-    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
-    readonly setDateFrom = (dateFrom: string) => this.patch({dateFrom});
-    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
-    readonly setDateTo = (dateTo: string) => this.patch({dateTo});
-    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
-    readonly reset = () => this.patch({userId: '', assigneeId: '', dateFrom: '', dateTo: ''});
 }
 
 const SUPPORT_ICON = <LifeBuoy size={22} aria-hidden="true" />;
@@ -341,6 +291,9 @@ export class AdminSupportIsland extends AntiHookComponent<Props> {
     // AdminGrid перезапрашивает данные при смене identity extraParams: кэшируем
     // объект до смены снапшота фильтров.
     private paramsCache?: {filters: Readonly<QueueFilters>; value: ReturnType<typeof queueParams>};
+    // Снимок очереди с загрузки страницы годен, пока модератор не ушёл с вкладки очереди: сетка при новом
+    // монтировании не перечитывает initialData, а ответ на тикете и его открытие меняют строки.
+    private queueLeft = false;
 
     /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
     private readonly applyOptions = (response: Awaited<ReturnType<typeof sendPost<{}, TicketFilterOptions>>>) => {
@@ -436,6 +389,7 @@ export class AdminSupportIsland extends AntiHookComponent<Props> {
     private renderQueue(options: TicketFilterOptions, filterState: Readonly<QueueFilters>,
         extraParams: ReturnType<typeof queueParams>) {
         const {ticketsPageUrl, ticketsInitialData, gridConfig} = this.props;
+        const initialData = this.queueLeft ? null : ticketsInitialData;
         const {statusFilter, userId, assigneeId, dateField, dateFrom, dateTo} = filterState;
         const {statusCounts} = options;
         const all = {value: '', label: t.Admin_Filter_All()};
@@ -454,7 +408,7 @@ export class AdminSupportIsland extends AntiHookComponent<Props> {
         onDateField={this.filters.setDateField}
                     onDateFrom={this.filters.setDateFrom} onDateTo={this.filters.setDateTo}
         onReset={this.filters.reset} />
-                <AdminGrid<SupportTicket> ref={this.gridRef} pageUrl={ticketsPageUrl} initialData={ticketsInitialData}
+                <AdminGrid<SupportTicket> ref={this.gridRef} pageUrl={ticketsPageUrl} initialData={initialData}
                     extraParams={extraParams} config={gridConfig} rowKey={rowKey} renders={this.ticketRenders}
                     emptyMessage={t.Support_NoTickets()} />
             </div>
@@ -479,6 +433,7 @@ export class AdminSupportIsland extends AntiHookComponent<Props> {
         const filterState = this.useCarburetor(this.filters);
         const user = this.useCarburetor(this.userTabs);
         const activeId = user.activeId ?? tabState.activeId;
+        if (activeId !== MAIN_TAB_ID) this.queueLeft = true;
         const allTabs: InternalTab[] = [
             {id: MAIN_TAB_ID, label: t.Admin_Support(), closeable: false, tabKind: null},
             ...tabState.dynamicTabs.map(copyTab),

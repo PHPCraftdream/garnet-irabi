@@ -16,13 +16,14 @@
  */
 
 import { test, expect, tn } from '../../../../helpers/scoped-test';
-import type { BrowserContext, Page } from '@playwright/test';
+import type { BrowserContext, Page, Request } from '@playwright/test';
 import mysql from 'mysql2/promise';
 
 import { newScopedContext } from '../../../../helpers/scoped-test';
 import { DB } from '../../../../helpers/db/db';
 import { roleLogin } from '../../../../helpers/auth/role-login';
 import { openAdminSupportQueue, openAdminTicket } from '../../../../helpers/ui/admin-support';
+import { createDiagnostics } from '../../../../helpers/guards/failure-diagnostics';
 test.describe.configure({ mode: 'serial' });
 
 const TICKET_SUBJECT = 'E2E admin-moderates: тест поддержки';
@@ -36,6 +37,43 @@ let adminContext: BrowserContext;
 let userPage: Page;
 let adminPage: Page;
 let ticketId = 0;
+
+// Support requests of both pages that have not finished yet: a ticket stuck on "Загрузка…" shows up here.
+const inFlight = new Map<Request, { page: string; method: string; path: string; startedAt: number }>();
+
+function trackSupportRequests(page: Page, label: string): void {
+	page.on('request', (request) => {
+		const path = new URL(request.url()).pathname;
+		if (!path.includes('support')) return;
+		inFlight.set(request, { page: label, method: request.method(), path, startedAt: Date.now() });
+	});
+	page.on('requestfinished', (request) => {
+		const info = inFlight.get(request);
+		if (!info) return;
+		inFlight.delete(request);
+		diag.note('request finished', { ...info, ms: Date.now() - info.startedAt });
+	});
+	page.on('requestfailed', (request) => {
+		const info = inFlight.get(request);
+		if (!info) return;
+		inFlight.delete(request);
+		diag.note('request failed', { ...info, ms: Date.now() - info.startedAt, failure: request.failure()?.errorText });
+	});
+}
+
+// Failure report: the ticket row as the DB holds it, the requests still running, every poll of step 7.
+const diag = createDiagnostics(async () => {
+	if (!ticketId) return { ticketId };
+	const conn = await mysql.createConnection(DB);
+	try {
+		const [tickets] = await conn.execute<any[]>(
+			`SELECT status, unread_staff, unread_user, assignee_id, updated_at FROM ${tn('support_tickets')} WHERE id = ?`, [ticketId],
+		);
+		return { ticketId, ticket: tickets[0] ?? null, adminPageUrl: adminPage?.url() };
+	} finally { await conn.end(); }
+});
+test.beforeEach(() => diag.reset());
+test.afterEach(async ({}, testInfo) => { await diag.report(testInfo); });
 
 // ── Dev-login helper ────────────────────────────────────────────────────────
 
@@ -78,6 +116,8 @@ test.describe('Cross-role: admin moderates user support ticket', () => {
 		const admin = await devLogin(browser, 'admin');
 		adminContext = admin.context;
 		adminPage = admin.page;
+		trackSupportRequests(userPage, 'user');
+		trackSupportRequests(adminPage, 'admin');
 	});
 
 	test.afterAll(async () => {
@@ -162,9 +202,11 @@ test.describe('Cross-role: admin moderates user support ticket', () => {
 
 		await adminPage.locator(`[data-test-id="support-ticket-${ticketId}"]`).click();
 
-		// Should see the user's message
+		// Should see the user's message. The message comes with ~ticketDetail, which took up to
+		// 5.4 s per support request on a machine with every core busy (measured by the failure
+		// report), so the wait is sized for that request plus the render, like the other steps.
 		await Promise.all([
-			expect(adminPage.locator(`text=${TICKET_MESSAGE}`)).toBeVisible({ timeout: 5000 }),
+			expect(adminPage.locator(`text=${TICKET_MESSAGE}`)).toBeVisible({ timeout: 15000 }),
 
 		// Context toggle should be visible (admin feature)
 			expect(adminPage.locator('[data-test-id="support-context-toggle"]')).toBeVisible(),
@@ -198,11 +240,16 @@ test.describe('Cross-role: admin moderates user support ticket', () => {
 	test('step 4: admin replies to ticket', async () => {
 		if (!ticketId) { test.skip(); return; }
 
+		// The user's page still shows this ticket and polls it every 15 s; the user's read clears
+		// unread_user on the server. Park it, or the bump asserted in the next test can vanish
+		// between the reply and the read (step 6 opens the ticket again).
+		await userPage.goto('about:blank');
+
 		await adminPage.locator('[data-test-id="support-reply-input"]').fill(ADMIN_REPLY);
 		// Reply triggers an XHR that sets assignee_id + unread_user;
 		// without the wait the next test reads null for assignee_id.
 		await Promise.all([
-			adminPage.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('~reply') && r.status() < 500, { timeout: 10000 }),
+			adminPage.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('~reply') && r.status() < 500, { timeout: 15000 }),
 			adminPage.locator('[data-test-id="support-reply-btn"]').click(),
 		]);
 
@@ -273,6 +320,11 @@ test.describe('Cross-role: admin moderates user support ticket', () => {
 	test('step 7: user replies to ticket', async () => {
 		if (!ticketId) { test.skip(); return; }
 
+		// The admin tab that still shows this ticket polls it every 15 s, and loading the detail
+		// clears unread_staff on the server. Park it, or the bump asserted below can vanish
+		// between the user's reply and the read (step 8 reopens the ticket anyway).
+		await adminPage.goto('about:blank');
+
 		await userPage.locator('[data-test-id="support-reply-input"]').fill(USER_REPLY);
 		// User reply triggers a status flip + unread_staff bump on the
 		// server; wait for the XHR so the next test reads consistent
@@ -299,6 +351,7 @@ test.describe('Cross-role: admin moderates user support ticket', () => {
 					`SELECT status, unread_staff FROM ${tn('support_tickets')} WHERE id = ?`, [ticketId]
 				);
 				row = rows[0];
+				diag.note('ticket poll', { attempt: i + 1, status: row?.status, unread_staff: row?.unread_staff });
 				if (row?.status === 'waiting_support' && row.unread_staff > 0) break;
 				await new Promise((r) => setTimeout(r, 200));
 			}

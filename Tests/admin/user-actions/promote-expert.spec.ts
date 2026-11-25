@@ -17,6 +17,7 @@ import { test, expect, tn } from '../../helpers/scoped-test';
 import mysql from 'mysql2/promise';
 import { DB } from '../../helpers/db/db';
 import { USER_LOGIN } from '../../helpers/auth/logins';
+import { searchAdminGrid } from '../../helpers/ui/admin-grid';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -88,6 +89,10 @@ test.describe('AdminSM: promote/demote expert', () => {
 		// "Pure" user shows up under the "users" tab.
 		await page.locator('[data-test-id="filter-tab-users"]').click();
 
+		// The grid pages server-side and the worker DB grows with every spec that ran
+		// before this one, so the target is on page one only by luck: search for it.
+		await searchAdminGrid(page, USER_LOGIN);
+
 		const row = page.locator(`[data-test-id="grid-row-${targetId}"]`);
 		await expect(row).toBeVisible({ timeout: 8000 });
 
@@ -129,6 +134,7 @@ test.describe('AdminSM: promote/demote expert', () => {
 
 		// Now the target lives in the "experts" tab.
 		await page.locator('[data-test-id="filter-tab-experts"]').click();
+		await searchAdminGrid(page, USER_LOGIN);
 
 		const row = page.locator(`[data-test-id="grid-row-${targetId}"]`);
 		await expect(row).toBeVisible({ timeout: 8000 });

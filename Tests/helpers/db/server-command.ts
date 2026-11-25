@@ -22,6 +22,15 @@
 import { spawnSync } from 'node:child_process';
 import * as path from 'node:path';
 import { isProd, remoteRuntimeDir } from './ssh-bridge';
+import { withProcessLock } from './process-lock';
+
+/**
+ * Имя межпроцессного мьютекса одной cron-задачи. Блокировка MySQL задачи общая для сервера, а не
+ * для воркера: без мьютекса прогон из соседнего воркера получает «previous run still active».
+ */
+export function cronProcessLockName(task: string): string {
+    return `irabi-cron-${task}`;
+}
 
 /**
  * Корень приложения. Экспортируется, чтобы проверкам, которым нужен `cwd`
@@ -47,12 +56,13 @@ export interface ServerCommandResult {
  */
 export function runServerCommand(args: string[], prefix?: string, timeoutMs?: number): ServerCommandResult {
     if (!isProd()) {
-        const res = spawnSync('php', ['run_cmd.php', ...args], {
+        const run = () => spawnSync('php', ['run_cmd.php', ...args], {
             cwd: APP_ROOT,
             env: prefix === undefined ? process.env : { ...process.env, DB_PREFIX_OVERRIDE: prefix },
             encoding: 'utf8',
             ...(timeoutMs !== undefined ? { timeout: timeoutMs } : {}),
         });
+        const res = args[0] === 'cron' && args[1] ? withProcessLock(cronProcessLockName(args[1]), run) : run();
 
         return { stdout: res.stdout ?? '', stderr: res.stderr ?? '', exitCode: res.status };
     }

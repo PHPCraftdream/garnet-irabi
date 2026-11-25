@@ -13,40 +13,17 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { runServerCommand } from './server-command';
+import { withProcessLock } from './process-lock';
 
-const BASE = path.join(os.tmpdir(), 'irabi-test-mode-lease');
-const LOCK = `${BASE}.lock`;
+const LOCK_NAME = 'irabi-test-mode-lease';
+const BASE = path.join(os.tmpdir(), LOCK_NAME);
 const STATE = `${BASE}.json`;
-const LOCK_TIMEOUT_MS = 60_000;
 const STALE_LEASE_MS = 2 * 60 * 60 * 1000;
 
 interface Lease {
     holders: number;
     wasOn: boolean;
     touched: number;
-}
-
-const sleep = (ms: number): void => {
-    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
-};
-
-/** Межпроцессная блокировка через атомарное создание каталога. */
-function withLock<T>(action: () => T): T {
-    const deadline = Date.now() + LOCK_TIMEOUT_MS;
-    for (;;) {
-        try {
-            fs.mkdirSync(LOCK);
-            break;
-        } catch {
-            if (Date.now() > deadline) fs.rmSync(LOCK, { recursive: true, force: true });
-            else sleep(50);
-        }
-    }
-    try {
-        return action();
-    } finally {
-        fs.rmSync(LOCK, { recursive: true, force: true });
-    }
 }
 
 function readLease(): Lease | null {
@@ -59,7 +36,7 @@ function readLease(): Lease | null {
 
 /** Берёт аренду: первый арендатор включает маркер, если он был выключен. */
 export function acquireTestMode(): void {
-    withLock(() => {
+    withProcessLock(LOCK_NAME, () => {
         let lease = readLease();
         if (!lease || lease.holders <= 0 || Date.now() - lease.touched > STALE_LEASE_MS) {
             const wasOn = runServerCommand(['test-mode', 'status']).stdout.includes('ON');
@@ -74,7 +51,7 @@ export function acquireTestMode(): void {
 
 /** Отдаёт аренду: последний арендатор возвращает маркер в исходное состояние. */
 export function releaseTestMode(): void {
-    withLock(() => {
+    withProcessLock(LOCK_NAME, () => {
         const lease = readLease();
         if (!lease) return;
         lease.holders--;
