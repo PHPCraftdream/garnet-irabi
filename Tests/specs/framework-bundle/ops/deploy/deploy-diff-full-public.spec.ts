@@ -11,10 +11,18 @@ import { test, expect } from '../../../../helpers/scoped-test';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import * as path from 'node:path';
+import * as fs from 'node:fs';
 
 const execAsync = promisify(execFile);
 
 const GARNET_ROOT = path.resolve(__dirname, '../../../../..');
+
+// deploy:diff reads WorkDir/ConfigDev/ssh.ini even for --dry-run and fails with
+// "host is empty" when no deploy target is configured.
+const SSH_INI = path.join(GARNET_ROOT, 'WorkDir', 'ConfigDev', 'ssh.ini');
+const SSH_CONFIGURED = (() => {
+    try { return /^\s*host\s*=\s*["']?[^"'\s;]/m.test(fs.readFileSync(SSH_INI, 'utf8')); } catch { return false; }
+})();
 
 async function runGarnet(args: string[]): Promise<{ stdout: string; stderr: string; exitCode: number }> {
     try {
@@ -33,6 +41,10 @@ async function runGarnet(args: string[]): Promise<{ stdout: string; stderr: stri
 }
 
 test.describe('deploy:diff --full-public', () => {
+    // Help output and the pure PHP unit need no deploy host; the dry-run cases do.
+    test.beforeEach(({}, testInfo) => {
+        test.skip(!SSH_CONFIGURED && !/help|perAppIndexContent/.test(testInfo.title), 'deploy:diff needs a deploy host in WorkDir/ConfigDev/ssh.ini');
+    });
     test('dry-run prints full-public mode line without "no commits selected"', async () => {
         const result = await runGarnet(['deploy:diff', '--full-public', '--dry-run']);
 

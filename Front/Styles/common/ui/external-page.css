@@ -1,0 +1,36 @@
+@utility tone-externalneutral-plain { @apply text-inherit; }
+@utility tone-externaldanger-plain { @apply text-externaldanger-ink; }
+@utility shape-external-page { @apply mx-auto w-full max-w-4xl mt-6 space-y-4; }
+@utility shape-external-heading { @apply mb-3; }
+@utility type-external-heading { @apply text-base font-semibold; }
+@utility tone-externalprimary-solid { @apply border-transparent bg-externalprimary-fill text-externalprimary-on-fill [&:hover]:bg-externalprimary-fill-hover; }
+@utility layout-external-button { @apply inline-flex items-center justify-center gap-1.5; }
+@utility shape-external-button { @apply rounded border px-2 py-1; }
+@utility type-external-button { @apply text-xs font-medium leading-normal no-underline whitespace-nowrap; }
+@utility behavior-external-button { @apply cursor-pointer disabled:cursor-not-allowed; }
+@utility effect-external-button { @apply disabled:opacity-50; }
+@utility motion-external-button { @apply active:translate-y-px; transition: all 0.15s ease; }
+@utility shape-external-details { @apply space-y-1; }
+@utility type-external-details { @apply text-sm; }
+@utility layout-external-inline { @apply inline; }
+@utility type-external-host { @apply font-medium; }
+@utility type-external-url { @apply break-all; }
+@utility layout-external-actions { @apply flex gap-2; }
+
+/* Нелейерный h1 фреймворка перебивает слой components: отступ и кегль дублируются вне слоя. */
+/* carburetor-disable-next-line valid-function-class */
+.external-heading { @apply shape-external-heading type-external-heading; }
+
+@layer components {
+  .external-page { @apply shape-external-page tone-externalneutral-plain; }
+  .external-heading { @apply shape-external-heading type-external-heading tone-supportsecondary-plain; }
+  .external-primary-action { @apply tone-externalprimary-solid layout-external-button shape-external-button type-external-button behavior-external-button effect-external-button motion-external-button effect-primary-action-shadow; }
+  .external-secondary-action { @apply tone-confirmsecondary-solid layout-external-button shape-external-button type-external-button behavior-external-button effect-external-button motion-external-button; }
+  .external-invalid { @apply tone-externaldanger-plain; }
+  .external-description { @apply tone-supportmuted-plain; }
+  .external-details { @apply shape-external-details type-external-details tone-externalneutral-plain; }
+  .external-term { @apply layout-external-inline tone-supportmuted-plain; }
+  .external-host { @apply layout-external-inline type-external-host tone-externalneutral-plain; }
+  .external-url { @apply layout-external-inline type-external-url tone-externalneutral-plain; }
+  .external-actions { @apply layout-external-actions tone-externalneutral-plain; }
+}

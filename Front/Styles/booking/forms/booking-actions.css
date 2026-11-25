@@ -1,0 +1,19 @@
+@utility layout-booking-card-action-row { @apply flex items-center gap-2 flex-wrap; }
+@utility shape-booking-card-action-row { @apply mt-3; }
+@utility shape-booking-card-action-hint { @apply mt-2 mb-0; }
+@utility shape-booking-card-action-terms { @apply mt-1 mb-0 pl-4; }
+@utility type-booking-card-action-terms { @apply list-disc text-xs; }
+
+@layer components {
+  .booking-card-action-row { @apply tone-bookneutral-plain layout-booking-card-action-row shape-booking-card-action-row; }
+  .booking-card-action-hint { @apply tone-supportmuted-plain shape-booking-card-action-hint type-token-small; }
+  .booking-card-action-terms { @apply tone-supportmuted-plain shape-booking-card-action-terms type-booking-card-action-terms; }
+  .booking-card-filter-row { @apply tone-bookneutral-plain layout-slot-status-filters; }
+}
+
+/* Unlayered отступ секции сильнее слоя components. */
+/* carburetor-disable-next-line valid-function-class */
+.section-soft[data-bookings-filters] { @apply mb-4; }
+/* Unlayered ml-auto сдвигает чип «прошедшие» вправо. */
+/* carburetor-disable-next-line valid-function-class */
+:is(.slot-filter-chip, .slot-filter-chip-active)[data-bookings-past] { @apply ml-auto; }

@@ -1,13 +1,19 @@
 import * as React from 'react';
-import {useMemo, useRef, useState} from 'react';
-import {AdminUser, GridConfig, PageResponse, UserTab} from '../Shell/types';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
+import {AdminUser, GridConfig, PageResponse, UserTab} from '../Shell/shared/types';
 import {AdminGrid, AdminGridHandle} from '../Grid/AdminGrid';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {formatTs} from '@common/Utils/Time/DateUtils';
-import {useOpenUser} from './UserDetailContext';
-import {flag, roleFlagLabel} from './usersFlags';
-import {FlagBtn} from './FlagBtn';
+import {UserDetailContext, type UserDetailContextValue} from './UserDetailContext';
+import {roleFlagLabel} from './flags/roleFlagLabel';
+import {flag} from './flags/flag';
+import {FlagBtn, type FlagButtonTone} from './flags/FlagBtn';
+
+const admin_Flag_GrantExpert = t.Admin_Flag_GrantExpert;
+const admin_Flag_RevokeExpert = t.Admin_Flag_RevokeExpert;
+const reg_AccountTypeExpert = t.Reg_AccountTypeExpert;
+const reg_AccountTypeUser = t.Reg_AccountTypeUser;
 
 type TabCounts = Record<UserTab, number>;
 
@@ -39,25 +45,31 @@ const tabs: TabDef[] = [
 const ROLE_TABS = new Set<UserTab>(['moderators', 'owners', 'admins']);
 const TYPE_TABS = new Set<UserTab>(['experts', 'users']);
 
-const TabButton: React.FC<{
-    tabKey: string;
+interface TabButtonProps {
+    tabKey: UserTab;
     label: string;
     count: number;
     active: boolean;
-    onSelect: (key: any) => void;
-}> = ({tabKey, label, count, active, onSelect}) => (
-    <li className="admin-tabnav-item">
-        <button
-            type="button"
-            data-test-id={`filter-tab-${tabKey}`}
-            aria-selected={active}
-            className={`admin-tabnav-btn ${active ? 'admin-tabnav-btn-active' : ''}`}
-            onClick={() => onSelect(tabKey)}
-        >
-            {label} <span className="admin-tabnav-count">({count})</span>
-        </button>
-    </li>
-);
+    onSelect: (key: UserTab) => void;
+}
+
+class TabButton extends AntiHookComponent<TabButtonProps> {
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly select = () => this.props.onSelect(this.props.tabKey);
+
+    /** Формирует представление данных для соответствующего раздела панели. */
+    render() {
+        const {tabKey, label, count, active} = this.props;
+        return (
+            <li className="admin-users-tab-item">
+                <button type="button" data-test-id={`filter-tab-${tabKey}`} aria-selected={active}
+                    className="admin-users-tab-button" onClick={this.select}>
+                    {label} <span className="admin-users-tab-count">({count})</span>
+                </button>
+            </li>
+        );
+    }
+}
 
 /** Тип аккаунта и переключатель «сделать преподавателем». */
 const UserTypeCell: React.FC<{
@@ -69,14 +81,14 @@ const UserTypeCell: React.FC<{
     const isExpert = row.type === 'expert';
 
     return (
-        <div className="flex items-center gap-2">
-            <span className={`badge ${isExpert ? 'status-info' : 'status-muted'}`}>
-                {isExpert ? t.Reg_AccountTypeExpert() : t.Reg_AccountTypeUser()}
+        <div className="widget-header-actions">
+            <span className="admin-user-role-badge" data-tone={isExpert ? 'info' : 'muted'}>
+                {isExpert ? reg_AccountTypeExpert() : reg_AccountTypeUser()}
             </span>
             {canChange && (
                 <FlagBtn
                     testId={`set-type-${row.id}`}
-                    label={isExpert ? t.Admin_Flag_RevokeExpert() : t.Admin_Flag_GrantExpert()}
+                    label={isExpert ? admin_Flag_RevokeExpert() : admin_Flag_GrantExpert()}
                     active={isExpert}
                     cls={['btn-outline-danger', 'btn-outline-primary']}
                     disabled={pending}
@@ -91,7 +103,7 @@ type FlagKey = 'IS_APPROVED' | 'IS_DISABLED' | 'IS_MODERATOR' | 'IS_OWNER' | 'IS
 
 interface FlagDef {
     key: FlagKey;
-    cls: [string, string];
+    cls: [FlagButtonTone, FlagButtonTone];
     label: (r: AdminUser) => string;
     title?: (r: AdminUser) => string | undefined;
     expertOnly?: boolean;
@@ -143,75 +155,149 @@ const flagDefs: Record<FlagKey, FlagDef> = {
 };
 
 /** Кнопка флага роли/статуса в строке таблицы. */
-const UserFlagCell: React.FC<{
+interface FlagCellProps {
     row: AdminUser;
     def: FlagDef;
     pending: boolean;
     onSetFlag: (userId: number, name: FlagKey, value: 0 | 1) => void;
-}> = ({row, def, pending, onSetFlag}) => {
-    if (def.expertOnly && row.type !== 'expert') return null;
-    const active = flag(row[def.key]);
+}
 
-    return (
-        <FlagBtn
-            testId={`flag-${def.key}-${row.id}`}
-            label={def.label(row)}
-            title={def.title?.(row)}
-            active={active}
-            cls={def.cls}
-            disabled={pending || (def.lockedBy?.(row) ?? false)}
-            onClick={() => onSetFlag(row.id, def.key, active ? 0 : 1)}
-        />
-    );
-};
+class UserFlagCell extends AntiHookComponent<FlagCellProps> {
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly toggle = () => {
+        const {row, def, onSetFlag} = this.props;
+        onSetFlag(row.id, def.key, flag(row[def.key]) ? 0 : 1);
+    };
 
-const UserLoginCell: React.FC<{
-    row: AdminUser;
-    onOpen: (id: number, label: string) => void;
-}> = ({row, onOpen}) => (
-    <button
-        type="button"
-        data-test-id={`user-login-${row.id}`}
-        className="admin-link-btn-md font-mono"
-        onClick={() => onOpen(row.id, row.name || row.login)}
-    >
-        {row.login}
-    </button>
-);
+    /** Формирует представление данных для соответствующего раздела панели. */
+    render() {
+        const {row, def, pending} = this.props;
+        if (def.expertOnly && row.type !== 'expert') return null;
+        return (
+            <FlagBtn testId={`flag-${def.key}-${row.id}`} label={def.label(row)} title={def.title?.(row)}
+                active={flag(row[def.key])} cls={def.cls} disabled={pending || (def.lockedBy?.(row) ?? false)}
+                onClick={this.toggle} />
+        );
+    }
+}
 
-export const UsersSection: React.FC<Props> = ({
-    pageUrl, initialData, tabCountsUrl, initialTabCounts, setFlagUrl, setUserTypeUrl, config,
-}) => {
-    const [activeTab, setActiveTab] = useState<UserTab>('all');
-    const [tabCounts, setTabCounts] = useState<TabCounts>(initialTabCounts);
-    const [pending, setPending]     = useState<Record<number, boolean>>({});
-    const gridRef = useRef<AdminGridHandle<AdminUser>>(null);
-    const openUser = useOpenUser();
+class UserLoginCell extends AntiHookComponent<{row: AdminUser; onOpen: (id: number, label: string) => void}> {
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly open = () => {
+        const {row, onOpen} = this.props;
+        onOpen(row.id, row.name || row.login);
+    };
 
-    const extraParams = useMemo(() => ({tab: activeTab}), [activeTab]);
+    /** Формирует представление данных для соответствующего раздела панели. */
+    render() {
+        const {row} = this.props;
+        return (
+            <button type="button" data-test-id={`user-login-${row.id}`} className="admin-users-login"
+        onClick={this.open}>
+                {row.login}
+            </button>
+        );
+    }
+}
 
-    const gridConfig = useMemo(() => {
-        if (activeTab === 'experts' || activeTab === 'all') return config;
-        return {
-            ...config,
-            columns: config.columns.filter(c => c.key !== 'IS_APPROVED'),
-        };
-    }, [config, activeTab]);
+interface ListState {
+    activeTab: UserTab;
+    tabCounts: TabCounts;
+    pending: Record<number, boolean>;
+}
 
-    const refreshTabCounts = async () => {
+class UsersListState extends Carburetor<ListState> {
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+    constructor(tabCounts: TabCounts) {
+        super({activeTab: 'all', tabCounts, pending: {}});
+    }
+
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    readonly snapshot = () => this.getData();
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    readonly subscribeSnapshot = (listener: () => void) => {
+        const id = this.subscribe(listener);
+        return () => this.unsubscribe(id);
+    };
+
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    readonly setActiveTab = (activeTab: UserTab) => {
+        const state = this.getData();
+        if (state.activeTab !== activeTab) this.setData({...state, activeTab});
+    };
+
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    readonly setTabCounts = (tabCounts: TabCounts) => this.setData({...this.getData(), tabCounts});
+
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    setPending(id: number, pending: boolean): void {
+        const state = this.getData();
+        this.setData({...state, pending: {...state.pending, [id]: pending}});
+    }
+}
+
+    /** Формирует представление данных для соответствующего раздела панели. */
+function isVisibleColumn(column: GridConfig['columns'][number]): boolean {
+    return column.key !== 'IS_APPROVED';
+}
+
+    /** Формирует представление данных для соответствующего раздела панели. */
+function userRowKey(row: AdminUser): number {
+    return row.id;
+}
+
+    /** Формирует представление данных для соответствующего раздела панели. */
+function renderUserId(row: AdminUser) {
+    return <span className="token-cell-muted">{row.id}</span>;
+}
+
+    /** Формирует представление данных для соответствующего раздела панели. */
+function renderLastOnline(row: AdminUser) {
+    return <span className="token-registration-ip">{formatTs(row.last_online_time)}</span>;
+}
+
+    /** Формирует представление данных для соответствующего раздела панели. */
+function patchUser(rows: AdminUser[], userId: number, patch: Partial<AdminUser>): AdminUser[] {
+    const index = rows.findIndex(row => row.id === userId);
+    if (index < 0) return rows;
+    const next = rows.slice();
+    next[index] = {...rows[index], ...patch};
+    return next;
+}
+
+    /** Формирует представление данных для соответствующего раздела панели. */
+function renderTabButtons(activeTab: UserTab, counts: TabCounts, onSelect: (tab: UserTab) => void) {
+    return tabs.map(tab => <TabButton key={tab.key} tabKey={tab.key} label={tab.labelFn()}
+        count={counts[tab.key]} active={activeTab === tab.key} onSelect={onSelect} />);
+}
+
+class UsersListActions {
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+    constructor(private readonly ui: UsersListState, private readonly gridRef:
+        React.RefObject<AdminGridHandle<AdminUser>>,
+        private readonly readProps: () => Props) {}
+
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private async refreshTabCounts(): Promise<void> {
+        const {tabCountsUrl} = this.readProps();
+        const {ui} = this;
         if (!tabCountsUrl) return;
         try {
             const resp = await sendPost<{}, TabCounts>(tabCountsUrl, {});
             const data = ('data' in resp && resp.data) ? resp.data : (resp as unknown as TabCounts);
-            setTabCounts(data);
+            ui.setTabCounts(data);
         } catch {
             // best-effort — stale counts are cosmetic, not worth surfacing an error for
         }
-    };
+    }
 
-    const setFlag = async (userId: number, flagName: FlagKey, value: 0 | 1) => {
-        if (!setFlagUrl || pending[userId]) return;
-        setPending(p => ({...p, [userId]: true}));
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    readonly setFlag = async (userId: number, flagName: FlagKey, value: 0 | 1) => {
+        const {setFlagUrl} = this.readProps();
+        const {ui, gridRef} = this;
+        const {activeTab} = ui.getData();
+        if (!setFlagUrl || ui.getData().pending[userId]) return;
+        ui.setPending(userId, true);
         try {
             const csrf = (window as any).__GARNET_CSRF__ ?? '';
             await sendPost(setFlagUrl, {CSRF_TOKEN: csrf, user_id: userId, flag: flagName, value});
@@ -219,66 +305,129 @@ export const UsersSection: React.FC<Props> = ({
             if (affectsTab && ROLE_TABS.has(activeTab)) {
                 gridRef.current?.refresh();
             } else {
-                gridRef.current?.setItems(prev => prev.map(u => u.id === userId ? {...u, [flagName]: value || null} : u));
+                gridRef.current?.setItems(rows => patchUser(rows, userId, {[flagName]: value || null}));
             }
-            if (affectsTab) void refreshTabCounts();
+            if (affectsTab) void this.refreshTabCounts();
         } finally {
-            setPending(p => ({...p, [userId]: false}));
+            ui.setPending(userId, false);
         }
     };
 
-    const setUserType = async (userId: number, nextType: 'user' | 'expert') => {
-        if (!setUserTypeUrl || pending[userId]) return;
-        setPending(p => ({...p, [userId]: true}));
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    readonly setUserType = async (userId: number, nextType: 'user' | 'expert') => {
+        const {setUserTypeUrl} = this.readProps();
+        const {ui, gridRef} = this;
+        const {activeTab} = ui.getData();
+        if (!setUserTypeUrl || ui.getData().pending[userId]) return;
+        ui.setPending(userId, true);
         try {
             const csrf = (window as any).__GARNET_CSRF__ ?? '';
             await sendPost(setUserTypeUrl, {CSRF_TOKEN: csrf, user_id: userId, type: nextType});
             if (TYPE_TABS.has(activeTab)) {
                 gridRef.current?.refresh();
             } else {
-                gridRef.current?.setItems(prev => prev.map(u => u.id === userId ? {...u, type: nextType} : u));
+                gridRef.current?.setItems(rows => patchUser(rows, userId, {type: nextType}));
             }
-            void refreshTabCounts();
+            void this.refreshTabCounts();
         } finally {
-            setPending(p => ({...p, [userId]: false}));
+            ui.setPending(userId, false);
         }
     };
+}
 
-    return (
-        <div>
-            <ul className="admin-tabnav">
-                {tabs.map(tab => (
-                    <TabButton
-                        key={tab.key}
-                        tabKey={tab.key}
-                        label={tab.labelFn()}
-                        count={tabCounts[tab.key]}
-                        active={activeTab === tab.key}
-                        onSelect={setActiveTab}
-                    />
-                ))}
+export class UsersSection extends AntiHookComponent<Props> {
+    static contextType = UserDetailContext;
+    declare context: UserDetailContextValue;
+
+    private readonly ui = new UsersListState(this.props.initialTabCounts);
+    private readonly gridRef = React.createRef<AdminGridHandle<AdminUser>>();
+    private readonly actions = new UsersListActions(this.ui, this.gridRef, () => this.props);
+    /*
+     * `pending` — объект-маркер: точечные правки его не будят, а флаги читают дочерние строки
+     * внутри рендера AdminGrid, то есть вне попытки рендера этой секции. Снимок читает ключи
+     * и меняет идентичность только вместе с содержимым.
+     */
+    private readonly pendingFlags = this.connectSelection(this.ui, state => state.pending);
+
+    private extraParams?: {tab: UserTab; value: {tab: UserTab}};
+    private gridConfig?: {config: GridConfig; tab: UserTab; value: GridConfig};
+
+    /** Формирует представление данных для соответствующего раздела панели. */
+    private readonly renderLogin = (row: AdminUser) => <UserLoginCell row={row} onOpen={this.context.openUser} />;
+
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private paramsFor(tab: UserTab): {tab: UserTab} {
+        const cached = this.extraParams;
+        if (cached?.tab === tab) return cached.value;
+        const value = {tab};
+        this.extraParams = {tab, value};
+        return value;
+    }
+
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private configFor(tab: UserTab): GridConfig {
+        const {config} = this.props;
+        if (tab === 'experts' || tab === 'all') return config;
+        const cached = this.gridConfig;
+        if (cached?.config === config && cached.tab === tab) return cached.value;
+        const value = {...config, columns: config.columns.filter(isVisibleColumn)};
+        this.gridConfig = {config, tab, value};
+        return value;
+    }
+
+    /** Формирует представление данных для соответствующего раздела панели. */
+    private renderTabs(activeTab: UserTab, tabCounts: TabCounts) {
+        return (
+            <ul className="admin-users-tabs">
+                {renderTabButtons(activeTab, tabCounts, this.ui.setActiveTab)}
             </ul>
+        );
+    }
 
+    /** Формирует представление данных для соответствующего раздела панели. */
+    private renderGrid(activeTab: UserTab, pending: Record<number, boolean>) {
+        const {pageUrl, initialData, setUserTypeUrl} = this.props;
+        const extraParams = this.paramsFor(activeTab);
+        const gridConfig = this.configFor(activeTab);
+        return (
             <AdminGrid
-                ref={gridRef}
+                ref={this.gridRef}
                 pageUrl={pageUrl}
                 initialData={initialData}
                 extraParams={extraParams}
                 config={gridConfig}
-                rowKey={r => r.id}
+                rowKey={userRowKey}
                 emptyMessage={t.Admin_NoUsers()}
                 renders={{
-                    id:    r => <span className="text-muted">{r.id}</span>,
-                    login: r => <UserLoginCell row={r} onOpen={openUser} />,
-                    type: r => <UserTypeCell row={r} canChange={!!setUserTypeUrl} pending={!!pending[r.id]} onToggle={() => setUserType(r.id, r.type === 'expert' ? 'user' : 'expert')} />,
-                    last_online_time: r => <span className="text-muted text-xs">{formatTs(r.last_online_time)}</span>,
-                    IS_APPROVED: r => <UserFlagCell row={r} def={flagDefs.IS_APPROVED} pending={!!pending[r.id]} onSetFlag={setFlag} />,
-                    IS_DISABLED: r => <UserFlagCell row={r} def={flagDefs.IS_DISABLED} pending={!!pending[r.id]} onSetFlag={setFlag} />,
-                    IS_MODERATOR: r => <UserFlagCell row={r} def={flagDefs.IS_MODERATOR} pending={!!pending[r.id]} onSetFlag={setFlag} />,
-                    IS_OWNER: r => <UserFlagCell row={r} def={flagDefs.IS_OWNER} pending={!!pending[r.id]} onSetFlag={setFlag} />,
-                    IS_ADMIN: r => <UserFlagCell row={r} def={flagDefs.IS_ADMIN} pending={!!pending[r.id]} onSetFlag={setFlag} />,
+                    id:    renderUserId,
+                    login: this.renderLogin,
+                    type: r => <UserTypeCell row={r} canChange={!!setUserTypeUrl} pending={!!pending[r.id]}
+        onToggle={() => this.actions.setUserType(r.id, r.type === 'expert' ? 'user' : 'expert')} />,
+                    last_online_time: renderLastOnline,
+                    IS_APPROVED: r => <UserFlagCell row={r} def={flagDefs.IS_APPROVED}
+        pending={!!pending[r.id]} onSetFlag={this.actions.setFlag} />,
+                    IS_DISABLED: r => <UserFlagCell row={r} def={flagDefs.IS_DISABLED}
+        pending={!!pending[r.id]} onSetFlag={this.actions.setFlag} />,
+                    IS_MODERATOR: r => <UserFlagCell row={r} def={flagDefs.IS_MODERATOR}
+        pending={!!pending[r.id]} onSetFlag={this.actions.setFlag} />,
+                    IS_OWNER: r => <UserFlagCell row={r} def={flagDefs.IS_OWNER} pending={!!pending[r.id]}
+        onSetFlag={this.actions.setFlag} />,
+                    IS_ADMIN: r => <UserFlagCell row={r} def={flagDefs.IS_ADMIN} pending={!!pending[r.id]}
+        onSetFlag={this.actions.setFlag} />,
                 }}
             />
-        </div>
-    );
-};
+        );
+    }
+
+    /** Формирует представление данных для соответствующего раздела панели. */
+    render() {
+        const {activeTab, tabCounts} = this.useCarburetor(this.ui);
+        const pending = this.pendingFlags() as Record<number, boolean>;
+        return (
+            <div>
+                {this.renderTabs(activeTab, tabCounts)}
+                {this.renderGrid(activeTab, pending)}
+            </div>
+        );
+    }
+}

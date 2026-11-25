@@ -6,6 +6,7 @@
  */
 
 import { test, expect } from '../../helpers/scoped-test';
+import { waitForGridRefetch } from '../../helpers/ui/admin-grid';
 import {
     openAdminPage,
 } from './helpers';
@@ -59,10 +60,10 @@ test.describe('Admin — AdminGrid sort behaviour', () => {
 		};
 
 		const idHeader = page.locator('[data-test-id="sort-col-id"]').first();
-		await idHeader.click(); // asc
+		await waitForGridRefetch(page, () => idHeader.click(), (r) => r.sortField === 'id' && r.sortDir === 'asc');
 		const ascFirst = await getFirstCellId();
 
-		await idHeader.click(); // desc
+		await waitForGridRefetch(page, () => idHeader.click(), (r) => r.sortField === 'id' && r.sortDir === 'desc');
 		const descFirst = await getFirstCellId();
 
 		// If there are multiple rows, ascending and descending first cells differ

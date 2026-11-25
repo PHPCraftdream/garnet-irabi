@@ -1,0 +1,40 @@
+:root {
+  --palette-lightbox-backdrop: rgb(0 0 0 / 80%);
+  --palette-lightbox-overlay: rgb(255 255 255 / 10%);
+  --palette-lightbox-overlay-hover: rgb(255 255 255 / 20%);
+  --palette-lightbox-white: #fff;
+}
+
+@utility tone-neutral-plain { @apply text-inherit; }
+@utility tone-lightbox-solid { @apply bg-lightbox-fill; }
+@utility tone-lightbox-soft { @apply bg-lightbox-wash text-lightbox-ink hover:bg-lightbox-wash-hover; }
+@utility tone-lightbox-caption { @apply bg-lightbox-wash text-lightbox-ink; }
+
+@utility shape-lightbox-backdrop { @apply p-4; }
+@utility layout-lightbox-backdrop { @apply fixed inset-0 z-50 flex items-center justify-center; }
+@utility effect-lightbox-backdrop { @apply backdrop-blur-sm; }
+@utility layout-lightbox-actions { @apply absolute top-3 right-3 flex items-center gap-2; }
+@utility shape-lightbox-download { @apply px-3 py-2 rounded-md; }
+@utility layout-lightbox-download { @apply inline-flex items-center gap-1.5; }
+@utility type-lightbox-download { @apply text-sm no-underline; }
+@utility motion-lightbox-action { @apply transition-colors; }
+@utility shape-lightbox-close { @apply w-9 h-9 rounded-md; }
+@utility layout-lightbox-close { @apply inline-flex items-center justify-center; }
+@utility layout-lightbox-download-label { @apply hidden sm:inline; }
+@utility shape-lightbox-photo { @apply max-w-full max-h-full rounded object-contain; }
+@utility effect-lightbox-photo { @apply shadow-2xl; }
+@utility shape-lightbox-caption { @apply px-3 py-1.5 rounded max-w-[80%]; }
+@utility layout-lightbox-caption { @apply absolute bottom-3 left-1/2 overflow-hidden; }
+@utility motion-lightbox-caption { @apply -translate-x-1/2; }
+@utility type-lightbox-caption { @apply text-xs text-ellipsis whitespace-nowrap; }
+
+@layer components {
+  .lightbox-backdrop { @apply shape-lightbox-backdrop layout-lightbox-backdrop effect-lightbox-backdrop tone-lightbox-solid; }
+  .lightbox-actions { @apply layout-lightbox-actions tone-neutral-plain; }
+  /* Keep bg- in the name to exclude the framework's generic link colours. */
+  .lightbox-bg-download { @apply shape-lightbox-download layout-lightbox-download type-lightbox-download motion-lightbox-action tone-lightbox-soft; }
+  .lightbox-close { @apply shape-lightbox-close layout-lightbox-close motion-lightbox-action tone-lightbox-soft; }
+  .lightbox-download-label { @apply layout-lightbox-download-label tone-neutral-plain; }
+  .lightbox-photo { @apply shape-lightbox-photo effect-lightbox-photo tone-neutral-plain; }
+  .lightbox-caption { @apply shape-lightbox-caption layout-lightbox-caption motion-lightbox-caption type-lightbox-caption tone-lightbox-caption; }
+}

@@ -26,6 +26,7 @@ import { test, expect, tn } from '../../helpers/scoped-test';
 import mysql from 'mysql2/promise';
 import { DB } from '../../helpers/db/db';
 
+import { searchAdminGrid } from '../../helpers/ui/admin-grid';
 test.describe.configure({ mode: 'serial' });
 
 const EXPERT_LOGIN = 'testuser_setup_expert@irabi.test';
@@ -164,9 +165,10 @@ async function restoreExpertFlags(expertId: number): Promise<void> {
 	} finally { await conn.end(); }
 }
 
-async function clickFlagAndWait(page: import('@playwright/test').Page, flagName: string, userId: number): Promise<void> {
+async function clickFlagAndWait(page: import('@playwright/test').Page, flagName: string, userId: number, login: string = EXPERT_LOGIN): Promise<void> {
 	await page.goto('/admin/');
 	await page.waitForSelector('table', { timeout: 12000 });
+	await searchAdminGrid(page, login);
 	const btn = page.locator(`[data-test-id="flag-${flagName}-${userId}"]`);
 	await expect(btn).toBeVisible({ timeout: 8000 });
 	await Promise.all([

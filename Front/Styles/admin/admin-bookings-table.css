@@ -1,0 +1,17 @@
+@utility shape-admin-booking-row { @apply border-b; }
+@utility shape-admin-booking-cell { @apply p-3; }
+@utility type-admin-booking-nowrap { @apply whitespace-nowrap; }
+@utility type-admin-booking-heading { @apply text-left; }
+@utility type-admin-booking-small { @apply text-xs; }
+@utility layout-admin-booking-scroll { @apply overflow-x-auto; }
+
+@layer components {
+  .admin-booking-table-row { @apply shape-admin-booking-row tone-supportconv-outline; }
+  .admin-booking-table-cell { @apply shape-admin-booking-cell tone-filterneutral-plain; }
+  .admin-booking-table-cell-nowrap { @apply shape-admin-booking-cell type-admin-booking-nowrap tone-filterneutral-plain; }
+  .admin-booking-table-cell-muted-nowrap { @apply shape-admin-booking-cell type-admin-booking-nowrap tone-supportmuted-plain; }
+  .admin-booking-table-cell-muted-nowrap-small { @apply shape-admin-booking-cell type-admin-booking-nowrap type-admin-booking-small tone-supportmuted-plain; }
+  .admin-booking-table-muted { @apply tone-supportmuted-plain; }
+  .admin-booking-table-heading { @apply shape-admin-booking-cell type-admin-booking-heading tone-filterneutral-plain; }
+  .admin-booking-table-scroll { @apply layout-admin-booking-scroll tone-filterneutral-plain; }
+}

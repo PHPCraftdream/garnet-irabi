@@ -1,0 +1,147 @@
+@layer components {
+  .admin-client-context { @apply tone-widgetneutral-plain; }
+  .admin-client-context-title { @apply tone-widgetneutral-plain; }
+  .admin-client-context-list { @apply tone-widgetneutral-plain; }
+  .admin-client-context-balance { @apply tone-supportmuted-plain shape-admin-client-context-balance; }
+  .admin-client-context-empty { @apply tone-supportmuted-plain type-im-recipient-text; }
+  .admin-client-context-line { @apply tone-widgetneutral-plain type-im-recipient-text; }
+  .admin-support-context-panel { @apply tone-supportconv-outlined shape-admin-attachment-panel shape-admin-support-context-panel type-im-recipient-text; }
+  .admin-support-context-value { @apply tone-widgetneutral-plain type-widget-im-unread; }
+  .admin-support-context-breadcrumb { @apply tone-supportsecondary-plain shape-support-message-time type-widget-im-unread; }
+  .admin-support-context-issue { @apply tone-bookwarning-plain type-admin-support-context-issue; }
+  .admin-support-context-issue[data-tone="error"] { @apply tone-externaldanger-plain; }
+  .admin-support-context-issues { @apply tone-bookwarning-plain shape-admin-support-context-issues type-admin-support-context-issues; }
+  .admin-support-context-issues[data-tone="error"] { @apply tone-externaldanger-plain; }
+  .admin-support-queue-subject { @apply tone-widgetneutral-plain layout-admin-support-queue-subject; }
+  .admin-support-queue-link { @apply tone-bookaccent-plain type-admin-support-queue-link; }
+  .admin-support-queue-unread { @apply tone-supportbadge-soft shape-admin-support-queue-unread type-admin-support-queue-unread; }
+  .admin-support-detail { @apply tone-widgetneutral-plain shape-admin-support-detail; }
+  .admin-support-detail-error { @apply tone-externaldanger-plain shape-admin-support-detail-notice; }
+  .admin-support-detail-loading { @apply tone-supportmuted-plain shape-admin-support-detail-notice type-im-recipient-text; }
+  .admin-support-stale-warning { @apply tone-widgetneutral-plain shape-admin-support-stale; }
+  .admin-support-stale-dismiss { @apply tone-adminsupportdismiss-outline layout-compact-action shape-confirm-button shape-admin-support-stale-dismiss type-confirm-button behavior-compact-action motion-compact-action; }
+  .admin-attachment-panel { @apply tone-supportconv-outlined shape-admin-attachment-panel; }
+  .admin-attachment-list { @apply tone-widgetneutral-plain layout-admin-attachment-list; }
+  .admin-attachment-icon { @apply tone-adminattachmenticon-soft shape-admin-attachment-thumb layout-admin-attachment-icon; }
+  .admin-attachment-row { @apply tone-adminattachmentrow-outlined layout-admin-attachment-row shape-admin-attachment-row motion-support-control type-im-recipient-text; }
+  .admin-attachment-image { @apply tone-widgetneutral-plain shape-admin-attachment-thumb shape-admin-attachment-image; }
+  .admin-attachment-details { @apply tone-widgetneutral-plain layout-conversation-partner shape-conversation-partner; }
+  .admin-attachment-name { @apply tone-widgetim-plain type-admin-attachment-name layout-support-truncate; }
+  .admin-attachment-meta { @apply tone-supportmuted-plain layout-admin-attachment-meta type-widget-im-unread; }
+  .admin-ticket-heading { @apply tone-widgetneutral-plain layout-admin-ticket-heading; }
+  .admin-ticket-title { @apply tone-widgetim-plain type-im-new-title layout-admin-ticket-title; }
+  .admin-ticket-meta { @apply tone-supportmuted-plain layout-admin-ticket-meta shape-support-message-time type-widget-im-unread; }
+  .admin-ticket-person { @apply tone-supportconv-outlined shape-admin-ticket-person; }
+  .admin-ticket-person-label { @apply tone-supportmuted-plain type-admin-ticket-person-label shape-support-form-label; }
+  .admin-ticket-person-details { @apply tone-widgetneutral-plain layout-admin-ticket-person-details type-im-recipient-text; }
+  .admin-ticket-role { @apply tone-adminticketrole-soft layout-support-ticket-status shape-admin-ticket-role type-support-message-author; }
+  .admin-ticket-controls { @apply tone-widgetneutral-plain layout-admin-ticket-controls shape-admin-ticket-controls; }
+  .admin-ticket-control-label { @apply tone-supportmuted-plain layout-support-form-label shape-support-form-label type-widget-im-unread; }
+  .admin-support-status-bar { @apply tone-widgetneutral-plain layout-admin-support-status-bar shape-admin-support-form; }
+  .admin-support-status-chip { @apply tone-adminstatusempty-outline layout-admin-support-status-chip shape-admin-support-status-chip type-admin-support-form-label motion-support-control; }
+  .admin-support-status-chip[aria-selected="false"] { @apply tone-adminstatusemptyhover-outlined; }
+  .admin-support-status-chip[aria-selected="true"] { @apply tone-adminstatusactive-outlined; }
+  .admin-support-status-count { @apply tone-widgetneutral-plain shape-admin-support-status-count type-widget-im-unread effect-admin-support-status-count; }
+  .admin-support-form { @apply tone-widgetneutral-plain shape-admin-support-form; }
+  .admin-support-reply-label { @apply tone-supportsecondary-plain layout-support-form-label shape-support-form-label type-admin-support-form-label; }
+  .admin-support-internal-divider { @apply tone-supportconv-outline shape-admin-support-divider; }
+  .admin-support-internal-banner { @apply tone-ticketstatusyellow-soft shape-admin-support-banner type-admin-support-banner; }
+  .admin-support-internal-panel { @apply tone-admininternal-outlined shape-admin-support-panel; }
+  .admin-support-internal-form-label { @apply tone-bookwarning-plain layout-support-form-label shape-support-form-label type-admin-support-form-label; }
+  .admin-support-internal-input { @apply tone-garnetfield-outlined shape-native-control shape-native-field layout-native-select type-native-select focus-native-select motion-native-select shape-im-thread-input; }
+  .admin-support-timeline { @apply tone-cardsurface-outlined shape-admin-support-timeline layout-admin-support-timeline; }
+  .admin-support-timeline-scroll { @apply tone-widgetneutral-plain shape-admin-support-timeline-scroll layout-im-recipient-list; }
+  .admin-support-timeline-empty { @apply tone-supportmuted-plain shape-admin-support-timeline-empty type-admin-support-timeline-empty; }
+  .support-message-bubble[data-admin-internal="true"] { @apply tone-admininternal-outlined; }
+  .admin-support-author-muted { @apply tone-supportmuted-plain type-support-message-author; }
+  .admin-support-message-heading { @apply tone-widgetneutral-plain layout-widget-inline-actions shape-admin-support-heading; }
+  .admin-support-internal-label { @apply tone-bookwarning-plain type-support-message-author; }
+  .admin-support-history { @apply tone-widgetneutral-plain shape-admin-support-history; }
+  .admin-support-history-box { @apply tone-supportconv-outline shape-admin-support-history-box layout-admin-support-history-box; }
+  .admin-support-history-row { @apply tone-widgethistory-soft; }
+  .admin-support-history-party { @apply tone-supportmuted-plain; }
+  .admin-support-history-time { @apply tone-supportmuted-plain type-admin-support-history-time; }
+  .admin-support-history-toggle { @apply tone-adminhistory-plain layout-admin-support-history-toggle type-im-recipient-text; }
+  .admin-support-history-chevron { @apply tone-widgetneutral-plain type-widget-im-unread behavior-admin-support-history-chevron; }
+  .support-conv-header { @apply tone-supportconv-outlined shape-im-thread-heading; }
+  .support-conv-header-row { @apply tone-widgetneutral-plain layout-support-page-thread-heading; }
+  .support-conv-title { @apply tone-widgetim-plain layout-support-page-thread-title type-im-thread-title; }
+  .support-conv-meta { @apply tone-supportmuted-plain shape-support-message-time type-widget-im-unread; }
+  .support-list-panel { @apply tone-cardsurface-outlined layout-im-conversation-list shape-im-conversation-list; }
+  .support-list-header { @apply tone-supportconv-outlined shape-im-conversation-list-header; }
+  .support-list-pagination { @apply tone-supportconv-outline shape-support-page-list-pager; }
+  .support-list-pagination-bottom { @apply tone-supportconv-outline shape-support-page-list-pager-bottom; }
+  .support-ticket-status { @apply tone-ticketstatusgray-soft layout-support-ticket-status shape-support-ticket-status type-support-ticket-status; }
+  .support-ticket-status[data-ticket-status="open"] { @apply tone-ticketstatusblue-soft; }
+  .support-ticket-status[data-ticket-status="investigation"] { @apply tone-ticketstatuscyan-soft; }
+  .support-ticket-status[data-ticket-status="in_progress"] { @apply tone-ticketstatusyellow-soft; }
+  .support-ticket-status[data-ticket-status="waiting_user"] { @apply tone-ticketstatusorange-soft; }
+  .support-ticket-status[data-ticket-status="waiting_support"] { @apply tone-ticketstatusred-soft; }
+  .support-ticket-status[data-ticket-status="escalated"] { @apply tone-ticketstatuspurple-soft; }
+  .support-ticket-status[data-ticket-status="resolved"] { @apply tone-ticketstatusgreen-soft; }
+  .comms-page { @apply tone-widgetneutral-plain shape-im-page; }
+  .comms-page-layout { @apply tone-widgetneutral-plain layout-im-page shape-im-page-layout; }
+  .comms-page-thread { @apply tone-cardsurface-outlined layout-im-page-thread shape-im-page-thread; }
+  .comms-page-back { @apply tone-imback-outlined layout-im-page-back shape-im-page-back type-im-page-back; }
+  .comms-page-empty { @apply tone-supportmuted-plain layout-im-page-empty type-im-recipient-text; }
+  .im-page-fab { @apply tone-widgetfab-soft layout-im-page-fab shape-im-page-fab effect-im-page-fab type-im-page-fab motion-support-control; }
+  .im-recipient-trigger { @apply tone-recipienttrigger-outlined layout-im-recipient-trigger shape-im-recipient-trigger focus-im-recipient-trigger type-im-recipient-text; }
+  .im-recipient-trigger[data-empty="true"] { @apply tone-supportmuted-plain; }
+  .im-recipient-content { @apply tone-cardsurface-outlined shape-im-recipient-content effect-im-recipient-content layout-im-recipient-content; }
+  .im-recipient-search-wrap { @apply tone-supportconv-outline shape-im-recipient-search-wrap; }
+  .im-recipient-search-input { @apply tone-recipientsearch-soft shape-im-recipient-search focus-im-recipient-search type-im-recipient-text; }
+  .im-recipient-list { @apply tone-widgetneutral-plain shape-im-recipient-list layout-im-recipient-list; }
+  .im-recipient-empty { @apply tone-supportmuted-plain shape-im-recipient-empty type-im-recipient-empty; }
+  .im-recipient-option { @apply tone-recipientoption-soft layout-im-recipient-option shape-im-recipient-option behavior-im-recipient-option type-im-recipient-text; }
+  .im-recipient-option[data-active="true"] { @apply tone-recipientaccent-soft; }
+  .im-recipient-chevron { @apply tone-widgetneutral-plain shape-im-recipient-chevron layout-conversation-time effect-im-recipient-chevron; }
+  .im-recipient-avatar { @apply tone-recipientaccent-soft layout-im-recipient-avatar shape-im-recipient-avatar type-im-recipient-avatar; }
+  .im-recipient-avatar-small { @apply tone-recipientaccent-soft layout-im-recipient-avatar shape-im-recipient-avatar-small type-im-recipient-avatar-small; }
+  .im-recipient-label { @apply tone-widgetneutral-plain layout-widget-inline-actions type-im-recipient-truncate layout-support-truncate; }
+  .im-recipient-name { @apply tone-widgetneutral-plain type-im-recipient-truncate layout-support-truncate; }
+  .im-recipient-role { @apply tone-supportmuted-plain type-widget-im-unread layout-conversation-time; }
+  .im-recipient-option-label { @apply tone-widgetneutral-plain layout-im-recipient-option-label type-im-recipient-option-label layout-support-truncate; }
+  .im-recipient-option-name { @apply tone-widgetneutral-plain type-conversation-you; }
+  .im-new-form { @apply tone-widgetneutral-plain shape-im-new-form layout-im-new-form; }
+  .im-new-title { @apply tone-widgetim-plain type-im-new-title; }
+  .im-conversation-list { @apply tone-cardsurface-outlined layout-im-conversation-list shape-im-conversation-list; }
+  .im-conversation-list-header { @apply tone-supportconv-outlined shape-im-conversation-list-header layout-im-conversation-list-header; }
+  .im-conversation-create { @apply tone-settingssave-outlined shape-im-conversation-create type-im-conversation-create motion-support-control; }
+  .im-thread-heading { @apply tone-supportconv-outlined shape-im-thread-heading layout-widget-inline-actions; }
+  .im-thread-title { @apply tone-widgetim-plain type-im-thread-title; }
+  .im-thread-body { @apply tone-widgetneutral-plain layout-support-conv-body shape-im-thread-body; }
+  .im-thread-reply { @apply tone-supportconv-outline shape-im-thread-reply; }
+  .im-thread-input { @apply tone-garnetfield-outlined shape-native-control shape-native-field layout-native-select type-native-select focus-native-select motion-native-select shape-im-thread-input; }
+  .im-thread-actions { @apply tone-widgetneutral-plain layout-im-thread-actions; }
+  .conversation-attachments { @apply tone-supportmuted-plain type-widget-im-unread layout-conversation-attachments; }
+  .conversation-partner-name { @apply tone-bookaccent-plain layout-conversation-partner shape-conversation-partner type-conversation-partner layout-support-truncate; }
+  .conversation-snippet { @apply tone-supportmuted-plain layout-conversation-snippet type-conversation-snippet layout-support-truncate; }
+  .conversation-you { @apply tone-widgetim-plain type-conversation-you; }
+  .conversation-time { @apply tone-supportmuted-plain type-widget-im-unread layout-conversation-time; }
+  .conversation-row-content { @apply tone-widgetneutral-plain layout-conversation-content; }
+  .conversation-summary { @apply tone-widgetneutral-plain layout-conversation-partner shape-conversation-partner; }
+  .support-page-ticket-row { @apply tone-supportconv-outline shape-support-page-ticket behavior-support-row motion-support-control; }
+  .support-page-ticket-row[data-active="true"] { @apply tone-ticketrowactive-outlined; }
+  .support-page-ticket-row[data-active="false"] { @apply tone-ticketrowidle-outlined; }
+  .support-ticket-heading { @apply tone-widgetneutral-plain layout-support-ticket-heading; }
+  .support-ticket-metadata { @apply tone-widgetneutral-plain layout-support-ticket-metadata shape-support-ticket-metadata; }
+  .support-ticket-unread { @apply tone-supportbadge-soft shape-support-ticket-unread layout-widget-im-unread type-widget-im-unread; }
+  .support-ticket-time { @apply tone-supportmuted-plain type-widget-im-unread; }
+  .support-message-system { @apply tone-supportmuted-plain shape-support-message-system type-support-message-system; }
+  .support-message-system-time { @apply tone-supportmuted-plain shape-support-message-system-time; }
+  .support-message-row { @apply tone-widgetneutral-plain layout-support-message-row shape-support-message-row; }
+  .support-message-bubble { @apply tone-widgetmessage-soft shape-support-message-bubble type-support-message-bubble; }
+  .support-message-bubble[data-own="true"] { @apply tone-widgetown-soft; }
+  .support-message-author { @apply tone-supportmuted-plain type-support-message-author shape-support-message-author; }
+  .support-message-body { @apply tone-widgetneutral-plain type-support-message-body; }
+  .support-message-time { @apply tone-supportmuted-plain type-widget-im-unread shape-support-message-time; }
+  .widget-im-link { @apply tone-widgetim-outlined shape-widget-im-link layout-widget-inline-actions type-widget-im-link; }
+  .widget-im-label { @apply tone-widgetim-plain; }
+  .widget-im-unread { @apply tone-supportbadge-soft shape-widget-im-unread layout-widget-im-unread type-widget-im-unread; }
+  .widget-attachment-tools { @apply layout-widget-inline-actions tone-widgetneutral-plain; }
+  .widget-reply-row { @apply layout-widget-reply-row tone-widgetneutral-plain; }
+  .widget-header-actions { @apply layout-widget-inline-actions tone-widgetneutral-plain; }
+  .widget-ticket-list { @apply shape-widget-ticket-list layout-widget-ticket-list tone-widgetneutral-plain; }
+  .widget-ticket-heading { @apply shape-widget-ticket-heading tone-supportconv-outline; }
+}
+

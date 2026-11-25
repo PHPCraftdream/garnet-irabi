@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {TokenRow} from './tokenTypes';
+import {TokenRow} from './config/tokenTypes';
 import {TokenTableRow} from './TokenTableRow';
 
 const COLUMNS = [
@@ -15,16 +15,21 @@ const COLUMNS = [
     () => t.Admin_Tokens_Actions(),
 ];
 
+    /** Формирует представление данных для соответствующего раздела панели. */
+function renderColumn(label: () => string, index: number) {
+    return <th key={index} className="admin-grid-heading">{label()}</th>;
+}
+
 const TokenTableHead: React.FC = () => (
     <thead>
-        <tr className="border-b border-subtle">
-            {COLUMNS.map((label, i) => <th key={i} className="text-left p-3">{label()}</th>)}
+        <tr>
+            {COLUMNS.map(renderColumn)}
         </tr>
     </thead>
 );
 
 interface Props {
-    tokens: TokenRow[];
+    tokens: readonly TokenRow[];
     onShowLink: (url: string) => void;
     onShowRegistrations: (row: TokenRow) => void;
     onEdit: (row: TokenRow) => void;
@@ -32,15 +37,18 @@ interface Props {
     onDelete: (row: TokenRow) => void;
 }
 
-export const TokenTable: React.FC<Props> = ({tokens, ...handlers}) => (
-    <div className="card">
-        <div className="overflow-x-auto">
-            <table className="admin-table">
-                <TokenTableHead />
-                <tbody>
-                    {tokens.map(row => <TokenTableRow key={row.id} row={row} {...handlers} />)}
-                </tbody>
-            </table>
+/** Отображает данные раздела и передаёт действия пользователя обработчикам. */
+export const TokenTable: React.FC<Props> = ({tokens, ...handlers}) => {
+    const rows: React.ReactNode[] = [];
+    for (const row of tokens) rows.push(<TokenTableRow key={row.id} row={row} {...handlers} />);
+    return (
+        <div className="booking-card-shell">
+            <div className="token-table-scroll">
+                <table className="admin-table">
+                    <TokenTableHead />
+                    <tbody>{rows}</tbody>
+                </table>
+            </div>
         </div>
-    </div>
-);
+    );
+};

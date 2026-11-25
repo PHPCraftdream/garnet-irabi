@@ -56,7 +56,7 @@ test('admin removes a user photo: DB cleared + history logged', async ({ page })
     await page.goto(`/system/admin/#user=${accountId}`);
 
     // Avatar image + remove button are present (admin reads the photo fresh).
-    const avatar = page.locator('[data-test-id="user-detail-pane"] .admin-user-avatar-img');
+    const avatar = page.locator('[data-test-id="user-detail-pane"] .admin-user-heading-photo');
     await expect(avatar).toBeVisible({ timeout: 10000 });
     const removeBtn = page.locator(`[data-test-id="remove-user-photo-${accountId}"]`);
     await expect(removeBtn).toBeVisible();

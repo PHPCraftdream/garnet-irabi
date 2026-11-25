@@ -2,6 +2,8 @@ import * as React from 'react';
 
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 
+const supportWidgetTitle = t.Support_Widget_Title;
+
 interface FabProps {
     badge: number;
     onToggle: () => void;
@@ -13,7 +15,7 @@ export const WidgetFab: React.FC<FabProps> = ({badge, onToggle}) => (
         type="button"
         data-test-id="support-widget-btn"
         className="support-widget-fab"
-        title={t.Support_Widget_Title()}
+        title={supportWidgetTitle()}
         onClick={onToggle}
     >
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">

@@ -1,0 +1,22 @@
+@utility tone-slotpageneutral-plain { @apply text-inherit; }
+@utility tone-slotpageaccent-link { @apply text-slotpageaccent-ink hover:text-slotpageaccent-ink-hover; }
+@utility shape-slots-calendar-status { @apply mb-4; }
+@utility shape-slots-own-notice { @apply mb-3; }
+@utility type-slots-own-notice { @apply text-sm; }
+@utility shape-slots-no-match { @apply py-8 mt-4; }
+@utility type-slots-no-match { @apply text-center; }
+@utility shape-slots-no-match-title { @apply mb-2; }
+@utility type-slots-no-match-title { @apply text-lg; }
+@utility type-slots-reset { @apply text-sm underline; }
+
+@layer utilities {
+  [data-slots-calendar-section] { @apply space-y-5; }
+}
+
+@layer components {
+  .slots-calendar-status { @apply shape-slots-calendar-status tone-slotpageneutral-plain; }
+  .slots-own-notice { @apply shape-slots-own-notice type-slots-own-notice tone-supportsecondary-plain; }
+  .slots-no-match { @apply shape-slots-no-match type-slots-no-match tone-supportmuted-plain; }
+  .slots-no-match-title { @apply shape-slots-no-match-title type-slots-no-match-title tone-slotpageneutral-plain; }
+  .slots-reset { @apply type-slots-reset tone-slotpageaccent-link; }
+}

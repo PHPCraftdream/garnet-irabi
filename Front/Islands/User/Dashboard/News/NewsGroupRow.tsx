@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {Archive, ArchiveRestore} from 'lucide-react';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {AsyncIconButton} from '@common/Components/Controls/AsyncIconButton';
@@ -16,33 +17,41 @@ interface ArchiveButtonProps {
     onUnarchive: (id: number) => Promise<void> | void;
 }
 
-const ArchiveToggle: React.FC<ArchiveButtonProps> = ({event, onArchive, onUnarchive}) => {
-    if (event.is_archived) {
+class ArchiveToggle extends AntiHookComponent<ArchiveButtonProps> {
+    /** Запускает обработчик архивирования текущего события. */
+    private readonly archive = () => this.props.onArchive(this.props.event.id);
+    /** Запускает обработчик восстановления текущего события. */
+    private readonly unarchive = () => this.props.onUnarchive(this.props.event.id);
+
+    /** Отображает архивное действие, соответствующее состоянию события. */
+    render() {
+        const {event} = this.props;
+        if (event.is_archived) {
+            return (
+                <AsyncIconButton
+                    icon={<ArchiveRestore size={14} aria-hidden="true" />}
+                    label={t.News_Unarchive()}
+                    variant="accent-outline"
+                    testId={`news-unarchive-${event.id}`}
+                    iconSize={14}
+                    errorToast={t.News_UnarchiveError()}
+                    onAction={this.unarchive}
+                />
+            );
+        }
         return (
             <AsyncIconButton
-                icon={<ArchiveRestore size={14} aria-hidden="true" />}
-                label={t.News_Unarchive()}
-                className="inline-flex items-center gap-1.5 px-2 py-1 text-sm rounded border border-accent text-accent hover:bg-accent hover:text-accent-text transition-colors"
-                testId={`news-unarchive-${event.id}`}
+                icon={<Archive size={14} aria-hidden="true" />}
+                label={t.News_Archive()}
+                variant="muted-outline"
+                testId={`news-archive-${event.id}`}
                 iconSize={14}
-                errorToast={t.News_UnarchiveError()}
-                onAction={() => onUnarchive(event.id)}
+                errorToast={t.News_ArchiveError()}
+                onAction={this.archive}
             />
         );
     }
-
-    return (
-        <AsyncIconButton
-            icon={<Archive size={14} aria-hidden="true" />}
-            label={t.News_Archive()}
-            className="inline-flex items-center gap-1.5 px-2 py-1 text-sm rounded border border-default text-muted hover:text-on-surface hover:bg-surface-hover transition-colors"
-            testId={`news-archive-${event.id}`}
-            iconSize={14}
-            errorToast={t.News_ArchiveError()}
-            onAction={() => onArchive(event.id)}
-        />
-    );
-};
+}
 
 interface Props {
     group: NewsGroup;
@@ -62,42 +71,82 @@ interface Props {
  * Прочитанным отмечается при наведении — и вся группа сразу, а не только
  * верхнее событие: человек прочитал их все одним взглядом.
  */
-export const NewsGroupRow: React.FC<Props> = ({group, detail, message, onMarkRead, onArchive, onUnarchive}) => {
-    const event = group.first;
-    const groupCount = group.others.length;
-    const anyUnread = !event.is_read || group.others.some(o => !o.is_read);
+function unreadIds(group: NewsGroup): number[] {
+    const ids: number[] = [];
+    if (!group.first.is_read) ids.push(group.first.id);
+    for (const event of group.others) {
+        if (!event.is_read) ids.push(event.id);
+    }
+    return ids;
+}
 
-    const markGroupRead = () => {
-        const unread = [event, ...group.others].filter(e => !e.is_read).map(e => e.id);
-        if (unread.length > 0) onMarkRead(unread);
+/** Возвращает, есть ли в группе непрочитанные события. */
+function hasUnread(group: NewsGroup): boolean {
+    if (!group.first.is_read) return true;
+    for (const event of group.others) {
+        if (!event.is_read) return true;
+    }
+    return false;
+}
+
+export class NewsGroupRow extends AntiHookComponent<Props> {
+    /** Отмечает все непрочитанные события группы прочитанными. */
+    private readonly markGroupRead = (): void => {
+        const unread = unreadIds(this.props.group);
+        if (unread.length > 0) this.props.onMarkRead(unread);
     };
 
-    const rowClass = [
-        'flex items-start gap-3 px-4 py-3 transition-colors',
-        anyUnread ? 'bg-accent-subtle' : '',
-        event.is_archived ? 'opacity-60' : '',
-    ].join(' ');
-
-    return (
-        <div className={rowClass} data-test-id={`news-event-${event.id}`} onMouseEnter={markGroupRead}>
-            <div className="flex-1 min-w-0">
-                <p className={`text-sm ${anyUnread ? 'font-semibold text-on-surface' : 'text-on-surface'}`}>
-                    {message}
-                </p>
-                {detail && <p className="text-sm text-muted mt-0.5">{detail}</p>}
-                {groupCount > 0 && (
-                    <p className="news-group-suffix" data-test-id={`news-group-suffix-${event.id}`}>
-                        {t.News_GroupSuffix([groupCount])}
+    /** Рисует содержимое группы и связанные с ней действия. */
+    private renderGroupContent(
+        event: NewsEvent,
+        detail: string | null,
+        message: React.ReactNode,
+        groupCount: number,
+        anyUnread: boolean,
+    ) {
+        return (
+            <>
+                <div className="news-row-content">
+                    <p className={anyUnread ? 'news-row-message-unread' : 'news-row-message'} data-unread={anyUnread}>
+                        {message}
                     </p>
-                )}
-                <p className="text-xs text-muted mt-1">
-                    {t.News_HappenedAt([formatTs(event.created_at)])}
-                    {event.is_archived && <span className="ml-2 text-warning">{t.News_Archived()}</span>}
-                </p>
+                    {detail && <p className="news-row-detail">{detail}</p>}
+                    {groupCount > 0 && (
+                        <p className="news-group-suffix" data-test-id={`news-group-suffix-${event.id}`}>
+                            {t.News_GroupSuffix([groupCount])}
+                        </p>
+                    )}
+                    <p className="news-row-time">
+                        {t.News_HappenedAt([formatTs(event.created_at)])}
+                        {event.is_archived && <span className="news-row-archived">{t.News_Archived()}</span>}
+                    </p>
+                </div>
+                <div className="news-row-actions">
+                    <ArchiveToggle
+                        event={event}
+                        onArchive={this.props.onArchive}
+                        onUnarchive={this.props.onUnarchive}
+                    />
+                </div>
+            </>
+        );
+    }
+
+    /** Рисует группу событий и связанные с ней действия. */
+    render() {
+        const {group, detail, message} = this.props;
+        const event = group.first;
+        const anyUnread = hasUnread(group);
+        return (
+            <div
+                className={event.is_archived ? 'news-row-archived-item' : 'news-row'}
+                data-unread={anyUnread}
+                data-archived={event.is_archived}
+                data-test-id={`news-event-${event.id}`}
+                onMouseEnter={this.markGroupRead}
+            >
+                {this.renderGroupContent(event, detail, message, group.others.length, anyUnread)}
             </div>
-            <div className="flex-shrink-0 mt-0.5 news-row-actions">
-                <ArchiveToggle event={event} onArchive={onArchive} onUnarchive={onUnarchive} />
-            </div>
-        </div>
-    );
-};
+        );
+    }
+}

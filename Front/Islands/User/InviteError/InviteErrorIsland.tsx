@@ -1,6 +1,8 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 
+const inviteContactPhone = t.Invite_Contact_Phone;
+
 interface SupportContacts {
     email: string;
     phone: string;
@@ -22,18 +24,20 @@ interface Props {
     supportContacts: SupportContacts;
 }
 
-const ContactLine: React.FC<{label: string; href: string; text: string; external?: boolean}> = ({
-    label,
-    href,
-    text,
-    external = false,
-}) => (
-    <div className="text-on-surface">
-        <span className="text-muted">{label}: </span>
+const ContactLine: React.FC<{
+    label: string;
+    href: string;
+    text: string;
+    external?: boolean;
+}> = ({label, href, text, external = false}) => (
+    <div className="invite-foreground">
+        <span className="invite-muted">{label}: </span>
         <a
             href={href}
-            className="text-accent hover:underline"
-            {...(external ? {target: '_blank', rel: 'noopener noreferrer'} : {})}
+            className="invite-contact-link"
+            {...(external
+                ? {target: '_blank', rel: 'noopener noreferrer'}
+                : {})}
         >
             {text}
         </a>
@@ -44,19 +48,37 @@ const ContactLine: React.FC<{label: string; href: string; text: string; external
 const telegramHref = (value: string): string =>
     value.startsWith('http') ? value : `https://t.me/${value.replace('@', '')}`;
 
-const SupportBlock: React.FC<{contacts: SupportContacts; message: string}> = ({contacts, message}) => {
+const SupportBlock: React.FC<{
+    contacts: SupportContacts;
+    message: string;
+}> = ({contacts, message}) => {
     if (!contacts.email && !contacts.phone && !contacts.telegram) return null;
 
     return (
-        <div className="border-t border-subtle pt-5">
-            <p className="text-sm text-secondary mb-3">{message}</p>
-            <div className="space-y-2 text-sm">
-                {contacts.email && <ContactLine label="Email" href={`mailto:${contacts.email}`} text={contacts.email} />}
+        <div className="invite-support">
+            <p className="invite-contact-message">{message}</p>
+            <div className="invite-contacts">
+                {contacts.email && (
+                    <ContactLine
+                        label="Email"
+                        href={`mailto:${contacts.email}`}
+                        text={contacts.email}
+                    />
+                )}
                 {contacts.phone && (
-                    <ContactLine label={t.Invite_Contact_Phone()} href={`tel:${contacts.phone}`} text={contacts.phone} />
+                    <ContactLine
+                        label={inviteContactPhone()}
+                        href={`tel:${contacts.phone}`}
+                        text={contacts.phone}
+                    />
                 )}
                 {contacts.telegram && (
-                    <ContactLine label="Telegram" href={telegramHref(contacts.telegram)} text={contacts.telegram} external />
+                    <ContactLine
+                        label="Telegram"
+                        href={telegramHref(contacts.telegram)}
+                        text={contacts.telegram}
+                        external
+                    />
                 )}
             </div>
         </div>
@@ -64,13 +86,21 @@ const SupportBlock: React.FC<{contacts: SupportContacts; message: string}> = ({c
 };
 
 /** Приглашение не сработало: почему и что теперь делать. */
-export const InviteErrorIsland: React.FC<Props> = ({title, reason, guidance, contactMessage, supportContacts}) => (
-    <div className="max-w-lg mx-auto mt-12" data-test-id="invite-error">
-        <div className="rounded-lg border border-default bg-surface p-8 text-center">
-            <div className="mb-4 text-4xl text-warning" aria-hidden="true">!</div>
-            <h1 className="text-xl font-semibold text-on-surface mb-3">{title}</h1>
-            <p className="text-secondary mb-6">{reason}</p>
-            {guidance && <p className="text-on-surface mb-6">{guidance}</p>}
+export const InviteErrorIsland: React.FC<Props> = ({
+    title,
+    reason,
+    guidance,
+    contactMessage,
+    supportContacts,
+}) => (
+    <div className="invite-page" data-test-id="invite-error">
+        <div className="invite-card">
+            <div className="invite-warning" aria-hidden="true">
+                !
+            </div>
+            <h1 className="invite-title">{title}</h1>
+            <p className="invite-reason">{reason}</p>
+            {guidance && <p className="invite-guidance">{guidance}</p>}
             <SupportBlock contacts={supportContacts} message={contactMessage} />
         </div>
     </div>

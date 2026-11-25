@@ -1,0 +1,27 @@
+@utility tone-calnavneutral-plain { @apply text-inherit; }
+@utility tone-calnav-soft { @apply bg-calnav-wash text-calnav-ink hover:text-calnav-ink-hover; }
+@utility shape-calendar-pager-week { @apply mb-4; }
+@utility shape-calendar-pager-expert { @apply mb-2; }
+@utility layout-calendar-pager { @apply grid grid-cols-3 items-center gap-3; }
+@utility shape-calendar-pager-side { @apply min-w-0; }
+@utility layout-calendar-pager-side { @apply flex items-center gap-2; }
+@utility layout-calendar-pager-next { @apply justify-end; }
+@utility layout-calendar-pager-center { @apply flex flex-col items-center gap-1; }
+@utility layout-calendar-pager-range { @apply flex items-center gap-2 flex-wrap justify-center; }
+@utility type-calendar-pager-title { @apply text-sm font-semibold; }
+@utility type-calendar-week-title { @apply first-letter:uppercase; }
+@utility shape-calendar-pager-arrow { @apply w-9 h-9 rounded-full; }
+@utility layout-calendar-pager-arrow { @apply inline-flex items-center justify-center; }
+@utility motion-calendar-pager-arrow { @apply transition-all; }
+
+@layer components {
+  .calendar-week-pager { @apply shape-calendar-pager-week layout-calendar-pager tone-calnavneutral-plain; }
+  .calendar-expert-pager { @apply shape-calendar-pager-expert layout-calendar-pager tone-calnavneutral-plain; }
+  .calendar-pager-side { @apply shape-calendar-pager-side layout-calendar-pager-side tone-calnavneutral-plain; }
+  .calendar-pager-next { @apply shape-calendar-pager-side layout-calendar-pager-side layout-calendar-pager-next tone-calnavneutral-plain; }
+  .calendar-pager-center { @apply shape-calendar-pager-side layout-calendar-pager-center tone-calnavneutral-plain; }
+  .calendar-pager-range { @apply layout-calendar-pager-range tone-calnavneutral-plain; }
+  .calendar-week-title { @apply type-calendar-pager-title type-calendar-week-title tone-supportprimary-plain; }
+  .calendar-expert-title { @apply type-calendar-pager-title tone-supportprimary-plain; }
+  .calendar-pager-arrow { @apply shape-calendar-pager-arrow layout-calendar-pager-arrow motion-calendar-pager-arrow tone-calnav-soft; }
+}

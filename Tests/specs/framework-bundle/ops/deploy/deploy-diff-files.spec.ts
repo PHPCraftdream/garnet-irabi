@@ -4,7 +4,7 @@
  * Exercises the --file / --files flags in dry-run mode:
  *   1. Missing path → non-zero exit + stderr mentions the path
  *   2. Single Framework PHP file → upload preview, no rspack message
- *   3. public/<App>/ asset → auto-included 4 *Gen.php
+ *   3. public/<App>/ asset → auto-included *Gen.php
  */
 
 import { test, expect } from '../../../../helpers/scoped-test';
@@ -16,6 +16,15 @@ import * as fs from 'node:fs';
 const execAsync = promisify(execFile);
 
 const GARNET_ROOT = path.resolve(__dirname, '../../../../..');
+
+// deploy:diff reads WorkDir/ConfigDev/ssh.ini even for --dry-run and fails with
+// "host is empty" when no deploy target is configured.
+const SSH_INI = path.join(GARNET_ROOT, 'WorkDir', 'ConfigDev', 'ssh.ini');
+const SSH_CONFIGURED = (() => {
+    try { return /^\s*host\s*=\s*["']?[^"'\s;]/m.test(fs.readFileSync(SSH_INI, 'utf8')); } catch { return false; }
+})();
+// Assets live under Public/assets/<app dir name>/ — the checkout need not be called IRabi.
+const APP_ASSETS = path.basename(GARNET_ROOT).toLowerCase();
 
 async function runGarnet(args: string[]): Promise<{ stdout: string; stderr: string; exitCode: number }> {
     try {
@@ -34,6 +43,10 @@ async function runGarnet(args: string[]): Promise<{ stdout: string; stderr: stri
 }
 
 test.describe('deploy:diff --file (files mode)', () => {
+    // Help output and the pure PHP unit need no deploy host; the dry-run cases do.
+    test.beforeEach(({}, testInfo) => {
+        test.skip(!SSH_CONFIGURED && !/help|perAppIndexContent/.test(testInfo.title), 'deploy:diff needs a deploy host in WorkDir/ConfigDev/ssh.ini');
+    });
     test('missing path errors out with clear message', async () => {
         const result = await runGarnet([
             'deploy:diff',
@@ -59,18 +72,18 @@ test.describe('deploy:diff --file (files mode)', () => {
         expect(result.stdout).not.toContain('frontend rebuild');
     });
 
-    test('auto-includes 4 *Gen.php when public/* asset is listed', async () => {
+    test('auto-includes the *Gen.php files when public/* asset is listed', async () => {
         // Asset hashes change on every bundle. Pick the current
         // foreground.foreground.<hash>.gen.js so this test survives the next
         // FrontBuilder run without manual updates.
-        const assetDir = path.join(GARNET_ROOT, 'Public', 'assets', 'irabi', 'gen', 'js');
+        const assetDir = path.join(GARNET_ROOT, 'Public', 'assets', APP_ASSETS, 'gen', 'js');
         const assetFile = fs.readdirSync(assetDir)
             .find(f => /^foreground\.foreground\.[a-f0-9]+\.gen\.js$/.test(f));
         expect(assetFile, 'no foreground.foreground.<hash>.gen.js — rebuild first').toBeTruthy();
 
         const result = await runGarnet([
             'deploy:diff',
-            `--file=Public/assets/irabi/gen/js/${assetFile}`,
+            `--file=Public/assets/${APP_ASSETS}/gen/js/${assetFile}`,
             '--dry-run',
         ]);
 

@@ -1,8 +1,12 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {translateStatus} from '../../../../../Common/booking/statusHelpers';
-import {CalendarPagerCounts, PagerCountItem} from '../../../../../Common/booking/CalendarPagerCounts';
-import {PAGER_KINDS} from './calendarHelpers';
+import {translateStatus} from '../../../../../Common/booking/status/statusHelpers';
+import {CalendarPagerCounts, PagerCountItem} from '../../../../../Common/booking/formatting/CalendarPagerCounts';
+import {PAGER_KINDS} from './logic/calendarHelpers';
+
+const slotsPrevWeek = t.Slots_PrevWeek;
+const slotsToday = t.Slots_Today;
+const slotsNextWeek = t.Slots_NextWeek;
 
 export type PagerKind = typeof PAGER_KINDS[number];
 export type PagerCounts = Record<PagerKind, number>;
@@ -12,11 +16,12 @@ const pagerItems = (counts: PagerCounts): PagerCountItem[] =>
         key: k,
         count: counts[k],
         label: k === 'pending' ? t.Slot_Filter_Pending() : translateStatus(k),
-        cls: `cal-nav-badge--${k}`,
+        kind: k,
     }));
 
 const Chevron: React.FC<{points: string}> = ({points}) => (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"
+    strokeLinecap="round" strokeLinejoin="round">
         <polyline points={points} />
     </svg>
 );
@@ -50,13 +55,13 @@ export const CalendarPager: React.FC<Props> = ({
     onToday,
     activeKind,
 }) => (
-    <div className="grid grid-cols-3 items-center gap-3 mb-2" data-test-id="expert-week-nav">
-        <div className="flex items-center gap-2 min-w-0">
+    <div className="calendar-expert-pager" data-test-id="expert-week-nav">
+        <div className="calendar-pager-side">
             <button
-                className="btn-icon-round"
+                className="calendar-pager-arrow"
                 onClick={onPrev}
-                title={t.Slots_PrevWeek()}
-                aria-label={t.Slots_PrevWeek()}
+                title={slotsPrevWeek()}
+                aria-label={slotsPrevWeek()}
                 data-test-id="expert-week-prev"
             >
                 <Chevron points="10 12 6 8 10 4" />
@@ -64,25 +69,25 @@ export const CalendarPager: React.FC<Props> = ({
             <CalendarPagerCounts items={pagerItems(prevCounts)} side="prev" activeKey={activeKind} />
         </div>
 
-        <div className="flex flex-col items-center gap-1 min-w-0">
+        <div className="calendar-pager-center">
             <CalendarPagerCounts items={pagerItems(windowCounts)} side="now" activeKey={activeKind} />
-            <div className="flex items-center gap-2 flex-wrap justify-center">
-                <span className="text-sm font-semibold text-on-surface">{rangeLabel}</span>
+            <div className="calendar-pager-range">
+                <span className="calendar-expert-title">{rangeLabel}</span>
                 {weekOffset !== 0 && (
-                    <button className="chip" onClick={onToday} data-test-id="expert-week-today">
-                        {t.Slots_Today()}
+                    <button className="slot-filter-chip" onClick={onToday} data-test-id="expert-week-today">
+                        {slotsToday()}
                     </button>
                 )}
             </div>
         </div>
 
-        <div className="flex items-center gap-2 min-w-0 justify-end">
+        <div className="calendar-pager-next">
             <CalendarPagerCounts items={pagerItems(nextCounts)} side="next" activeKey={activeKind} />
             <button
-                className="btn-icon-round"
+                className="calendar-pager-arrow"
                 onClick={onNext}
-                title={t.Slots_NextWeek()}
-                aria-label={t.Slots_NextWeek()}
+                title={slotsNextWeek()}
+                aria-label={slotsNextWeek()}
                 data-test-id="expert-week-next"
             >
                 <Chevron points="6 4 10 8 6 12" />

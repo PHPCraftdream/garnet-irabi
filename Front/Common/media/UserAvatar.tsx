@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {UserX} from 'lucide-react';
 
 interface Props {
@@ -7,15 +8,20 @@ interface Props {
     /** sm → 36px (lists/headers), lg → 80px (profile cards). */
     size?: 'sm' | 'lg';
     testId?: string;
-    className?: string;
     /** Blocked account → show a neutral placeholder icon, never the real photo. */
     disabled?: boolean;
 }
 
+/** Возвращает заглавную букву слова. */
+function initialOf(word: string): string {
+    return word[0]?.toUpperCase() || '';
+}
+
+/** Собирает инициалы максимум из двух слов. */
 function initialsOf(name: string): string {
     return (name || '?')
         .split(' ')
-        .map(w => w[0]?.toUpperCase() || '')
+        .map(initialOf)
         .slice(0, 2)
         .join('');
 }
@@ -24,25 +30,40 @@ function initialsOf(name: string): string {
  * Shared user avatar: renders the uploaded photo when present, otherwise an
  * initials circle. Same footprint either way (see avatar-circle* CSS).
  */
-export const UserAvatar: React.FC<Props> = ({name, avatar, size = 'sm', testId, className, disabled}) => {
-    const imgCls = size === 'lg' ? 'avatar-circle-lg-img' : 'avatar-circle-img';
-    const boxCls = size === 'lg' ? 'avatar-circle-lg' : 'avatar-circle';
-    const cls = (base: string) => (className ? `${base} ${className}` : base);
+export class UserAvatar extends AntiHookComponent<Props> {
+/** Рисует фото, нейтральную заглушку или инициалы. */
+    render() {
+        const {name, avatar, size = 'sm', testId, disabled} = this.props;
 
-    if (disabled) {
+        if (disabled) {
+            return (
+                <div
+                    className={size === 'lg' ? 'avatar-circle-lg' : 'avatar-circle'}
+                    data-test-id={testId ? `${testId}-disabled` : undefined}
+                    title={name}
+                >
+                    <UserX size={size === 'lg' ? 36 : 18} aria-hidden="true" />
+                </div>
+            );
+        }
+
+        if (avatar) {
+            return (
+                <img
+                    src={avatar}
+                    alt={name}
+                    className={size === 'lg' ? 'avatar-circle-lg-img' : 'avatar-circle-img'}
+                    data-test-id={testId}
+                />
+            );
+        }
         return (
-            <div className={cls(boxCls)} data-test-id={testId ? `${testId}-disabled` : undefined} title={name}>
-                <UserX size={size === 'lg' ? 36 : 18} aria-hidden="true" />
+            <div
+                className={size === 'lg' ? 'avatar-circle-lg' : 'avatar-circle'}
+                data-test-id={testId ? `${testId}-fallback` : undefined}
+            >
+                {initialsOf(name)}
             </div>
         );
     }
-
-    if (avatar) {
-        return <img src={avatar} alt={name} className={cls(imgCls)} data-test-id={testId} />;
-    }
-    return (
-        <div className={cls(boxCls)} data-test-id={testId ? `${testId}-fallback` : undefined}>
-            {initialsOf(name)}
-        </div>
-    );
-};
+}

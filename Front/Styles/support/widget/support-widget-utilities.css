@@ -1,0 +1,204 @@
+@utility tone-widgetneutral-plain { @apply text-inherit; }
+@utility layout-widget-inline-actions { @apply flex items-center gap-2; }
+@utility layout-widget-reply-row { @apply flex gap-2; }
+@utility shape-widget-ticket-list { @apply h-full; }
+@utility layout-widget-ticket-list { @apply flex flex-col; }
+@utility shape-widget-ticket-heading { @apply p-3 border-b; }
+
+@utility tone-widgetim-outlined { @apply border-widgetim-edge bg-widgetim-wash hover:bg-widgetim-wash-hover; }
+@utility tone-widgetim-plain { @apply text-widgetim-ink; }
+@utility shape-widget-im-link { @apply px-4 py-2 border-b; }
+@utility shape-im-thread-heading { @apply px-6 py-4 border-b; }
+@utility type-im-thread-title { @apply text-base font-semibold; }
+@utility shape-im-thread-body { @apply px-6 py-4; }
+@utility shape-im-thread-reply { @apply px-6 py-4 border-t; }
+@utility shape-im-thread-input { @apply mb-2; }
+@utility layout-im-thread-actions { @apply flex items-center gap-3; }
+@utility type-widget-im-link { @apply text-sm no-underline; }
+@utility shape-widget-im-unread { @apply ml-auto rounded-full w-5 h-5; }
+@utility layout-widget-im-unread { @apply flex items-center justify-center shrink-0; }
+@utility type-widget-im-unread { @apply text-xs; }
+
+@utility tone-widgetmessage-soft { @apply bg-widgetmessage-wash text-widgetmessage-ink; }
+@utility tone-widgetown-soft { @apply bg-widgetown-wash text-widgetown-ink; }
+@utility shape-support-page-ticket { @apply px-4 py-3 border-b; }
+@utility layout-support-ticket-heading { @apply flex items-start justify-between gap-2; }
+@utility layout-support-ticket-metadata { @apply flex items-center gap-2; }
+@utility shape-support-ticket-metadata { @apply mt-1; }
+@utility shape-support-ticket-unread { @apply rounded-full w-5 h-5; }
+@utility layout-support-message-row { @apply flex justify-start data-[own=true]:justify-end; }
+@utility shape-support-message-row { @apply mb-3 data-[tight=true]:mb-2; }
+@utility shape-support-message-bubble { @apply max-w-[70%] rounded-lg px-4 py-3 data-[tight=true]:max-w-[80%] data-[tight=true]:px-3 data-[tight=true]:py-2 data-[admin-internal=true]:border; }
+@utility type-support-message-bubble { @apply text-sm; }
+@utility type-support-message-author { @apply text-xs font-medium; }
+@utility shape-support-message-author { @apply mb-1 data-[tight=true]:mb-0.5; }
+@utility type-support-message-body { @apply whitespace-pre-wrap break-words; }
+@utility shape-support-message-time { @apply mt-1; }
+@utility shape-support-message-system-time { @apply mt-0.5; }
+@utility shape-support-message-system { @apply my-3 px-4 data-[tight=true]:my-2 data-[tight=true]:px-2; }
+@utility type-support-message-system { @apply text-center text-xs italic; }
+
+@utility layout-conversation-attachments { @apply inline-flex items-center gap-0.5 shrink-0; }
+@utility layout-conversation-partner { @apply flex-1; }
+@utility shape-conversation-partner { @apply min-w-0; }
+@utility layout-support-truncate { @apply overflow-hidden; }
+@utility type-conversation-partner { @apply text-sm font-medium text-ellipsis whitespace-nowrap hover:underline; }
+@utility layout-conversation-snippet { @apply flex-1; }
+@utility type-conversation-snippet { @apply text-xs text-ellipsis whitespace-nowrap; }
+@utility type-conversation-you { @apply font-medium; }
+@utility layout-conversation-time { @apply shrink-0; }
+@utility layout-conversation-content { @apply flex items-start gap-2; }
+
+@utility layout-im-conversation-list { @apply flex flex-col overflow-hidden; }
+@utility shape-im-conversation-list { @apply w-1/3 border rounded-lg; }
+@utility layout-im-conversation-list-header { @apply flex flex-col gap-2; }
+@utility shape-im-conversation-list-header { @apply p-3 border-b; }
+@utility shape-im-conversation-create { @apply w-full py-2 px-3 rounded; }
+@utility type-im-conversation-create { @apply text-sm font-medium; }
+
+@utility shape-im-new-form { @apply p-6; }
+@utility layout-im-new-form { @apply flex flex-col gap-4; }
+@utility type-im-new-title { @apply text-lg font-semibold; }
+
+@utility layout-im-recipient-trigger { @apply flex items-center justify-between; }
+@utility shape-im-recipient-trigger { @apply h-10 w-full rounded-md border px-3 py-2; }
+@utility focus-im-recipient-trigger { @apply focus:outline-none focus:ring-2; }
+@utility type-im-recipient-text { @apply text-sm; }
+@utility shape-im-recipient-content { @apply rounded-md border; }
+@utility effect-im-recipient-content { @apply shadow-lg; }
+@utility layout-im-recipient-content { @apply z-50; }
+@utility shape-im-recipient-search-wrap { @apply p-2 border-b; }
+@utility shape-im-recipient-search { @apply w-full px-2 py-1.5 rounded border-0; }
+@utility focus-im-recipient-search { @apply outline-none; }
+@utility shape-im-recipient-list { @apply max-h-60 p-1; }
+@utility layout-im-recipient-list { @apply overflow-y-auto; }
+@utility shape-im-recipient-empty { @apply py-4; }
+@utility type-im-recipient-empty { @apply text-center text-sm; }
+@utility layout-im-recipient-option { @apply flex items-center gap-2.5; }
+@utility shape-im-recipient-option { @apply w-full rounded-sm px-2 py-2; }
+@utility behavior-im-recipient-option { @apply cursor-pointer; }
+@utility shape-im-recipient-chevron { @apply ml-2; }
+@utility effect-im-recipient-chevron { @apply opacity-50; }
+@utility layout-im-recipient-avatar { @apply flex items-center justify-center shrink-0; }
+@utility shape-im-recipient-avatar { @apply w-8 h-8 rounded-full; }
+@utility shape-im-recipient-avatar-small { @apply w-6 h-6 rounded-full; }
+@utility type-im-recipient-avatar { @apply text-xs font-bold; }
+@utility type-im-recipient-avatar-small { @apply text-[10px] font-bold; }
+@utility type-im-recipient-truncate { @apply text-ellipsis whitespace-nowrap; }
+@utility layout-im-recipient-option-label { @apply flex-1; }
+@utility type-im-recipient-option-label { @apply text-left text-ellipsis whitespace-nowrap; }
+@utility tone-recipienttrigger-outlined { @apply border-recipienttrigger-edge bg-recipienttrigger-wash text-recipienttrigger-ink hover:bg-recipienttrigger-wash-hover focus:ring-recipienttrigger-edge-focus; }
+@utility tone-recipientsearch-soft { @apply bg-recipientsearch-wash text-recipientsearch-ink placeholder:text-recipientsearch-ink-placeholder; }
+@utility tone-recipientaccent-soft { @apply bg-recipientaccent-wash text-recipientaccent-ink; }
+
+@utility tone-imback-outlined { @apply border-imback-edge bg-imback-wash text-imback-ink; }
+@utility shape-im-page { @apply mx-auto w-full max-w-4xl; }
+@utility layout-im-page { @apply flex gap-6; }
+@utility shape-im-page-layout { min-height: 500px; }
+@utility layout-im-page-thread { @apply flex flex-col overflow-hidden; }
+@utility shape-im-page-thread { @apply w-2/3 border rounded-lg; }
+@utility layout-im-page-back { @apply hidden max-md:flex items-center gap-1; }
+@utility shape-im-page-back { @apply w-full px-4 py-2.5 border-b; }
+@utility type-im-page-back { @apply text-sm font-medium text-left; }
+@utility layout-im-page-empty { @apply flex-1 flex items-center justify-center; }
+@utility layout-im-page-fab { @apply fixed bottom-4 right-20 z-[100] flex items-center justify-center; }
+@utility shape-im-page-fab { @apply w-12 h-12 rounded-full; }
+@utility effect-im-page-fab { @apply shadow-lg; }
+@utility type-im-page-fab { @apply no-underline; }
+
+@utility tone-ticketstatusblue-soft { @apply bg-ticketstatusblue-wash text-ticketstatusblue-ink; }
+@utility tone-ticketstatuscyan-soft { @apply bg-ticketstatuscyan-wash text-ticketstatuscyan-ink; }
+@utility tone-ticketstatusyellow-soft { @apply bg-ticketstatusyellow-wash text-ticketstatusyellow-ink; }
+@utility tone-ticketstatusorange-soft { @apply bg-ticketstatusorange-wash text-ticketstatusorange-ink; }
+@utility tone-ticketstatusred-soft { @apply bg-ticketstatusred-wash text-ticketstatusred-ink; }
+@utility tone-ticketstatuspurple-soft { @apply bg-ticketstatuspurple-wash text-ticketstatuspurple-ink; }
+@utility tone-ticketstatusgreen-soft { @apply bg-ticketstatusgreen-wash text-ticketstatusgreen-ink; }
+@utility tone-ticketstatusgray-soft { @apply bg-ticketstatusgray-wash text-ticketstatusgray-ink; }
+@utility layout-support-ticket-status { @apply inline-block; }
+@utility shape-support-ticket-status { @apply px-2 py-0.5 rounded; }
+@utility type-support-ticket-status { @apply text-xs font-medium; }
+
+@utility layout-support-page-thread-heading { @apply flex items-center gap-3; }
+@utility layout-support-page-thread-title { @apply flex-1; }
+@utility shape-support-page-list-pager { @apply p-2 border-b; }
+@utility shape-support-page-list-pager-bottom { @apply p-2 border-t; }
+
+@utility tone-admininternal-outlined { @apply bg-admininternal-wash text-admininternal-ink border-admininternal-edge; }
+@utility tone-adminhistory-plain { @apply text-adminhistory-ink hover:text-adminhistory-ink-hover; }
+@utility shape-admin-support-heading { @apply mb-1; }
+@utility shape-admin-support-history { @apply mt-4; }
+@utility shape-admin-support-history-box { @apply mt-2 rounded border; }
+@utility layout-admin-support-history-box { @apply overflow-hidden; }
+@utility layout-admin-support-history-toggle { @apply flex items-center gap-1; }
+@utility type-admin-support-history-time { @apply text-xs whitespace-nowrap; }
+@utility behavior-admin-support-history-chevron { @apply select-none; }
+
+@utility shape-admin-support-timeline { @apply border rounded-lg mb-4; }
+@utility layout-admin-support-timeline { @apply overflow-hidden; }
+@utility shape-admin-support-timeline-scroll { @apply max-h-96 px-4 py-3; }
+@utility shape-admin-support-timeline-empty { @apply py-4; }
+@utility type-admin-support-timeline-empty { @apply text-center text-sm; }
+
+@utility shape-admin-support-form { @apply mb-4; }
+@utility shape-admin-support-divider { @apply border-t pt-3 mb-3; }
+@utility shape-admin-support-banner { @apply px-3 py-1.5 rounded; }
+@utility type-admin-support-banner { @apply text-xs font-semibold uppercase tracking-wide; }
+@utility shape-admin-support-panel { @apply rounded-lg p-4 border; }
+@utility type-admin-support-form-label { @apply text-sm font-medium; }
+
+@utility tone-adminstatusactive-outlined { @apply border-adminstatusactive-edge bg-adminstatusactive-wash text-adminstatusactive-ink [&:is(:hover,:focus,:active)]:bg-adminstatusactive-wash-hover; }
+@utility tone-adminstatusempty-outline { @apply border-adminstatusempty-edge text-adminstatusempty-ink; }
+@utility layout-admin-support-status-bar { @apply flex flex-wrap gap-2; }
+@utility layout-admin-support-status-chip { @apply inline-flex items-center; }
+@utility shape-admin-support-status-chip { @apply px-3 py-1.5 rounded-md border; }
+@utility shape-admin-support-status-count { @apply ml-1.5; }
+@utility effect-admin-support-status-count { @apply opacity-75; }
+
+@utility tone-adminticketrole-soft { @apply bg-adminticketrole-wash text-adminticketrole-ink; }
+@utility layout-admin-ticket-heading { @apply flex items-center gap-3 flex-wrap; }
+@utility layout-admin-ticket-title { @apply flex-1; }
+@utility layout-admin-ticket-meta { @apply flex gap-4 flex-wrap; }
+@utility shape-admin-ticket-person { @apply mt-3 border rounded-lg p-3; }
+@utility type-admin-ticket-person-label { @apply text-xs font-medium uppercase; }
+@utility layout-admin-ticket-person-details { @apply flex items-center gap-2 flex-wrap; }
+@utility shape-admin-ticket-role { @apply px-1.5 py-0.5 rounded; }
+@utility layout-admin-ticket-controls { @apply flex gap-4 flex-wrap; }
+@utility shape-admin-ticket-controls { @apply mt-4; }
+
+@utility shape-admin-attachment-panel { @apply mt-2 rounded border p-3; }
+@utility layout-admin-attachment-list { @apply flex flex-col gap-2; }
+@utility shape-admin-attachment-thumb { @apply w-10 h-10 rounded; }
+@utility layout-admin-attachment-icon { @apply flex items-center justify-center; }
+@utility layout-admin-attachment-row { @apply flex items-center gap-3; }
+@utility shape-admin-attachment-row { @apply px-3 py-2 rounded border; }
+@utility shape-admin-attachment-image { @apply object-cover; }
+@utility type-admin-attachment-name { @apply text-ellipsis whitespace-nowrap font-medium; }
+@utility layout-admin-attachment-meta { @apply flex gap-2; }
+
+@utility shape-admin-support-detail { @apply p-4 max-w-4xl; }
+@utility shape-admin-support-detail-notice { @apply p-6; }
+@utility shape-admin-support-stale { @apply mb-3; }
+@utility shape-admin-support-stale-dismiss { @apply ml-2; }
+@utility tone-adminsupportdismiss-outline { @apply border-transparent text-inherit; }
+
+@utility layout-admin-support-queue-subject { @apply inline-flex items-center gap-1; }
+@utility type-admin-support-queue-link { @apply hover:underline text-left font-medium; }
+@utility shape-admin-support-queue-unread { @apply rounded-full px-1.5 py-0.5; }
+@utility type-admin-support-queue-unread { @apply text-xs font-bold; }
+
+@utility shape-admin-support-context-panel { @apply space-y-1; }
+@utility shape-admin-support-context-issues { @apply ml-4; }
+@utility type-admin-support-context-issues { @apply list-disc text-xs; }
+@utility type-admin-support-context-issue { @apply font-medium; }
+
+@utility shape-admin-client-context-balance { @apply ms-2; }
+
+@utility tone-adminstatusemptyhover-outlined { @apply border-adminstatusemptyhover-edge text-adminstatusemptyhover-ink hover:bg-adminstatusemptyhover-wash-hover; }
+@utility tone-recipientoption-soft { @apply text-recipientoption-ink hover:bg-recipientoption-wash-hover; }
+@utility tone-widgetfab-soft { @apply bg-widgetfab-wash text-widgetfab-ink hover:bg-widgetfab-wash-hover; }
+@utility tone-adminattachmenticon-soft { @apply bg-adminattachmenticon-wash text-adminattachmenticon-ink; }
+@utility tone-adminattachmentrow-outlined { @apply border-adminattachmentrow-edge bg-adminattachmentrow-wash hover:border-adminattachmentrow-edge-hover; }
+@utility tone-widgethistory-soft { @apply text-inherit hover:bg-widgethistory-wash-hover; }
+@utility tone-ticketrowactive-outlined { @apply border-ticketrowactive-edge bg-ticketrowactive-wash hover:bg-ticketrowactive-wash-hover focus:bg-ticketrowactive-wash-focus; }
+@utility tone-ticketrowidle-outlined { @apply border-ticketrowidle-edge hover:bg-ticketrowidle-wash-hover; }
+

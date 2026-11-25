@@ -1,0 +1,79 @@
+@utility tone-slotneutral-plain { @apply text-inherit; }
+@utility tone-slotaccent-soft { @apply bg-slotaccent-wash; }
+@utility tone-slotsurface-soft { @apply bg-slotsurface-wash; }
+@utility tone-slotborder-outline { @apply border-slotborder-edge; }
+@utility tone-slotlink-plain { @apply text-slotlink-ink; }
+@utility tone-slotformatonline-soft { @apply bg-slotformatonline-wash text-slotformatonline-ink; }
+@utility tone-slotformatoffline-soft { @apply bg-slotformatoffline-wash text-slotformatoffline-ink; }
+@utility tone-slotpanel-outlined { @apply bg-slotpanel-wash border-slotpanel-edge; }
+@utility tone-slotstatusdanger-soft { @apply bg-slotstatusdanger-wash text-slotstatusdanger-ink; }
+@utility tone-slotstatusinfo-soft { @apply bg-slotstatusinfo-wash text-slotstatusinfo-ink; }
+@utility tone-slotclose-plain { @apply text-slotclose-ink hover:text-slotclose-ink-hover; }
+@utility tone-slothead-outlined { @apply bg-slothead-wash border-slothead-edge; }
+@utility shape-slot-detail-panel { @apply p-3 rounded-lg; }
+@utility shape-slot-detail-compact { @apply px-3 py-2 rounded-lg; }
+@utility shape-slot-detail-expert { @apply px-3 py-2 rounded-lg border; }
+@utility layout-slot-detail-row { @apply flex items-center justify-between; }
+@utility shape-slot-detail-label { @apply mb-1; }
+@utility type-slot-detail-label { @apply text-sm; }
+@utility type-slot-detail-date { @apply font-semibold; }
+@utility shape-slot-detail-time { @apply mt-0.5; }
+@utility type-slot-detail-time { @apply text-sm font-medium; }
+@utility shape-slot-detail-duration { @apply mt-1; }
+@utility type-slot-detail-duration { @apply text-xs; }
+@utility type-slot-detail-price { @apply font-semibold text-lg; }
+@utility type-slot-detail-expert-link { @apply font-medium hover:underline; }
+@utility type-slot-detail-message-link { @apply text-sm hover:underline; }
+@utility shape-slot-format-badge { @apply px-2 py-0.5 rounded; }
+@utility layout-slot-format-badge { @apply inline-block; }
+@utility type-slot-format-badge { @apply text-xs; }
+@utility shape-slot-format-place { @apply mt-1.5; }
+@utility shape-slot-chat-panel { @apply border rounded-lg; }
+@utility layout-slot-chat-panel { @apply overflow-hidden; }
+@utility shape-slot-chat-heading { @apply px-3 py-2 border-b; }
+@utility type-slot-chat-heading { @apply text-sm font-medium; }
+@utility shape-slot-modal-header { @apply p-4 border-b rounded-t-lg; }
+@utility layout-slot-modal-header { @apply flex justify-between items-center sticky top-0 z-10; }
+@utility layout-slot-modal-heading-group { @apply flex items-center gap-3; }
+@utility type-slot-modal-title { @apply text-lg font-semibold; }
+@utility type-slot-modal-status { @apply text-xs font-medium; }
+@utility type-slot-modal-close { @apply text-xl leading-none; }
+@utility shape-slot-modal-body { @apply p-4 space-y-4; }
+@utility layout-slot-modal-body { @apply overflow-y-auto flex-1; }
+
+@layer components {
+  .slot-detail-datetime { @apply shape-slot-detail-panel tone-slotaccent-soft; }
+  .slot-detail-label { @apply shape-slot-detail-label type-slot-detail-label tone-supportmuted-plain; }
+  .slot-detail-date { @apply type-slot-detail-date tone-slotneutral-plain; }
+  .slot-detail-time { @apply shape-slot-detail-time type-slot-detail-time tone-slotneutral-plain; }
+  .slot-detail-duration { @apply shape-slot-detail-duration type-slot-detail-duration tone-supportmuted-plain; }
+  .slot-detail-price-panel { @apply shape-slot-detail-compact layout-slot-detail-row tone-slotsurface-soft; }
+  .slot-detail-price-label { @apply type-slot-detail-label tone-supportmuted-plain; }
+  .slot-detail-price-value { @apply type-slot-detail-price tone-slotneutral-plain; }
+  .slot-detail-expert-panel { @apply shape-slot-detail-expert tone-slotborder-outline; }
+  .slot-detail-expert-row { @apply layout-slot-detail-row tone-slotneutral-plain; }
+  .slot-detail-expert-link { @apply type-slot-detail-expert-link tone-slotlink-plain; }
+  .slot-detail-message-link { @apply type-slot-detail-message-link tone-slotlink-plain; }
+  .slot-format-panel { @apply shape-slot-detail-compact tone-slotsurface-soft; }
+  .slot-format-badge {
+    @apply shape-slot-format-badge layout-slot-format-badge type-slot-format-badge tone-slotformatonline-soft;
+    &[data-format="offline"] { @apply tone-slotformatoffline-soft; }
+  }
+  .slot-format-place { @apply shape-slot-format-place type-slot-detail-label tone-slotneutral-plain; }
+  .slot-format-place-label { @apply tone-supportmuted-plain; }
+  .slot-chat-panel { @apply shape-slot-chat-panel layout-slot-chat-panel tone-slotborder-outline; }
+  .slot-chat-heading { @apply shape-slot-chat-heading type-slot-chat-heading tone-slotpanel-outlined; }
+  .slot-cancel-reason-panel { @apply shape-slot-detail-expert tone-slotpanel-outlined; }
+  .slot-cancel-reason-text { @apply type-slot-detail-label tone-slotneutral-plain; }
+  .slot-modal-header { @apply shape-slot-modal-header layout-slot-modal-header tone-slothead-outlined; }
+  .slot-modal-heading-group { @apply layout-slot-modal-heading-group tone-slotneutral-plain; }
+  .slot-modal-title { @apply type-slot-modal-title tone-slotneutral-plain; }
+  .slot-modal-status {
+    @apply shape-slot-format-badge layout-slot-format-badge type-slot-modal-status tone-slotstatusinfo-soft;
+    &[data-status="confirmed"] { @apply tone-slotformatonline-soft; }
+    &[data-status="pending"] { @apply tone-slotformatoffline-soft; }
+    &[data-status="cancelled"] { @apply tone-slotstatusdanger-soft; }
+  }
+  .slot-modal-close { @apply type-slot-modal-close tone-slotclose-plain; }
+  .slot-modal-body { @apply shape-slot-modal-body layout-slot-modal-body tone-slotneutral-plain; }
+}

@@ -7,27 +7,27 @@
    meta referrer=no-referrer, the continue link adds
    rel="noopener noreferrer nofollow", and the destination URL was
    already validated server-side. #}
-<div class="page-narrow space-y-4 mt-6" data-test-id="external-redirect">
-    <h1 class="section-heading">{{ title }}</h1>
+<div class="external-page" data-test-id="external-redirect">
+    <h1 class="external-heading">{{ title }}</h1>
 
     {% if target_url is null %}
-        <p class="text-danger">{{ invalid_label }}</p>
-        <a href="/" class="btn btn-secondary btn-sm">{{ cancel_label }}</a>
+        <p class="external-invalid">{{ invalid_label }}</p>
+        <a href="/" class="external-secondary-action">{{ cancel_label }}</a>
     {% else %}
-        <p class="text-muted">{{ description }}</p>
-        <dl class="text-sm space-y-1">
-            <div><dt class="inline text-muted">{{ host_label }}:</dt> <dd class="inline font-medium">{{ host_text }}</dd></div>
-            <div><dt class="inline text-muted">{{ full_label }}:</dt> <dd class="inline break-all">{{ target_url }}</dd></div>
+        <p class="external-description">{{ description }}</p>
+        <dl class="external-details">
+            <div><dt class="external-term">{{ host_label }}:</dt> <dd class="external-host">{{ host_text }}</dd></div>
+            <div><dt class="external-term">{{ full_label }}:</dt> <dd class="external-url">{{ target_url }}</dd></div>
         </dl>
-        <div class="flex gap-2">
+        <div class="external-actions">
             <a
                 href="{{ target_url }}"
                 rel="noopener noreferrer nofollow"
                 referrerpolicy="no-referrer"
-                class="btn btn-primary btn-sm"
+                class="external-primary-action"
                 data-test-id="external-continue"
             >{{ continue_label }}</a>
-            <a href="/" class="btn btn-secondary btn-sm" data-test-id="external-cancel">{{ cancel_label }}</a>
+            <a href="/" class="external-secondary-action" data-test-id="external-cancel">{{ cancel_label }}</a>
         </div>
     {% endif %}
 </div>

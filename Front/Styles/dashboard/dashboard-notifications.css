@@ -1,0 +1,14 @@
+@utility tone-dashneutral-plain { @apply text-inherit; }
+@utility tone-dashwarn-outlined { @apply border-dashwarn-edge bg-dashwarn-wash text-dashwarn-ink hover:bg-dashwarn-wash-hover; }
+@utility tone-dashaccent-outlined { @apply border-dashaccent-edge bg-dashaccent-wash text-dashaccent-ink hover:bg-dashaccent-wash-hover; }
+@utility layout-dashboard-notifications { @apply flex flex-wrap gap-3; }
+@utility shape-dashboard-notification { @apply px-4 py-2.5 rounded-lg border; }
+@utility layout-dashboard-notification { @apply flex items-center gap-2; }
+@utility type-dashboard-notification { @apply text-sm font-medium no-underline; }
+@utility motion-dashboard-notification { @apply transition-colors; }
+
+@layer components {
+  .dashboard-notifications { @apply layout-dashboard-notifications tone-dashneutral-plain; }
+  .dashboard-support-notification { @apply shape-dashboard-notification layout-dashboard-notification type-dashboard-notification motion-dashboard-notification tone-dashwarn-outlined; }
+  .dashboard-message-notification { @apply shape-dashboard-notification layout-dashboard-notification type-dashboard-notification motion-dashboard-notification tone-dashaccent-outlined; }
+}

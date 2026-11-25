@@ -1,9 +1,11 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {SupportTicket, SupportStatus, UserRole} from '../../../Comms/Support/parts/supportTypes';
 import {StatusBadge} from '../../../Comms/Support/parts/supportRenders';
-import {ALL_STATUSES, statusLabel} from '../../../Comms/Support/parts/render/supportStatus';
-import {AdminUserLink} from '../../../../Common/people/EntityLinks';
+import {ALL_STATUSES} from '../../../Comms/Support/parts/render/ALL_STATUSES';
+import {statusLabel} from '../../Grid/statusLabel';
+import {AdminUserLink} from '../../../../Common/people/links/EntityLinks';
 import {UserAvatar} from '../../../../Common/media/UserAvatar';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 
@@ -31,81 +33,110 @@ const roleLabel = (role?: UserRole): string => {
     return role ? (map[role] || role) : '';
 };
 
-export default function TicketHeader({ticket, moderators, onStatusChange, onAssign}: Props) {
-    const userName = ticket.user_name || ticket.account_name || '';
-    const userLogin = ticket.user_login || ticket.account_login || '';
-    const displayName = userName || userLogin || `#${ticket.account_id}`;
+    /** Формирует представление данных для соответствующего раздела панели. */
+function statusOption(status: SupportStatus) {
+    return <option key={status} value={status}>{statusLabel(status)}</option>;
+}
 
-    return (
-        <div className="mb-4">
-            {/* Title + status */}
-            <div className="flex items-center gap-3 flex-wrap">
-                <h2 className="text-lg font-semibold text-on-surface flex-1">{ticket.subject}</h2>
-                <StatusBadge status={ticket.status} />
-            </div>
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+function moderatorOption(moderator: Moderator) {
+    return <option key={moderator.id} value={moderator.id}>{moderator.name || moderator.login}</option>;
+}
 
-            {/* Timestamps */}
-            <div className="text-xs text-muted mt-1 flex gap-4 flex-wrap">
-                <span>{t.Support_Assignee()}: {ticket.assignee_name || ticket.assignee_login || t.Support_Unassigned()}</span>
-                <span>{t.Support_Created()}: {formatTs(ticket.created_at)}</span>
-                <span>{t.Support_Updated()}: {formatTs(ticket.updated_at)}</span>
-            </div>
+export default class TicketHeader extends AntiHookComponent<Props> {
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeStatus = (event: React.ChangeEvent<HTMLSelectElement>) =>
+        this.props.onStatusChange(event.target.value as SupportStatus);
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeAssignee = (event: React.ChangeEvent<HTMLSelectElement>) =>
+        this.props.onAssign(event.target.value ? Number(event.target.value) : null);
 
-            {/* User info block */}
+    /** Формирует представление данных для соответствующего раздела панели. */
+    private renderPerson() {
+        const {ticket} = this.props;
+        const userName = ticket.user_name || ticket.account_name || '';
+        const userLogin = ticket.user_login || ticket.account_login || '';
+        const displayName = userName || userLogin || `#${ticket.account_id}`;
+        return (
             <div
                 data-test-id="support-user-info"
-                className="mt-3 bg-surface-alt border border-default rounded-lg p-3"
+                className="admin-ticket-person"
             >
-                <div className="text-xs text-muted font-medium uppercase mb-1">{t.Support_User()}</div>
-                <div className="flex items-center gap-2 flex-wrap text-sm">
+                <div className="admin-ticket-person-label">{t.Support_User()}</div>
+                <div className="admin-ticket-person-details">
                     <UserAvatar name={displayName} avatar={ticket.user_avatar} testId="support-user-avatar" />
                     <span data-test-id="support-user-name">
                         <AdminUserLink id={ticket.account_id} name={displayName} />
                     </span>
                     {userLogin && userName && (
-                        <span className="text-muted text-xs" data-test-id="support-user-login">({userLogin})</span>
+                        <span className="support-ticket-time" data-test-id="support-user-login">({userLogin})</span>
                     )}
                     {ticket.user_role && (
                         <span
                             data-test-id="support-user-role"
-                            className="inline-block px-1.5 py-0.5 rounded text-xs font-medium bg-theme-border text-secondary"
+                            className="admin-ticket-role"
                         >
                             {roleLabel(ticket.user_role)}
                         </span>
                     )}
                 </div>
             </div>
+        );
+    }
 
-            {/* Controls: status + assignee */}
-            <div className="flex gap-4 mt-4 flex-wrap">
+    /** Формирует представление данных для соответствующего раздела панели. */
+    private renderControls() {
+        const {ticket, moderators} = this.props;
+        return (
+            <div className="admin-ticket-controls">
                 <div>
-                    <label className="text-xs text-muted block mb-1">{t.Support_ChangeStatus()}</label>
+                    <label className="admin-ticket-control-label">{t.Support_ChangeStatus()}</label>
                     <select
-                        className="form-control text-sm"
+                        className="support-form-control"
                         value={ticket.status}
-                        onChange={e => onStatusChange(e.target.value as SupportStatus)}
+                        onChange={this.changeStatus}
                         data-test-id="support-status-select"
                     >
-                        {ALL_STATUSES.map(s => (
-                            <option key={s} value={s}>{statusLabel(s)}</option>
-                        ))}
+                        {ALL_STATUSES.map(statusOption)}
                     </select>
                 </div>
                 <div>
-                    <label className="text-xs text-muted block mb-1">{t.Support_Assign()}</label>
+                    <label className="admin-ticket-control-label">{t.Support_Assign()}</label>
                     <select
-                        className="form-control text-sm"
+                        className="support-form-control"
                         value={ticket.assignee_id ?? ''}
-                        onChange={e => onAssign(e.target.value ? Number(e.target.value) : null)}
+                        onChange={this.changeAssignee}
                         data-test-id="support-assignee-select"
                     >
                         <option value="">{t.Support_Unassigned()}</option>
-                        {moderators.map(m => (
-                            <option key={m.id} value={m.id}>{m.name || m.login}</option>
-                        ))}
+                        {moderators.map(moderatorOption)}
                     </select>
                 </div>
             </div>
-        </div>
-    );
+        );
+    }
+
+    /** Формирует представление данных для соответствующего раздела панели. */
+    render() {
+        const {ticket} = this.props;
+        return (
+            <div className="admin-support-form">
+                {/* Title + status */}
+                <div className="admin-ticket-heading">
+                    <h2 className="admin-ticket-title">{ticket.subject}</h2>
+                    <StatusBadge status={ticket.status} />
+                </div>
+
+                {/* Timestamps */}
+                <div className="admin-ticket-meta">
+                    <span>{t.Support_Assignee()}: {ticket.assignee_name || ticket.assignee_login ||
+        t.Support_Unassigned()}</span>
+                    <span>{t.Support_Created()}: {formatTs(ticket.created_at)}</span>
+                    <span>{t.Support_Updated()}: {formatTs(ticket.updated_at)}</span>
+                </div>
+                {this.renderPerson()}
+                {this.renderControls()}
+            </div>
+        );
+    }
 }

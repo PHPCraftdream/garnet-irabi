@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {useState} from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {appUrl} from '@common/Utils/Url/appUrl';
 import ImageLightbox from '../../../../Common/media/ImageLightbox';
@@ -12,22 +12,26 @@ interface WelcomeCardProps {
     avatar_full?: string | null;
 }
 
+type BadgeRole = 'user' | 'expert' | 'moderator' | 'owner' | 'admin';
+
+const initialChar = (word: string) => word[0]?.toUpperCase() || '';
+
+/** Берёт первые буквы имени для заглушки аватара. */
 function initialsOf(name: string): string {
     return (name || '?')
         .split(' ')
-        .map(w => w[0]?.toUpperCase() || '')
+        .map(initialChar)
         .slice(0, 2)
         .join('');
 }
 
-const roleBadgeColor: Record<string, string> = {
-    user: 'status-info',
-    expert: 'status-success',
-    moderator: 'status-special',
-    owner: 'status-warning',
-    admin: 'status-danger',
-};
+/** Ограничивает значение роли допустимыми ролями бейджа. */
+function badgeRole(role: string): BadgeRole {
+    if (role === 'expert' || role === 'moderator' || role === 'owner' || role === 'admin') return role;
+    return 'user';
+}
 
+/** Возвращает локализованное название роли пользователя. */
 function roleLabel(role: string): string {
     if (role === 'expert') return t.Dash_Role_Expert();
     if (role === 'moderator') return t.Dash_Role_Moderator();
@@ -35,47 +39,79 @@ function roleLabel(role: string): string {
     return t.Dash_Role_User();
 }
 
-export const WelcomeCard: React.FC<WelcomeCardProps> = ({name, role, balance, avatar, avatar_full}) => {
-    const [lightboxOpen, setLightboxOpen] = useState(false);
-    const fullPhoto = avatar_full || avatar;
-    return (
-    <div className="welcome-card" data-test-id="welcome-card">
-        <div className="welcome-card-row">
-            <div className="flex items-center gap-3">
-                {avatar ? (
-                    <button
-                        type="button"
-                        className="p-0 border-0 bg-transparent cursor-pointer"
-                        onClick={() => setLightboxOpen(true)}
-                        title={name}
-                    >
-                        <img src={avatar} alt={name} className="avatar-circle-img" data-test-id="welcome-avatar" />
-                    </button>
-                ) : (
-                    <div className="avatar-circle" data-test-id="welcome-avatar-fallback">{initialsOf(name)}</div>
-                )}
-                {lightboxOpen && fullPhoto && (
-                    <ImageLightbox src={fullPhoto} alt={name} onClose={() => setLightboxOpen(false)} />
-                )}
+export class WelcomeCard extends AntiHookComponent<WelcomeCardProps> {
+    private readonly lightboxState = new Carburetor({open: false});
+    /** Открывает полноразмерный аватар в просмотрщике. */
+    private readonly openAvatar = () => this.lightboxState.setData({open: true});
+    /** Закрывает просмотр полноразмерного аватара. */
+    private readonly closeAvatar = () => this.lightboxState.setData({open: false});
+
+    /** Показывает баланс и ссылку для его пополнения. */
+    private renderBalance() {
+        const {balance} = this.props;
+        return (
+            <div className="welcome-balance">
                 <div>
-                    <h1 className="text-xl font-semibold text-on-surface mb-1">
-                        {t.Dash_Welcome([name])}
-                    </h1>
-                    <span className={`role-badge ${roleBadgeColor[role] || roleBadgeColor.user}`}>
-                        {roleLabel(role)}
-                    </span>
+                    <span className="welcome-balance-label">{t.Dashboard_Balance()}:</span>{' '}
+                    <strong className="welcome-balance-value">{balance} &#8381;</strong>
                 </div>
-            </div>
-            <div className="flex items-center gap-3">
-                <div>
-                    <span className="text-sm text-muted">{t.Dashboard_Balance()}:</span>{' '}
-                    <strong className="text-accent">{balance} &#8381;</strong>
-                </div>
-                <a href={appUrl('/balance')} className="btn btn-sm btn-outline-primary" data-test-id="balance-link">
+                <a href={appUrl('/balance')} className="compact-outline-action" data-test-id="balance-link">
                     {t.Balance_TopUp()}
                 </a>
             </div>
-        </div>
-    </div>
-    );
-};
+        );
+    }
+
+    /** Показывает аватар, его заглушку и просмотр полноразмерного фото. */
+    private renderAvatar(name: string, avatar?: string | null, fullPhoto?: string | null, open = false) {
+        return (
+            <>
+                {avatar ? (
+                    <button
+                        type="button"
+                        className="welcome-avatar-button"
+                        onClick={this.openAvatar}
+                        title={name}
+                    >
+                        <img
+                            src={avatar}
+                            alt={name}
+                            className="welcome-avatar-image"
+                            data-test-id="welcome-avatar"
+                        />
+                    </button>
+                ) : (
+                    <div className="welcome-avatar-fallback" data-test-id="welcome-avatar-fallback">
+                        {initialsOf(name)}
+                    </div>
+                )}
+                {open && fullPhoto && (
+                    <ImageLightbox src={fullPhoto} alt={name} onClose={this.closeAvatar} />
+                )}
+            </>
+        );
+    }
+
+    /** Показывает приветствие, роль, аватар и баланс пользователя. */
+    public render() {
+        const {name, role, avatar, avatar_full} = this.props;
+        const {open} = this.useCarburetor(this.lightboxState);
+        const fullPhoto = avatar_full || avatar;
+        return (
+            <div className="dashboard-welcome-card" data-test-id="welcome-card">
+                <div className="dashboard-welcome-row">
+                    <div className="welcome-identity">
+                        {this.renderAvatar(name, avatar, fullPhoto, open)}
+                        <div>
+                            <h1 className="welcome-heading">{t.Dash_Welcome([name])}</h1>
+                            <span className="welcome-role" data-role={badgeRole(role)}>
+                                {roleLabel(role)}
+                            </span>
+                        </div>
+                    </div>
+                    {this.renderBalance()}
+                </div>
+            </div>
+        );
+    }
+}

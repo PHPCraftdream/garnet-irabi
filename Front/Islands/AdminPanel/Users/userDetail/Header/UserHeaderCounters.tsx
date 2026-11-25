@@ -1,6 +1,11 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 
+const user_ExpertCancellations = t.User_ExpertCancellations;
+const user_ExpertDeclines = t.User_ExpertDeclines;
+const user_UserCancellations = t.User_UserCancellations;
+const user_UserDeclines = t.User_UserDeclines;
+
 interface CountersProps {
     expertCancelCount: number;
     userCancelCount: number;
@@ -24,11 +29,15 @@ export const UserHeaderCounters: React.FC<CountersProps> = ({
     if (!expertCancelCount && !userCancelCount && !expertDeclineCount && !userDeclineCount) return null;
 
     return (
-        <div className="admin-user-meta">
-            {expertDeclineCount > 0 && <span className="text-warning">{t.User_ExpertDeclines()}: {expertDeclineCount}</span>}
-            {expertCancelCount > 0 && <span className="text-danger">{t.User_ExpertCancellations()}: {expertCancelCount}</span>}
-            {userDeclineCount > 0 && <span className="text-warning">{t.User_UserDeclines()}: {userDeclineCount}</span>}
-            {userCancelCount > 0 && <span className="text-danger">{t.User_UserCancellations()}: {userCancelCount}</span>}
+        <div className="admin-ticket-meta">
+            {expertDeclineCount > 0 && <span className="admin-user-count-warning">{user_ExpertDeclines()}:{' '}
+        {expertDeclineCount}</span>}
+            {expertCancelCount > 0 && <span
+        className="admin-user-count-danger">{user_ExpertCancellations()}: {expertCancelCount}</span>}
+            {userDeclineCount > 0 && <span className="admin-user-count-warning">{user_UserDeclines()}:{' '}
+        {userDeclineCount}</span>}
+            {userCancelCount > 0 && <span className="admin-user-count-danger">{user_UserCancellations()}:{' '}
+        {userCancelCount}</span>}
         </div>
     );
 };

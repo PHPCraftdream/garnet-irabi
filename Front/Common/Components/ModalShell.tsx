@@ -1,6 +1,9 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {Portal} from '@common/Components/Layout/Portal';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
+
+const actionClose = t.Action_Close;
 
 /**
  * Оболочка модального окна: затемнение, карточка, шапка с крестиком.
@@ -11,20 +14,20 @@ import {I18nForeground as t} from '../../I18nGen/I18nForeground';
  */
 interface HeaderProps {
     title: string;
-    titleClassName?: string;
+    titleTone?: 'danger';
     testId: string;
     onClose: () => void;
 }
 
-const ModalHeader: React.FC<HeaderProps> = ({title, titleClassName = '', testId, onClose}) => (
-    <div className="fg-modal-header-row">
-        <h3 className={`fg-modal-title ${titleClassName}`}>{title}</h3>
+const ModalHeader: React.FC<HeaderProps> = ({title, titleTone, testId, onClose}) => (
+    <div className="modal-shell-header">
+        <h3 className="modal-shell-title" data-tone={titleTone}>{title}</h3>
         <button
             type="button"
-            className="fg-modal-close-x"
+            className="modal-shell-close"
             onClick={onClose}
-            title={t.Action_Close()}
-            aria-label={t.Action_Close()}
+            title={actionClose()}
+            aria-label={actionClose()}
             data-test-id={`${testId}-close`}
         >
             &times;
@@ -34,8 +37,7 @@ const ModalHeader: React.FC<HeaderProps> = ({title, titleClassName = '', testId,
 
 interface Props {
     title: string;
-    /** Дополнительный класс заголовка — например, красный у необратимых действий. */
-    titleClassName?: string;
+    titleTone?: 'danger';
     testId: string;
     onClose: () => void;
     /** Ширина карточки; по умолчанию средняя. */
@@ -43,17 +45,29 @@ interface Props {
     children: React.ReactNode;
 }
 
-export const ModalShell: React.FC<Props> = ({title, titleClassName, testId, onClose, size = 'md', children}) => (
-    <Portal>
-        <div
-            className="fg-modal-overlay"
-            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-            data-test-id={testId}
-        >
-            <div role="dialog" aria-modal="true" aria-label={title} className={`fg-modal-card fg-modal-card-${size}`}>
-                <ModalHeader title={title} titleClassName={titleClassName} testId={testId} onClose={onClose} />
-                {children}
-            </div>
-        </div>
-    </Portal>
-);
+export class ModalShell extends AntiHookComponent<Props> {
+/** Закрывает окно по клику на затемнённый фон. */
+    private readonly closeFromBackdrop = (event: React.MouseEvent<HTMLDivElement>) => {
+        if (event.target === event.currentTarget) this.props.onClose();
+    };
+
+/** Рисует модальное окно и его содержимое. */
+    render() {
+        const {title, titleTone, testId, onClose, size = 'md', children} = this.props;
+        return (
+            <Portal>
+                <div className="modal-shell-overlay" onClick={this.closeFromBackdrop} data-test-id={testId}>
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label={title}
+                        className={size === 'lg' ? 'modal-shell-card-lg' : 'modal-shell-card-md'}
+                    >
+                        <ModalHeader title={title} titleTone={titleTone} testId={testId} onClose={onClose} />
+                        {children}
+                    </div>
+                </div>
+            </Portal>
+        );
+    }
+}

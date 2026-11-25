@@ -1,9 +1,13 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {useSlotBooking} from '../../SlotsCalendar/Booking/useSlotBooking';
+import {SlotBookingController} from '../../SlotsCalendar/Booking/logic/SlotBookingController';
+import {SlotBookingModalHost} from '../../SlotsCalendar/Booking/components/SlotBookingModalHost';
+
+const USER_DASH_LINK_TEMPLATE = <a className="user-dash-link" />;
 
 interface SlotTeaser {
     id: number;
@@ -15,59 +19,93 @@ interface SlotTeaser {
     label: string;
 }
 
-const SlotTeaserRow: React.FC<{slot: SlotTeaser; onBook: (id: number) => void}> = ({slot, onBook}) => (
-    <div className="booking-row">
-        <div className="min-w-0 flex-1">
-            <div className="text-sm font-medium text-on-surface">{slot.label}</div>
-            <div className="text-sm text-muted">
-                {slot.expert_id > 0
-                    ? (
-                        <UserLink
-                            id={slot.expert_id}
-                            name={slot.expert_name}
-                            isExpert
-                            className="text-accent hover:underline"
-                            onClick={e => e.stopPropagation()}
-                        />
-                    )
-                    : slot.expert_name}
-                {' '}&middot; {formatTs(slot.start_at, {weekday: true})}
+const stopPropagation = (event: React.MouseEvent) => event.stopPropagation();
+const reloadPage = () => window.location.reload();
+
+class SlotTeaserRow extends AntiHookComponent<{slot: SlotTeaser; onBook: (id: number) => void}> {
+    /** Открывает форму бронирования выбранного занятия. */
+    private readonly handleBook = () => this.props.onBook(this.props.slot.id);
+
+    /** Рисует цену и кнопку записи рядом с описанием занятия. */
+    private renderAside() {
+        const {slot} = this.props;
+        return (
+            <div className="user-dash-slot-aside">
+                <span className="user-dash-slot-cost">{slot.cost} &#8381;</span>
+                <button
+                    type="button"
+                    onClick={this.handleBook}
+                    className="primary-action-button" data-user-dash-compact="nowrap"
+                    data-test-id="book-btn"
+                >
+                    {t.Slot_Book()}
+                </button>
             </div>
-            <div className="text-sm text-muted">{slot.duration_min} {t.Slot_Duration_Min()}</div>
-        </div>
-        <div className="flex flex-col items-end gap-1 shrink-0">
-            <span className="text-sm font-medium text-secondary whitespace-nowrap">{slot.cost} &#8381;</span>
-            <button
-                type="button"
-                onClick={() => onBook(slot.id)}
-                className="btn btn-sm btn-primary whitespace-nowrap"
-                data-test-id="book-btn"
-            >
-                {t.Slot_Book()}
-            </button>
-        </div>
-    </div>
-);
+        );
+    }
+
+    /** Отображает занятие с преподавателем, временем и длительностью. */
+    render() {
+        const {slot} = this.props;
+        return (
+            <div>
+                <div className="user-dash-row-main">
+                    <div className="user-dash-row-title">{slot.label}</div>
+                    <div className="user-dash-row-meta">
+                        {slot.expert_id > 0 ? (
+                            <UserLink
+                                id={slot.expert_id}
+                                name={slot.expert_name}
+                                isExpert
+                                anchor={USER_DASH_LINK_TEMPLATE}
+                                onClick={stopPropagation}
+                            />
+                        ) : (
+                            slot.expert_name
+                        )}{' '}
+                        &middot; {formatTs(slot.start_at, {weekday: true})}
+                    </div>
+                    <div className="user-dash-row-meta">
+                        {slot.duration_min} {t.Slot_Duration_Min()}
+                    </div>
+                </div>
+                {this.renderAside()}
+            </div>
+        );
+    }
+}
+
+interface Props {
+    slots: SlotTeaser[];
+}
 
 /** Подборка занятий на главной. */
-export const RecommendedSlots: React.FC<{slots: SlotTeaser[]}> = ({slots}) => {
+export class RecommendedSlots extends AntiHookComponent<Props> {
     // Общий поток бронирования: занятие открывается окном, а не уводит на
     // отдельную страницу. После успеха страница перезагружается, чтобы
     // ближайшие занятия и баланс показали новую бронь.
-    const {openBooking, bookingModal} = useSlotBooking({onBooked: () => window.location.reload()});
+    private readonly controller = new SlotBookingController();
+    /** Запускает бронирование из окна рекомендуемых занятий. */
+    private readonly book = (slotId: number) => void this.controller.openBooking(slotId);
 
-    if (slots.length === 0) return null;
+    /** Показывает карточку с подходящими занятиями. */
+    render() {
+        const {slots} = this.props;
+        if (slots.length === 0) return null;
+        const rows: React.ReactNode[] = [];
+        for (const slot of slots) rows.push(<SlotTeaserRow key={slot.id} slot={slot} onBook={this.book} />);
 
-    return (
-        <div data-test-id="recommended-slots">
-            <div className="section-header-row">
-                <h2 className="section-heading mb-0">{t.Dash_Recommendations()}</h2>
-                <a href={appUrl('/slots')} className="view-all-link">{t.Dash_ViewAll()}</a>
+        return (
+            <div data-test-id="recommended-slots">
+                <div className="user-dash-section-header">
+                    <h2 className="user-dash-section-heading">{t.Dash_Recommendations()}</h2>
+                    <a href={appUrl('/slots')} className="user-dash-view-all">{t.Dash_ViewAll()}</a>
+                </div>
+                <div className="user-dash-list">
+                    {rows}
+                </div>
+                <SlotBookingModalHost controller={this.controller} onBooked={reloadPage} />
             </div>
-            <div className="space-y-2">
-                {slots.map(slot => <SlotTeaserRow key={slot.id} slot={slot} onBook={openBooking} />)}
-            </div>
-            {bookingModal}
-        </div>
-    );
-};
+        );
+    }
+}

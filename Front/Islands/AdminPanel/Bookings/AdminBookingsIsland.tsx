@@ -1,16 +1,16 @@
 import * as React from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {PageResponse} from '@common/hooks/data/usePagination';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {CalendarRange} from 'lucide-react';
-import AdminCancellationsTab, {CancellationRow} from './AdminCancellationsTab';
-import {AccountOption} from '../Shell/adminShared';
-import {AdminSlotsTab} from './AdminSlotsTab';
-import {AdminBookingsTab} from './AdminBookingsTab';
-import {AdminBookingRow, AdminSlotRow} from './bookingsTypes';
+import AdminCancellationsTab, {CancellationRow} from './CancellationsTab/AdminCancellationsTab';
+import {AccountOption} from '../Shell/shared/adminShared';
+import {AdminSlotsTab} from './SlotsTab/AdminSlotsTab';
+import {AdminBookingsTab} from './BookingsTab/AdminBookingsTab';
+import {AdminBookingRow, AdminSlotRow} from './shared/bookingsTypes';
+import {AdminBookingsTabNav, TabKey} from './AdminBookingsTabNav';
 
-export type {AccountOption} from '../Shell/adminShared';
-
-type TabKey = 'slots' | 'bookings' | 'expert-cancellations' | 'user-cancellations';
+export type {AccountOption} from '../Shell/shared/adminShared';
 
 interface Props {
     pageTitle: string;
@@ -31,6 +31,7 @@ interface Props {
     allowedSlotStatuses: string[];
 }
 
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
 function pushTabToUrl(tab: TabKey): void {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
@@ -38,108 +39,105 @@ function pushTabToUrl(tab: TabKey): void {
     window.history.pushState({}, '', url.toString());
 }
 
-interface TabNavProps {
-    tabs: TabKey[];
-    tabLabels: Record<TabKey, string>;
-    activeTab: TabKey;
-    onSelect: (tab: TabKey) => void;
-}
-
-const TabNav: React.FC<TabNavProps> = ({tabs, tabLabels, activeTab, onSelect}) => (
-    <div className="flex flex-wrap items-center gap-2 mb-4" role="tablist" data-test-id="admin-bookings-section-tabs">
-        {tabs.map(tab => (
-            <button
-                key={tab}
-                type="button"
-                role="tab"
-                aria-selected={tab === activeTab}
-                className={`chip ${tab === activeTab ? 'chip-active' : ''}`}
-                onClick={() => onSelect(tab)}
-                data-test-id={`tabnav-btn-${tab}`}
-            >
-                {tabLabels[tab]}
-            </button>
-        ))}
-    </div>
-);
-
 /** Занятия, брони и отмены — четыре вкладки над одним набором фильтров. */
-export const AdminBookingsIsland: React.FC<Props> = (props) => {
-    const {
-        pageTitle, activeTab: initialTab, tabs, tabLabels,
-        experts, users,
-        slotsPayload, slotsPageUrl,
-        bookingsPayload, bookingsPageUrl,
-        expertCancellationsPayload, expertCancellationsPageUrl,
-        userCancellationsPayload, userCancellationsPageUrl,
-        allowedStatuses, allowedSlotStatuses,
-    } = props;
+export class AdminBookingsIsland extends AntiHookComponent<Props> {
+    private readonly ui = new Carburetor({activeTab: this.props.activeTab});
 
-    const [activeTab, setActiveTab] = React.useState<TabKey>(initialTab);
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
+    componentDidMount(): void {
+        super.componentDidMount();
+        window.addEventListener('popstate', this.onPopState);
+    }
 
-    // Кнопка «назад» в браузере должна возвращать на прежнюю вкладку, а не
-    // уводить со страницы целиком.
-    React.useEffect(() => {
-        const onPopState = () => {
-            if (typeof window === 'undefined') return;
-            const requested = new URLSearchParams(window.location.search).get('tab') as TabKey | null;
-            setActiveTab(requested && tabs.includes(requested) ? requested : tabs[0]);
-        };
-        window.addEventListener('popstate', onPopState);
-        return () => window.removeEventListener('popstate', onPopState);
-    }, [tabs]);
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
+    componentWillUnmount(): void {
+        window.removeEventListener('popstate', this.onPopState);
+        super.componentWillUnmount();
+    }
 
-    const handleTabClick = React.useCallback((tab: TabKey) => {
-        if (tab === activeTab || !tabs.includes(tab)) return;
-        setActiveTab(tab);
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly onPopState = () => {
+        if (typeof window === 'undefined') return;
+        const {tabs} = this.props;
+        const requested = new URLSearchParams(window.location.search).get('tab') as TabKey | null;
+        this.ui.setData({activeTab: requested && tabs.includes(requested) ? requested : tabs[0]});
+    };
+
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly handleTabClick = (tab: TabKey) => {
+        if (tab === this.ui.getData().activeTab || !this.props.tabs.includes(tab)) return;
+        this.ui.setData({activeTab: tab});
         pushTabToUrl(tab);
-    }, [activeTab, tabs]);
+    };
 
-    return (
-        <div>
-            <PageHeader title={pageTitle} icon={<CalendarRange size={22} aria-hidden="true" />} />
-            <div className="section-soft">
-                <TabNav tabs={tabs} tabLabels={tabLabels} activeTab={activeTab} onSelect={handleTabClick} />
+    /** Формирует представление данных для соответствующего раздела панели. */
+    private renderTab(activeTab: TabKey) {
+        const {
+            experts, users,
+            slotsPayload, slotsPageUrl,
+            bookingsPayload, bookingsPageUrl,
+            expertCancellationsPayload, expertCancellationsPageUrl,
+            userCancellationsPayload, userCancellationsPageUrl,
+            allowedStatuses, allowedSlotStatuses,
+        } = this.props;
+        return (
+            <>
+            {activeTab === 'slots' && (
+                <AdminSlotsTab
+                    initialData={slotsPayload}
+                    pageUrl={slotsPageUrl}
+                    allowedStatuses={allowedSlotStatuses}
+                    experts={experts}
+                    users={users}
+                />
+            )}
+            {activeTab === 'bookings' && (
+                <AdminBookingsTab
+                    initialData={bookingsPayload}
+                    pageUrl={bookingsPageUrl}
+                    allowedStatuses={allowedStatuses}
+                    experts={experts}
+                    users={users}
+                />
+            )}
+            {activeTab === 'expert-cancellations' && (
+                <AdminCancellationsTab
+                    initialData={expertCancellationsPayload}
+                    pageUrl={expertCancellationsPageUrl}
+                    isModerator={true}
+                    kind="expert"
+                    experts={experts}
+                    users={users}
+                />
+            )}
+            {activeTab === 'user-cancellations' && (
+                <AdminCancellationsTab
+                    initialData={userCancellationsPayload}
+                    pageUrl={userCancellationsPageUrl}
+                    isModerator={true}
+                    kind="user"
+                    experts={experts}
+                    users={users}
+                />
+            )}
+            </>
+        );
+    }
 
-                {activeTab === 'slots' && (
-                    <AdminSlotsTab
-                        initialData={slotsPayload}
-                        pageUrl={slotsPageUrl}
-                        allowedStatuses={allowedSlotStatuses}
-                        experts={experts}
-                        users={users}
-                    />
-                )}
-                {activeTab === 'bookings' && (
-                    <AdminBookingsTab
-                        initialData={bookingsPayload}
-                        pageUrl={bookingsPageUrl}
-                        allowedStatuses={allowedStatuses}
-                        experts={experts}
-                        users={users}
-                    />
-                )}
-                {activeTab === 'expert-cancellations' && (
-                    <AdminCancellationsTab
-                        initialData={expertCancellationsPayload}
-                        pageUrl={expertCancellationsPageUrl}
-                        isModerator={true}
-                        kind="expert"
-                        experts={experts}
-                        users={users}
-                    />
-                )}
-                {activeTab === 'user-cancellations' && (
-                    <AdminCancellationsTab
-                        initialData={userCancellationsPayload}
-                        pageUrl={userCancellationsPageUrl}
-                        isModerator={true}
-                        kind="user"
-                        experts={experts}
-                        users={users}
-                    />
-                )}
+    /** Формирует представление данных для соответствующего раздела панели. */
+    render() {
+        const {pageTitle, tabs, tabLabels} = this.props;
+        const {activeTab} = this.useCarburetor(this.ui);
+        return (
+            <div>
+                <PageHeader title={pageTitle} icon={<CalendarRange size={22} aria-hidden="true" />} />
+                <div className="section-soft">
+                    <AdminBookingsTabNav tabs={tabs} tabLabels={tabLabels} activeTab={activeTab}
+        onSelect={this.handleTabClick} />
+
+                    {this.renderTab(activeTab)}
+                </div>
             </div>
-        </div>
-    );
-};
+        );
+    }
+}

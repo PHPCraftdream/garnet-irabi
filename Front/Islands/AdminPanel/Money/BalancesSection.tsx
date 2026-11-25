@@ -1,12 +1,12 @@
 import * as React from 'react';
-import {useMemo, useRef, useState} from 'react';
-import {AccountBalanceRow, GridConfig, PageResponse} from '../Shell/types';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
+import {AccountBalanceRow, GridConfig, PageResponse} from '../Shell/shared/types';
 import {AdminGrid, AdminGridHandle} from '../Grid/AdminGrid';
 import {Combobox} from '@common/Components/ui/Combobox';
 import {DateInput} from '@common/Components/ui/DateInput';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/Time/DateUtils';
-import {AdminUserLink} from '../../../Common/people/EntityLinks';
+import {AdminUserLink} from '../../../Common/people/links/EntityLinks';
 import {BalanceAdjustModal} from './BalanceAdjustModal';
 
 interface Props {
@@ -35,7 +35,7 @@ const ResetFilterButton: React.FC<{
 }> = ({label, onReset}) => (
     <button
         type="button"
-        className="btn btn-sm btn-outline-secondary"
+        className="booking-cancel-dismiss"
         onClick={onReset}
         data-test-id="balances-reset"
         aria-label={label}
@@ -43,127 +43,169 @@ const ResetFilterButton: React.FC<{
     >×</button>
 );
 
-const AdjustBalanceButton: React.FC<{
+interface AdjustProps {
     row: AccountBalanceRow;
     onAdjust: (row: AccountBalanceRow) => void;
-}> = ({row, onAdjust}) => (
-    <button
-        type="button"
-        className="btn btn-sm btn-outline-primary"
-        onClick={() => onAdjust(row)}
-        data-test-id={`balance-adjust-${row.account_id}`}
-        title={t.Admin_Balance_Adjust()}
-        aria-label={t.Admin_Balance_Adjust()}
-    >
-        {t.Admin_Balance_Adjust()}
-    </button>
-);
+}
 
-export const BalancesSection: React.FC<Props> = ({pageUrl, initialData, initialAccountOptions, config, adjustUrl, canAdjust}) => {
-    const [accountId, setAccountId] = useState<string>('');
-    const [dateFrom, setDateFrom] = useState<string>('');
-    const [dateTo, setDateTo] = useState<string>('');
-    const [adjusting, setAdjusting] = useState<AccountBalanceRow | null>(null);
-    const gridRef = useRef<AdminGridHandle<AccountBalanceRow>>(null);
+class AdjustBalanceButton extends AntiHookComponent<AdjustProps> {
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+    private readonly adjust = () => this.props.onAdjust(this.props.row);
 
-    const allLabel = t.Admin_Filter_All();
+    /** Формирует представление данных для соответствующего раздела панели. */
+    render() {
+        const {row} = this.props;
+        const label = t.Admin_Balance_Adjust();
+        return <button type="button" className="compact-outline-action" onClick={this.adjust}
+            data-test-id={`balance-adjust-${row.account_id}`} title={label} aria-label={label}>{label}</button>;
+    }
+}
 
-    const accountOptions = useMemo(
-        () => [{value: '', label: allLabel}, ...initialAccountOptions],
-        [initialAccountOptions, allLabel],
-    );
+interface BalanceState {
+    accountId: string;
+    dateFrom: string;
+    dateTo: string;
+    adjusting: AccountBalanceRow | null;
+}
 
-    const extraParams = useMemo(() => ({
-        accountId: accountId || undefined,
-        dateFrom: dateFrom ? Math.floor(new Date(dateFrom + 'T00:00:00Z').getTime() / 1000) : undefined,
-        dateTo: dateTo ? Math.floor(new Date(dateTo + 'T23:59:59Z').getTime() / 1000) : undefined,
-    }), [accountId, dateFrom, dateTo]);
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+function balanceRowKey(row: AccountBalanceRow) { return row.id; }
 
-    const hasActive = !!(accountId || dateFrom || dateTo);
-    const reset = () => {
-        setAccountId('');
-        setDateFrom('');
-        setDateTo('');
+    /** Формирует представление данных для соответствующего раздела панели. */
+function renderAccount(row: AccountBalanceRow) {
+    return <AdminUserLink id={row.account_id} name={row.name || row.login} role={row.type} />;
+}
+
+    /** Формирует представление данных для соответствующего раздела панели. */
+function renderBalance(row: AccountBalanceRow) {
+    return <span className="admin-money-balance" data-negative={row.balance < 0}>{row.balance} &#8381;</span>;
+}
+
+    /** Формирует представление данных для соответствующего раздела панели. */
+function renderUpdated(row: AccountBalanceRow) {
+    return <span className="token-registration-ip">{formatTs(row.updated_at)}</span>;
+}
+
+export class BalancesSection extends AntiHookComponent<Props> {
+    private readonly ui = new Carburetor<BalanceState>({accountId: '', dateFrom: '', dateTo: '', adjusting: null});
+    private readonly adjusting = this.connectSelection(this.ui, state => state.adjusting);
+    private readonly gridRef = React.createRef<AdminGridHandle<AccountBalanceRow>>();
+    private optionsCache?: {source: Props['initialAccountOptions']; label: string; result:
+        Props['initialAccountOptions']};
+    private paramsCache?: {accountId: string; dateFrom: string; dateTo: string; result: Record<string, string
+        | number | undefined>};
+    private configCache?: {source: GridConfig; result: GridConfig};
+
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private update(patch: Partial<BalanceState>): void {
+        this.ui.setData({...this.ui.getData(), ...patch});
+    }
+
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeAccount = (accountId: string) => this.update({accountId});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeFrom = (event: React.ChangeEvent<HTMLInputElement>) => this.update({dateFrom:
+        event.target.value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeTo = (event: React.ChangeEvent<HTMLInputElement>) => this.update({dateTo:
+        event.target.value});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly reset = () => this.update({accountId: '', dateFrom: '', dateTo: ''});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly open = (adjusting: AccountBalanceRow) => this.update({adjusting});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly close = () => this.update({adjusting: null});
+
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+    private readonly adjusted = (accountId: number, balance: number, updated_at: number) => {
+        this.gridRef.current?.setItems(previous => {
+            const index = previous.findIndex(row => row.account_id === accountId);
+            if (index < 0) return previous;
+            const next = previous.slice();
+            next[index] = {...next[index], balance, updated_at};
+            return next;
+        });
     };
 
-    const handleAdjusted = (acctId: number, newBalance: number, updatedAt: number) => {
-        gridRef.current?.setItems(prev => prev.map(b => b.account_id === acctId
-            ? {...b, balance: newBalance, updated_at: updatedAt}
-            : b
-        ));
-    };
+    /** Формирует представление данных для соответствующего раздела панели. */
+    private readonly renderAction = (row: AccountBalanceRow) => this.props.canAdjust ? <AdjustBalanceButton
+        row={row} onAdjust={this.open} /> : null;
+    private readonly renders = {name: renderAccount, balance: renderBalance, updated_at: renderUpdated,
+        actions: this.renderAction};
 
-    // Append a synthetic "actions" column on top of the PHP-supplied config —
-    // only when the viewer may adjust (owner/admin). Moderators get a read-only
-    // grid, matching the server-side owner-only gate on ~adjustBalance.
-    const configWithActions = useMemo<GridConfig>(() => (canAdjust ? {
-        ...config,
-        columns: [
-            ...config.columns,
-            {key: 'actions', label: '', shrink: true},
-        ],
-    } : config), [config, canAdjust]);
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+    private accountOptions(label: string) {
+        const {initialAccountOptions: source} = this.props;
+        if (this.optionsCache?.source === source && this.optionsCache.label === label) return this.optionsCache.result;
+        const result = [{value: '', label}, ...source];
+        this.optionsCache = {source, label, result};
+        return result;
+    }
 
-    return (
-        <div>
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+    private extraParams(accountId: string, dateFrom: string, dateTo: string) {
+        const cached = this.paramsCache;
+        if (cached?.accountId === accountId && cached.dateFrom === dateFrom && cached.dateTo === dateTo)
+        return cached.result;
+        const result = {
+            accountId: accountId || undefined,
+            dateFrom: dateFrom ? Math.floor(new Date(dateFrom + 'T00:00:00Z').getTime() / 1000) : undefined,
+            dateTo: dateTo ? Math.floor(new Date(dateTo + 'T23:59:59Z').getTime() / 1000) : undefined,
+        };
+        this.paramsCache = {accountId, dateFrom, dateTo, result};
+        return result;
+    }
+
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+    private gridConfig(): GridConfig {
+        const {config, canAdjust} = this.props;
+        if (!canAdjust) return config;
+        if (this.configCache?.source === config) return this.configCache.result;
+        const result: GridConfig = {...config, columns: [...config.columns, {key: 'actions', label: '', shrink: true}]};
+        this.configCache = {source: config, result};
+        return result;
+    }
+
+    /** Формирует представление данных для соответствующего раздела панели. */
+    private renderFilters(accountId: string, dateFrom: string, dateTo: string) {
+        const allLabel = t.Admin_Filter_All();
+        return (
             <div className="admin-bookings-filters">
                 <FilterCell label={t.Admin_Filter_User()}>
-                    <Combobox
-                        options={accountOptions}
-                        value={accountId}
-                        onChange={setAccountId}
-                        placeholder={allLabel}
-                        searchPlaceholder={t.Admin_Filter_SearchUser()}
-                        testId="balances-account-filter"
-                    />
+                    <Combobox options={this.accountOptions(allLabel)} value={accountId} onChange={this.changeAccount}
+                        placeholder={allLabel} searchPlaceholder={t.Admin_Filter_SearchUser()}
+                            testId="balances-account-filter" />
                 </FilterCell>
                 <FilterCell label={t.Admin_Filter_DateFrom()} htmlFor="balances-date-from">
-                    <DateInput
-                        id="balances-date-from"
-                        className="text-sm"
-                        value={dateFrom}
-                        onChange={e => setDateFrom(e.target.value)}
-                        data-test-id="balances-date-from"
-                    />
+                    <DateInput id="balances-date-from" value={dateFrom} onChange={this.changeFrom}
+                        data-test-id="balances-date-from" />
                 </FilterCell>
                 <FilterCell label={t.Admin_Filter_DateTo()} htmlFor="balances-date-to">
-                    <DateInput
-                        id="balances-date-to"
-                        className="text-sm"
-                        value={dateTo}
-                        onChange={e => setDateTo(e.target.value)}
-                        data-test-id="balances-date-to"
-                    />
+                    <DateInput id="balances-date-to" value={dateTo} onChange={this.changeTo}
+                        data-test-id="balances-date-to" />
                 </FilterCell>
                 <div className="filter-actions">
-                    {hasActive && <ResetFilterButton label={t.Admin_Filter_ResetAll()} onReset={reset} />}
+                    {(accountId || dateFrom || dateTo) && <ResetFilterButton label={t.Admin_Filter_ResetAll()}
+        onReset={this.reset} />}
                 </div>
             </div>
+        );
+    }
 
-            <AdminGrid
-                ref={gridRef}
-                pageUrl={pageUrl}
-                initialData={initialData}
-                extraParams={extraParams}
-                config={configWithActions}
-                rowKey={r => r.id}
-                emptyMessage={t.Admin_NoBalances()}
-                renders={{
-                    name:       r => <AdminUserLink id={r.account_id} name={r.name || r.login} role={r.type} />,
-                    balance:    r => <span className={`font-medium ${r.balance < 0 ? 'text-danger' : 'text-success'}`}>{r.balance} &#8381;</span>,
-                    updated_at: r => <span className="text-muted text-xs">{formatTs(r.updated_at)}</span>,
-                    actions:    r => canAdjust ? <AdjustBalanceButton row={r} onAdjust={setAdjusting} /> : null,
-                }}
-            />
-
-            {adjusting && (
-                <BalanceAdjustModal
-                    row={adjusting}
-                    adjustUrl={adjustUrl}
-                    onClose={() => setAdjusting(null)}
-                    onAdjusted={handleAdjusted}
-                />
-            )}
-        </div>
-    );
-};
+    /** Формирует представление данных для соответствующего раздела панели. */
+    render() {
+        const {pageUrl, initialData, adjustUrl} = this.props;
+        const {accountId, dateFrom, dateTo} = this.useCarburetor(this.ui);
+        const adjusting = this.adjusting();
+        return (
+            <div>
+                {this.renderFilters(accountId, dateFrom, dateTo)}
+                <AdminGrid ref={this.gridRef} pageUrl={pageUrl} initialData={initialData}
+                    extraParams={this.extraParams(accountId, dateFrom, dateTo)} config={this.gridConfig()}
+                    rowKey={balanceRowKey} emptyMessage={t.Admin_NoBalances()} renders={this.renders} />
+                {adjusting && <BalanceAdjustModal row={adjusting} adjustUrl={adjustUrl} onClose={this.close}
+        onAdjusted={this.adjusted} />}
+            </div>
+        );
+    }
+}

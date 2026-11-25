@@ -1,16 +1,17 @@
 import * as React from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
-import {useConfirm} from '@common/hooks/ui/useConfirm';
+import type {ConfirmOptions, ConfirmState} from '@common/hooks/ui/useConfirm';
 import {ConfirmModal} from '@common/Components/Feedback/ConfirmModal';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {TokenRow} from './tokens/tokenTypes';
+import {TokenRow} from './tokens/config/tokenTypes';
 import {TokenFilters} from './tokens/TokenFilters';
 import {TokenTable} from './tokens/TokenTable';
 import {CreateTokenModal} from './tokens/Modals/CreateTokenModal';
 import {RegistrationsModal} from './tokens/Modals/RegistrationsModal';
 import {LinkModal} from './tokens/Modals/LinkModal';
-import {EditTokenModal} from './tokens/Modals/EditTokenModal';
+import {EditTokenModal, type TokenUpdate} from './tokens/Modals/EditTokenModal';
 
 export interface AdminTokensSectionProps {
     listUrl: string;
@@ -22,157 +23,233 @@ export interface AdminTokensSectionProps {
     updateUrl: string;
 }
 
-/**
- * Приглашения: список, фильтры и четыре окна.
- *
- * Раньше всё это лежало одним файлом на 777 строк, где строка таблицы и её
- * кнопки уходили на четырнадцатый уровень вложенности. Здесь остались только
- * состояние, загрузка и действия — разметка живёт в `tokens/`.
- */
-export const AdminTokensSection: React.FC<AdminTokensSectionProps> = (props) => {
-    const {listUrl, createUrl, disableUrl, enableUrl, deleteUrl, registrationsUrl, updateUrl} = props;
+interface State {
+    tokens: TokenRow[];
+    loading: boolean;
+    search: string;
+    status: string;
+    showCreate: boolean;
+    registrations: TokenRow | null;
+    link: string | null;
+    edit: TokenRow | null;
+    confirmState: ConfirmState;
+}
 
-    const [tokens, setTokens] = React.useState<TokenRow[]>([]);
-    const [loading, setLoading] = React.useState(false);
-    const [search, setSearch] = React.useState('');
-    const [statusFilter, setStatusFilter] = React.useState('');
-    const [showCreate, setShowCreate] = React.useState(false);
-    const [regsModal, setRegsModal] = React.useState<TokenRow | null>(null);
-    const [linkModal, setLinkModal] = React.useState<string | null>(null);
-    const [editModal, setEditModal] = React.useState<TokenRow | null>(null);
+export class AdminTokensSection extends AntiHookComponent<AdminTokensSectionProps> {
+    private readonly ui = new Carburetor<State>({tokens: [], loading: false, search: '', status: '',
+        showCreate: false, registrations: null, link: null, edit: null, confirmState: {visible: false,
+        message: '', items: []}});
+    private readonly snapshot = this.connectSelection(this.ui, state => ({tokens: state.tokens, loading:
+        state.loading, search: state.search, status: state.status, showCreate: state.showCreate,
+        registrations: state.registrations, link: state.link, edit: state.edit, confirmState: state.confirmState}));
+    private timer?: ReturnType<typeof setTimeout>;
+    private confirmResolver?: (ok: boolean) => void;
 
-    const {confirmState, confirm, handleConfirm, handleCancel} = useConfirm();
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
+    componentDidMount(): void {
+        super.componentDidMount();
+        void this.fetchTokens();
+    }
 
-    const stateRef = React.useRef({search, statusFilter});
-    stateRef.current = {search, statusFilter};
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
+    componentDidUpdate(previous: Readonly<AdminTokensSectionProps>): void {
+        super.componentDidUpdate(previous);
+        if (previous.listUrl !== this.props.listUrl) this.scheduleFetch();
+    }
 
-    const fetchTokens = React.useCallback(async (overrides: {search?: string; status?: string} = {}) => {
-        const cur = stateRef.current;
-        setLoading(true);
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
+    componentWillUnmount(): void {
+        clearTimeout(this.timer);
+        super.componentWillUnmount();
+    }
+
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private update(patch: Partial<State>): void {
+        this.ui.setData({...this.ui.getData(), ...patch});
+    }
+
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+    private scheduleFetch(): void {
+        clearTimeout(this.timer);
+        this.timer = setTimeout(this.fetchTokens, 300);
+    }
+
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+    private readonly fetchTokens = async () => {
+        const {search, status} = this.ui.getData();
+        this.update({loading: true});
         try {
-            const resp = await sendPost<{search: string; status: string}, {tokens: TokenRow[]}>(listUrl, {
-                search: overrides.search ?? cur.search,
-                status: overrides.status ?? cur.statusFilter,
-            });
-            const data = ('data' in resp && resp.data) ? resp.data : (resp as unknown as {tokens: TokenRow[]});
-            setTokens(data.tokens ?? []);
+            const response = await sendPost<{search: string; status: string}, {tokens:
+        TokenRow[]}>(this.props.listUrl, {search, status});
+            const data = ('data' in response && response.data) ? response.data : (response as unknown as
+        {tokens: TokenRow[]});
+            this.update({tokens: data.tokens ?? []});
         } catch {
             showToast(t.User_LoadError(), 'danger');
         } finally {
-            setLoading(false);
+            this.update({loading: false});
         }
-    }, [listUrl]);
+    };
 
-    React.useEffect(() => {
-        void fetchTokens();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+    private readonly search = (search: string) => {
+        if (search === this.ui.getData().search) return;
+        this.update({search});
+        this.scheduleFetch();
+    };
 
-    // Фильтр с задержкой: набор в поле не должен бить в сервер на каждую букву.
-    const isFirstRef = React.useRef(true);
-    React.useEffect(() => {
-        if (isFirstRef.current) {
-            isFirstRef.current = false;
-            return;
-        }
-        const handle = setTimeout(() => void fetchTokens(), 300);
-        return () => clearTimeout(handle);
-    }, [search, statusFilter, fetchTokens]);
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly filter = (status: string) => {
+        if (status === this.ui.getData().status) return;
+        this.update({status});
+        this.scheduleFetch();
+    };
 
-    /** Общая часть «нажали — сервер ответил — правим строку в списке». */
-    const applyToRow = React.useCallback(async (url: string, id: number, patch: Partial<TokenRow>) => {
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private patchRow(id: number, patch: Partial<TokenRow>): void {
+        const previous = this.ui.getData().tokens;
+        const index = previous.findIndex(row => row.id === id);
+        if (index < 0) return;
+        const tokens = previous.slice();
+        tokens[index] = {...tokens[index], ...patch};
+        this.update({tokens});
+    }
+
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private async changeRow(url: string, id: number, patch?: Partial<TokenRow>): Promise<void> {
         try {
-            const resp = await sendPost<{id: number}, {success: boolean}>(url, {id});
-            const data = ('data' in resp && resp.data) ? resp.data : (resp as unknown as {success: boolean});
+            const response = await sendPost<{id: number}, {success: boolean}>(url, {id});
+            const data = ('data' in response && response.data) ? response.data : (response as unknown as
+        {success: boolean});
             if (!data?.success) {
                 showToast(t.General_Error(), 'danger');
                 return;
             }
-            setTokens(prev => prev.map(tk => tk.id === id ? {...tk, ...patch} : tk));
+            if (patch) this.patchRow(id, patch);
+            else this.update({tokens: this.ui.getData().tokens.filter(row => row.id !== id)});
         } catch {
             showToast(t.General_Error(), 'danger');
         }
-    }, []);
+    }
 
-    const handleToggleDisable = React.useCallback(async (row: TokenRow) => {
-        // Включение обратно ничего не ломает — спрашиваем только про отключение.
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+    private confirm(message: string, opts: string[] | ConfirmOptions = []): Promise<boolean> {
+        return new Promise(resolve => {
+            this.confirmResolver = resolve;
+            if (Array.isArray(opts)) {
+                this.update({confirmState: {visible: true, message, items: opts}});
+            } else {
+                this.update({
+                    confirmState: {
+                        visible: true,
+                        message,
+                        items: opts.items ?? [],
+                        confirmLabel: opts.confirmLabel,
+                        variant: opts.variant,
+                    },
+                });
+            }
+        });
+    }
+
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private settleConfirm(confirmed: boolean): void {
+        const data = this.ui.getData();
+        this.update({confirmState: {...data.confirmState, visible: false}});
+        this.confirmResolver?.(confirmed);
+        this.confirmResolver = null;
+    }
+
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly handleConfirm = (): void => { this.settleConfirm(true); };
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly handleCancel = (): void => { this.settleConfirm(false); };
+
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly toggle = async (row: TokenRow) => {
+        const {enableUrl, disableUrl} = this.props;
         if (row.is_disabled) {
-            await applyToRow(enableUrl, row.id, {is_disabled: false, status: 'active'});
+            await this.changeRow(enableUrl, row.id, {is_disabled: false, status: 'active'});
             return;
         }
+        const ok = await this.confirm(t.Admin_Tokens_DisableConfirm(), {variant: 'danger', confirmLabel:
+        t.Admin_Tokens_Disable()});
+        if (ok) await this.changeRow(disableUrl, row.id, {is_disabled: true, status: 'disabled'});
+    };
 
-        const ok = await confirm(t.Admin_Tokens_DisableConfirm(), {variant: 'danger', confirmLabel: t.Admin_Tokens_Disable()});
-        if (!ok) return;
-        await applyToRow(disableUrl, row.id, {is_disabled: true, status: 'disabled'});
-    }, [applyToRow, confirm, disableUrl, enableUrl]);
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly remove = async (row: TokenRow) => {
+        const {deleteUrl} = this.props;
+        const ok = await this.confirm(t.Admin_Tokens_DeleteConfirm(), {variant: 'danger', confirmLabel:
+        t.Action_Delete()});
+        if (ok) await this.changeRow(deleteUrl, row.id);
+    };
 
-    const handleDelete = React.useCallback(async (row: TokenRow) => {
-        const ok = await confirm(t.Admin_Tokens_DeleteConfirm(), {variant: 'danger', confirmLabel: t.Action_Delete()});
-        if (!ok) return;
-        try {
-            const resp = await sendPost<{id: number}, {success: boolean}>(deleteUrl, {id: row.id});
-            const data = ('data' in resp && resp.data) ? resp.data : (resp as unknown as {success: boolean});
-            if (!data?.success) {
-                showToast(t.General_Error(), 'danger');
-                return;
-            }
-            setTokens(prev => prev.filter(tk => tk.id !== row.id));
-        } catch {
-            showToast(t.General_Error(), 'danger');
-        }
-    }, [confirm, deleteUrl]);
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly openCreate = () => this.update({showCreate: true});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly closeCreate = () => this.update({showCreate: false});
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+    private readonly showRegistrations = (registrations: TokenRow) => this.update({registrations});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly closeRegistrations = () => this.update({registrations: null});
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+    private readonly showLink = (link: string) => this.update({link});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly closeLink = () => this.update({link: null});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly openEdit = (edit: TokenRow) => this.update({edit});
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly closeEdit = () => this.update({edit: null});
 
-    return (
-        <div data-test-id="admin-tokens">
-            <TokenFilters
-                search={search}
-                status={statusFilter}
-                onSearchChange={setSearch}
-                onStatusChange={setStatusFilter}
-                onCreate={() => setShowCreate(true)}
-            />
+    /** Формирует представление данных для соответствующего раздела панели. */
+    private readonly created = (token: TokenRow) => {
+        this.update({tokens: [token, ...this.ui.getData().tokens], showCreate: false});
+    };
 
-            {tokens.length === 0 && (
-                <p className="text-muted">{loading ? t.User_Loading() : t.Admin_Tokens_Empty()}</p>
-            )}
-            {tokens.length > 0 && (
-                <TokenTable
-                    tokens={tokens}
-                    onShowLink={setLinkModal}
-                    onShowRegistrations={setRegsModal}
-                    onEdit={setEditModal}
-                    onToggleDisable={row => void handleToggleDisable(row)}
-                    onDelete={row => void handleDelete(row)}
-                />
-            )}
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+    private readonly edited = (updated: TokenUpdate) => {
+        this.patchRow(updated.id, updated);
+        this.closeEdit();
+    };
 
-            {showCreate && (
-                <CreateTokenModal
-                    createUrl={createUrl}
-                    onCreated={newToken => {
-                        setTokens(prev => [newToken, ...prev]);
-                        setShowCreate(false);
-                    }}
-                    onClose={() => setShowCreate(false)}
-                />
-            )}
-            {regsModal && (
-                <RegistrationsModal token={regsModal} registrationsUrl={registrationsUrl} onClose={() => setRegsModal(null)} />
-            )}
-            {linkModal && <LinkModal url={linkModal} onClose={() => setLinkModal(null)} />}
-            {editModal && (
-                <EditTokenModal
-                    token={editModal}
-                    updateUrl={updateUrl}
-                    onUpdated={updated => {
-                        setTokens(prev => prev.map(tk => tk.id === updated.id ? {...tk, ...updated} : tk));
-                        setEditModal(null);
-                    }}
-                    onClose={() => setEditModal(null)}
-                />
-            )}
+    /** Формирует представление данных для соответствующего раздела панели. */
+    private renderTable(tokens: readonly TokenRow[], loading: boolean) {
+        if (!tokens.length) return <p className="token-cell-muted">{loading ? t.User_Loading() :
+        t.Admin_Tokens_Empty()}</p>;
+        return <TokenTable tokens={tokens} onShowLink={this.showLink} onShowRegistrations={this.showRegistrations}
+            onEdit={this.openEdit} onToggleDisable={this.toggle} onDelete={this.remove} />;
+    }
 
-            <ConfirmModal state={confirmState} onConfirm={handleConfirm} onCancel={handleCancel} />
-        </div>
-    );
-};
+    /** Формирует представление данных для соответствующего раздела панели. */
+    private renderModals({showCreate, registrations, link, edit}: Omit<State, 'tokens' | 'confirmState'>) {
+        const {createUrl, registrationsUrl, updateUrl} = this.props;
+        return (
+            <>
+                {showCreate && <CreateTokenModal createUrl={createUrl} onCreated={this.created}
+        onClose={this.closeCreate} />}
+                {registrations && <RegistrationsModal token={registrations}
+        registrationsUrl={registrationsUrl} onClose={this.closeRegistrations} />}
+                {link && <LinkModal url={link} onClose={this.closeLink} />}
+                {edit && <EditTokenModal token={edit} updateUrl={updateUrl} onUpdated={this.edited}
+        onClose={this.closeEdit} />}
+            </>
+        );
+    }
+
+    /** Формирует представление данных для соответствующего раздела панели. */
+    render() {
+        const state = this.snapshot();
+        const {confirmState} = state;
+        return (
+            <div data-test-id="admin-tokens">
+                <TokenFilters search={state.search} status={state.status} onSearchChange={this.search}
+        onStatusChange={this.filter} onCreate={this.openCreate} />
+                {this.renderTable(state.tokens, state.loading)}
+                {this.renderModals(state)}
+                <ConfirmModal state={{...confirmState, items: [...confirmState.items]}}
+        onConfirm={this.handleConfirm} onCancel={this.handleCancel} />
+            </div>
+        );
+    }
+}

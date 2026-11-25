@@ -1,0 +1,32 @@
+@utility tone-pagerinherit-plain { @apply text-inherit; }
+@utility tone-pagerfree-outlined { @apply bg-pagerfree-wash text-pagerfree-ink border-pagerfree-edge; }
+@utility tone-pagerpending-outlined { @apply bg-pagerpending-wash text-pagerpending-ink border-pagerpending-edge; }
+@utility tone-pagerbooked-outlined { @apply bg-pagerbooked-wash text-pagerbooked-ink border-pagerbooked-edge; }
+@utility tone-pagercompleted-outlined { @apply bg-pagercompleted-wash text-pagercompleted-ink border-pagercompleted-edge; }
+@utility layout-calendar-counts { @apply inline-flex items-center gap-1 flex-wrap; }
+@utility shape-calendar-count { @apply h-[1.35rem] px-1.5 rounded-full border-[1.5px] border-solid; }
+@utility layout-calendar-count { @apply inline-flex items-center gap-1; }
+@utility type-calendar-count { @apply text-[11px] leading-none whitespace-nowrap; }
+@utility effect-calendar-count-dim { opacity: 0.35; }
+@utility type-calendar-count-number { @apply font-bold; }
+@utility type-calendar-count-label { @apply font-medium; }
+
+@layer components {
+  .calendar-counts { @apply layout-calendar-counts tone-pagerinherit-plain; }
+  .calendar-count-chip {
+    @apply shape-calendar-count layout-calendar-count type-calendar-count tone-pagerfree-outlined;
+    &[data-kind="pending"] { @apply tone-pagerpending-outlined; }
+    &[data-kind="booked"] { @apply tone-pagerbooked-outlined; }
+    &[data-kind="mine"] { @apply tone-pagerbooked-outlined; }
+    &[data-kind="completed"] { @apply tone-pagercompleted-outlined; }
+  }
+  .calendar-count-chip-dim {
+    @apply shape-calendar-count layout-calendar-count type-calendar-count effect-calendar-count-dim tone-pagerfree-outlined;
+    &[data-kind="pending"] { @apply tone-pagerpending-outlined; }
+    &[data-kind="booked"] { @apply tone-pagerbooked-outlined; }
+    &[data-kind="mine"] { @apply tone-pagerbooked-outlined; }
+    &[data-kind="completed"] { @apply tone-pagercompleted-outlined; }
+  }
+  .calendar-count-number { @apply type-calendar-count-number tone-pagerinherit-plain; }
+  .calendar-count-label { @apply type-calendar-count-label tone-pagerinherit-plain; }
+}

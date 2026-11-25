@@ -1,8 +1,8 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {translateStatus} from '../../../../../Common/booking/statusHelpers';
+import {translateStatus} from '../../../../../Common/booking/status/statusHelpers';
 import {Slot} from '../../types';
-import {STATUS_FILTERS} from './calendarHelpers';
+import {STATUS_FILTERS} from './logic/STATUS_FILTERS';
 
 export type StatusFilter = typeof STATUS_FILTERS[number];
 
@@ -10,9 +10,11 @@ export type StatusFilter = typeof STATUS_FILTERS[number];
  * `pending` — не статус слота, а состояние брони на нём, поэтому считается
  * отдельной веткой везде, где встречается.
  */
+const hasPendingBooking = (slot: Slot) => slot.booking_status === 'pending';
+
 const countFor = (slots: Slot[], f: StatusFilter): number =>
     f === 'pending'
-        ? slots.filter(s => s.booking_status === 'pending').length
+        ? slots.filter(hasPendingBooking).length
         : slots.filter(s => s.status === f).length;
 
 const labelFor = (f: StatusFilter): string => {
@@ -27,22 +29,54 @@ interface Props {
     onChange: (f: StatusFilter) => void;
 }
 
+interface StatusOptionProps {
+    filter: StatusFilter;
+    active: boolean;
+    count?: number;
+    onChange: (filter: StatusFilter) => void;
+}
+
+class StatusOption extends React.Component<StatusOptionProps> {
+    /** Обработать соответствующее действие пользователя. */
+    private readonly select = () => this.props.onChange(this.props.filter);
+
+    /** Отобразить соответствующую часть интерфейса. */
+    public render() {
+        const {filter, active, count} = this.props;
+        return (
+            <button
+                type="button"
+                className={active ? 'expert-calendar-status-active' : 'expert-calendar-status-button'}
+                onClick={this.select}
+                data-test-id={`filter-status-${filter}`}
+            >
+                {labelFor(filter)}
+                {filter !== 'all' && ` (${count})`}
+            </button>
+        );
+    }
+}
+
 /** Фильтр по состоянию — показываются только те кнопки, за которыми что-то есть. */
-export const CalendarStatusFilter: React.FC<Props> = ({slots, value, onChange}) => (
-    <div className="flex gap-1 mb-2" data-test-id="expert-status-filter">
-        {STATUS_FILTERS
-            .filter(f => f === 'all' || countFor(slots, f) > 0)
-            .map(f => (
-                <button
-                    key={f}
-                    type="button"
-                    className={`status-filter-btn ${value === f ? 'status-filter-btn-active' : ''}`}
-                    onClick={() => onChange(f)}
-                    data-test-id={`filter-status-${f}`}
-                >
-                    {labelFor(f)}
-                    {f !== 'all' && ` (${countFor(slots, f)})`}
-                </button>
-            ))}
-    </div>
-);
+export class CalendarStatusFilter extends React.Component<Props> {
+    /** Отобразить соответствующую часть интерфейса. */
+    private readonly renderFilter = (filter: StatusFilter) => (
+        <StatusOption
+            key={filter}
+            filter={filter}
+            active={this.props.value === filter}
+            count={filter === 'all' ? undefined : countFor(this.props.slots, filter)}
+            onChange={this.props.onChange}
+        />
+    );
+
+    /** Отобразить соответствующую часть интерфейса. */
+    public render() {
+        const visible: StatusFilter[] = [];
+        for (const filter of STATUS_FILTERS) {
+            if (filter === 'all' || countFor(this.props.slots, filter) > 0) visible.push(filter);
+        }
+        return <div className="expert-calendar-filters"
+        data-test-id="expert-status-filter">{visible.map(this.renderFilter)}</div>;
+    }
+}

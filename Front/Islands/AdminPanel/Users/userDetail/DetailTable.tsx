@@ -6,7 +6,7 @@ interface Props {
     /** Число в скобках рядом с заголовком: сколько всего записей. */
     count: number;
     columns: string[];
-    className?: string;
+    spacing?: 'after';
     children: React.ReactNode;
 }
 
@@ -17,12 +17,17 @@ interface Props {
  * `<thead>` и строки заголовков — четыре уровня вложенности до того, как
  * начнутся собственно данные.
  */
-export const DetailTable: React.FC<Props> = ({title, count, columns, className = 'admin-detail-table', children}) => (
+function renderColumn(column: string, index: number) {
+    return <th className="admin-user-history-header-cell" key={index}>{column}</th>;
+}
+
+/** Отображает данные раздела и передаёт действия пользователя обработчикам. */
+export const DetailTable: React.FC<Props> = ({title, count, columns, spacing, children}) => (
     <>
         <SectionTitle>{title} ({count})</SectionTitle>
-        <table className={className}>
+        <table className="admin-user-history-table" data-spacing={spacing}>
             <thead>
-                <tr>{columns.map((c, i) => <th key={i}>{c}</th>)}</tr>
+                <tr className="admin-user-history-header-row">{columns.map(renderColumn)}</tr>
             </thead>
             <tbody>{children}</tbody>
         </table>

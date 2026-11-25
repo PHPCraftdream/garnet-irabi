@@ -1,9 +1,10 @@
 import * as React from 'react';
-import {useState, useEffect} from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import SendButton from '@common/Components/Controls/SendButton';
-import {useBodyScrollLock} from '@common/hooks/ui/useBodyScrollLock';
 import {I18nForeground as t} from '../../I18nGen/I18nForeground';
 import {ModalShell} from './ModalShell';
+
+const batchCancel = t.Batch_Cancel;
 
 /**
  * Окно «подтвердите действие и напишите причину».
@@ -16,7 +17,7 @@ import {ModalShell} from './ModalShell';
  *
  * Компонент отвечает только за причину и за кнопки. Что написано в заголовке
  * и в предупреждении, решает вызывающий — обычно через
- * `Front/Common/booking/bookingAction`.
+ * `Front/Common/booking/actions/rules/bookingAction`.
  */
 
 interface FieldProps {
@@ -24,7 +25,7 @@ interface FieldProps {
     placeholder?: string;
     value: string;
     testId: string;
-    onChange: (v: string) => void;
+    onChange: React.ChangeEventHandler<HTMLTextAreaElement>;
 }
 
 /**
@@ -36,17 +37,17 @@ interface FieldProps {
  * сообщение об ошибке после действия.
  */
 const ReasonField: React.FC<FieldProps> = ({label, placeholder, value, testId, onChange}) => (
-    <div className="mb-4">
-        <label className="text-sm text-secondary mb-1 block">
-            {label} <span className="text-danger" aria-hidden="true">*</span>
+    <div className="reason-modal-field">
+        <label className="booking-cancel-label">
+            {label} <span className="booking-cancel-error" aria-hidden="true">*</span>
         </label>
         <textarea
-            className="form-control"
+            className="booking-cancel-input"
             rows={3}
             required
             aria-required="true"
             value={value}
-            onChange={e => onChange(e.target.value)}
+            onChange={onChange}
             placeholder={placeholder}
             data-test-id={`${testId}-reason`}
         />
@@ -62,15 +63,15 @@ interface FooterProps {
 }
 
 const ReasonFooter: React.FC<FooterProps> = ({submitLabel, sending, testId, onSubmit, onClose}) => (
-    <div className="flex gap-2 justify-end">
+    <div className="booking-cancel-actions">
         <button
             type="button"
-            className="btn btn-secondary"
+            className="confirm-modal-cancel"
             onClick={onClose}
             disabled={sending}
             data-test-id={`${testId}-dismiss`}
         >
-            {t.Batch_Cancel()}
+            {batchCancel()}
         </button>
         <SendButton
             onClick={onSubmit}
@@ -103,73 +104,104 @@ export interface ReasonModalProps {
     onClose: () => void;
 }
 
-export const ReasonModal: React.FC<ReasonModalProps> = ({
-    open,
-    title,
-    impact,
-    details,
-    reasonLabel,
-    reasonPlaceholder,
-    reasonRequired = true,
-    requiredMessage,
-    submitLabel,
-    sending = false,
-    error,
-    testId,
-    onSubmit,
-    onClose,
-}) => {
-    const [reason, setReason] = useState('');
-    const [reasonError, setReasonError] = useState('');
+interface ReasonState {reason: string; reasonError: string}
 
-    useBodyScrollLock(open);
+/** Рисует уведомление о последствиях действия. */
+function renderImpact(impact: React.ReactNode, testId: string) {
+    if (!impact) return null;
+    return (
+        <div className="reason-modal-notice" data-tone="warning" data-test-id={`${testId}-impact`}>
+            {impact}
+        </div>
+    );
+}
 
-    // Каждое открытие начинается с чистого листа: иначе прошлая причина и
-    // прошлая ошибка достаются следующей брони.
-    useEffect(() => {
-        if (open) {
-            setReason('');
-            setReasonError('');
-        }
-    }, [open]);
+/** Рисует сообщение об ошибке формы. */
+function renderError(error: string | undefined, testId: string) {
+    if (!error) return null;
+    return (
+        <div className="reason-modal-notice" data-tone="error" data-test-id={`${testId}-error`}>
+            {error}
+        </div>
+    );
+}
 
-    if (!open) return null;
+class ReasonModalView extends AntiHookComponent<ReasonModalProps> {
+    private readonly ui = new Carburetor<ReasonState>({reason: '', reasonError: ''});
 
-    const handleChange = (v: string) => {
-        setReason(v);
-        setReasonError('');
+    /** Обновляет причину и очищает сообщение об ошибке. */
+    private readonly handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+        this.ui.setData({reason: event.currentTarget.value, reasonError: ''});
     };
 
-    const handleSubmit = () => {
-        const trimmed = reason.trim();
+    /** Проверяет причину и вызывает обработчик отправки. */
+    private readonly handleSubmit = () => {
+        const {reasonRequired = true, requiredMessage, onSubmit} = this.props;
+        const state = this.ui.getData();
+        const trimmed = state.reason.trim();
         if (reasonRequired && !trimmed) {
-            setReasonError(requiredMessage || t.Booking_RejectReasonRequired());
+            this.ui.setData({...state, reasonError: requiredMessage || t.Booking_RejectReasonRequired()});
             return;
         }
         onSubmit(trimmed);
     };
 
-    const shownError = reasonError || error;
+    /** Рисует форму подтверждения действия и её пояснения. */
+    render() {
+        const {
+            title, impact, details, reasonLabel, reasonPlaceholder, submitLabel,
+            sending = false, error, testId, onClose,
+        } = this.props;
+        const {reason, reasonError} = this.useCarburetor(this.ui);
+        const shownError = reasonError || error;
+        return (
+            <ModalShell title={title} testId={testId} onClose={onClose}>
+                {renderImpact(impact, testId)}
+                {details}
+                {renderError(shownError, testId)}
+                <ReasonField
+                    label={reasonLabel}
+                    placeholder={reasonPlaceholder}
+                    value={reason}
+                    testId={testId}
+                    onChange={this.handleChange}
+                />
+                <ReasonFooter
+                    submitLabel={submitLabel}
+                    sending={sending}
+                    testId={testId}
+                    onSubmit={this.handleSubmit}
+                    onClose={onClose}
+                />
+            </ModalShell>
+        );
+    }
+}
 
-    return (
-        <ModalShell title={title} testId={testId} onClose={onClose}>
-            {impact && <div className="mb-3 text-sm text-warning" data-test-id={`${testId}-impact`}>{impact}</div>}
-            {details}
-            {shownError && <div className="mb-3 text-sm text-danger" data-test-id={`${testId}-error`}>{shownError}</div>}
-            <ReasonField
-                label={reasonLabel}
-                placeholder={reasonPlaceholder}
-                value={reason}
-                testId={testId}
-                onChange={handleChange}
-            />
-            <ReasonFooter
-                submitLabel={submitLabel}
-                sending={sending}
-                testId={testId}
-                onSubmit={handleSubmit}
-                onClose={onClose}
-            />
-        </ModalShell>
-    );
-};
+/**
+ * Запирает прокрутку страницы, пока окно открыто.
+ *
+ * Сохраняем прежнее значение `overflow`: у вложенных окон второе запоминает
+ * `'hidden'`, поэтому при закрытии вернёт `'hidden'`, а не исходное значение.
+ */
+export class ReasonModal extends AntiHookComponent<ReasonModalProps> {
+    /** Блокирует прокрутку, пока окно открыто. */
+    private readonly lockBody = () => {
+        if (!this.props.open) return;
+        const previous = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = previous;
+        };
+    };
+
+/** Подключает блокировку прокрутки к состоянию окна. */
+    protected useEffects(): void {
+        this.useEffect(this.lockBody, [this.props.open]);
+    }
+
+/** Показывает содержимое только при открытом окне. */
+    render() {
+        return this.props.open ? <ReasonModalView {...this.props} /> : null;
+    }
+}

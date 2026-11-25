@@ -6,6 +6,7 @@
  */
 
 import { test, expect } from '../../helpers/scoped-test';
+import { searchAdminGrid } from '../../helpers/ui/admin-grid';
 import {
     openAdminPage,
     expectTableVisible,
@@ -42,8 +43,7 @@ test.describe('Admin — Users page (/admin/)', () => {
 
 	test('search for admin login filters results', async ({ page }) => {
 		await openAdminPage(page, '/admin/');
-		const searchInput = page.locator('[data-test-id="admin-grid-search"]');
-		await searchInput.fill('testuser_setup_admin@irabi.test');
+		await searchAdminGrid(page, 'testuser_setup_admin@irabi.test');
 
 		const rows = page.locator('tbody tr:not(:has(td[colspan]))');
 		const count = await rows.count();
@@ -54,7 +54,7 @@ test.describe('Admin — Users page (/admin/)', () => {
 
 	test('searching nonexistent user shows empty state', async ({ page }) => {
 		await openAdminPage(page, '/admin/');
-		await page.locator('[data-test-id="admin-grid-search"]').fill('xyzzy_no_such_user_abc');
+		await searchAdminGrid(page, 'xyzzy_no_such_user_abc');
 		await expect(page.locator('tbody td[colspan]')).toBeVisible();
 	});
 

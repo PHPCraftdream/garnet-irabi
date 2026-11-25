@@ -1,11 +1,11 @@
 import * as React from 'react';
-import {useRef, useState} from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {Mailbox} from 'lucide-react';
 import {AdminGrid, AdminGridHandle} from '../../Grid/AdminGrid';
-import {GridConfig, PageResponse} from '../../Shell/types';
+import {GridConfig, PageResponse} from '../../Shell/shared/types';
 
 interface EmailQueueRow {
     id: number;
@@ -43,88 +43,128 @@ interface RetryResponse {
     deadLetterCount: number;
 }
 
-const STATUS_BADGE: Record<string, string> = {
-    queued: 'status-warning',
-    sending: 'status-info',
-    sent: 'status-success',
-    error: 'status-danger',
-};
+const QUEUE_ICON = <Mailbox size={22} aria-hidden="true" />;
 
-const statusBadge = (status: string): React.ReactNode => (
-    <span className={`badge ${STATUS_BADGE[status] ?? 'status-muted'}`}>{status}</span>
-);
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+function rowKey(row: EmailQueueRow) { return row.id; }
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+function rowTestId(row: EmailQueueRow) { return 'email-queue-row-' + row.id; }
+    /** Формирует представление данных для соответствующего раздела панели. */
+function renderCreated(row: EmailQueueRow) {
+    return <span className="admin-email-queue-time">{formatTs(row.created_at)}</span>;
+}
+    /** Формирует представление данных для соответствующего раздела панели. */
+function renderNext(row: EmailQueueRow) {
+    return row.next_attempt_at !== null
+        ? <span className="admin-email-queue-time">{formatTs(row.next_attempt_at)}</span>
+        : <span className="admin-email-queue-muted">—</span>;
+}
+    /** Формирует представление данных для соответствующего раздела панели. */
+function renderStatus(row: EmailQueueRow) {
+    return <span className="admin-email-queue-status" data-status={row.status}>{row.status}</span>;
+}
 
-export const EmailQueueIsland: React.FC<Props> = (props) => {
-    const {pageUrl, initialData, gridConfig, retryUrl, labels} = props;
-    const [deadLetterCount, setDeadLetterCount] = useState<number>(props.deadLetterCount);
-    const [retryingId, setRetryingId] = useState<number | null>(null);
-    const [error, setError] = useState<string>('');
-    const gridRef = useRef<AdminGridHandle<EmailQueueRow>>(null);
+interface RetryProps {
+    row: EmailQueueRow;
+    retrying: boolean;
+    label: string;
+    onRetry: (id: number) => Promise<void>;
+}
 
-    const handleRetry = async (id: number): Promise<void> => {
-        setRetryingId(id);
-        setError('');
+class RetryButton extends AntiHookComponent<RetryProps> {
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+    private readonly retry = () => { void this.props.onRetry(this.props.row.id); };
+
+    /** Формирует представление данных для соответствующего раздела панели. */
+    render() {
+        const {row, retrying, label} = this.props;
+        return <button type="button" className="compact-outline-action" data-test-id={'email-queue-retry-' + row.id}
+            disabled={row.status !== 'error' || retrying} onClick={this.retry}>{retrying ? '…' : label}</button>;
+    }
+}
+
+    /** Формирует представление данных для соответствующего раздела панели. */
+function createRenders(retryingId: number | null, label: string, onRetry: RetryProps['onRetry']) {
+    return {created_at: renderCreated, next_attempt_at: renderNext, status: renderStatus,
+        retry: (row: EmailQueueRow) => <RetryButton row={row} retrying={retryingId === row.id} label={label}
+        onRetry={onRetry} />};
+}
+
+interface QueueState {
+    deadLetterCount: number;
+    retryingId: number | null;
+    error: string;
+}
+
+export class EmailQueueIsland extends AntiHookComponent<Props> {
+    private readonly ui = new Carburetor<QueueState>({
+        deadLetterCount: this.props.deadLetterCount,
+        retryingId: null,
+        error: '',
+    });
+    private readonly gridRef = React.createRef<AdminGridHandle<EmailQueueRow>>();
+
+    private cachedRenders?: {retryingId: number | null; label: string; value: ReturnType<typeof createRenders>};
+
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+    private getRenders(retryingId: number | null, label: string) {
+        const cached = this.cachedRenders;
+        if (cached?.retryingId === retryingId && cached.label === label) return cached.value;
+        const value = createRenders(retryingId, label, this.handleRetry);
+        this.cachedRenders = {retryingId, label, value};
+        return value;
+    }
+
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly handleRetry = async (id: number): Promise<void> => {
+        this.ui.setData({...this.ui.getData(), retryingId: id, error: ''});
         try {
-            const res = await sendPost<{id: number}, RetryResponse>(retryUrl, {id});
+            const res = await sendPost<{id: number}, RetryResponse>(this.props.retryUrl, {id});
             if (res.success && res.row) {
-                gridRef.current?.setItems(prev => prev.map(r => (r.id === id ? res.row! : r)));
+                this.gridRef.current?.setItems(prev => prev.map(r => (r.id === id ? res.row! : r)));
             }
-            setDeadLetterCount(res.deadLetterCount);
-            if (!res.success) {
-                setError(labels.retryFail);
-            }
+            this.ui.setData({...this.ui.getData(), deadLetterCount: res.deadLetterCount,
+                error: res.success ? this.ui.getData().error : this.props.labels.retryFail});
         } catch {
-            setError(labels.retryFail);
+            this.ui.setData({...this.ui.getData(), error: this.props.labels.retryFail});
         } finally {
-            setRetryingId(null);
+            this.ui.setData({...this.ui.getData(), retryingId: null});
         }
     };
 
-    return (
-        <div data-test-id="admin-email-queue">
-            <PageHeader title={labels.title} icon={<Mailbox size={22} aria-hidden="true" />} />
+    /** Формирует представление данных для соответствующего раздела панели. */
+    render() {
+        const {pageUrl, initialData, gridConfig, labels} = this.props;
+        const {deadLetterCount, retryingId, error} = this.useCarburetor(this.ui);
+        return (
+            <div data-test-id="admin-email-queue">
+                <PageHeader title={labels.title} icon={QUEUE_ICON} />
 
-            <div className="section-soft">
-                {deadLetterCount > 0 && (
-                    <div className="alert alert-danger mb-4" data-test-id="email-queue-deadletter-banner">
-                        {labels.deadLetter.replace('{0}', String(deadLetterCount))}
-                    </div>
-                )}
+                <div className="section-soft">
+                    {deadLetterCount > 0 && (
+                        <div className="admin-email-queue-notice" data-test-id="email-queue-deadletter-banner">
+                            {labels.deadLetter.replace('{0}', String(deadLetterCount))}
+                        </div>
+                    )}
 
-                {error && (
-                    <div className="alert alert-warning mb-4" data-test-id="email-queue-retry-error">
-                        {error}
-                    </div>
-                )}
+                    {error && (
+                        <div className="admin-email-queue-notice" data-test-id="email-queue-retry-error">
+                            {error}
+                        </div>
+                    )}
 
-                <AdminGrid
-                    ref={gridRef}
-                    pageUrl={pageUrl}
-                    initialData={initialData}
-                    config={gridConfig}
-                    rowKey={r => r.id}
-                    emptyMessage={labels.empty}
-                    rowTestId={r => `email-queue-row-${r.id}`}
-                    renders={{
-                        created_at: r => <span className="text-muted text-xs whitespace-nowrap">{formatTs(r.created_at)}</span>,
-                        next_attempt_at: r => r.next_attempt_at !== null
-                            ? <span className="text-muted text-xs whitespace-nowrap">{formatTs(r.next_attempt_at)}</span>
-                            : <span className="text-muted">—</span>,
-                        status: r => statusBadge(r.status),
-                        retry: r => (
-                            <button
-                                type="button"
-                                className="btn btn-sm btn-outline-primary"
-                                data-test-id={`email-queue-retry-${r.id}`}
-                                disabled={r.status !== 'error' || retryingId === r.id}
-                                onClick={() => void handleRetry(r.id)}
-                            >
-                                {retryingId === r.id ? '…' : labels.retry}
-                            </button>
-                        ),
-                    }}
-                />
+                    <AdminGrid
+                        ref={this.gridRef}
+                        pageUrl={pageUrl}
+                        initialData={initialData}
+                        config={gridConfig}
+                        rowKey={rowKey}
+                        emptyMessage={labels.empty}
+                        rowTestId={rowTestId}
+                        renders={this.getRenders(retryingId, labels.retry)}
+                    />
+                </div>
             </div>
-        </div>
-    );
-};
+        );
+    }
+}

@@ -1,0 +1,67 @@
+@utility tone-expertday-soft { @apply bg-expertday-wash; }
+@utility tone-expertdayaccent-plain { @apply text-expertdayaccent-ink; }
+@utility tone-expertedit-soft { @apply text-expertedit-ink hover:bg-expertedit-wash-hover; }
+@utility tone-expertdanger-soft { @apply text-expertdanger-ink hover:bg-expertdanger-wash-hover; }
+@utility tone-expertweek-outline { @apply border-expertweek-edge; }
+@utility shape-expert-calendar-day { @apply min-w-0; }
+@utility layout-expert-calendar-day { @apply flex flex-col; }
+@utility motion-expert-calendar-day { @apply transition-colors; }
+@utility type-expert-day-current-title { @apply font-bold; }
+@utility shape-expert-day-slots { @apply p-1; }
+@utility layout-expert-day-slots { @apply flex-1 overflow-y-auto; }
+@utility shape-expert-day-empty { @apply py-3; }
+@utility type-expert-day-empty { @apply text-center text-[10px]; }
+@utility type-expert-slot-time { @apply font-semibold; }
+@utility shape-expert-slot-user-row { @apply mt-1; }
+@utility type-expert-slot-user-row { @apply text-[10px]; }
+@utility type-expert-slot-user-link { @apply hover:underline font-medium; }
+@utility shape-expert-slot-cost-hint { @apply mt-1; }
+@utility type-expert-slot-cost-hint { @apply text-xs; }
+@utility behavior-expert-slot-grab { @apply cursor-grab; }
+@utility effect-expert-slot-dragging { @apply opacity-40; }
+@utility shape-expert-slot-status-row { @apply mt-1; }
+@utility shape-expert-slot-status { @apply px-1.5 py-0.5 rounded; }
+@utility layout-expert-slot-status { @apply inline-block; }
+@utility type-expert-slot-status { @apply text-[10px]; }
+@utility shape-expert-slot-actions { @apply mt-1.5; }
+@utility layout-expert-slot-actions { @apply flex gap-1.5; }
+@utility shape-expert-calendar { @apply space-y-4; }
+@utility type-expert-calendar-hint { @apply text-xs; }
+@utility shape-expert-calendar-week { @apply border rounded-lg; }
+@utility layout-expert-calendar-week { @apply grid grid-cols-7 gap-0 overflow-hidden; }
+
+@layer components {
+  .expert-calendar-day { @apply shape-expert-calendar-day layout-expert-calendar-day motion-expert-calendar-day tone-filterneutral-plain; }
+  .expert-calendar-day-highlight { @apply shape-expert-calendar-day layout-expert-calendar-day motion-expert-calendar-day tone-expertday-soft; }
+  .expert-day-title { @apply tone-supportmuted-plain; }
+  .expert-day-current-title { @apply type-expert-day-current-title tone-expertdayaccent-plain; }
+  .expert-day-slots { @apply shape-expert-day-slots layout-expert-day-slots tone-filterneutral-plain; }
+  .expert-day-empty { @apply shape-expert-day-empty type-expert-day-empty tone-supportmuted-plain; }
+  .expert-slot-time { @apply type-expert-slot-time tone-filterneutral-plain; }
+  .expert-slot-details { @apply tone-supportmuted-plain; }
+  .expert-slot-user-row { @apply shape-expert-slot-user-row type-expert-slot-user-row tone-filterneutral-plain; }
+  .expert-slot-user-label { @apply tone-supportmuted-plain; }
+  .expert-slot-user-link { @apply type-expert-slot-user-link tone-expertdayaccent-plain; }
+  .expert-slot-cost-hint { @apply shape-expert-slot-cost-hint type-expert-slot-cost-hint tone-supportmuted-plain; }
+  .expert-slot-grab { @apply behavior-expert-slot-grab tone-filterneutral-plain; }
+  .expert-slot-dragging { @apply effect-expert-slot-dragging tone-filterneutral-plain; }
+  .expert-slot-grab-dragging { @apply behavior-expert-slot-grab effect-expert-slot-dragging tone-filterneutral-plain; }
+  .expert-slot-status-row { @apply shape-expert-slot-status-row tone-filterneutral-plain; }
+  .expert-slot-booked-status {
+    @apply shape-expert-slot-status layout-expert-slot-status type-expert-slot-status tone-filterneutral-plain;
+    &[data-status="status-muted"] { @apply tone-slotbookmuted-soft; }
+    &[data-status="status-info"] { @apply tone-slotbookinfo-soft; }
+    &[data-status="status-success"] { @apply tone-slotbooksuccess-soft; }
+    &[data-status="status-danger"] { @apply tone-slotbookdanger-soft; }
+    &[data-status="status-warning"] { @apply tone-slotbookwarning-soft; }
+    &[data-status="status-notice"] { @apply tone-slotbooknotice-soft; }
+    &[data-status="status-special"] { @apply tone-slotbookspecial-soft; }
+    &[data-status="status-active"] { @apply tone-slotbookactive-soft; }
+  }
+  .expert-slot-actions { @apply shape-expert-slot-actions layout-expert-slot-actions tone-filterneutral-plain; }
+  .expert-slot-edit-action { @apply tone-expertedit-soft; }
+  .expert-slot-danger-action { @apply tone-expertdanger-soft; }
+  .expert-calendar { @apply shape-expert-calendar tone-filterneutral-plain; }
+  .expert-calendar-hint { @apply type-expert-calendar-hint tone-supportmuted-plain; }
+  .expert-calendar-week { @apply shape-expert-calendar-week layout-expert-calendar-week tone-expertweek-outline; }
+}

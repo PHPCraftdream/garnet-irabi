@@ -85,3 +85,6 @@ agents/_meta/**/locks/
 .opencode/
 .dsh/
 /test-results/
+
+# /wrush task worktrees — always created here, in-tree
+/worktrees/

@@ -27,6 +27,7 @@
 
 import { test, expect, tn, getDbPrefix } from '../../../../helpers/scoped-test';
 import { runServerCommand } from '../../../../helpers/db/server-command';
+import { acquireTestMode, releaseTestMode } from '../../../../helpers/db/test-mode-lease';
 import { isProd, remoteRuntimeDir } from '../../../../helpers/db/ssh-bridge';
 import { execFileSync } from 'node:child_process';
 import * as path from 'node:path';
@@ -90,22 +91,16 @@ async function countPendingAhead(id: number): Promise<number> {
 }
 
 test.describe('email-queue cron: named-lock serialises overlapping ticks', () => {
-    // test:hold-lock (remote holder path below) is test-mode gated.
-    let markerWasOurs = false;
-
+    // test:hold-lock (remote holder path below) is test-mode gated; the marker
+    // is leased across workers and restored by the last holder.
     test.beforeAll(() => {
         if (!isProd()) return;
-        const wasOn = runServerCommand(['test-mode', 'status']).stdout.includes('ON');
-        if (!wasOn) {
-            runServerCommand(['test-mode', 'on']);
-            markerWasOurs = true;
-        }
+        acquireTestMode();
     });
 
     test.afterAll(() => {
-        if (markerWasOurs) {
-            runServerCommand(['test-mode', 'off']);
-        }
+        if (!isProd()) return;
+        releaseTestMode();
     });
 
     test('seed a queued .test email', async () => {

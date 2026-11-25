@@ -1,0 +1,89 @@
+@custom-variant slot-card-hover {
+  @media (hover: hover) {
+    &:is(:where(.time-slot-card):hover *, :where(.group):hover *) { @slot; }
+  }
+}
+
+@utility tone-slotpartneutral-plain { @apply text-inherit; }
+@utility tone-slotpartlink-plain { @apply text-slotpartlink-ink; }
+@utility tone-slotpartpanel-outlined { @apply border-slotpartpanel-edge bg-slotpartpanel-wash; }
+@utility tone-slotbookinfo-soft { @apply bg-slotbookinfo-wash text-slotbookinfo-ink; }
+@utility tone-slotbooksuccess-soft { @apply bg-slotbooksuccess-wash text-slotbooksuccess-ink; }
+@utility tone-slotbookdanger-soft { @apply bg-slotbookdanger-wash text-slotbookdanger-ink; }
+@utility tone-slotbookwarning-soft { @apply bg-slotbookwarning-wash text-slotbookwarning-ink; }
+@utility tone-slotbooknotice-soft { @apply bg-slotbooknotice-wash text-slotbooknotice-ink; }
+@utility tone-slotbookspecial-soft { @apply bg-slotbookspecial-wash text-slotbookspecial-ink; }
+@utility tone-slotbookactive-soft { @apply bg-slotbookactive-wash text-slotbookactive-ink; }
+@utility tone-slotbookmuted-soft { @apply bg-slotbookmuted-wash text-slotbookmuted-ink; }
+@utility tone-slotaction-solid { @apply bg-slotaction-fill text-slotaction-on-fill hover:bg-slotaction-fill-hover slot-card-hover:shadow-slotaction-fill/20; }
+@utility tone-slotaction-badge { @apply bg-slotaction-fill text-slotaction-on-fill; }
+@utility shape-slot-meta-group { @apply mb-2; }
+@utility shape-slot-meta-single { @apply mb-5; }
+@utility layout-slot-meta { @apply flex items-center gap-1.5; }
+@utility type-slot-meta { @apply text-[11px]; }
+@utility layout-slot-meta-format { @apply inline-flex items-center gap-1; }
+@utility type-slot-meta-duration { @apply tabular-nums; }
+@utility shape-slot-tooltip-panel { @apply w-56 p-3 rounded-lg border-2; }
+@utility type-slot-tooltip-panel { @apply text-xs; }
+@utility behavior-slot-tooltip-panel { @apply pointer-events-none; }
+@utility effect-slot-tooltip-panel { @apply shadow-2xl; }
+@utility shape-slot-tooltip-heading { @apply mb-2; }
+@utility type-slot-tooltip-heading { @apply font-semibold text-sm; }
+@utility shape-slot-tooltip-row { @apply mb-1; }
+@utility type-slot-tooltip-expert-link { @apply hover:underline; }
+@utility behavior-slot-tooltip-expert-link { @apply pointer-events-auto; }
+@utility shape-slot-tooltip-seats-left { @apply ml-1; }
+@utility shape-slot-card-heading { @apply mb-1.5; }
+@utility layout-slot-card-heading { @apply flex items-start justify-between gap-2; }
+@utility type-slot-card-time { @apply font-semibold text-[13px] tabular-nums leading-tight whitespace-nowrap; }
+@utility shape-slot-card-dash { @apply mx-1; }
+@utility type-slot-card-price { @apply text-base font-bold tabular-nums whitespace-nowrap; }
+@utility shape-slot-card-expert { @apply mb-2; }
+@utility layout-slot-card-expert { @apply overflow-hidden; }
+@utility type-slot-card-expert { @apply text-[13px] text-ellipsis whitespace-nowrap; }
+@utility shape-slot-group-block { @apply mb-5; }
+@utility shape-slot-group-badge { @apply rounded-full px-2.5 py-0.5; }
+@utility layout-slot-group-badge { @apply inline-flex items-center; }
+@utility type-slot-group-badge { @apply font-semibold leading-normal tracking-wide text-[0.6875rem]; }
+@utility shape-slot-group-seats { @apply ml-2; }
+@utility type-slot-group-seats { @apply text-[11px]; }
+@utility shape-slot-card-action { @apply w-full py-2 px-3 rounded-lg; }
+@utility type-slot-card-action { @apply text-center text-xs font-semibold; }
+@utility behavior-slot-card-action { @apply cursor-pointer; }
+@utility effect-slot-booked-action { @apply hover:opacity-80; }
+@utility motion-slot-booked-action { @apply transition-opacity; }
+@utility motion-slot-book-action { @apply transition-colors; }
+@utility effect-slot-book-action { @apply slot-card-hover:shadow-md; }
+
+@layer components {
+  .slot-meta-group { @apply shape-slot-meta-group layout-slot-meta type-slot-meta tone-supportmuted-plain; }
+  .slot-meta-single { @apply shape-slot-meta-single layout-slot-meta type-slot-meta tone-supportmuted-plain; }
+  .slot-meta-format { @apply layout-slot-meta-format tone-slotpartneutral-plain; }
+  .slot-meta-duration { @apply type-slot-meta-duration tone-slotpartneutral-plain; }
+  .slot-tooltip-panel { @apply shape-slot-tooltip-panel type-slot-tooltip-panel behavior-slot-tooltip-panel effect-slot-tooltip-panel tone-slotpartpanel-outlined; }
+  .slot-tooltip-heading { @apply shape-slot-tooltip-heading type-slot-tooltip-heading tone-slotpartneutral-plain; }
+  .slot-tooltip-row { @apply shape-slot-tooltip-row tone-slotpartneutral-plain; }
+  .slot-tooltip-label { @apply tone-supportmuted-plain; }
+  .slot-tooltip-expert-link { @apply type-slot-tooltip-expert-link behavior-slot-tooltip-expert-link tone-slotpartlink-plain; }
+  .slot-tooltip-seats-left { @apply shape-slot-tooltip-seats-left tone-supportmuted-plain; }
+  .slot-card-heading { @apply shape-slot-card-heading layout-slot-card-heading tone-slotpartneutral-plain; }
+  .slot-card-time { @apply type-slot-card-time tone-slotpartneutral-plain; }
+  .slot-card-dash { @apply shape-slot-card-dash tone-supportmuted-plain; }
+  .slot-card-price { @apply type-slot-card-price tone-slotpartlink-plain; }
+  .slot-card-expert { @apply shape-slot-card-expert layout-slot-card-expert type-slot-card-expert tone-slotpartneutral-plain; }
+  .slot-group-block { @apply shape-slot-group-block tone-slotpartneutral-plain; }
+  .slot-group-badge { @apply shape-slot-group-badge layout-slot-group-badge type-slot-group-badge tone-slotaction-badge; }
+  .slot-group-seats { @apply shape-slot-group-seats type-slot-group-seats tone-supportmuted-plain; }
+  .slot-booked-action {
+    @apply shape-slot-card-action type-slot-card-action behavior-slot-card-action effect-slot-booked-action motion-slot-booked-action tone-slotpartneutral-plain;
+    &[data-status="status-muted"] { @apply tone-slotbookmuted-soft; }
+    &[data-status="status-info"] { @apply tone-slotbookinfo-soft; }
+    &[data-status="status-success"] { @apply tone-slotbooksuccess-soft; }
+    &[data-status="status-danger"] { @apply tone-slotbookdanger-soft; }
+    &[data-status="status-warning"] { @apply tone-slotbookwarning-soft; }
+    &[data-status="status-notice"] { @apply tone-slotbooknotice-soft; }
+    &[data-status="status-special"] { @apply tone-slotbookspecial-soft; }
+    &[data-status="status-active"] { @apply tone-slotbookactive-soft; }
+  }
+  .slot-book-action { @apply shape-slot-card-action type-slot-card-action motion-slot-book-action effect-slot-book-action tone-slotaction-solid; }
+}

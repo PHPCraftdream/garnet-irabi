@@ -1,0 +1,79 @@
+@utility tone-batchneutral-plain { @apply text-inherit; }
+@utility tone-batchexisting-soft { @apply text-batchexisting-ink bg-batchexisting-wash; }
+@utility tone-batchrowwarning-soft { @apply bg-batchrowwarning-wash; }
+@utility tone-batchremove-outlined { @apply border-batchremove-edge text-batchremove-ink bg-transparent hover:border-batchremove-edge-hover hover:text-batchremove-ink-hover hover:bg-batchremove-wash-hover; }
+/* Компактный размер из master: классы полей лежат в @layer components и грузятся после framework-CSS (IRabi.php), поэтому перебивают px-3/py-[0.4375rem]/text-sm из custom-date-input и cdp-native-input без !important. */
+@utility shape-batch-compact-input { @apply px-2 py-1; }
+@utility type-batch-compact-input { font-size: 0.8rem; }
+@utility layout-batch-date-input { @apply inline-block; }
+@utility shape-batch-existing { @apply rounded-full px-2.5 py-0.5 mr-1 mb-1; }
+@utility type-batch-existing { @apply font-semibold leading-normal tracking-wide; font-size: 0.7rem; }
+@utility shape-batch-weekday { @apply mr-1; }
+@utility type-batch-weekday { @apply text-xs; }
+@utility shape-batch-warning { @apply rounded-full px-2.5 py-0.5 mr-1; }
+@utility layout-batch-warning { @apply inline-flex items-center; }
+@utility type-batch-warning { @apply font-semibold leading-normal tracking-wide; font-size: 0.6875rem; }
+@utility shape-batch-label { @apply mb-1; }
+@utility layout-batch-label { @apply block; }
+@utility type-batch-label { @apply font-medium; font-size: 0.8125rem; }
+@utility layout-batch-date-row { @apply grid grid-cols-2 gap-3; }
+@utility layout-batch-params-row { @apply grid grid-cols-2 md:grid-cols-5 gap-3; }
+@utility layout-batch-format-row { @apply grid grid-cols-1 md:grid-cols-2 gap-3; }
+@utility shape-batch-help { @apply mt-1; }
+@utility type-batch-help { @apply text-xs; }
+@utility shape-batch-form-fields { @apply space-y-3 mb-4; }
+@utility shape-batch-form-footer { @apply mb-3; }
+@utility layout-batch-form-footer { @apply flex gap-2 justify-end; }
+
+@utility tone-batchavailable-soft { @apply bg-batchavailable-wash text-batchavailable-ink; }
+@utility tone-batchrestricted-soft { @apply bg-batchrestricted-wash text-batchrestricted-ink; }
+@utility tone-batchproposed-soft { @apply bg-batchproposed-wash text-batchproposed-ink; }
+@utility shape-batch-divider { @apply my-3; }
+@utility shape-batch-legend { @apply rounded-full px-2.5 py-0.5; }
+@utility type-batch-legend { @apply font-semibold leading-normal tracking-wide; font-size: 0.6875rem; }
+@utility layout-batch-add-row { @apply grid grid-cols-2 md:grid-cols-4 gap-3 items-end; }
+@utility shape-batch-add-button { @apply w-full; }
+@utility tone-batchtable-border { @apply border-batchtable-edge; }
+@utility tone-batchtitle-plain { @apply text-batchtitle-ink; }
+@utility tone-batchclose-plain { @apply text-batchclose-ink [&:hover]:text-batchclose-ink-hover; }
+@utility shape-batch-table { @apply w-full border mb-3; }
+@utility layout-batch-table { @apply border-collapse; }
+@utility type-batch-table { font-size: 0.8125rem; }
+@utility shape-batch-cell { @apply py-1 px-2 border; }
+@utility type-batch-cell { @apply align-top; }
+@utility type-batch-heading { @apply align-top font-semibold text-left text-xs uppercase tracking-wider; }
+@utility tone-batchtable-outlined { @apply border-batchtable-edge text-batchtable-ink bg-batchtable-wash; }
+
+@layer components {
+  .batch-preview-table { @apply tone-batchtable-border shape-batch-table layout-batch-table type-batch-table; }
+  .batch-preview-divider { @apply shape-batch-divider tone-batchneutral-plain; }
+  .batch-preview-spacing { @apply shape-batch-form-footer tone-batchneutral-plain; }
+  .batch-legend-available { @apply shape-batch-legend layout-batch-warning type-batch-legend tone-batchavailable-soft; }
+  .batch-legend-restricted { @apply shape-batch-legend layout-batch-warning type-batch-legend tone-batchrestricted-soft; }
+  .batch-legend-proposed { @apply shape-batch-legend layout-batch-warning type-batch-legend tone-batchproposed-soft; }
+  .batch-preview-add-row { @apply layout-batch-add-row shape-batch-form-footer tone-batchneutral-plain; }
+  .batch-preview-stats { @apply tone-supportmuted-plain; }
+  .batch-preview-actions { @apply layout-batch-form-footer tone-batchneutral-plain; }
+  .batch-preview-warning { @apply shape-batch-warning layout-batch-warning type-batch-warning tone-slotbookwarning-soft; }
+  .batch-preview-existing { @apply shape-batch-existing layout-batch-warning type-batch-existing tone-batchexisting-soft; }
+  .batch-preview-weekday { @apply shape-batch-weekday type-batch-weekday tone-supportmuted-plain; }
+  .batch-preview-row-warning { @apply tone-batchrowwarning-soft; }
+  .batch-preview-date-input { @apply behavior-date-field focus-date-field motion-date-field shape-batch-compact-input type-batch-compact-input layout-batch-date-input tone-batchneutral-plain; }
+  .slot-time-input { @apply layout-date-field behavior-date-field focus-date-field motion-date-field shape-batch-compact-input type-batch-compact-input tone-batchneutral-plain; }
+  .slot-remove-btn { @apply tone-batchremove-outlined layout-compact-action shape-compact-action type-compact-action behavior-compact-action effect-compact-action motion-compact-action; }
+  .batch-field-label { @apply shape-batch-label layout-batch-label type-batch-label tone-supportsecondary-plain; }
+  .batch-input { @apply tone-garnetfield-outlined shape-native-control shape-native-field layout-native-select type-native-select focus-native-select motion-native-select; }
+  .batch-date-row { @apply layout-batch-date-row tone-batchneutral-plain; }
+  .batch-params-row { @apply layout-batch-params-row tone-batchneutral-plain; }
+  .batch-format-row { @apply layout-batch-format-row tone-batchneutral-plain; }
+  .batch-help { @apply shape-batch-help type-batch-help tone-supportmuted-plain; }
+  .batch-form-fields { @apply shape-batch-form-fields tone-batchneutral-plain; }
+  .batch-form-footer { @apply shape-batch-form-footer layout-batch-form-footer tone-batchneutral-plain; }
+  .batch-preview-cell { @apply shape-batch-cell type-batch-cell tone-batchtable-border; }
+  .batch-preview-heading { @apply shape-batch-cell type-batch-heading tone-batchtable-outlined; }
+}
+
+/* Сохраняет приоритет над стилями общей кнопки. */
+/* valid-function-class: селектор по legacy-классу .compact-outline-action, которого нет в списке функциональных классов конфигурации, и unlayered-перекрытие кнопки фреймворка. */
+/* carburetor-disable-next-line valid-function-class */
+.batch-preview-add-row .compact-outline-action { @apply shape-confirm-button shape-batch-add-button type-confirm-button; }

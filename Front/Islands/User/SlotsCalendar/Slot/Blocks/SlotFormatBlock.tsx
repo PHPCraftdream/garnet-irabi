@@ -1,7 +1,11 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {slotPlaceLabel, slotPlaceValue} from '../../../../../Common/booking/slotFormat';
-import {SlotItem} from '../../types';
+import {slotPlaceLabel} from '../../../../../Common/booking/formatting/slotPlaceLabel';
+import {slotPlaceValue} from '../../../../../Common/booking/formatting/slotPlaceValue';
+import {SlotItem} from '../../State/view/types';
+
+const slotOffline = t.Slot_Offline;
+const slotOnline = t.Slot_Online;
 
 /**
  * Формат занятия и место.
@@ -13,13 +17,13 @@ export const SlotFormatBlock: React.FC<{slot: SlotItem}> = ({slot}) => {
     const place = slotPlaceValue(slot);
 
     return (
-        <div className="px-3 py-2 rounded-lg bg-surface-alt" data-test-id="slot-detail-format">
-            <span className={`inline-block text-xs px-2 py-0.5 rounded ${slot.is_online ? 'status-success' : 'status-notice'}`}>
-                {slot.is_online ? t.Slot_Online() : t.Slot_Offline()}
+        <div className="slot-format-panel" data-test-id="slot-detail-format">
+            <span className="slot-format-badge" data-format={slot.is_online ? 'online' : 'offline'}>
+                {slot.is_online ? slotOnline() : slotOffline()}
             </span>
             {place && (
-                <div className="text-sm mt-1.5">
-                    <span className="text-muted">{slotPlaceLabel(slot)}:</span> {place}
+                <div className="slot-format-place">
+                    <span className="slot-format-place-label">{slotPlaceLabel(slot)}:</span> {place}
                 </div>
             )}
         </div>

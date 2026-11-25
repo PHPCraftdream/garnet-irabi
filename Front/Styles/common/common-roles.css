@@ -1,0 +1,364 @@
+/* valid-color-role подавлен на весь файл: роли объявляются здесь один раз и ссылаются на семантические токены
+   темы Garnet (--color-*), у которых есть ветка [data-theme="dark"]; --palette-* хранит сырые значения и
+   зафиксировал бы светлый цвет. common-roles.css — единственная точка объявления ролей, поэтому и подавление
+   одно, а не построчное. */
+/* carburetor-disable valid-color-role */
+
+/* common.less компилируется в одну таблицу стилей: @apply разрешается по итоговому состоянию темы.
+   Поэтому сброс палитры объявлен ровно один раз — до всех ролей. */
+
+@theme inline reference {
+  --color-*: initial;
+  --color-lightbox-fill: var(--palette-lightbox-backdrop);
+  --color-lightbox-wash: var(--palette-lightbox-overlay);
+  --color-lightbox-wash-hover: var(--palette-lightbox-overlay-hover);
+  --color-lightbox-ink: var(--palette-lightbox-white);
+
+/* Роли следуют за токенами темы Garnet (--color-*): у них есть ветка [data-theme="dark"], а --palette-* хранит сырые значения и зафиксировал бы светлый цвет. */
+  --color-attachment-edge: var(--color-border);
+  --color-attachment-edge-hover: var(--color-accent);
+  --color-attachment-wash: var(--color-bg-surface-alt);
+  --color-attachment-ink: var(--color-text-muted);
+
+/* Роли следуют за токенами темы Garnet (--color-*): у них есть ветка [data-theme="dark"], а --palette-* хранит сырые значения и зафиксировал бы светлый цвет. */
+  --color-pick-wash: var(--palette-pick-nav);
+  --color-pick-wash-hover: var(--palette-pick-nav-hover);
+  --color-pick-ink: var(--palette-pick-white);
+  --color-pickdanger-wash: var(--color-danger-subtle);
+  --color-pickdanger-wash-hover: var(--color-danger-subtle);
+  --color-pickdanger-ink: var(--color-danger);
+  --color-pickneutral-wash: var(--color-bg-surface-alt);
+  --color-pickneutral-wash-hover: var(--color-bg-surface-hover);
+  --color-pickneutral-ink: var(--color-text-primary);
+
+/* Локальные семейства берут роли из семантических токенов Garnet (var(--color-border), var(--color-accent), …),
+   у которых есть ветка [data-theme="dark"]. Слой --palette-* приложения (Front/Carburetor/classes.css) содержит
+   сырые значения и в тёмной теме не переключается, поэтому valid-color-role гасится одной директивой уровня файла (строка 1);
+   правилам вне @layer components нужен приоритет над слоем — там valid-function-class. */
+  --color-adminstatusempty-edge: var(--color-border);
+  --color-adminstatusempty-ink: var(--color-text-secondary);
+  --color-adminstatusemptyhover-edge: var(--color-border);
+  --color-adminstatusemptyhover-ink: var(--color-text-secondary);
+  --color-adminstatusemptyhover-wash-hover: var(--color-bg-surface-hover);
+  --color-userprofileadmin-edge: var(--color-border);
+  --color-userprofileadmin-ink: var(--color-text-muted);
+  --color-userprofileadmin-ink-hover: var(--color-accent);
+  --color-userprofileadmin-edge-hover: var(--color-accent);
+  --color-recipienttrigger-wash-hover: var(--color-bg-surface-hover);
+  --color-recipienttrigger-edge-focus: var(--color-accent);
+  --color-recipientsearch-ink-placeholder: var(--color-text-muted);
+  --color-recipientoption-ink: var(--color-on-surface);
+  --color-recipientoption-wash-hover: var(--color-accent-subtle);
+  --color-widgetfab-wash: var(--color-bg-surface-alt);
+  --color-widgetfab-ink: var(--color-on-surface);
+  --color-widgetfab-wash-hover: var(--color-bg-surface-hover);
+  --color-adminattachmenticon-ink: var(--color-text-muted);
+  --color-adminattachmenticon-wash: var(--color-bg-surface-hover);
+  --color-adminattachmentrow-edge: var(--color-border);
+  --color-adminattachmentrow-wash: var(--color-bg-surface);
+  --color-adminattachmentrow-edge-hover: var(--color-accent);
+  --color-widgethistory-wash-hover: var(--color-bg-surface-hover);
+  --color-ticketrowactive-edge: var(--color-border-subtle);
+  --color-ticketrowactive-wash: var(--color-accent-subtle);
+  --color-ticketrowactive-wash-hover: var(--color-accent-subtle);
+  --color-ticketrowactive-wash-focus: var(--color-accent-subtle);
+  --color-ticketrowidle-edge: var(--color-border-subtle);
+  --color-ticketrowidle-wash-hover: var(--color-bg-surface-hover);
+  --color-adminticketrole-wash: var(--color-border);
+  --color-adminticketrole-ink: var(--color-text-secondary);
+  --color-adminstatusactive-edge: var(--color-accent);
+  --color-adminstatusactive-wash: var(--color-accent);
+  --color-adminstatusactive-wash-hover: var(--color-accent-hover);
+  --color-adminstatusactive-ink: var(--color-accent-text);
+  --color-admininternal-edge: var(--color-border);
+  --color-admininternal-wash: var(--color-warning-subtle);
+  --color-admininternal-ink: var(--color-on-surface);
+  --color-adminhistory-ink: var(--color-text-muted);
+  --color-adminhistory-ink-hover: var(--color-text-secondary);
+  --color-ticketstatusblue-wash: var(--color-status-blue-bg);
+  --color-ticketstatusblue-ink: var(--color-status-blue);
+  --color-ticketstatuscyan-wash: var(--color-status-cyan-bg);
+  --color-ticketstatuscyan-ink: var(--color-status-cyan);
+  --color-ticketstatusyellow-wash: var(--color-status-yellow-bg);
+  --color-ticketstatusyellow-ink: var(--color-status-yellow);
+  --color-ticketstatusorange-wash: var(--color-status-orange-bg);
+  --color-ticketstatusorange-ink: var(--color-status-orange);
+  --color-ticketstatusred-wash: var(--color-status-red-bg);
+  --color-ticketstatusred-ink: var(--color-status-red);
+  --color-ticketstatuspurple-wash: var(--color-status-purple-bg);
+  --color-ticketstatuspurple-ink: var(--color-status-purple);
+  --color-ticketstatusgreen-wash: var(--color-status-green-bg);
+  --color-ticketstatusgreen-ink: var(--color-status-green);
+  --color-ticketstatusgray-wash: var(--color-status-gray-bg);
+  --color-ticketstatusgray-ink: var(--color-status-gray);
+  --color-imback-edge: var(--color-border);
+  --color-imback-wash: var(--color-bg-surface-alt);
+  --color-imback-ink: var(--color-accent);
+  --color-recipienttrigger-edge: var(--color-border-strong);
+  --color-recipienttrigger-wash: var(--color-bg-surface);
+  --color-recipienttrigger-ink: var(--color-on-surface);
+  --color-recipientsearch-wash: var(--color-bg-surface-alt);
+  --color-recipientsearch-ink: var(--color-on-surface);
+  --color-recipientaccent-wash: var(--color-accent-subtle);
+  --color-recipientaccent-ink: var(--color-accent);
+  --color-widgetim-edge: var(--color-border);
+  --color-widgetim-wash: var(--color-bg-surface-alt);
+  --color-widgetim-wash-hover: var(--color-bg-surface-hover);
+  --color-widgetim-ink: var(--color-on-surface);
+  --color-widgetmessage-wash: var(--color-bg-surface-hover);
+  --color-widgetmessage-ink: var(--color-on-surface);
+  --color-widgetown-wash: var(--color-accent-subtle);
+  --color-widgetown-ink: var(--color-on-surface);
+
+  /* Псевдоним роли темы: палитра сломала бы тёмную тему. */
+  --color-newsaccent-ink: var(--color-accent);
+
+  /* Псевдоним роли темы: палитра сломала бы тёмную тему. */
+  --color-newsneutral-edge: var(--color-border);
+
+  /* Псевдонимы ролей темы: палитра сломала бы тёмную тему. */
+  --color-dashwarn-edge: var(--color-border);
+  --color-dashwarn-wash: var(--color-warning-subtle);
+  --color-dashwarn-wash-hover: var(--color-bg-surface-hover);
+  --color-dashwarn-ink: var(--color-warning);
+  --color-dashaccent-edge: var(--color-border);
+  --color-dashaccent-wash: var(--color-accent-subtle);
+  --color-dashaccent-wash-hover: var(--color-bg-surface-hover);
+  --color-dashaccent-ink: var(--color-accent);
+
+/* Garnet theme vars are the palette; copying literals would fork the theme */
+  --color-slotaccent-wash: var(--color-accent-subtle);
+  --color-slotsurface-wash: var(--color-bg-surface-alt);
+  --color-slotborder-edge: var(--color-border);
+  --color-slotlink-ink: var(--color-accent);
+  --color-slotformatonline-wash: var(--color-status-green-bg);
+  --color-slotformatonline-ink: var(--color-status-green);
+  --color-slotformatoffline-wash: var(--color-status-orange-bg);
+  --color-slotformatoffline-ink: var(--color-status-orange);
+  --color-slotpanel-wash: var(--color-bg-surface-alt);
+  --color-slotpanel-edge: var(--color-border);
+  --color-slotstatusdanger-wash: var(--color-status-red-bg);
+  --color-slotstatusdanger-ink: var(--color-status-red);
+  --color-slotstatusinfo-wash: var(--color-status-blue-bg);
+  --color-slotstatusinfo-ink: var(--color-status-blue);
+  --color-slotclose-ink: var(--color-text-muted);
+  --color-slotclose-ink-hover: var(--color-text-primary);
+  --color-slothead-wash: var(--color-bg-surface);
+  --color-slothead-edge: var(--color-border);
+
+  /* Псевдонимы ролей темы: палитра сломала бы тёмную тему. */
+  --color-bookaccent-ink: var(--color-accent);
+  --color-booksurface-wash: var(--color-bg-surface-alt);
+  --color-bookrefund-wash: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  --color-bookrefund-ink: var(--color-accent);
+  --color-bookwarning-ink: var(--color-warning);
+  --color-booksummary-wash: var(--color-accent-subtle);
+  --color-bookneutral-wash-hover: var(--color-bg-surface-hover);
+  --color-bookcancel-edge: var(--color-border);
+  --color-bookcancel-wash: var(--color-bg-surface-alt);
+  --color-booktitle-ink: var(--color-on-surface);
+  --color-bookclose-ink: var(--color-text-muted);
+  --color-bookclose-ink-hover: var(--color-on-surface);
+  --color-bookdismiss-edge: var(--color-border-strong);
+  --color-bookdismiss-edge-hover: var(--color-gray-400);
+  --color-bookdismiss-ink: var(--color-text-muted);
+  --color-bookdismiss-ink-hover: var(--color-text-secondary);
+  --color-bookdismiss-wash-hover: var(--color-bg-surface-hover);
+
+/* Garnet theme vars are the palette; copying literals would fork the theme */
+  --color-weekempty-ink: color-mix(in srgb, var(--color-text-muted) 75%, transparent);
+  --color-weekborder-edge: var(--color-border);
+  --color-weekaccent-ink: var(--color-accent);
+  --color-weekcurrent-wash: var(--color-accent);
+  --color-weekcurrent-ink: var(--color-accent-text);
+
+  /* Псевдонимы ролей темы: палитра сломала бы тёмную тему. */
+  --color-welcomeavatar-wash: var(--color-accent-subtle);
+  --color-welcomeavatar-ink: var(--color-accent);
+  --color-welcomeimage-edge: var(--color-border);
+  --color-welcomeaccent-ink: var(--color-accent);
+  --color-welcomeuser-wash: var(--color-status-blue-bg);
+  --color-welcomeuser-ink: var(--color-status-blue);
+  --color-welcomeexpert-wash: var(--color-status-green-bg);
+  --color-welcomeexpert-ink: var(--color-status-green);
+  --color-welcomemoderator-wash: var(--color-status-purple-bg);
+  --color-welcomemoderator-ink: var(--color-status-purple);
+  --color-welcomeowner-wash: var(--color-status-yellow-bg);
+  --color-welcomeowner-ink: var(--color-status-yellow);
+  --color-welcomeadmin-wash: var(--color-status-red-bg);
+  --color-welcomeadmin-ink: var(--color-status-red);
+
+/* Garnet theme vars are the palette; copying literals would fork the theme */
+  --color-slotpartlink-ink: var(--color-accent);
+  --color-slotpartpanel-edge: var(--color-accent);
+  --color-slotpartpanel-wash: var(--color-bg-surface-alt);
+  --color-slotbookinfo-wash: var(--color-status-blue-bg);
+  --color-slotbookinfo-ink: var(--color-status-blue);
+  --color-slotbooksuccess-wash: var(--color-status-green-bg);
+  --color-slotbooksuccess-ink: var(--color-status-green);
+  --color-slotbookdanger-wash: var(--color-status-red-bg);
+  --color-slotbookdanger-ink: var(--color-status-red);
+  --color-slotbookwarning-wash: var(--color-status-yellow-bg);
+  --color-slotbookwarning-ink: var(--color-status-yellow);
+  --color-slotbooknotice-wash: var(--color-status-orange-bg);
+  --color-slotbooknotice-ink: var(--color-status-orange);
+  --color-slotbookspecial-wash: var(--color-status-purple-bg);
+  --color-slotbookspecial-ink: var(--color-status-purple);
+  --color-slotbookactive-wash: var(--color-status-cyan-bg);
+  --color-slotbookactive-ink: var(--color-status-cyan);
+  --color-slotbookmuted-wash: var(--color-status-gray-bg);
+  --color-slotbookmuted-ink: var(--color-status-gray);
+  --color-slotaction-fill: var(--color-accent);
+  --color-slotaction-fill-hover: var(--color-accent-hover);
+  --color-slotaction-on-fill: var(--color-accent-text);
+
+/* Garnet theme vars are the palette; copying literals would fork the theme */
+  --color-filteridle-wash: var(--color-bg-surface-hover);
+  --color-filteridle-ink: var(--color-text-secondary);
+  --color-filteridle-ink-hover: var(--color-text-primary);
+  --color-filteractive-wash: var(--color-accent);
+  --color-filteractive-wash-hover: var(--color-accent-hover);
+  --color-filteractive-wash-focus: var(--color-accent-hover);
+  --color-filteractive-wash-active: var(--color-accent-hover);
+  --color-filteractive-ink: var(--color-accent-text);
+  --color-filteractive-edge: var(--color-accent);
+  --color-filteractive-ink-subtle: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  --color-filterfield-wash: var(--color-bg-surface);
+  --color-filterfield-ink: var(--color-text-primary);
+  --color-filterfield-ink-subtle: var(--color-text-muted);
+  --color-filterfield-edge: var(--color-border-strong);
+  --color-filterfield-edge-focus: var(--color-accent);
+  --color-filtercount-wash: var(--color-bg-surface-alt);
+  --color-filtercount-ink: var(--color-text-muted);
+  --color-filtercountactive-wash: var(--palette-filtercount-white);
+  --color-filtercountactive-ink: var(--color-accent-text);
+
+/* valid-color-role ждёт var(--palette-*): часть ролей блока ссылается на цвета Garnet-темы (--color-text-secondary, --color-bg-surface-hover, --color-status-*), которые переключаются в [data-theme="dark"] — дублировать их в палитру нельзя без форка темы; часть — на фиксированные токены Tailwind (amber-50, red-300, red-600, white), сохранённые ради исходных значений из master, а не ради темы. */
+  --color-batchexisting-ink: var(--color-text-secondary);
+  --color-batchexisting-wash: var(--color-bg-surface-hover);
+  --color-batchrowwarning-wash: var(--color-amber-50);
+  --color-batchremove-edge: var(--color-red-300);
+  --color-batchremove-edge-hover: var(--color-red-600);
+  --color-batchremove-ink: var(--color-red-600);
+  --color-batchremove-ink-hover: var(--color-white);
+  --color-batchremove-wash-hover: var(--color-red-600);
+  --color-batchavailable-wash: var(--color-status-green-bg);
+  --color-batchavailable-ink: var(--color-status-green);
+  --color-batchrestricted-wash: var(--color-status-red-bg);
+  --color-batchrestricted-ink: var(--color-status-red);
+  --color-batchproposed-wash: var(--color-status-blue-bg);
+  --color-batchproposed-ink: var(--color-status-blue);
+  --color-batchtable-edge: var(--color-border);
+  --color-batchtable-ink: var(--color-text-secondary);
+  --color-batchtable-wash: var(--color-bg-surface-alt);
+  --color-batchtitle-ink: var(--color-on-surface);
+  --color-batchclose-ink: var(--color-text-muted);
+  --color-batchclose-ink-hover: var(--color-on-surface);
+
+/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (booking/slots/slot-filters.css:2), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы; поэтому роли ниже остаются ссылками на --color-*. */
+  --color-expertcardcancelled-wash: var(--color-bg-surface-hover);
+  --color-expertcardcancelled-ink: var(--color-text-secondary);
+  --color-editslotnotice-wash: var(--color-bg-surface-alt);
+  --color-expertslotpending-edge: var(--color-warning);
+
+/* Роли следуют за токенами темы Garnet (--color-*): у них есть ветка [data-theme="dark"], а --palette-* хранит сырые значения и зафиксировал бы светлый цвет. */
+  --color-externaldanger-ink: var(--color-danger);
+  --color-externalprimary-fill: var(--color-accent);
+  --color-externalprimary-fill-hover: var(--color-accent-hover);
+  --color-externalprimary-on-fill: var(--color-accent-text);
+
+/* Garnet theme vars are the palette; copying literals would fork the theme */
+  --color-slotpageaccent-ink: var(--color-accent);
+  --color-slotpageaccent-ink-hover: var(--color-accent-hover);
+
+/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (booking/slots/slot-filters.css:2), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы. */
+  --color-calnav-wash: var(--color-bg-surface-hover);
+  --color-calnav-ink: var(--color-text-secondary);
+  --color-calnav-ink-hover: var(--color-text-primary);
+
+/* Роли смешивают статусные цвета Garnet-темы: в палитре их нет, а тёмная ветка должна следовать за темой. */
+  --color-pagerfree-wash: color-mix(in srgb, var(--color-status-green) 18%, transparent);
+  --color-pagerfree-ink: var(--color-status-green);
+  --color-pagerfree-edge: var(--color-status-green);
+  --color-pagerpending-wash: color-mix(in srgb, var(--color-status-orange) 18%, transparent);
+  --color-pagerpending-ink: var(--color-status-orange);
+  --color-pagerpending-edge: var(--color-status-orange);
+  --color-pagerbooked-wash: color-mix(in srgb, var(--color-status-blue) 18%, transparent);
+  --color-pagerbooked-ink: var(--color-status-blue);
+  --color-pagerbooked-edge: var(--color-status-blue);
+  --color-pagercompleted-wash: color-mix(in srgb, var(--color-status-gray) 20%, transparent);
+  --color-pagercompleted-ink: var(--color-status-gray);
+  --color-pagercompleted-edge: var(--color-status-gray);
+
+/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (booking/slots/slot-filters.css:2), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы. */
+  --color-expertfilter-edge: var(--color-border);
+  --color-expertfilter-ink: var(--color-text-secondary);
+  --color-expertfilter-wash-hover: var(--color-bg-surface-hover);
+  --color-expertactive-edge: var(--color-accent);
+  --color-expertactive-ink: var(--color-accent-text);
+  --color-expertactive-wash: var(--color-accent);
+  --color-expertactive-wash-hover: var(--color-accent-hover);
+  --color-expertactive-wash-focus: var(--color-accent-hover);
+  --color-expertactive-wash-active: var(--color-accent-hover);
+
+/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (booking/slots/slot-filters.css:2), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы. */
+  --color-expertday-wash: var(--color-accent-subtle);
+  --color-expertdayaccent-ink: var(--color-accent);
+  --color-expertedit-ink: var(--color-accent);
+  --color-expertedit-wash-hover: var(--color-accent-subtle);
+  --color-expertdanger-ink: var(--color-danger);
+  --color-expertdanger-wash-hover: var(--color-danger-subtle);
+  --color-expertweek-edge: var(--color-border);
+
+/* Роли следуют за токенами темы Garnet (--color-*): у них есть ветка [data-theme="dark"], а --palette-* хранит сырые значения и зафиксировал бы светлый цвет. */
+  /* Роль tokenmuted-filter: эквивалент (border-subtle + text-muted) лежит в модуле фреймворка, который конфиг линта не сканирует, а valid-tone-class запрещает тону брать кирпичи чужого семейства. */
+  --color-tokenmuted-edge: var(--color-border-subtle);
+  --color-tokenmuted-ink-subtle: var(--color-text-muted);
+  /* Роль вкладок users: framework tone-tabnavinactive-outline выглядит эквивалентно, но его ink-hover — --color-text-secondary, а вкладке нужен --color-text-primary, поэтому переиспользование изменило бы цвет при наведении. */
+  --color-usersidle-ink: var(--color-text-muted);
+  --color-usersidle-ink-hover: var(--color-text-primary);
+  --color-usersidle-edge-hover: var(--color-border-strong);
+
+/* Роль moneybalance: эквивалент --color-success есть только в модуле фреймворка, который конфиг линта не сканирует, а valid-tone-class запрещает тону брать кирпичи чужого семейства. */
+  --color-moneybalance-ink: var(--color-success);
+
+/* Роли следуют за токенами темы Garnet (--color-*): у них есть ветка [data-theme="dark"], а --palette-* хранит сырые значения и зафиксировал бы светлый цвет. */
+/* Плитка — композитный тон (edge + wash + два hover-варианта): одиночного эквивалента нет, а Function применяет только один Tone. */
+  --color-admindashboardtile-edge: var(--color-border-subtle);
+  --color-admindashboardtile-wash: var(--color-bg-surface-alt);
+  --color-admindashboardtile-edge-hover: var(--color-border-strong);
+  --color-admindashboardtile-wash-hover: var(--color-bg-surface);
+
+  /* Псевдоним роли темы: палитра сломала бы тёмную тему. */
+  --color-bookformexpert-wash: var(--color-bg-surface-hover);
+
+  /* Псевдонимы ролей темы: палитра сломала бы тёмную тему. */
+  --color-userbalance-edge: var(--color-border);
+  --color-userbalance-wash: var(--color-accent-subtle);
+  --color-balanceborder-edge: var(--color-border);
+  --color-balancecard-wash: var(--color-bg-surface);
+  --color-balancecard-edge: var(--color-border);
+  --color-balancerow-wash-hover: var(--color-bg-surface-hover);
+
+  /* Псевдонимы ролей темы: палитра сломала бы тёмную тему. */
+  --color-userdashbadge-wash: var(--color-accent-subtle);
+  --color-userdashbadge-ink: var(--color-accent);
+  --color-userdashempty-wash: var(--color-bg-surface-alt);
+  --color-userdashempty-edge: var(--color-border-strong);
+
+  /* Псевдонимы ролей темы: палитра сломала бы тёмную тему. */
+  --color-newsarchiveidle-ink: var(--color-text-muted);
+  --color-newsarchiveidle-ink-hover: var(--color-text-primary);
+  --color-newsarchiveidle-wash-hover: var(--color-bg-surface-hover);
+  --color-newsarchiveidle-edge: var(--color-border);
+
+/* valid-color-role ждёт ссылку на --palette-*; в палитре лежат только сырые rgba/white для оверлеев (booking/slots/slot-filters.css:2), а цвета темы Garnet объявлены как --color-* и меняются в тёмной теме — дублировать их в палитру нельзя без форка темы. */
+  --color-expertbookingok-wash: var(--color-success-subtle);
+  --color-expertbookingok-ink: var(--color-success);
+
+/* Роли следуют за токенами темы Garnet (--color-*): у них есть ветка [data-theme="dark"], а --palette-* хранит сырые значения и зафиксировал бы светлый цвет. */
+  --color-entityadmin-edge: var(--color-border);
+  --color-entityadmin-edge-hover: var(--color-accent);
+  --color-entityadmin-ink: var(--color-text-muted);
+  --color-entityadmin-ink-hover: var(--color-accent);
+}

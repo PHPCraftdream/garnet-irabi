@@ -3,6 +3,11 @@ import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {appUrl} from '@common/Utils/Url/appUrl';
 
+const dashBooked = t.Dash_Booked;
+const dashExpertSlots = t.Dash_ExpertSlots;
+const dashViewAll = t.Dash_ViewAll;
+const slotDurationMin = t.Slot_Duration_Min;
+
 interface ExpertSlotItem {
     id: number;
     start_at: number;
@@ -21,33 +26,37 @@ interface ExpertSlotRowProps {
 }
 
 const ExpertSlotRow: React.FC<ExpertSlotRowProps> = ({slot}) => (
-    <div className="booking-row">
+    <div>
         <div>
-            <div className="text-sm font-medium text-on-surface">{slot.label}</div>
-            <div className="text-xs text-muted">
+            <div className="user-dash-row-title">{slot.label}</div>
+            <div className="user-dash-row-small">
                 {formatTs(slot.start_at)}
-                <span className="text-muted"> &middot; {slot.duration_min} {t.Slot_Duration_Min()}</span>
+                <span className="user-dash-muted"> &middot; {slot.duration_min} {slotDurationMin()}</span>
             </div>
         </div>
-        <span className="count-badge-accent">
-            {slot.booked_count}/{slot.max_users} {t.Dash_Booked()}
+        <span className="user-dash-count-badge">
+            {slot.booked_count}/{slot.max_users} {dashBooked()}
         </span>
     </div>
 );
 
+/** Создаёт строку ближайшего занятия преподавателя. */
+function renderRow(slot: ExpertUpcomingSlotsProps['slots'][number]) {
+    return <ExpertSlotRow key={slot.id} slot={slot} />;
+}
+
+/** Показывает преподавателю его предстоящие занятия и число мест. */
 export const ExpertUpcomingSlots: React.FC<ExpertUpcomingSlotsProps> = ({slots}) => {
     if (slots.length === 0) return null;
 
     return (
         <div data-test-id="expert-slots">
-            <div className="section-header-row">
-                <h2 className="section-heading mb-0">{t.Dash_ExpertSlots()}</h2>
-                <a href={appUrl('/expert/~slots')} className="view-all-link">{t.Dash_ViewAll()}</a>
+            <div className="user-dash-section-header">
+                <h2 className="user-dash-section-heading">{dashExpertSlots()}</h2>
+                <a href={appUrl('/expert/~slots')} className="user-dash-view-all">{dashViewAll()}</a>
             </div>
-            <div className="space-y-2">
-                {slots.map(slot => (
-                    <ExpertSlotRow key={slot.id} slot={slot} />
-                ))}
+            <div className="user-dash-list">
+                {slots.map(renderRow)}
             </div>
         </div>
     );

@@ -1,6 +1,12 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 
+const dashBookingsThisMonth = t.Dash_BookingsThisMonth;
+const dashOpenTickets = t.Dash_OpenTickets;
+const dashPendingApprovals = t.Dash_PendingApprovals;
+const dashStats = t.Dash_Stats;
+const dashTotalUsers = t.Dash_TotalUsers;
+
 interface ModeratorStatsProps {
     openTickets: number;
     pendingApprovals: number;
@@ -8,27 +14,39 @@ interface ModeratorStatsProps {
     bookingsThisMonth: number;
 }
 
-export const ModeratorStats: React.FC<ModeratorStatsProps> = ({openTickets, pendingApprovals, totalUsers, bookingsThisMonth}) => (
-    <div className="rounded-lg border border-default bg-surface" data-test-id="moderator-stats">
-        <div className="flex items-center px-4 py-3 border-b border-default">
-            <h2 className="text-base font-semibold text-on-surface">{t.Dash_Stats()}</h2>
+/** Показывает модератору очередь и общие показатели платформы. */
+export const ModeratorStats: React.FC<ModeratorStatsProps> = ({
+    openTickets,
+    pendingApprovals,
+    totalUsers,
+    bookingsThisMonth,
+}) => (
+    <div className="user-dash-stats-card" data-test-id="moderator-stats">
+        <div className="user-dash-stats-heading">
+            <h2 className="user-dash-stats-title">{dashStats()}</h2>
         </div>
-        <div className="grid grid-cols-2 gap-3 p-4">
-            <div className="stat-tile">
-                <div className="user-dash-stat-value-danger">{openTickets}</div>
-                <div className="stat-tile-label">{t.Dash_OpenTickets()}</div>
+        <div className="user-dash-moderator-grid">
+            <div className="stat-tile" data-user-dash-tile>
+                <div className="user-dash-stat-value" data-tone="danger">{openTickets}</div>
+                <div className="user-dash-stat-label">{dashOpenTickets()}</div>
             </div>
-            <div className="stat-tile">
-                <div className="user-dash-stat-value-warning" data-test-id="moderator-pending-approvals">{pendingApprovals}</div>
-                <div className="stat-tile-label">{t.Dash_PendingApprovals()}</div>
+            <div className="stat-tile" data-user-dash-tile>
+                <div
+                    className="user-dash-stat-value"
+                    data-tone="warning"
+                    data-test-id="moderator-pending-approvals"
+                >
+                    {pendingApprovals}
+                </div>
+                <div className="user-dash-stat-label">{dashPendingApprovals()}</div>
             </div>
-            <div className="stat-tile">
-                <div className="user-dash-stat-value-accent">{totalUsers}</div>
-                <div className="stat-tile-label">{t.Dash_TotalUsers()}</div>
+            <div className="stat-tile" data-user-dash-tile>
+                <div className="user-dash-stat-value">{totalUsers}</div>
+                <div className="user-dash-stat-label">{dashTotalUsers()}</div>
             </div>
-            <div className="stat-tile">
-                <div className="user-dash-stat-value-success">{bookingsThisMonth}</div>
-                <div className="stat-tile-label">{t.Dash_BookingsThisMonth()}</div>
+            <div className="stat-tile" data-user-dash-tile>
+                <div className="user-dash-stat-value" data-tone="success">{bookingsThisMonth}</div>
+                <div className="user-dash-stat-label">{dashBookingsThisMonth()}</div>
             </div>
         </div>
     </div>

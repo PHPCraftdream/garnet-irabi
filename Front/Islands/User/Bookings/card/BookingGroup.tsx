@@ -1,8 +1,14 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {BookingGroupData, ExpertInfo, SlotInfo, UserInfo, BookingsViewAs} from './bookingCardTypes';
+import {Booking, BookingGroupData, ExpertInfo, SlotInfo, UserInfo, BookingsViewAs} from './bookingCardTypes';
 import {BookingCard} from './BookingCard';
+
+const bookingGroupCount = t.Booking_GroupCount;
+const bookingNA = t.Booking_NA;
+const slotLocation = t.Slot_Location;
+const slotOnline = t.Slot_Online;
 
 interface Props {
     group: BookingGroupData;
@@ -18,27 +24,34 @@ interface Props {
     confirmingId: number | null;
 }
 
+const isActiveBooking = (booking: Booking) => booking.status !== 'cancelled';
+
+const BookingGroupCount: React.FC<{group: BookingGroupData}> = ({group}) => {
+    const id = group.slotId ?? group.key;
+    // Отменённая бронь остаётся в истории, но не занимает место (D-170).
+    const activeCount = group.bookings.filter(isActiveBooking).length;
+    return (
+        <span data-test-id={`booking-group-count-${id}`}>
+            {bookingGroupCount([activeCount])}
+        </span>
+    );
+};
+
 const GroupHeader: React.FC<{group: BookingGroupData}> = ({group}) => {
     const slot = group.slot;
-    const id = group.slotId ?? group.key;
-    // Отменённая бронь на том же слоте остаётся в группе (история видна), но
-    // не должна считаться как занятое место — иначе счётчик путает (D-170).
-    const activeCount = group.bookings.filter(b => b.status !== 'cancelled').length;
 
     return (
-        <div className="booking-group-header">
+        <div>
             <div>
-                <div className="booking-group-title">{slot ? formatTs(slot.start_at) : t.Booking_NA()}</div>
+                <div>{slot ? formatTs(slot.start_at) : bookingNA()}</div>
                 {slot && (
-                    <div className="booking-group-meta">
-                        {slot.is_online ? t.Slot_Online() : t.Slot_Location()}
+                    <div>
+                        {slot.is_online ? slotOnline() : slotLocation()}
                         {slot.cost ? ` · ${slot.cost} ₽` : ''}
                     </div>
                 )}
             </div>
-            <span className="booking-group-count" data-test-id={`booking-group-count-${id}`}>
-                {t.Booking_GroupCount([activeCount])}
-            </span>
+            <BookingGroupCount group={group} />
         </div>
     );
 };
@@ -49,18 +62,26 @@ const GroupHeader: React.FC<{group: BookingGroupData}> = ({group}) => {
  * Одиночная бронь остаётся обычной карточкой без обёртки: группа из одного
  * человека выглядела бы странно.
  */
-export const BookingGroup: React.FC<Props> = ({group, ...cardProps}) => {
-    const grouped = group.bookings.length > 1;
-    const cards = group.bookings.map(booking => (
-        <BookingCard key={booking.id} booking={booking} {...cardProps} hideCost={grouped} />
-    ));
+export class BookingGroup extends AntiHookComponent<Props> {
+    /** Создаёт карточку брони, скрывая повтор цены в группе. */
+    private readonly renderCard = (booking: Booking) => {
+        const {group, ...cardProps} = this.props;
+        return <BookingCard key={booking.id} booking={booking} {...cardProps} hideCost={group.bookings.length > 1} />;
+    };
 
-    if (!grouped) return cards[0];
+    /** Рендерит одиночную бронь либо общий заголовок группы с карточками. */
+    public render() {
+        const {group} = this.props;
+        const grouped = group.bookings.length > 1;
+        const cards = group.bookings.map(this.renderCard);
 
-    return (
-        <div className="booking-group" data-test-id={`booking-group-${group.slotId ?? group.key}`}>
-            <GroupHeader group={group} />
-            <div className="booking-group-list">{cards}</div>
-        </div>
-    );
-};
+        if (!grouped) return cards[0];
+
+        return (
+            <div data-test-id={`booking-group-${group.slotId ?? group.key}`}>
+                <GroupHeader group={group} />
+                <div>{cards}</div>
+            </div>
+        );
+    }
+}

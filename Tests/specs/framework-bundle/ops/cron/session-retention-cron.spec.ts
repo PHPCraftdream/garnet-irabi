@@ -37,6 +37,7 @@
 import { test, expect, tn, getDbPrefix } from '../../../../helpers/scoped-test';
 import { withConnection } from '../../../../helpers/db/db';
 import { runServerCommand } from '../../../../helpers/db/server-command';
+import { acquireTestMode, releaseTestMode } from '../../../../helpers/db/test-mode-lease';
 
 const DAY = 86400;
 
@@ -272,16 +273,11 @@ test.describe('SessionRetentionService — boundary-inclusive cutoff (fixed cloc
     let pastSessionId = 0;
     let boundarySessionId = 0;
     let insideSessionId = 0;
-    // test:prune-sessions is test-mode gated (same lock clear-user uses);
-    // restore the prior state so this doesn't leave it flipped for other specs.
-    let markerWasOurs = false;
+    // test:prune-sessions is test-mode gated (same lock clear-user uses); the
+    // marker is leased across workers and restored by the last holder.
 
     test.beforeAll(async () => {
-        const wasOn = runServerCommand(['test-mode', 'status']).stdout.includes('ON');
-        if (!wasOn) {
-            runServerCommand(['test-mode', 'on']);
-            markerWasOurs = true;
-        }
+        acquireTestMode();
 
         // Three rows straddling the cutoff by 1 second each:
         //   PAST     lastUsage = cutoff - 1  → DELETED (< cutoff)
@@ -321,9 +317,7 @@ test.describe('SessionRetentionService — boundary-inclusive cutoff (fixed cloc
             );
         });
 
-        if (markerWasOurs) {
-            runServerCommand(['test-mode', 'off']);
-        }
+        releaseTestMode();
     });
 
     test('keeps the exact-boundary row, deletes only strictly-older rows', async () => {

@@ -1,17 +1,16 @@
 import * as React from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {useSending} from '@common/hooks/data/useSending';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {D} from '@common/Support/Debug/D';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {
-    actionImpact,
-    actionReasonLabel,
-    actionReasonPlaceholder,
-    actionSubmitLabel,
-    actionTitle,
-} from '../../../Common/booking/bookingAction';
+import {actionImpact} from '../../../Common/booking/actions/labels/actionImpact';
+import {actionReasonLabel} from '../../../Common/booking/actions/labels/actionReasonLabel';
+import {actionReasonPlaceholder} from '../../../Common/booking/actions/labels/actionReasonPlaceholder';
+import {actionSubmitLabel} from '../../../Common/booking/actions/labels/actionSubmitLabel';
+import {actionTitle} from '../../../Common/booking/actions/labels/actionTitle';
 import {ReasonModal} from '../../../Common/Components/ReasonModal';
 import {PendingBookingItem, PendingBookingRow} from './PendingBookingRow';
 
@@ -19,28 +18,36 @@ export type {PendingBookingItem} from './PendingBookingRow';
 
 interface Props {
     bookings: PendingBookingItem[];
-    /**
-     * Подтверждение раньше убирало карточку из ЭТОГО списка и не говорило
-     * никому больше. Список подтверждённых и счётчик держали свои копии того
-     * же факта и продолжали показывать старую — три места на одной странице
-     * расходились, пока страницу не перезагружали руками.
-     *
-     * Список теперь живёт у родителя; эти два — сообщения о том, что с ним
-     * произошло.
-     */
     onConfirmed: (booking: PendingBookingItem) => void;
     onRejected: (bookingId: number) => void;
 }
 
-/** Заявки, ждущие решения преподавателя. */
-export const ExpertPendingBookings: React.FC<Props> = ({bookings, onConfirmed, onRejected}) => {
-    const {sending: confirmSending, withSending: withConfirmSending} = useSending();
-    const {sending: rejectSending, withSending: withRejectSending} = useSending();
-    const [activeId, setActiveId] = React.useState<number | null>(null);
-    const [rejectId, setRejectId] = React.useState<number | null>(null);
+interface ViewProps extends Props {
+    confirmSending: boolean;
+    rejectSending: boolean;
+    withConfirmSending: ReturnType<typeof useSending>['withSending'];
+    withRejectSending: ReturnType<typeof useSending>['withSending'];
+}
 
-    const handleConfirm = (bookingId: number) => {
-        setActiveId(bookingId);
+interface PendingState {activeId: number | null; rejectId: number | null}
+
+class PendingBookingsView extends AntiHookComponent<ViewProps> {
+    private readonly ui = new Carburetor<PendingState>({activeId: null, rejectId: null});
+
+    /** Обработать соответствующее действие пользователя. */
+    private patch(changes: Partial<PendingState>) {
+        this.ui.setData({...this.ui.getData(), ...changes});
+    }
+
+    /** Обработать соответствующее действие пользователя. */
+    private readonly openReject = (rejectId: number) => this.patch({rejectId});
+    /** Обработать соответствующее действие пользователя. */
+    private readonly closeReject = () => this.patch({rejectId: null});
+
+    /** Обработать соответствующее действие пользователя. */
+    private readonly handleConfirm = (bookingId: number) => {
+        const {bookings, onConfirmed, withConfirmSending} = this.props;
+        this.patch({activeId: bookingId});
         withConfirmSending(async () => {
             D('teaching.pendingBookings.confirm', {bookingId});
             try {
@@ -52,78 +59,92 @@ export const ExpertPendingBookings: React.FC<Props> = ({bookings, onConfirmed, o
                 D('teaching.pendingBookings.error', {action: 'confirm', bookingId, error: e?.message});
                 showToast(e?.message || t.General_Error(), 'danger');
             } finally {
-                setActiveId(null);
+                this.patch({activeId: null});
             }
         });
     };
 
-    const handleReject = (reason: string) => {
-        if (rejectId === null) return;
-        const bookingId = rejectId;
-        setActiveId(bookingId);
+    /** Обработать соответствующее действие пользователя. */
+    private readonly handleReject = (reason: string) => {
+        const bookingId = this.ui.getData().rejectId;
+        if (bookingId === null) return;
+        const {onRejected, withRejectSending} = this.props;
+        this.patch({activeId: bookingId});
         withRejectSending(async () => {
             D('teaching.pendingBookings.reject', {bookingId, reason});
             try {
                 const csrf = (window as any).__GARNET_CSRF__ ?? '';
                 await sendPost(appUrl('/expert/~cancelBooking'), {CSRF_TOKEN: csrf, booking_id: bookingId, reason});
                 onRejected(bookingId);
-                setRejectId(null);
+                this.patch({rejectId: null});
             } catch (e: any) {
                 D('teaching.pendingBookings.error', {action: 'reject', bookingId, error: e?.message});
                 showToast(e?.message || t.General_Error(), 'danger');
             } finally {
-                setActiveId(null);
+                this.patch({activeId: null});
             }
         });
     };
 
-    return (
-        <div data-test-id="expert-pending-bookings">
-            <div className="section-header-row">
-                <h2 className="section-heading mb-0">
-                    {t.Teaching_PendingBookingsTitle()}
-                    {bookings.length > 0 && <span className="ms-2 count-badge-warning">{bookings.length}</span>}
-                </h2>
+    /** Отобразить соответствующую часть интерфейса. */
+    private renderList(activeId: number | null) {
+        const {bookings, confirmSending, rejectSending} = this.props;
+        const rows: React.ReactNode[] = [];
+        for (const b of bookings) rows.push(<PendingBookingRow key={b.booking_id} booking={b}
+                                confirming={confirmSending && activeId === b.booking_id}
+                                rejecting={rejectSending && activeId === b.booking_id}
+                                onConfirm={this.handleConfirm} onReject={this.openReject} />);
+        return (
+            <>
+                {bookings.length === 0 && (
+                    <div className="empty-state-card">
+                        <p className="expert-bookings-empty-label">{t.Teaching_NoPendingBookings()}</p>
+                    </div>
+                )}
+                {bookings.length > 0 && (
+                    <div className="user-dash-list">
+                        {rows}
+                    </div>
+                )}
+            </>
+        );
+    }
+
+    /** Отобразить соответствующую часть интерфейса. */
+    render() {
+        const {bookings, rejectSending} = this.props;
+        const {activeId, rejectId} = this.useCarburetor(this.ui);
+        return (
+            <div data-test-id="expert-pending-bookings">
+                <div className="user-dash-section-header">
+                    <h2 className="user-dash-section-heading">
+                        {t.Teaching_PendingBookingsTitle()}
+                        {bookings.length > 0 && <span
+                        className="expert-bookings-count-warning">{bookings.length}</span>}
+                    </h2>
+                </div>
+                {this.renderList(activeId)}
+                <ReasonModal
+                    open={rejectId !== null}
+                    title={actionTitle('expert', 'pending')}
+                    impact={actionImpact('expert', 'pending')}
+                    reasonLabel={actionReasonLabel('expert', 'pending')}
+                    reasonPlaceholder={actionReasonPlaceholder('expert', 'pending')}
+                    submitLabel={actionSubmitLabel('expert', 'pending')}
+                    sending={rejectSending}
+                    testId="reject-modal"
+                    onSubmit={this.handleReject}
+                    onClose={this.closeReject}
+                />
             </div>
+        );
+    }
+}
 
-            {bookings.length === 0 && (
-                <div className="empty-state-card">
-                    <p className="text-muted font-medium">{t.Teaching_NoPendingBookings()}</p>
-                </div>
-            )}
-            {bookings.length > 0 && (
-                <div className="space-y-2">
-                    {bookings.map(b => (
-                        <PendingBookingRow
-                            key={b.booking_id}
-                            booking={b}
-                            confirming={confirmSending && activeId === b.booking_id}
-                            rejecting={rejectSending && activeId === b.booking_id}
-                            onConfirm={handleConfirm}
-                            onReject={setRejectId}
-                        />
-                    ))}
-                </div>
-            )}
-
-            {/*
-              * Пятая копия окна «действие с причиной», найденная при разборе.
-              * Прежняя жила здесь со своим состоянием, своим Escape и своим
-              * заголовком — и говорила «Отклонить бронь» там, где остальные
-              * экраны уже говорили «Отклонить заявку».
-              */}
-            <ReasonModal
-                open={rejectId !== null}
-                title={actionTitle('expert', 'pending')}
-                impact={actionImpact('expert', 'pending')}
-                reasonLabel={actionReasonLabel('expert', 'pending')}
-                reasonPlaceholder={actionReasonPlaceholder('expert', 'pending')}
-                submitLabel={actionSubmitLabel('expert', 'pending')}
-                sending={rejectSending}
-                testId="reject-modal"
-                onSubmit={handleReject}
-                onClose={() => setRejectId(null)}
-            />
-        </div>
-    );
+/** Заявки, ждущие решения преподавателя. */
+export const ExpertPendingBookings: React.FC<Props> = props => {
+    const {sending: confirmSending, withSending: withConfirmSending} = useSending();
+    const {sending: rejectSending, withSending: withRejectSending} = useSending();
+    return <PendingBookingsView {...props} {...{confirmSending, rejectSending, withConfirmSending,
+    withRejectSending}} />;
 };

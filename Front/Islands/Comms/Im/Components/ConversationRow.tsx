@@ -1,10 +1,16 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {Paperclip} from 'lucide-react';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {ImConversation} from '../imTypes';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {UserAvatar} from '../../../../Common/media/UserAvatar';
+
+const supportHasAttachments = t.Support_HasAttachments;
+const imYouPrefix = t.IM_YouPrefix;
+
+const CONVERSATION_PARTNER_NAME_TEMPLATE = <a className="conversation-partner-name" />;
 
 /**
  * Значок скрепки в строке диалога.
@@ -17,9 +23,9 @@ const AttachmentsMark: React.FC<{count: number; convId: number}> = ({count, conv
 
     return (
         <span
-            className="text-muted text-xs inline-flex items-center gap-0.5 shrink-0"
+            className="conversation-attachments"
             data-test-id={`im-conv-attachments-${convId}`}
-            title={t.Support_HasAttachments([count])}
+            title={supportHasAttachments([count])}
         >
             <Paperclip size={12} aria-hidden="true" />
             {count}
@@ -27,18 +33,23 @@ const AttachmentsMark: React.FC<{count: number; convId: number}> = ({count, conv
     );
 };
 
+/** Обрабатывает stopClick. */
+function stopClick(event: React.MouseEvent<HTMLAnchorElement>): void {
+    event.stopPropagation();
+}
+
 const ConversationHead: React.FC<{conv: ImConversation; partnerName: string}> = ({conv, partnerName}) => (
-    <div className="support-ticket-row-head">
+    <div className="support-ticket-heading">
         {/* Клик по имени открывает карточку человека, а не диалог —
             поэтому всплытие останавливается. */}
         <UserLink
             id={conv.partner_id}
             name={partnerName}
-            className="support-ticket-title common-link"
-            onClick={e => e.stopPropagation()}
+            anchor={CONVERSATION_PARTNER_NAME_TEMPLATE}
+            onClick={stopClick}
         />
         {conv.unread_count > 0 && (
-            <span data-test-id={`im-unread-badge-${conv.id}`} className="support-unread-badge">
+            <span data-test-id={`im-unread-badge-${conv.id}`} className="support-ticket-unread">
                 {conv.unread_count}
             </span>
         )}
@@ -46,13 +57,13 @@ const ConversationHead: React.FC<{conv: ImConversation; partnerName: string}> = 
 );
 
 const ConversationMeta: React.FC<{conv: ImConversation}> = ({conv}) => (
-    <div className="support-ticket-row-meta">
-        <span className="im-conv-snippet">
-            {conv.last_message_is_mine && <span className="im-conv-you-prefix">{t.IM_YouPrefix()}</span>}
+    <div className="support-ticket-metadata">
+        <span className="conversation-snippet">
+            {conv.last_message_is_mine && <span className="conversation-you">{imYouPrefix()}</span>}
             {conv.last_message_snippet}
         </span>
         <AttachmentsMark count={conv.attachments_count ?? 0} convId={conv.id} />
-        <span className="im-conv-time">{formatTs(conv.last_message_at)}</span>
+        <span className="conversation-time">{formatTs(conv.last_message_at)}</span>
     </div>
 );
 
@@ -63,28 +74,34 @@ interface Props {
 }
 
 /** Строка диалога: собеседник, последнее сообщение, непрочитанное, время. */
-export const ConversationRow: React.FC<Props> = ({conv, active, onSelect}) => {
-    const partnerName = conv.partner_name || t.User_Anonymous();
+export class ConversationRow extends AntiHookComponent<Props> {
+    /** Выбирает строку списка. */
+    private readonly select = () => this.props.onSelect(this.props.conv.id);
 
-    return (
-        <div
-            data-test-id={`im-conversation-${conv.id}`}
-            className={`support-ticket-row ${active ? 'support-ticket-row-active' : 'support-ticket-row-inactive'}`}
-            onClick={() => onSelect(conv.id)}
-        >
-            <div className="flex items-start gap-2">
-                <UserAvatar
-                    name={partnerName}
-                    avatar={conv.partner_avatar}
-                    disabled={!!conv.partner_is_disabled}
-                    testId={`im-conv-avatar-${conv.id}`}
-                    className="mt-0.5"
-                />
-                <div className="min-w-0 flex-1">
-                    <ConversationHead conv={conv} partnerName={partnerName} />
-                    <ConversationMeta conv={conv} />
+    /** Рисует содержимое компонента. */
+    render() {
+        const {conv, active} = this.props;
+        const partnerName = conv.partner_name || t.User_Anonymous();
+
+        return (
+            <div
+                data-test-id={`im-conversation-${conv.id}`}
+                className="support-page-ticket-row" data-active={active}
+                onClick={this.select}
+            >
+                <div className="conversation-row-content">
+                    <UserAvatar
+                        name={partnerName}
+                        avatar={conv.partner_avatar}
+                        disabled={!!conv.partner_is_disabled}
+                        testId={`im-conv-avatar-${conv.id}`}
+                    />
+                    <div className="conversation-summary">
+                        <ConversationHead conv={conv} partnerName={partnerName} />
+                        <ConversationMeta conv={conv} />
+                    </div>
                 </div>
             </div>
-        </div>
-    );
-};
+        );
+    }
+}

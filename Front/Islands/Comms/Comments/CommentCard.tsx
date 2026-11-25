@@ -1,8 +1,11 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {formatTs} from '@common/Utils/Time/DateUtils';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
 import {Comment} from './commentTypes';
+
+const userAnonymous = t.User_Anonymous;
 
 interface Props {
     comment: Comment;
@@ -21,37 +24,50 @@ interface Props {
  */
 const CommentAuthor: React.FC<{comment: Comment}> = ({comment}) => {
     if (comment.author_id > 0) {
-        return <UserLink id={comment.author_id} name={comment.author_name || t.User_Anonymous()} />;
+        return <UserLink id={comment.author_id} name={comment.author_name || userAnonymous()} />;
     }
 
-    return <>{comment.author_name || t.User_Anonymous()}</>;
+    return <>{comment.author_name || userAnonymous()}</>;
 };
 
-export const CommentCard: React.FC<Props> = ({comment, statusLabel, canDelete, onDelete}) => (
-    <div data-test-id={`comment-${comment.id}`} className="comment-card">
-        <div className="comment-card-row">
-            <div className="flex-1">
-                <div className="comment-author">
+export class CommentCard extends AntiHookComponent<Props> {
+    /** Обрабатывает remove. */
+    private readonly remove = () => this.props.onDelete(this.props.comment.id);
+
+    /** Рисует содержимое комментария. */
+    private renderContent() {
+        const {comment, statusLabel} = this.props;
+        return (
+            <div className="review-content">
+                <div className="review-author">
                     <CommentAuthor comment={comment} />
                     {statusLabel && (
-                        <span className="text-xs text-muted ml-2" data-test-id={`comment-status-${comment.id}`}>
+                        <span className="review-status" data-test-id={`comment-status-${comment.id}`}>
                             {statusLabel}
                         </span>
                     )}
                 </div>
-                <div className="comment-body">{comment.body}</div>
-                <div className="comment-time">{formatTs(comment.created_at)}</div>
+                <div className="review-body">{comment.body}</div>
+                <div className="review-time">{formatTs(comment.created_at)}</div>
             </div>
-            {canDelete && (
-                <button
-                    type="button"
-                    data-test-id={`comment-delete-${comment.id}`}
-                    className="comment-delete-btn"
-                    onClick={() => onDelete(comment.id)}
-                >
-                    {t.Comment_Delete()}
-                </button>
-            )}
-        </div>
-    </div>
-);
+        );
+    }
+
+    /** Рисует содержимое компонента. */
+    render() {
+        const {comment, canDelete} = this.props;
+        return (
+            <div data-test-id={`comment-${comment.id}`} className="review-card">
+                <div className="review-row">
+                    {this.renderContent()}
+                    {canDelete && (
+                        <button type="button" data-test-id={`comment-delete-${comment.id}`}
+                            className="review-delete" onClick={this.remove}>
+                            {t.Comment_Delete()}
+                        </button>
+                    )}
+                </div>
+            </div>
+        );
+    }
+}

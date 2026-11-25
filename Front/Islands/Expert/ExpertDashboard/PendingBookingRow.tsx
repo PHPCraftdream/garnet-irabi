@@ -1,6 +1,7 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {actionLabel} from '../../../Common/booking/bookingAction';
+import {actionLabel} from '../../../Common/booking/actions/labels/actionLabel';
 import {BookingPerson} from './BookingPerson';
 
 export interface PendingBookingItem {
@@ -23,35 +24,36 @@ interface Props {
 }
 
 /** Заявка, ждущая решения преподавателя. */
-export const PendingBookingRow: React.FC<Props> = ({booking, confirming, rejecting, onConfirm, onReject}) => (
-    <div className="booking-row" data-test-id={`pending-booking-${booking.booking_id}`}>
-        <BookingPerson
-            userId={booking.user_id}
-            userName={booking.user_name}
-            startAt={booking.start_at}
-            durationMin={booking.duration_min}
-            cost={booking.cost}
-            testId={`pending-user-link-${booking.booking_id}`}
-        />
-        <div className="flex gap-2 flex-shrink-0">
-            <button
-                className="btn btn-sm btn-success"
-                disabled={confirming}
-                onClick={() => onConfirm(booking.booking_id)}
-                data-test-id={`pending-confirm-${booking.booking_id}`}
-            >
-                {confirming ? '...' : t.Booking_Confirm()}
-            </button>
-            {/* Название берётся из общего словаря действий: заявка, а не
-                занятие, — значит «Отклонить заявку», как и на других экранах. */}
-            <button
-                className="btn btn-sm btn-outline-danger"
-                disabled={rejecting}
-                onClick={() => onReject(booking.booking_id)}
-                data-test-id={`pending-reject-${booking.booking_id}`}
-            >
-                {actionLabel('expert', 'pending')}
-            </button>
-        </div>
-    </div>
-);
+export class PendingBookingRow extends AntiHookComponent<Props> {
+    /** Обработать соответствующее действие пользователя. */
+    private readonly confirm = () => this.props.onConfirm(this.props.booking.booking_id);
+    /** Подготовить данные для соответствующего интерфейса. */
+    private readonly reject = () => this.props.onReject(this.props.booking.booking_id);
+
+    /** Отобразить соответствующую часть интерфейса. */
+    render() {
+        const {booking, confirming, rejecting} = this.props;
+        return (
+            <div data-test-id={`pending-booking-${booking.booking_id}`}>
+                <BookingPerson
+                    userId={booking.user_id}
+                    userName={booking.user_name}
+                    startAt={booking.start_at}
+                    durationMin={booking.duration_min}
+                    cost={booking.cost}
+                    testId={`pending-user-link-${booking.booking_id}`}
+                />
+                <div className="expert-pending-actions">
+                    <button className="compact-success-action" disabled={confirming} onClick={this.confirm}
+                    data-test-id={`pending-confirm-${booking.booking_id}`}>
+                        {confirming ? '...' : t.Booking_Confirm()}
+                    </button>
+                    <button className="slot-remove-btn" disabled={rejecting} onClick={this.reject}
+                    data-test-id={`pending-reject-${booking.booking_id}`}>
+                        {actionLabel('expert', 'pending')}
+                    </button>
+                </div>
+            </div>
+        );
+    }
+}

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {AdminSupportWidget} from './AdminSupportWidget';
 import {AdminApprovalsWidget} from './AdminApprovalsWidget';
@@ -54,14 +55,14 @@ interface Props {
     financeUrl: string;
 }
 
-export const AdminDashboardIsland: React.FC<Props> = (props) => {
-    const {openTickets, pendingApprovals, platformStats, recentActivity, supportUrl, usersUrl, logsUrl, bookingsUrl, financeUrl} = props;
+const DASHBOARD_ICON = <LayoutDashboard size={22} aria-hidden="true" />;
 
-    return (
-        <div className="space-y-6" data-test-id="admin-dashboard">
-            <PageHeader title={t.Admin_Dashboard()} icon={<LayoutDashboard size={22} aria-hidden="true" />} />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+export class AdminDashboardIsland extends AntiHookComponent<Props> {
+    /** Формирует представление данных для соответствующего раздела панели. */
+    private renderInbox() {
+        const {openTickets, pendingApprovals, supportUrl, usersUrl} = this.props;
+        return (
+            <div className="admin-dashboard-grid">
                 <AdminSupportWidget
                     count={openTickets.count}
                     tickets={openTickets.tickets}
@@ -73,22 +74,35 @@ export const AdminDashboardIsland: React.FC<Props> = (props) => {
                     usersUrl={usersUrl}
                 />
             </div>
+        );
+    }
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <AdminPlatformStats
-                    totalUsers={platformStats.totalUsers}
-                    totalExperts={platformStats.totalExperts}
-                    bookingsThisMonth={platformStats.bookingsThisMonth}
-                    revenueThisMonth={platformStats.revenueThisMonth}
-                    usersUrl={usersUrl}
-                    bookingsUrl={bookingsUrl}
-                    financeUrl={financeUrl}
-                />
-                <AdminRecentActivity
-                    logs={recentActivity}
-                    logsUrl={logsUrl}
-                />
+    /** Формирует представление данных для соответствующего раздела панели. */
+    render() {
+        const {platformStats, recentActivity, usersUrl, logsUrl, bookingsUrl, financeUrl} = this.props;
+
+        return (
+            <div className="admin-dashboard" data-test-id="admin-dashboard">
+                <PageHeader title={t.Admin_Dashboard()} icon={DASHBOARD_ICON} />
+
+                {this.renderInbox()}
+
+                <div className="admin-dashboard-grid">
+                    <AdminPlatformStats
+                        totalUsers={platformStats.totalUsers}
+                        totalExperts={platformStats.totalExperts}
+                        bookingsThisMonth={platformStats.bookingsThisMonth}
+                        revenueThisMonth={platformStats.revenueThisMonth}
+                        usersUrl={usersUrl}
+                        bookingsUrl={bookingsUrl}
+                        financeUrl={financeUrl}
+                    />
+                    <AdminRecentActivity
+                        logs={recentActivity}
+                        logsUrl={logsUrl}
+                    />
+                </div>
             </div>
-        </div>
-    );
-};
+        );
+    }
+}

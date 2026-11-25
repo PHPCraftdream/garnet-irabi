@@ -1,0 +1,30 @@
+@utility tone-attachment-outline { @apply border-attachment-edge hover:border-attachment-edge-hover; }
+@utility tone-attachment-image { @apply border-attachment-edge hover:border-attachment-edge-hover bg-transparent; }
+@utility tone-attachment-soft { @apply bg-attachment-wash; }
+@utility shape-attachment-frame { @apply border rounded; }
+@utility shape-attachment-image-button { @apply border rounded p-0; }
+@utility layout-attachment-frame { @apply block overflow-hidden; }
+@utility motion-attachment-frame { @apply transition-colors; }
+@utility behavior-attachment-image { @apply cursor-zoom-in; }
+@utility shape-attachment-image { @apply max-w-48 max-h-32 object-contain; }
+@utility layout-attachment-image { @apply block; }
+@utility shape-attachment-file-content { @apply px-3 py-2; }
+@utility layout-attachment-file-content { @apply flex items-center gap-2; }
+@utility type-attachment-file-content { @apply text-sm; }
+@utility shape-attachment-file-name { @apply max-w-32; }
+@utility layout-attachment-file-name { @apply overflow-hidden; }
+@utility type-attachment-file-name { @apply text-ellipsis whitespace-nowrap; }
+@utility type-attachment-file-size { @apply text-xs; }
+@utility shape-attachment-list { @apply mt-2; }
+@utility layout-attachment-list { @apply flex flex-wrap gap-2; }
+
+@layer components {
+  .attachment-image-button { @apply shape-attachment-image-button layout-attachment-frame motion-attachment-frame behavior-attachment-image tone-attachment-image; }
+  .attachment-image { @apply shape-attachment-image layout-attachment-image tone-neutral-plain; }
+  /* Preserve the framework's generic anchor and hover colours. */
+  .attachment-file-link { @apply shape-attachment-frame layout-attachment-frame motion-attachment-frame tone-attachment-outline; }
+  .attachment-file-content { @apply shape-attachment-file-content layout-attachment-file-content type-attachment-file-content tone-attachment-soft; }
+  .attachment-file-name { @apply shape-attachment-file-name layout-attachment-file-name type-attachment-file-name tone-neutral-plain; }
+  .attachment-file-size { @apply type-attachment-file-size tone-supportmuted-plain; }
+  .attachment-list { @apply shape-attachment-list layout-attachment-list tone-neutral-plain; }
+}

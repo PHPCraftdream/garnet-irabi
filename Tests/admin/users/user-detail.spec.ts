@@ -11,6 +11,7 @@
  */
 
 import { test, expect } from '../../helpers/scoped-test';
+import { searchAdminGrid } from '../../helpers/ui/admin-grid';
 import type { Page } from '@playwright/test';
 
 // Read-only smoke — opens admin pages, clicks around, asserts. No DB
@@ -97,8 +98,7 @@ test.describe('UserDetail — user profile', () => {
     async function openUserDetail(page: Page): Promise<boolean> {
         await openPage(page, '/admin/');
         // Use the seeded dev user — has bookings + ledger entries from DevSeedService.
-        const search = page.locator('[data-test-id="admin-grid-search"]');
-        await search.fill('user1@dev.test');
+        await searchAdminGrid(page, 'user1@dev.test');
 
         const rows = page.locator('tbody tr:not(:has(td[colspan]))');
         if (await rows.count() === 0) return false;
@@ -151,8 +151,7 @@ test.describe('UserDetail — expert profile', () => {
     async function openExpertDetail(page: Page): Promise<boolean> {
         await openPage(page, '/admin/');
         // Search for the dev seed expert who has slots/etc.
-        const search = page.locator('[data-test-id="admin-grid-search"]');
-        await search.fill('testuser_setup_expert@irabi.test');
+        await searchAdminGrid(page, 'testuser_setup_expert@irabi.test');
 
         const rows = page.locator('tbody tr:not(:has(td[colspan]))');
         if (await rows.count() === 0) return false;

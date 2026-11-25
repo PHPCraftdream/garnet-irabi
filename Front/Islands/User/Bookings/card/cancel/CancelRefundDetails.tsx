@@ -1,7 +1,11 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {penaltyPreview} from '../../../../../Common/booking/bookingAction';
+import {penaltyPreview} from '../../../../../Common/booking/actions/outcomes/penaltyPreview';
 import {SlotInfo} from '../bookingCardTypes';
+
+const bookingPenaltyKeptByExpert = t.Booking_PenaltyKeptByExpert;
+const bookingRefundAmount = t.Booking_RefundAmount;
+const bookingRefundInfo = t.Booking_RefundInfo;
 
 interface Props {
     booking?: {bookable_type: string; bookable_id: number; status: string};
@@ -30,19 +34,19 @@ export const CancelRefundDetails: React.FC<Props> = ({booking, slots}) => {
 
     if (!preview.applies) {
         return (
-            <div className="user-cancel-info-bar" data-test-id="cancel-refund-info">
-                {t.Booking_RefundInfo()} {cost} &#x20bd;
+            <div className="booking-refund-info" data-test-id="cancel-refund-info">
+                {bookingRefundInfo()} {cost} &#x20bd;
             </div>
         );
     }
 
     return (
-        <div className="user-cancel-info-bar space-y-1" data-test-id="cancel-penalty-preview">
-            <div className="text-warning">
-                {t.Booking_PenaltyKeptByExpert([slot.cancellation_penalty_percent, preview.penaltyAmount])}
+        <div className="booking-penalty-info" data-test-id="cancel-penalty-preview">
+            <div className="booking-penalty-amount">
+                {bookingPenaltyKeptByExpert([slot.cancellation_penalty_percent, preview.penaltyAmount])}
             </div>
-            <div className="text-muted">
-                {t.Booking_RefundAmount([preview.refundAmount])}
+            <div className="booking-refund-amount">
+                {bookingRefundAmount([preview.refundAmount])}
             </div>
         </div>
     );

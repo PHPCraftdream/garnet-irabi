@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {useEffect, useRef} from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {SupportMessage, AssignmentLogEntry} from '../../../Comms/Support/parts/supportTypes';
+import type {SupportMessage, AssignmentLogEntry} from '../../../Comms/Support/parts/supportTypes';
 import {SupportMessageBubble} from './timeline/SupportMessageBubble';
 import {AssignmentHistory} from './timeline/AssignmentHistory';
 
@@ -10,32 +10,51 @@ interface Props {
     assignmentLog: AssignmentLogEntry[];
 }
 
-/** Переписка по обращению и, отдельно, история передач между сотрудниками. */
-export default function TicketTimeline({messages, assignmentLog}: Props) {
-    const boxRef = useRef<HTMLDivElement>(null);
+    /** Формирует представление данных для соответствующего раздела панели. */
+function renderMessage(msg: SupportMessage) {
+    return <SupportMessageBubble key={msg.id} msg={msg} />;
+}
 
-    // Лента ограничена по высоте и прокручивается внутри себя. Без явной
-    // прокрутки вниз сотрудник видит начало переписки, а свой только что
-    // отправленный ответ — нет, и делает вывод, что отправка не сработала.
-    // Прокручиваем сам контейнер, а не через scrollIntoView: тот тянет за
-    // собой и страницу целиком.
-    useEffect(() => {
-        const box = boxRef.current;
+export default class TicketTimeline extends AntiHookComponent<Props> {
+    private readonly boxRef = React.createRef<HTMLDivElement>();
+    private lastCount = -1;
 
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
+    componentDidMount(): void {
+        super.componentDidMount();
+        this.scrollIfCountChanged();
+    }
+
+    /** Синхронизирует жизненный цикл компонента с его внешними подписками. */
+    componentDidUpdate(previous: Readonly<Props>): void {
+        super.componentDidUpdate(previous);
+        this.scrollIfCountChanged();
+    }
+
+    /** Обеспечивает работу соответствующей части интерфейса панели администратора. */
+    private scrollIfCountChanged(): void {
+        const count = this.props.messages.length;
+        if (this.lastCount === count) return;
+        this.lastCount = count;
+        const box = this.boxRef.current;
         if (box) box.scrollTop = box.scrollHeight;
-    }, [messages.length]);
+    }
 
-    return (
-        <>
-            <div className="border border-default rounded-lg mb-4 overflow-hidden bg-surface" data-test-id="support-timeline">
-                <div className="max-h-96 overflow-y-auto px-4 py-3" ref={boxRef} data-test-id="support-timeline-scroll">
-                    {messages.length === 0 && (
-                        <div className="text-center text-muted text-sm py-4">{t.Support_NoMessages()}</div>
-                    )}
-                    {messages.map(msg => <SupportMessageBubble key={msg.id} msg={msg} />)}
+    /** Формирует представление данных для соответствующего раздела панели. */
+    render() {
+        const {messages, assignmentLog} = this.props;
+        return (
+            <>
+                <div className="admin-support-timeline" data-test-id="support-timeline">
+                    <div className="admin-support-timeline-scroll" ref={this.boxRef}
+                        data-test-id="support-timeline-scroll">
+                        {messages.length === 0 && <div
+        className="admin-support-timeline-empty">{t.Support_NoMessages()}</div>}
+                        {messages.map(renderMessage)}
+                    </div>
                 </div>
-            </div>
-            <AssignmentHistory entries={assignmentLog} />
-        </>
-    );
+                <AssignmentHistory entries={assignmentLog} />
+            </>
+        );
+    }
 }

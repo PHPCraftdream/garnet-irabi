@@ -1,7 +1,14 @@
 import * as React from 'react';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {resolvedUserTz} from '@common/Utils/Time/DateUtils';
-import {CalendarPagerCounts, PagerCountItem} from '../../../../Common/booking/CalendarPagerCounts';
+import {
+    CalendarPagerCounts,
+    PagerCountItem,
+} from '../../../../Common/booking/formatting/CalendarPagerCounts';
+import {WeekTodayChip} from './WeekTodayChip';
+
+const slotsPrevWeek = t.Slots_PrevWeek;
+const slotsNextWeek = t.Slots_NextWeek;
 
 interface WeekNavigationProps {
     weekStartUnix: number;
@@ -16,21 +23,43 @@ interface WeekNavigationProps {
     weekCounts?: PagerCountItem[];
 }
 
+/** Выбирает язык форматирования дат приложения. */
 function appLocale(): string {
-    const lang = (typeof window !== 'undefined' && (window as Window & {__GARNET_UI_LANG__?: string}).__GARNET_UI_LANG__) || 'RU';
+    const lang =
+        (typeof window !== 'undefined' &&
+            (window as Window & {__GARNET_UI_LANG__?: string})
+                .__GARNET_UI_LANG__) ||
+        'RU';
     return lang === 'RU' ? 'ru-RU' : 'en-US';
 }
 
-function fmtRangeParts(ts: number, opts: Intl.DateTimeFormatOptions): {day: string; month: string; year: string} {
+/** Разбирает дату недели на локализованные части. */
+function fmtRangeParts(
+    ts: number,
+    opts: Intl.DateTimeFormatOptions,
+): {day: string; month: string; year: string} {
     const tz = resolvedUserTz();
-    const parts = new Intl.DateTimeFormat(appLocale(), {timeZone: tz, ...opts}).formatToParts(new Date(ts * 1000));
-    const get = (type: string): string => parts.find(p => p.type === type)?.value ?? '';
+    const parts = new Intl.DateTimeFormat(appLocale(), {
+        timeZone: tz,
+        ...opts,
+    }).formatToParts(new Date(ts * 1000));
+    const get = (type: string): string =>
+        parts.find((p) => p.type === type)?.value ?? '';
     return {day: get('day'), month: get('month'), year: get('year')};
 }
 
+/** Форматирует диапазон дат текущей недели. */
 function formatRange(startUnix: number, endUnix: number): string {
-    const s = fmtRangeParts(startUnix, {day: 'numeric', month: 'long', year: 'numeric'});
-    const e = fmtRangeParts(endUnix - 1, {day: 'numeric', month: 'long', year: 'numeric'});
+    const s = fmtRangeParts(startUnix, {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+    });
+    const e = fmtRangeParts(endUnix - 1, {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+    });
     if (s.year === e.year && s.month === e.month) {
         return `${s.day}–${e.day} ${e.month} ${e.year}`;
     }
@@ -40,56 +69,84 @@ function formatRange(startUnix: number, endUnix: number): string {
     return `${s.day} ${s.month} ${s.year} – ${e.day} ${e.month} ${e.year}`;
 }
 
-export const WeekNavigation: React.FC<WeekNavigationProps> = ({weekStartUnix, weekEndUnix, onPrev, onNext, onToday, prevCounts, nextCounts, weekCounts}) => {
-    const nowSec = Math.floor(Date.now() / 1000);
-    const isCurrentWeek = nowSec >= weekStartUnix && nowSec < weekEndUnix;
-
-    const navBtn = "btn-icon-round";
-
+/** Рисует навигацию по неделям календаря. */
+export const WeekNavigation: React.FC<WeekNavigationProps> = ({
+    weekStartUnix,
+    weekEndUnix,
+    onPrev,
+    onNext,
+    onToday,
+    prevCounts,
+    nextCounts,
+    weekCounts,
+}) => {
     return (
-        <div className="grid grid-cols-3 items-center gap-3 mb-4" data-test-id="week-navigation">
-            <div className="flex items-center gap-2 min-w-0">
+        <div className="calendar-week-pager" data-test-id="week-navigation">
+            <div className="calendar-pager-side">
                 <button
-                    className={navBtn}
+                    className="calendar-pager-arrow"
                     onClick={onPrev}
-                    title={t.Slots_PrevWeek()}
-                    aria-label={t.Slots_PrevWeek()}
+                    title={slotsPrevWeek()}
+                    aria-label={slotsPrevWeek()}
                     data-test-id="week-prev"
                 >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="10 12 6 8 10 4"/></svg>
+                    <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    >
+                        <polyline points="10 12 6 8 10 4" />
+                    </svg>
                 </button>
-                {prevCounts && <CalendarPagerCounts items={prevCounts} side="prev" />}
+                {prevCounts && (
+                    <CalendarPagerCounts items={prevCounts} side="prev" />
+                )}
             </div>
 
-            <div className="flex flex-col items-center gap-1 min-w-0">
-                {weekCounts && <CalendarPagerCounts items={weekCounts} side="now" />}
-                <div className="flex items-center gap-2 flex-wrap justify-center">
-                    <span className="text-sm font-semibold text-on-surface first-letter:uppercase">
+            <div className="calendar-pager-center">
+                {weekCounts && (
+                    <CalendarPagerCounts items={weekCounts} side="now" />
+                )}
+                <div className="calendar-pager-range">
+                    <span className="calendar-week-title">
                         {formatRange(weekStartUnix, weekEndUnix)}
                     </span>
-                    {!isCurrentWeek && (
-                        <button
-                            className="chip"
-                            onClick={onToday}
-                            title={t.Slots_Today()}
-                            data-test-id="week-today"
-                        >
-                            {t.Slots_Today()}
-                        </button>
-                    )}
+                    <WeekTodayChip
+                        weekStartUnix={weekStartUnix}
+                        weekEndUnix={weekEndUnix}
+                        onToday={onToday}
+                    />
                 </div>
             </div>
 
-            <div className="flex items-center gap-2 min-w-0 justify-end">
-                {nextCounts && <CalendarPagerCounts items={nextCounts} side="next" />}
+            <div className="calendar-pager-next">
+                {nextCounts && (
+                    <CalendarPagerCounts items={nextCounts} side="next" />
+                )}
                 <button
-                    className={navBtn}
+                    className="calendar-pager-arrow"
                     onClick={onNext}
-                    title={t.Slots_NextWeek()}
-                    aria-label={t.Slots_NextWeek()}
+                    title={slotsNextWeek()}
+                    aria-label={slotsNextWeek()}
                     data-test-id="week-next"
                 >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 4 10 8 6 12"/></svg>
+                    <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    >
+                        <polyline points="6 4 10 8 6 12" />
+                    </svg>
                 </button>
             </div>
         </div>

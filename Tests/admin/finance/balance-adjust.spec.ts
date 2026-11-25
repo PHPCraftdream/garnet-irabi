@@ -21,6 +21,8 @@
 import { test, expect, tn } from '../../helpers/scoped-test';
 import mysql from 'mysql2/promise';
 import { DB } from '../../helpers/db/db';
+import { waitForGridRefetch } from '../../helpers/ui/admin-grid';
+import type { Page } from '@playwright/test';
 test.describe.configure({ mode: 'serial' });
 
 // ── DB helpers ─────────────────────────────────────────────────────────────────
@@ -33,6 +35,17 @@ async function getAccountId(login: string): Promise<number> {
 		);
 		return rows[0]?.id ?? 0;
 	} finally { await conn.end(); }
+}
+
+/**
+ * The balances grid has no free-text search (the account is not a real column
+ * of account_balance); it narrows by the "user" combobox instead.
+ */
+async function filterBalancesByAccount(page: Page, accountId: number): Promise<void> {
+	await waitForGridRefetch(page, async () => {
+		await page.locator('[data-test-id="balances-account-filter"]').click();
+		await page.locator(`[data-test-id="balances-account-filter-option-${accountId}"]`).click();
+	});
 }
 
 async function getBalance(login: string): Promise<number> {
@@ -121,17 +134,15 @@ test.describe('Admin balances page', () => {
 		await expect(page.locator('text=/Fatal|Exception/i')).toHaveCount(0);
 	});
 
-	test('search filters balance rows', async ({ page }) => {
+	test('account filter narrows the balance rows to that account', async ({ page }) => {
+		const expertId = await getAccountId('testuser_setup_expert@irabi.test');
+		expect(expertId).toBeGreaterThan(0);
 		await page.goto('/admin/balances/');
 		await page.waitForSelector('table', { timeout: 12000 });
 
-		const searchInput = page.locator('[data-test-id="admin-grid-search"]');
-		await expect(searchInput).toBeVisible({ timeout: 8000 });
+		await filterBalancesByAccount(page, expertId);
 
-		// Search for the test expert login
-		await searchInput.fill('testuser_setup_expert@irabi.test');
-
-		// Should show filtered results without error
+		await expect(page.locator('tbody tr:not(:has(td[colspan]))')).toHaveCount(1);
 		await expect(page.locator('text=/Fatal|Exception/i')).toHaveCount(0);
 	});
 });
@@ -187,10 +198,8 @@ test.describe('Admin balance: UI adjustment via finance page', () => {
 		await page.goto('/admin/finance/?tab=balances');
 		await page.waitForSelector('table', { timeout: 12000 });
 
-		// Filter the grid down to our user via search by name (backend searches by 'name' field)
-		const searchInput = page.locator('[data-test-id="admin-grid-search"]');
-		await expect(searchInput).toBeVisible({ timeout: 8000 });
-		await searchInput.fill('Setup User');
+		// Narrow the grid down to our user with the account combobox
+		await filterBalancesByAccount(page, userId);
 
 		const adjustBtn = page.locator(`[data-test-id="balance-adjust-${userId}"]`);
 		await expect(adjustBtn).toBeVisible({ timeout: 8000 });
@@ -274,9 +283,8 @@ test.describe('Admin balance: DB adjustment reflected in grid', () => {
 		await page.goto('/admin/balances/');
 		await page.waitForSelector('table', { timeout: 12000 });
 
-		// Search for the user
-		const searchInput = page.locator('[data-test-id="admin-grid-search"]');
-		await searchInput.fill('testuser_setup_user@irabi.test');
+		// Narrow the grid down to the user
+		await filterBalancesByAccount(page, userId);
 
 		// Page renders without error
 		await expect(page.locator('text=/Fatal|Exception/i')).toHaveCount(0);

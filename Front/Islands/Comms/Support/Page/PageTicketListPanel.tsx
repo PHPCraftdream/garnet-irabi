@@ -5,6 +5,9 @@ import {SupportTicket} from '../parts/supportTypes';
 import {SupportTicketRow} from '../parts/SupportTicketRow';
 import Pagination, {PaginationLabels} from '@common/Components/Layout/Paging/Pagination';
 
+const supportNewTicket = t.Support_NewTicket;
+const supportNoTickets = t.Support_NoTickets;
+
 interface ListPanelProps {
     tickets: SupportTicket[];
     selectedId: number | null;
@@ -36,45 +39,26 @@ export const PageTicketListPanel: React.FC<ListPanelProps> = ({
     perPage,
     onPageChange,
     onPageSizeChange,
-}) => (
-    <div className="support-list-panel">
-        <div className="support-list-header">
-            <button
-                type="button"
-                data-test-id="support-new-ticket-btn"
-                className="support-new-btn"
-                onClick={onNew}
-            >
-                + {t.Support_NewTicket()}
-            </button>
-        </div>
-        <div className="support-list-pagination">
-            <Pagination
-                page={page}
-                totalPages={totalPages}
-                total={total}
-                loading={loading}
-                compact
-                onPageChange={onPageChange}
-                labels={labels}
-                pageSize={perPage}
-                onPageSizeChange={onPageSizeChange}
-            />
-        </div>
-        <div className="support-list-scroll">
-            {tickets.length === 0 && <div className="support-empty">{t.Support_NoTickets()}</div>}
-            {tickets.map(ticket => (
-                <SupportTicketRow
-                    key={ticket.id}
-                    ticket={ticket}
-                    active={selectedId === ticket.id}
-                    readLocally={readTicketIds.has(ticket.id)}
-                    onSelect={onSelect}
-                />
-            ))}
-        </div>
-        {totalPages > 1 && (
-            <div className="support-list-pagination-bottom">
+}) => {
+    const rows: React.ReactNode[] = [];
+    for (const ticket of tickets) {
+        rows.push(<SupportTicketRow key={ticket.id} ticket={ticket} active={selectedId === ticket.id}
+            readLocally={readTicketIds.has(ticket.id)} onSelect={onSelect} />);
+    }
+    return (
+
+        <div className="support-list-panel">
+            <div className="support-list-header">
+                <button
+                    type="button"
+                    data-test-id="support-new-ticket-btn"
+                    className="im-conversation-create"
+                    onClick={onNew}
+                >
+                    + {supportNewTicket()}
+                </button>
+            </div>
+            <div className="support-list-pagination">
                 <Pagination
                     page={page}
                     totalPages={totalPages}
@@ -83,8 +67,27 @@ export const PageTicketListPanel: React.FC<ListPanelProps> = ({
                     compact
                     onPageChange={onPageChange}
                     labels={labels}
+                    pageSize={perPage}
+                    onPageSizeChange={onPageSizeChange}
                 />
             </div>
-        )}
-    </div>
-);
+            <div className="support-list-scroll">
+                {tickets.length === 0 && <div className="support-empty">{supportNoTickets()}</div>}
+                {rows}
+            </div>
+            {totalPages > 1 && (
+                <div className="support-list-pagination-bottom">
+                    <Pagination
+                        page={page}
+                        totalPages={totalPages}
+                        total={total}
+                        loading={loading}
+                        compact
+                        onPageChange={onPageChange}
+                        labels={labels}
+                    />
+                </div>
+            )}
+        </div>
+    );
+};

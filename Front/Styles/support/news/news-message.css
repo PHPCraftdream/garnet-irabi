@@ -1,0 +1,10 @@
+@utility tone-newsaccent-plain { @apply text-newsaccent-ink; }
+@utility tone-newsaccent-link { @apply text-newsaccent-ink bg-transparent; }
+@utility type-news-event-link { @apply font-medium hover:underline; }
+@utility shape-news-book-button { @apply border-0 p-0; }
+@utility behavior-news-book-button { @apply cursor-pointer; }
+
+@layer components {
+  .news-event-link { @apply type-news-event-link tone-newsaccent-plain; }
+  .news-book-button { @apply shape-news-book-button type-news-event-link behavior-news-book-button tone-newsaccent-link; }
+}

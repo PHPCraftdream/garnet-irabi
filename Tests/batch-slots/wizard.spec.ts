@@ -172,7 +172,7 @@ test.describe('iRabi Batch Slot Creation — мастер', () => {
 		const firstRow = rows.first();
 		await Promise.all([
 			expect(firstRow.locator('.slot-time-input')).toBeVisible(),
-			expect(firstRow.locator('.slot-duration-select')).toBeVisible(),
+			expect(firstRow.locator('[data-test-id="slot-duration-select"]')).toBeVisible(),
 			expect(firstRow.locator('.slot-remove-btn')).toBeVisible(),
 		]);
 
@@ -247,7 +247,7 @@ test.describe('iRabi Batch Slot Creation — мастер', () => {
 
 	test('10. Edit duration per slot', async () => {
 		const batchModal = page.locator('[data-test-id="batch-slot-modal"]');
-		const firstDurationSelect = batchModal.locator('#proposedBody tr').first().locator('.slot-duration-select');
+		const firstDurationSelect = batchModal.locator('#proposedBody tr').first().locator('[data-test-id="slot-duration-select"]');
 		await expect(firstDurationSelect).toBeVisible();
 
 		await firstDurationSelect.selectOption('90');
@@ -285,7 +285,7 @@ test.describe('iRabi Batch Slot Creation — мастер', () => {
 		const lastRow = batchModal.locator('#proposedBody tr').last();
 		const timeVal = await lastRow.locator('.slot-time-input').inputValue();
 		expect(timeVal).toBe('16:00');
-		const durVal = await lastRow.locator('.slot-duration-select').inputValue();
+		const durVal = await lastRow.locator('[data-test-id="slot-duration-select"]').inputValue();
 		expect(durVal).toBe('45');
 
 		console.log('Added slot via add-row for date:', dateAttr);

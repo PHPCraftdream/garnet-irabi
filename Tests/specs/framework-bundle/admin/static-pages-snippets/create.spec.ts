@@ -39,7 +39,7 @@ test.describe('Admin -- Create header/footer snippets', () => {
 		await createSnippetViaUI(page, HDR_SLUG, 'E2E Header', 'header');
 
 		// Editor tab should open
-		const editorSection = page.locator('section.section-soft');
+		const editorSection = page.locator('section.snippet-editor');
 		await expect(editorSection).toBeVisible({ timeout: 8000 });
 		const editorText = await editorSection.textContent();
 		expect(editorText).toContain(HDR_SLUG);
@@ -62,7 +62,7 @@ test.describe('Admin -- Create header/footer snippets', () => {
 		await switchToSnippetsTab(page);
 		await createSnippetViaUI(page, FTR_SLUG, 'E2E Footer', 'footer');
 
-		const editorSection = page.locator('section.section-soft');
+		const editorSection = page.locator('section.snippet-editor');
 		await expect(editorSection).toBeVisible({ timeout: 8000 });
 		const editorText = await editorSection.textContent();
 		expect(editorText).toContain(FTR_SLUG);
@@ -83,7 +83,7 @@ test.describe('Admin -- Create header/footer snippets', () => {
 		const editorSection = await openSnippetEditor(page, HDR_SLUG);
 
 		// Find the type select within the editor
-		const selects = editorSection.locator('select.form-control');
+		const selects = editorSection.locator('select.static-admin-input');
 		const count = await selects.count();
 		let foundHeader = false;
 		for (let i = 0; i < count; i++) {
@@ -99,7 +99,7 @@ test.describe('Admin -- Create header/footer snippets', () => {
 	test('footer snippet type shows correctly in snippet type select', async ({ page }) => {
 		const editorSection = await openSnippetEditor(page, FTR_SLUG);
 
-		const selects = editorSection.locator('select.form-control');
+		const selects = editorSection.locator('select.static-admin-input');
 		const count = await selects.count();
 		let foundFooter = false;
 		for (let i = 0; i < count; i++) {
@@ -117,7 +117,7 @@ test.describe('Admin -- Create header/footer snippets', () => {
 		await switchToSnippetsTab(page);
 
 		// Filter buttons: "All", "header", "footer", "variable", "block"
-		const filterButtons = page.locator('[data-test-id="admin-static-pages"] button.status-muted, [data-test-id="admin-static-pages"] button.status-active');
+		const filterButtons = page.locator('[data-test-id="admin-static-pages"] button.static-admin-filter');
 		const count = await filterButtons.count();
 		expect(count).toBeGreaterThanOrEqual(5);
 
@@ -136,7 +136,7 @@ test.describe('Admin -- Create header/footer snippets', () => {
 		for (const slug of [HDR_SLUG, FTR_SLUG]) {
 			const row = page.locator(`tr:has(td:has-text("${slug}"))`);
 			if (await row.isVisible({ timeout: 3000 }).catch(() => false)) {
-				await row.locator('button.text-danger').first().click();
+				await row.locator('button.static-admin-delete').first().click();
 				await expect(page.locator('[data-test-id="modal-confirm-btn"]')).toBeVisible({ timeout: 5000 });
 				await page.locator('[data-test-id="modal-confirm-btn"]').click();
 				await expect(row).not.toBeVisible({ timeout: 5000 });

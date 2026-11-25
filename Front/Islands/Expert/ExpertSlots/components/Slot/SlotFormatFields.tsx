@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
 
 interface Props {
@@ -6,81 +7,78 @@ interface Props {
     location: string;
     onIsOnlineChange: (v: boolean) => void;
     onLocationChange: (v: string) => void;
-    /** Unique prefix for radio `name` and `data-test-id` (e.g. 'slot', 'batch', 'edit-slot'). */
     idPrefix: string;
-    /** Defaults to 'form-label'; EditSlotModal passes its own label class. */
-    labelClassName?: string;
-    /**
-     * Слот уже забронирован: формат менять нельзя, место — можно. Человек
-     * записывался на очное или на онлайн, и подменять это задним числом
-     * нельзя; а вот дописать ссылку или адрес нужно обязательно.
-     */
+    labelVariant?: 'edit';
     formatLocked?: boolean;
 }
 
-/**
- * Shared "Format" (Online/Offline) + "Location" fields used by the three
- * expert slot surfaces (create, batch, edit). Keeping the markup in one
- * place guarantees the toggle/placeholder/hint stay consistent everywhere.
- */
-export const SlotFormatFields: React.FC<Props> = ({
-    isOnline,
-    location,
-    onIsOnlineChange,
-    onLocationChange,
-    idPrefix,
-    labelClassName = 'form-label',
-    formatLocked = false,
-}) => {
-    const locationPlaceholder = isOnline
-        ? t.Slot_LocationPlaceholderOnline()
-        : t.Slot_LocationPlaceholderOffline();
+export class SlotFormatFields extends AntiHookComponent<Props> {
+    /** Подготовить данные для соответствующего интерфейса. */
+    private readonly chooseOnline = () => this.props.onIsOnlineChange(true);
+    /** Подготовить данные для соответствующего интерфейса. */
+    private readonly chooseOffline = () => this.props.onIsOnlineChange(false);
+    /** Обработать соответствующее действие пользователя. */
+    private readonly changeLocation = (event: React.ChangeEvent<HTMLInputElement>) => {
+        this.props.onLocationChange(event.target.value);
+    };
 
-    return (
-        <>
+    /** Отобразить соответствующую часть интерфейса. */
+    private renderLabel(text: string) {
+        return <label className={this.props.labelVariant === 'edit' ? 'slot-format-label-edit' :
+        'slot-format-label'}>{text}</label>;
+    }
+
+    /** Отобразить соответствующую часть интерфейса. */
+    private renderOption(online: boolean) {
+        const {idPrefix, isOnline, formatLocked = false} = this.props;
+        return (
+            <label className="slot-format-option">
+                <input
+                    type="radio"
+                    name={`${idPrefix}-format`}
+                    checked={isOnline === online}
+                    onChange={online ? this.chooseOnline : this.chooseOffline}
+                    disabled={formatLocked}
+                    data-test-id={`${idPrefix}-format-${online ? 'online' : 'offline'}`}
+                    className="slot-format-radio"
+                />
+                <span className="slot-format-option-text">{online ? t.Slot_Online() : t.Slot_Offline()}</span>
+            </label>
+        );
+    }
+
+    /** Отобразить соответствующую часть интерфейса. */
+    private renderLocation() {
+        const {isOnline, location, idPrefix} = this.props;
+        return (
             <div>
-                <label className={labelClassName}>{t.Slot_Format()}</label>
-                <div className="flex gap-3">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            name={`${idPrefix}-format`}
-                            checked={isOnline}
-                            onChange={() => onIsOnlineChange(true)}
-                            disabled={formatLocked}
-                            data-test-id={`${idPrefix}-format-online`}
-                            className="accent-theme"
-                        />
-                        <span className="text-sm">{t.Slot_Online()}</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            name={`${idPrefix}-format`}
-                            checked={!isOnline}
-                            onChange={() => onIsOnlineChange(false)}
-                            disabled={formatLocked}
-                            data-test-id={`${idPrefix}-format-offline`}
-                            className="accent-theme"
-                        />
-                        <span className="text-sm">{t.Slot_Offline()}</span>
-                    </label>
-                </div>
-            </div>
-            <div>
-                <label className={labelClassName}>{t.Slot_Location()}</label>
+                {this.renderLabel(t.Slot_Location())}
                 <input
                     type="text"
-                    className="form-control"
+                    className="slot-format-location"
                     value={location}
-                    onChange={e => onLocationChange(e.target.value)}
-                    placeholder={locationPlaceholder}
+                    onChange={this.changeLocation}
+                    placeholder={isOnline ? t.Slot_LocationPlaceholderOnline() : t.Slot_LocationPlaceholderOffline()}
                     data-test-id={`${idPrefix}-location`}
                 />
-                {!location.trim() && (
-                    <div className="text-xs text-muted mt-1">{t.Slot_LocationHint()}</div>
-                )}
+                {!location.trim() && <div className="slot-format-hint">{t.Slot_LocationHint()}</div>}
             </div>
-        </>
-    );
-};
+        );
+    }
+
+    /** Отобразить соответствующую часть интерфейса. */
+    render() {
+        return (
+            <>
+                <div>
+                    {this.renderLabel(t.Slot_Format())}
+                    <div className="slot-format-options">
+                        {this.renderOption(true)}
+                        {this.renderOption(false)}
+                    </div>
+                </div>
+                {this.renderLocation()}
+            </>
+        );
+    }
+}

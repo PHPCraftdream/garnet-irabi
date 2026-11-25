@@ -4,6 +4,10 @@ import {formatTs} from '@common/Utils/Time/DateUtils';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {getInitials} from './getInitials';
 
+const slotDurationMin = t.Slot_Duration_Min;
+
+const USER_DASH_LINK_TEMPLATE = <a className="user-dash-link" />;
+
 /** Кто записался и когда занятие. */
 export const BookingPerson: React.FC<{
     userId: number;
@@ -13,14 +17,14 @@ export const BookingPerson: React.FC<{
     cost: number;
     testId: string;
 }> = ({userId, userName, startAt, durationMin, cost, testId}) => (
-    <div className="flex items-center gap-3">
-        <div className="avatar-circle">{getInitials(userName)}</div>
+    <div className="expert-booking-person">
+        <div className="expert-booking-avatar">{getInitials(userName)}</div>
         <div>
-            <div className="text-sm font-medium text-on-surface" data-test-id={testId}>
-                <UserLink id={userId} name={userName} className="text-accent hover:underline" />
+            <div className="user-dash-row-title" data-test-id={testId}>
+                <UserLink id={userId} name={userName} anchor={USER_DASH_LINK_TEMPLATE} />
             </div>
-            <div className="text-xs text-muted">
-                {formatTs(startAt)} &middot; {durationMin} {t.Slot_Duration_Min()}
+            <div className="user-dash-row-small">
+                {formatTs(startAt)} &middot; {durationMin} {slotDurationMin()}
                 {cost > 0 && <> &middot; {cost} &#8381;</>}
             </div>
         </div>

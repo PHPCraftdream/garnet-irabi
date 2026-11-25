@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {AntiHookComponent} from '@react-carburetor/core';
 import {Combobox} from '@common/Components/ui/Combobox';
 import {DateInput} from '@common/Components/ui/DateInput';
 import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
@@ -27,62 +28,96 @@ interface FiltersProps {
  * Кнопка сброса появляется, только когда есть что сбрасывать: постоянный
  * крестик рядом с пустыми фильтрами ничего не значит.
  */
-export const SupportTicketFilters: React.FC<FiltersProps> = (p) => (
-    <div className="admin-bookings-filters mt-3">
-        <div className="filter-cell">
-            <label>{t.Admin_Filter_User()}</label>
-            <Combobox
-                options={p.userOptions}
-                value={p.userId}
-                onChange={p.onUserId}
-                placeholder={t.Admin_Filter_All()}
-                searchPlaceholder={t.Admin_Filter_SearchUser()}
-                testId="support-user-filter"
-            />
-        </div>
-        <div className="filter-cell">
-            <label>{t.Admin_Filter_Assignee()}</label>
-            <Combobox
-                options={p.assigneeOptions}
-                value={p.assigneeId}
-                onChange={p.onAssigneeId}
-                placeholder={t.Admin_Filter_All()}
-                searchPlaceholder={t.Admin_Filter_SearchUser()}
-                testId="support-assignee-filter"
-            />
-        </div>
-        <div className="filter-cell">
-            <label>{t.Admin_Filter_DateBy()}</label>
-            <select
-                className="form-select text-sm"
-                value={p.dateField}
-                onChange={e => p.onDateField(e.target.value as DateField)}
-                data-test-id="support-date-field"
-            >
-                <option value="updated_at">{t.Admin_Filter_DateUpdated()}</option>
-                <option value="created_at">{t.Admin_Filter_DateCreated()}</option>
-            </select>
-        </div>
-        <div className="filter-cell">
-            <label>{t.Admin_Filter_DateFrom()}</label>
-            <DateInput className="text-sm" value={p.dateFrom} onChange={e => p.onDateFrom(e.target.value)} data-test-id="support-date-from" />
-        </div>
-        <div className="filter-cell">
-            <label>{t.Admin_Filter_DateTo()}</label>
-            <DateInput className="text-sm" value={p.dateTo} onChange={e => p.onDateTo(e.target.value)} data-test-id="support-date-to" />
-        </div>
-        <div className="filter-actions">
-            {(p.userId || p.assigneeId || p.dateFrom || p.dateTo) && (
-                <button
-                    type="button"
-                    className="btn btn-sm btn-outline-secondary"
-                    onClick={p.onReset}
-                    data-test-id="support-filter-reset"
-                    aria-label={t.Admin_Filter_ResetAll()}
-                >
-                    ×
-                </button>
-            )}
-        </div>
-    </div>
-);
+export class SupportTicketFilters extends AntiHookComponent<FiltersProps> {
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeField = (event: React.ChangeEvent<HTMLSelectElement>) =>
+        this.props.onDateField(event.target.value as DateField);
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeFrom = (event: React.ChangeEvent<HTMLInputElement>) =>
+        this.props.onDateFrom(event.target.value);
+    /** Обновляет состояние интерфейса или передаёт действие пользователя обработчику. */
+    private readonly changeTo = (event: React.ChangeEvent<HTMLInputElement>) => this.props.onDateTo(event.target.value);
+
+    /** Формирует представление данных для соответствующего раздела панели. */
+    private renderPeople() {
+        const p = this.props;
+        return (
+            <>
+                <div className="filter-cell">
+                    <label>{t.Admin_Filter_User()}</label>
+                    <Combobox
+                        options={p.userOptions}
+                        value={p.userId}
+                        onChange={p.onUserId}
+                        placeholder={t.Admin_Filter_All()}
+                        searchPlaceholder={t.Admin_Filter_SearchUser()}
+                        testId="support-user-filter"
+                    />
+                </div>
+                <div className="filter-cell">
+                    <label>{t.Admin_Filter_Assignee()}</label>
+                    <Combobox
+                        options={p.assigneeOptions}
+                        value={p.assigneeId}
+                        onChange={p.onAssigneeId}
+                        placeholder={t.Admin_Filter_All()}
+                        searchPlaceholder={t.Admin_Filter_SearchUser()}
+                        testId="support-assignee-filter"
+                    />
+                </div>
+            </>
+        );
+    }
+
+    /** Формирует представление данных для соответствующего раздела панели. */
+    private renderDatesAndReset() {
+        const p = this.props;
+        return (
+            <>
+                <div className="filter-cell">
+                    <label>{t.Admin_Filter_DateBy()}</label>
+                    <select
+                        className="create-slot-select"
+                        value={p.dateField}
+                        onChange={this.changeField}
+                        data-test-id="support-date-field"
+                    >
+                        <option value="updated_at">{t.Admin_Filter_DateUpdated()}</option>
+                        <option value="created_at">{t.Admin_Filter_DateCreated()}</option>
+                    </select>
+                </div>
+                <div className="filter-cell">
+                    <label>{t.Admin_Filter_DateFrom()}</label>
+                    <DateInput value={p.dateFrom} onChange={this.changeFrom} data-test-id="support-date-from" />
+                </div>
+                <div className="filter-cell">
+                    <label>{t.Admin_Filter_DateTo()}</label>
+                    <DateInput value={p.dateTo} onChange={this.changeTo} data-test-id="support-date-to" />
+                </div>
+                <div className="filter-actions">
+                    {(p.userId || p.assigneeId || p.dateFrom || p.dateTo) && (
+                        <button
+                            type="button"
+                            className="booking-cancel-dismiss"
+                            onClick={p.onReset}
+                            data-test-id="support-filter-reset"
+                            aria-label={t.Admin_Filter_ResetAll()}
+                        >
+                            ×
+                        </button>
+                    )}
+                </div>
+            </>
+        );
+    }
+
+    /** Формирует представление данных для соответствующего раздела панели. */
+    render() {
+        return (
+            <div className="admin-bookings-filters" data-support-filters>
+                {this.renderPeople()}
+                {this.renderDatesAndReset()}
+            </div>
+        );
+    }
+}

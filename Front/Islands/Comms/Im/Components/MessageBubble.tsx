@@ -9,23 +9,24 @@ interface Props {
     isMine: boolean;
 }
 
+/** Рисует сообщение переписки. */
 export default function MessageBubble({message, isMine}: Props) {
     return (
         <div
             data-test-id={`im-message-${message.id}`}
-            className={`im-bubble-row ${isMine ? 'justify-end' : 'justify-start'}`}
+            className="support-message-row" data-own={isMine}
         >
-            <div className={`im-bubble ${isMine ? 'im-bubble-mine' : 'im-bubble-theirs'}`}>
+            <div className="support-message-bubble" data-own={isMine}>
                 {!isMine && message.sender_name && (
-                    <div className="im-bubble-author">
+                    <div className="support-message-author">
                         <UserLink id={message.sender_id} name={message.sender_name} />
                     </div>
                 )}
-                <div className="im-bubble-body">{message.body}</div>
+                <div className="support-message-body">{message.body}</div>
                 {message.attachments && message.attachments.length > 0 && (
                     <AttachmentDisplay attachments={message.attachments as any} />
                 )}
-                <div className="im-bubble-time">
+                <div className="support-message-time">
                     {formatTs(message.created_at)}
                 </div>
             </div>

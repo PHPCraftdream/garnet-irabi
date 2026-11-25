@@ -23,6 +23,7 @@
 import { test, expect, tn, getDbPrefix } from '../helpers/scoped-test';
 import { withConnection } from '../helpers/db/db';
 import { runServerCommand } from '../helpers/db/server-command';
+import { acquireTestMode, releaseTestMode } from '../helpers/db/test-mode-lease';
 
 const RUN_ID = `${process.env.TEST_PARALLEL_INDEX ?? '0'}-${Date.now()}`;
 
@@ -135,25 +136,14 @@ async function reminderMark(bookingId: number): Promise<number | null> {
 // нет вовсе. Прогон включает режим, если он был выключен, и возвращает всё
 // как было: тот же маркер открывает и `clear-user`, поэтому оставлять его
 // после себя нельзя.
-let markerWasOurs = false;
-
+// Маркер общий для воркеров, поэтому его берут в аренду: выключает последний
+// арендатор, а не тот, кто включил первым (см. test-mode-lease).
 test.beforeAll(() => {
-    // #397: `php garnet test-mode ...` — same officially-supported command a
-    // human runs, over the same local/remote path as runServerCommand()
-    // itself. Poking .test-mode directly (the old approach) only ever
-    // touched the LOCAL filesystem — a no-op against the remote app dir
-    // under PW_PROD.
-    const wasOn = runServerCommand(['test-mode', 'status']).stdout.includes('ON');
-    if (!wasOn) {
-        runServerCommand(['test-mode', 'on']);
-        markerWasOurs = true;
-    }
+    acquireTestMode();
 });
 
 test.afterAll(() => {
-    if (markerWasOurs) {
-        runServerCommand(['test-mode', 'off']);
-    }
+    releaseTestMode();
 });
 
 test('занятие живого преподавателя не двигается, и отказ называет причину', async () => {

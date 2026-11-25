@@ -10,10 +10,18 @@ import { test, expect } from '../../../../helpers/scoped-test';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import * as path from 'node:path';
+import * as fs from 'node:fs';
 
 const execAsync = promisify(execFile);
 
 const GARNET_ROOT = path.resolve(__dirname, '../../../../..');
+
+// deploy:diff reads WorkDir/ConfigDev/ssh.ini even for --dry-run and fails with
+// "host is empty" when no deploy target is configured.
+const SSH_INI = path.join(GARNET_ROOT, 'WorkDir', 'ConfigDev', 'ssh.ini');
+const SSH_CONFIGURED = (() => {
+    try { return /^\s*host\s*=\s*["']?[^"'\s;]/m.test(fs.readFileSync(SSH_INI, 'utf8')); } catch { return false; }
+})();
 const PHP = process.env.PHP_BINARY ?? 'php';
 
 function phpBoot(code: string): string {
@@ -43,6 +51,10 @@ async function runGarnet(args: string[]): Promise<{ stdout: string; stderr: stri
 }
 
 test.describe('deploy:diff per-app index.php shim rewrite', () => {
+    // Help output and the pure PHP unit need no deploy host; the dry-run cases do.
+    test.beforeEach(({}, testInfo) => {
+        test.skip(!SSH_CONFIGURED && !/help|perAppIndexContent/.test(testInfo.title), 'deploy:diff needs a deploy host in WorkDir/ConfigDev/ssh.ini');
+    });
     test('perAppIndexContent returns correct shim', async () => {
         const { stdout } = await execAsync(PHP, ['-r', phpBoot(`
 echo PublicPathRebrander::perAppIndexContent('garnet-runtime-example');

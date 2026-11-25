@@ -1,0 +1,5 @@
+@utility motion-screenshot-progress { @apply animate-pulse; }
+
+@layer components {
+  .screenshot-progress { @apply motion-screenshot-progress tone-neutral-plain; }
+}

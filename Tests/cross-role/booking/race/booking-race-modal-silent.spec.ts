@@ -155,7 +155,7 @@ test.describe('D-256 — booking modal must not fail silently when the slot is r
 
         // The real assertion: SOME visible error must appear, and the modal
         // must not vanish as if the booking had gone through.
-        const errorText = modal.locator('.text-danger');
+        const errorText = modal.locator('[data-test-id="booking-error"]');
         await expect(errorText).toBeVisible({ timeout: 5000 });
         await expect(modal).toBeVisible();
 

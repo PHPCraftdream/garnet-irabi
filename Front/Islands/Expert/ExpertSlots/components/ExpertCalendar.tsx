@@ -1,12 +1,15 @@
 import * as React from 'react';
-import {useState, useMemo, useCallback} from 'react';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
+import {tsToInputDate} from '@common/Utils/Time/DateUtils';
 import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
 import {Slot} from '../types';
 import {CalendarStatusFilter, StatusFilter} from './calendar/CalendarStatusFilter';
 import {CalendarPager, PagerKind} from './calendar/CalendarPager';
-import {CalendarDayColumn} from './calendar/CalendarDayColumn';
-import {useCalendarDrag} from './calendar/useCalendarDrag';
-import {useCalendarWeeks, PAGE_WEEKS} from './calendar/useCalendarWeeks';
+import {ExpertCalendarWeeks} from './calendar/CalendarWeeks/ExpertCalendarWeeks';
+import {CalendarDragController} from './calendar/CalendarDragController';
+import {buildCalendarWindow} from './calendar/CalendarWeeks/calendarWeeks';
+import {countCalendarSlots} from './calendar/CalendarWeeks/countCalendarSlots';
+import {PAGE_WEEKS} from './calendar/CalendarWeeks/PAGE_WEEKS';
 
 interface Props {
     slots: Slot[];
@@ -19,6 +22,14 @@ interface Props {
     onSlotDrop?: (slotId: number, newDateStr: string) => void;
 }
 
+const hasFreeSlot = (slot: Slot) => slot.status === 'free';
+const isPendingSlot = (slot: Slot) => slot.booking_status === 'pending';
+const filterSlots = (slots: Slot[], statusFilter: StatusFilter) => {
+    if (statusFilter === 'all') return slots;
+    if (statusFilter === 'pending') return slots.filter(isPendingSlot);
+    return slots.filter(slot => slot.status === statusFilter);
+};
+
 /**
  * Календарь занятий преподавателя — сборка из четырёх частей: фильтр,
  * пагинатор, недели из колонок-дней и ячейки занятий.
@@ -28,94 +39,133 @@ interface Props {
  * правка ветки «что показывать на забронированном слоте» начиналась со счёта
  * отступов.
  */
-export const ExpertCalendar: React.FC<Props> = ({
-    slots,
-    onCancel: _onCancel,
-    onEdit,
-    onCancelBooking,
-    onConfirmBooking,
-    onDelete,
-    onUserClick,
-    onSlotDrop,
-}) => {
-    const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-    // Смещение окна в неделях. Позволяет уйти назад в прошлое и вперёд за
-    // пределы окна по умолчанию, чтобы достижимо было КАЖДОЕ занятие.
-    const [weekOffset, setWeekOffset] = useState(0);
-    const nowSec = Math.floor(Date.now() / 1000);
+export class ExpertCalendar extends AntiHookComponent<Props> {
+    private readonly calendarState = new Carburetor<{statusFilter: StatusFilter; weekOffset:
+    number}>({statusFilter: 'all', weekOffset: 0});
+    private readonly drag = new CalendarDragController(() => this.props);
+    private filteredCache?: {slots: Slot[]; statusFilter: StatusFilter; value: Slot[]};
+    private windowCache?: {slots: Slot[]; nowSec: number; todayIso: string; weekOffset: number; value:
+    ReturnType<typeof buildCalendarWindow>};
+    private countsCache?: {slots: Slot[]; start: number; end: number; value: ReturnType<typeof countCalendarSlots>};
 
-    const drag = useCalendarDrag(slots, onSlotDrop);
+    /** Получить или вычислить соответствующие данные. */
+    private getFilteredSlots(slots: Slot[], statusFilter: StatusFilter) {
+        if (!this.filteredCache || this.filteredCache.slots !== slots || this.filteredCache.statusFilter !==
+        statusFilter) {
+            this.filteredCache = {slots, statusFilter, value: filterSlots(slots, statusFilter)};
+        }
+        return this.filteredCache.value;
+    }
 
-    const filteredSlots = useMemo(() => {
-        if (statusFilter === 'all') return slots;
-        if (statusFilter === 'pending') return slots.filter(s => s.booking_status === 'pending');
-        return slots.filter(s => s.status === statusFilter);
-    }, [slots, statusFilter]);
+    /** Получить или вычислить соответствующие данные. */
+    private getWindow(slots: Slot[], nowSec: number, todayIso: string, weekOffset: number) {
+        const cache = this.windowCache;
+        if (!cache || cache.slots !== slots || cache.nowSec !== nowSec || cache.todayIso !== todayIso ||
+        cache.weekOffset !== weekOffset) {
+            this.windowCache = {slots, nowSec, todayIso, weekOffset, value: buildCalendarWindow(slots, weekOffset,
+            nowSec, todayIso)};
+        }
+        return this.windowCache!.value;
+    }
 
-    const {weeks, rangeLabel, prevCounts, nextCounts, windowCounts} =
-        useCalendarWeeks(slots, filteredSlots, weekOffset, nowSec);
+    /** Получить или вычислить соответствующие данные. */
+    private getCounts(slots: Slot[], start: number, end: number) {
+        const cache = this.countsCache;
+        if (!cache || cache.slots !== slots || cache.start !== start || cache.end !== end) {
+            this.countsCache = {slots, start, end, value: countCalendarSlots(slots, start, end)};
+        }
+        return this.countsCache!.value;
+    }
 
-    const handlePrevPage = useCallback(() => setWeekOffset(o => o - PAGE_WEEKS), []);
-    const handleNextPage = useCallback(() => setWeekOffset(o => o + PAGE_WEEKS), []);
-    const handleToday = useCallback(() => setWeekOffset(0), []);
+    /** Обработать соответствующее действие пользователя. */
+    private readonly setStatusFilter = (statusFilter: StatusFilter) => {
+        this.calendarState.setData({...this.calendarState.getData(), statusFilter});
+    };
+    /** Обработать соответствующее действие пользователя. */
+    private readonly handlePrevPage = () => {
+        const state = this.calendarState.getData();
+        this.calendarState.setData({...state, weekOffset: state.weekOffset - PAGE_WEEKS});
+    };
+    /** Обработать соответствующее действие пользователя. */
+    private readonly handleNextPage = () => {
+        const state = this.calendarState.getData();
+        this.calendarState.setData({...state, weekOffset: state.weekOffset + PAGE_WEEKS});
+    };
+    /** Обработать соответствующее действие пользователя. */
+    private readonly handleToday = () => {
+        this.calendarState.setData({...this.calendarState.getData(), weekOffset: 0});
+    };
 
-    const hasFreeSlots = slots.some(s => s.status === 'free');
-    const activeKind: PagerKind | undefined =
-        statusFilter === 'free' || statusFilter === 'pending' || statusFilter === 'booked' || statusFilter === 'completed'
-            ? statusFilter
-            : undefined;
-
-    return (
-        <div className="space-y-4">
-            <CalendarStatusFilter slots={slots} value={statusFilter} onChange={setStatusFilter} />
-
-            {hasFreeSlots && onSlotDrop && (
-                <div className="text-xs text-muted" data-test-id="slot-drag-hint">
-                    {t.Slot_DragHint()}
-                </div>
-            )}
-
+    /** Отобразить соответствующую часть интерфейса. */
+    private renderPager(rangeLabel: string, weekOffset: number, counts: ReturnType<typeof countCalendarSlots>,
+    activeKind: PagerKind | undefined) {
+        return (
             <CalendarPager
                 rangeLabel={rangeLabel}
                 weekOffset={weekOffset}
-                prevCounts={prevCounts}
-                nextCounts={nextCounts}
-                windowCounts={windowCounts}
-                onPrev={handlePrevPage}
-                onNext={handleNextPage}
-                onToday={handleToday}
+                prevCounts={counts.prevCounts}
+                nextCounts={counts.nextCounts}
+                windowCounts={counts.windowCounts}
+                onPrev={this.handlePrevPage}
+                onNext={this.handleNextPage}
+                onToday={this.handleToday}
                 activeKind={activeKind}
             />
+        );
+    }
 
-            {weeks.map((week, wi) => (
-                <div
-                    key={wi}
-                    className="grid grid-cols-7 gap-0 border border-default rounded-lg overflow-hidden"
-                    data-test-id={`expert-week-${wi}`}
-                >
-                    {week.days.map(day => (
-                        <CalendarDayColumn
-                            key={day.dateStr}
-                            day={day}
-                            slots={week.slotsByDay.get(day.dateStr) || []}
-                            isDropTarget={drag.dragOverDay === day.dayIso && drag.draggingSlotId !== null}
-                            draggingSlotId={drag.draggingSlotId}
-                            canDrag={!!onSlotDrop}
-                            onDragEnter={drag.handleDragEnter}
-                            onDragLeave={drag.handleDragLeave}
-                            onDragOver={drag.handleDragOver}
-                            onDrop={drag.handleDrop}
-                            onSlotDragStart={drag.handleDragStart}
-                            onSlotDragEnd={drag.handleDragEnd}
-                            onEdit={onEdit}
-                            onDelete={onDelete}
-                            onCancelBooking={onCancelBooking}
-                            onConfirmBooking={onConfirmBooking}
-                            onUserClick={onUserClick}
-                        />
-                    ))}
-                </div>
-            ))}
-        </div>
-    );
-};
+    /** Отобразить соответствующую часть интерфейса. */
+    private renderWeeks(weeks: ReturnType<typeof buildCalendarWindow>['weeks'], dragOverDay: string | null,
+    draggingSlotId: number | null) {
+        const {onEdit, onCancelBooking, onConfirmBooking, onDelete, onUserClick, onSlotDrop} = this.props;
+        return (
+            <ExpertCalendarWeeks
+                weeks={weeks}
+                drag={this.drag}
+                dragOverDay={dragOverDay}
+                draggingSlotId={draggingSlotId}
+                canDrag={!!onSlotDrop}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onCancelBooking={onCancelBooking}
+                onConfirmBooking={onConfirmBooking}
+                onUserClick={onUserClick}
+            />
+        );
+    }
+
+    /** Отобразить соответствующую часть интерфейса. */
+    public render() {
+        const {slots, onSlotDrop} = this.props;
+        const {statusFilter, weekOffset} = this.useCarburetor(this.calendarState);
+        const {dragOverDay, draggingSlotId} = this.useCarburetor(this.drag.state);
+        const nowSec = Math.floor(Date.now() / 1000);
+        const filteredSlots = this.getFilteredSlots(slots, statusFilter);
+        const {weeks, rangeLabel, windowStartUnix, windowEndUnix} =
+            this.getWindow(filteredSlots, nowSec, tsToInputDate(nowSec), weekOffset);
+        const counts = this.getCounts(slots, windowStartUnix, windowEndUnix);
+
+        const hasFreeSlots = slots.some(hasFreeSlot);
+        const activeKind: PagerKind | undefined =
+            statusFilter === 'free' || statusFilter === 'pending' || statusFilter === 'booked' || statusFilter ===
+            'completed'
+                ? statusFilter
+                : undefined;
+
+        return (
+            <div className="expert-calendar">
+                <CalendarStatusFilter slots={slots} value={statusFilter} onChange={this.setStatusFilter} />
+
+                {hasFreeSlots && onSlotDrop && (
+                    <div className="expert-calendar-hint" data-test-id="slot-drag-hint">
+                        {t.Slot_DragHint()}
+                    </div>
+                )}
+
+                {this.renderPager(rangeLabel, weekOffset, counts, activeKind)}
+
+                {this.renderWeeks(weeks, dragOverDay, draggingSlotId)}
+            </div>
+        );
+    }
+}

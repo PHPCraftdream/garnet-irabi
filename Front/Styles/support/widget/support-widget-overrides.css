@@ -1,0 +1,179 @@
+/* Unlayered integration overrides retain precedence over component layers. */
+/* carburetor-disable-next-line valid-function-class */
+.conversation-row-content > :first-child { @apply mt-0.5; }
+
+@media (max-width: 767px) {
+  /* carburetor-disable-next-line valid-function-class */
+  .im-conversation-list,
+  .comms-page-layout .support-list-panel { width: 100%; }
+  /* carburetor-disable-next-line valid-function-class */
+  .comms-page-layout { @apply flex-col gap-3; min-height: 0; }
+  /* carburetor-disable-next-line valid-function-class */
+  .comms-page-thread { width: 100%; }
+  /* carburetor-disable-next-line valid-function-class */
+  .comms-page-layout[data-detail="true"] .im-conversation-list,
+  .comms-page-layout[data-detail="true"] .support-list-panel,
+  .comms-page-layout[data-detail="false"] .comms-page-thread { display: none; }
+}
+
+/* carburetor-disable-next-line valid-function-class */
+.im-recipient-content { width: var(--radix-popover-trigger-width); }
+/* carburetor-disable-next-line valid-function-class */
+.admin-bookings-filters[data-support-filters] { @apply mt-3; }
+
+/* carburetor-disable-next-line valid-function-class */
+.im-page-fab, .im-page-fab:hover { color: var(--color-on-surface); }
+
+@utility shape-admin-comments-pager-bottom { @apply mt-3; }
+@utility type-admin-comments-body { @apply whitespace-pre-wrap; }
+
+@utility shape-profile-slot-offset { @apply ml-2; }
+@utility shape-my-reviews-panel { @apply border rounded-lg mt-4; }
+@utility shape-my-review-item { @apply p-4; }
+@utility layout-my-review-header { @apply flex items-center justify-between; }
+@utility layout-my-review-heading { @apply flex items-center justify-between gap-2; }
+@utility shape-my-review-header { @apply p-4 border-b; }
+/* unlayered `h3 { @apply text-lg mb-3; }` (01-base.css:76) перебивает слоёные утилиты — нужен mb-0!. */
+@utility shape-my-reviews-title { @apply mb-0!; }
+@utility shape-my-reviews-pager { @apply p-4 pb-0; }
+@utility shape-my-reviews-list { @apply divide-y; }
+
+@utility shape-review-card { @apply border rounded-lg px-4 py-3; }
+@utility layout-review-row { @apply flex items-start justify-between gap-2; }
+@utility layout-review-content { @apply flex-1; }
+@utility type-review-author { @apply text-sm font-medium; }
+@utility shape-review-status { @apply ml-2; }
+@utility type-review-body { @apply text-sm whitespace-pre-wrap break-words; }
+@utility shape-review-section { @apply mt-6; }
+/* тот же unlayered `h3 { @apply text-lg mb-3; }` (01-base.css:76), применён к h3 через .review-heading — нужен mb-4!. */
+@utility shape-review-heading { @apply mb-4!; }
+@utility shape-review-notice { @apply p-3 mb-3 border rounded-lg; }
+@utility shape-review-empty { @apply py-4; }
+@utility layout-review-list { @apply flex flex-col gap-3; }
+@utility shape-review-list { @apply mb-4; }
+@utility layout-review-form { @apply flex gap-3; }
+@utility layout-review-send { @apply self-end; }
+
+@utility shape-user-profile-photo { @apply w-20 h-20 rounded-full; }
+@utility shape-user-profile-avatar-offset { @apply mx-auto mb-4; }
+@utility shape-user-profile-photo-border { @apply border; }
+@utility layout-user-profile-photo-button { @apply block; }
+@utility layout-user-profile-actions { @apply flex items-center justify-center gap-2; }
+@utility shape-user-profile-actions { @apply mt-3; }
+@utility shape-user-profile-admin-link { @apply px-2 py-1 rounded border; }
+@utility type-user-profile-admin-link { @apply text-sm; }
+@utility layout-user-profile-stats { @apply grid grid-cols-2 md:grid-cols-5; }
+@utility shape-user-profile-stats { @apply border-t; }
+@utility shape-user-profile-stat { @apply px-6 py-5; }
+@utility type-user-profile-stat { @apply text-center; }
+@utility type-user-profile-number { @apply text-2xl font-bold; }
+@utility shape-user-profile-header { @apply px-6 py-8 border-b; }
+@utility type-user-profile-name { @apply text-xl font-semibold; }
+@utility type-user-profile-bio { @apply whitespace-pre-line; }
+@utility shape-user-profile-bio { @apply mb-0; }
+@utility tone-userprofileadmin-outline { @apply border-userprofileadmin-edge text-userprofileadmin-ink hover:text-userprofileadmin-ink-hover hover:border-userprofileadmin-edge-hover; }
+
+@layer components {
+  .user-profile-avatar-disabled { @apply tone-widgetmessage-soft shape-user-profile-photo shape-user-profile-avatar-offset layout-im-recipient-avatar; }
+  .user-profile-initials { @apply tone-recipientaccent-soft shape-user-profile-photo shape-user-profile-avatar-offset layout-im-recipient-avatar type-user-profile-number; }
+  .user-profile-photo { @apply tone-supportconv-outline shape-user-profile-photo shape-user-profile-photo-border shape-admin-attachment-image; }
+  .user-profile-photo-button { @apply tone-adminuserphoto-plain layout-user-profile-photo-button shape-user-profile-avatar-offset shape-admin-user-photo-button behavior-support-row; }
+  .user-profile-actions { @apply tone-widgetneutral-plain layout-user-profile-actions shape-user-profile-actions; }
+  .user-profile-admin-link { @apply tone-userprofileadmin-outline shape-user-profile-admin-link type-user-profile-admin-link; }
+  .user-profile-stats { @apply tone-supportconv-outline shape-user-profile-stats layout-user-profile-stats; }
+  .user-profile-stat { @apply tone-widgetneutral-plain shape-user-profile-stat type-user-profile-stat; }
+  .user-profile-stat-value { @apply tone-bookaccent-plain type-user-profile-number; }
+  .user-profile-stat-label { @apply tone-supportmuted-plain type-widget-im-unread shape-support-message-time; }
+  .user-profile-card { @apply tone-cardsurface-outlined shape-booking-card layout-booking-card; }
+  .user-profile-header { @apply tone-supportconv-outlined shape-user-profile-header type-user-profile-stat; }
+  .user-profile-name { @apply tone-widgetim-plain type-user-profile-name; }
+  .user-profile-about-title { @apply tone-widgetneutral-plain; }
+  .user-profile-bio { @apply tone-widgetneutral-plain shape-user-profile-bio type-user-profile-bio; }
+  .my-reviews-panel { @apply tone-cardsurface-outlined shape-my-reviews-panel layout-booking-card; }
+  .my-review-item { @apply tone-widgetneutral-plain shape-my-review-item; }
+  .my-review-item-heading { @apply tone-widgetneutral-plain layout-my-review-heading shape-support-form-label; }
+  .my-review-expert { @apply tone-bookaccent-plain type-book-place-link type-conversation-you; }
+  .my-review-copy { @apply tone-widgetim-plain type-book-place shape-support-form-label; }
+  .my-reviews-header { @apply tone-supportconv-outline layout-my-review-header shape-my-review-header; }
+  .my-reviews-heading { @apply tone-widgetneutral-plain shape-my-reviews-title; }
+  .my-reviews-pager { @apply tone-widgetneutral-plain shape-my-reviews-pager; }
+  .my-reviews-list { @apply tone-widgetneutral-plain shape-my-reviews-list; }
+  .profile-slot-seats { @apply tone-supportmuted-plain type-widget-im-unread shape-profile-slot-offset; }
+  .profile-slot-book { @apply tone-settingssave-outlined layout-compact-action shape-confirm-button type-confirm-button behavior-compact-action effect-compact-action effect-primary-action-shadow motion-compact-action; }
+  .review-section { @apply tone-widgetneutral-plain shape-review-section; }
+  .review-heading { @apply tone-widgetneutral-plain shape-review-heading; }
+  .review-notice { @apply tone-supportconv-outlined shape-review-notice type-book-place; }
+  .review-empty { @apply tone-supportmuted-plain shape-review-empty type-book-place; }
+  .review-list { @apply tone-widgetneutral-plain layout-review-list shape-review-list; }
+  .review-form { @apply tone-widgetneutral-plain layout-review-form; }
+  .review-input { @apply tone-garnetfield-outlined shape-native-control shape-native-field layout-native-select layout-review-content type-native-select focus-native-select motion-native-select; }
+  .review-send { @apply tone-widgetneutral-plain layout-review-send; }
+  .review-card { @apply tone-cardsurface-outlined shape-review-card; }
+  .review-row { @apply tone-widgetneutral-plain layout-review-row; }
+  .review-content { @apply tone-widgetneutral-plain layout-review-content; }
+  .review-author { @apply tone-widgetim-plain type-review-author; }
+  .review-status { @apply tone-supportmuted-plain type-widget-im-unread shape-review-status; }
+  .review-body { @apply tone-supportsecondary-plain type-review-body shape-support-message-time; }
+  .review-time { @apply tone-supportmuted-plain type-widget-im-unread shape-support-message-time; }
+  .review-delete { @apply tone-externaldanger-plain type-widget-im-unread layout-conversation-time; }
+  .admin-comment-approve { @apply tone-adminsupportdismiss-outline layout-compact-action shape-confirm-button type-confirm-button behavior-compact-action effect-compact-action motion-compact-action; }
+  .admin-comments-pager-top { @apply tone-widgetneutral-plain shape-token-field; }
+  .admin-comments-pager-bottom { @apply tone-widgetneutral-plain shape-admin-comments-pager-bottom; }
+  .admin-comments-body { @apply tone-widgetneutral-plain type-admin-comments-body; }
+  .admin-comments-author-muted { @apply tone-supportmuted-plain; }
+}
+
+/* Shared component overrides retain their unlayered precedence. */
+/* carburetor-disable-next-line valid-function-class */
+.slot-remove-btn[data-comment-action="offset"] { @apply ml-2; }
+/* carburetor-disable-next-line valid-function-class */
+.review-notice[data-accent="true"] { border-color: var(--color-accent); }
+
+/* The unlayered border override must outrank the field Tone. */
+/* carburetor-disable-next-line valid-function-class */
+.admin-support-internal-input { @apply border-default focus:border-strong; }
+
+/* carburetor-disable-next-line valid-function-class */
+.section-soft[data-profile-about] { @apply mb-8; }
+/* carburetor-disable-next-line valid-function-class */
+.primary-action-button[data-profile-size="compact"] { @apply shape-compact-action type-compact-action; }
+/* carburetor-disable-next-line valid-function-class */
+.user-profile-avatar-disabled { background-color: var(--color-accent-subtle); color: var(--color-text-muted); }
+
+/* Стеклянная тема: admin-support-stale-dismiss заменяет btn btn-sm btn-link, у которого в glass.css общая рамка-хайрлайн и свечение на hover. */
+/* Правило намеренно вне @layer components, чтобы перебивать компонентный слой, как делает glass.css фреймворка. */
+/* carburetor-disable-next-line valid-function-class */
+.glass-skin .admin-support-stale-dismiss {
+  transition: box-shadow 0.18s ease, filter 0.18s ease, transform 0.12s ease;
+  border: 1px solid color-mix(in srgb, white 16%, var(--color-border));
+}
+
+/* carburetor-disable-next-line valid-function-class */
+.glass-skin .admin-support-stale-dismiss:hover {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 32%, transparent),
+    0 6px 7px -8px color-mix(in srgb, var(--color-accent) 45%, transparent),
+    0 0 6px -6px color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
+/* Стеклянная тема: profile-slot-book заменяет btn btn-primary — градиентная заливка и постоянное свечение (glass.css:214-228). */
+/* Карбюратор разрешает в селекторе только функциональный класс или класс с одним атрибутом, а стекло адресуется по body.glass-skin, поэтому правило вне слоя с узким подавлением. */
+/* carburetor-disable-next-line valid-function-class */
+.glass-skin .profile-slot-book {
+  background-image: linear-gradient(135deg, var(--color-accent), color-mix(in srgb, var(--color-status-purple) 70%, var(--color-accent)));
+  border: 1px solid color-mix(in srgb, white 22%, transparent);
+  box-shadow:
+    0 6px 7px -6px color-mix(in srgb, var(--color-accent) 55%, transparent),
+    0 0 7px -8px color-mix(in srgb, var(--color-status-purple) 50%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 28%, transparent);
+}
+
+/* carburetor-disable-next-line valid-function-class */
+.glass-skin .profile-slot-book:hover {
+  background-image: linear-gradient(135deg, var(--color-accent-hover), color-mix(in srgb, var(--color-status-purple) 78%, var(--color-accent-hover)));
+  filter: brightness(1.04);
+  box-shadow:
+    0 8px 8px -6px color-mix(in srgb, var(--color-accent) 65%, transparent),
+    0 0 10px -6px color-mix(in srgb, var(--color-status-purple) 60%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 32%, transparent);
+}

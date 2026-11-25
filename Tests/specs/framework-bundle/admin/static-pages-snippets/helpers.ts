@@ -36,13 +36,13 @@ export async function createSnippetViaUI(page: Page, slug: string, name: string,
 
 	const formSection = page.locator('[data-test-id="admin-static-pages"] section');
 	await expect(formSection).toBeVisible({ timeout: 5000 });
-	const inputs = formSection.locator('input.form-control');
+	const inputs = formSection.locator('input.static-admin-input');
 	await inputs.nth(0).fill(slug);
 	await inputs.nth(1).fill(name);
-	const typeSelect = formSection.locator('select.form-control');
+	const typeSelect = formSection.locator('select.static-admin-input');
 	await typeSelect.selectOption(type);
 
-	const submitBtn = formSection.locator('button.btn-primary').first();
+	const submitBtn = formSection.locator('button.static-admin-create-submit').first();
 	await submitBtn.click();
 }
 
@@ -52,9 +52,9 @@ export async function openSnippetEditor(page: Page, slug: string) {
 
 	const row = page.locator(`tr:has(td:has-text("${slug}"))`);
 	await expect(row).toBeVisible({ timeout: 10000 });
-	await row.locator('button.text-accent').first().click();
+	await row.locator('button.static-admin-link').first().click();
 
-	const editorSection = page.locator('section.section-soft');
+	const editorSection = page.locator('section.snippet-editor');
 	await expect(editorSection).toBeVisible({ timeout: 8000 });
 	return editorSection;
 }

@@ -1,5 +1,7 @@
 import * as React from 'react';
-import {IrabiPreviewProvider} from '../../../Common/people/IrabiPreviewProvider';
+import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
+import type {TReadonly} from '@react-carburetor/core';
+import {IrabiPreviewProvider} from '../../../Common/people/preview/IrabiPreviewProvider';
 import {WelcomeCard} from './Widgets/WelcomeCard';
 import {NotificationsWidget} from './Widgets/NotificationsWidget';
 import {UpcomingBookings} from './Widgets/UpcomingBookings';
@@ -76,128 +78,149 @@ interface DashboardProps {
     unreadNews: number;
 }
 
-export const DashboardIsland: React.FC<DashboardProps> = (props) => {
-    const {
-        name, avatar, avatar_full, role, isExpert, isModerator, balance,
-        unreadSupport, unreadIm,
-        upcomingBookings, recommendedSlots,
-        expertSlots, pendingBookings, usersThisMonth, earningsThisMonth,
-        declines, cancellations, missed, expertStatsUrl,
-        expertPendingBookingsList, expertConfirmedBookingsList,
-        openTickets, pendingApprovals, totalUsers, bookingsThisMonth,
-        newsApiUrl, unreadNews,
-    } = props;
+interface DashboardState {
+    pending: PendingBookingItem[];
+    confirmed: ConfirmedBookingItem[];
+    usersThisMonth: number;
+    earningsThisMonth: number;
+    declines: number;
+    cancellations: number;
+    missed: number;
+}
 
-    // One fact, one place. The pending list, the confirmed list and the stats
-    // counter each held their own copy and were updated separately — so
-    // confirming a booking left three views of the same page disagreeing until
-    // it was reloaded by hand. Now they all read this.
-    const [pending, setPending] = React.useState<PendingBookingItem[]>(expertPendingBookingsList ?? []);
-    const [confirmed, setConfirmed] = React.useState<ConfirmedBookingItem[]>(expertConfirmedBookingsList ?? []);
+/** Сравнивает подтверждённые записи по времени начала. */
+function compareBookingStart(a: ConfirmedBookingItem, b: ConfirmedBookingItem): number {
+    return a.start_at - b.start_at;
+}
 
-    // D-206: та же болезнь, что вылечили у списка, оставалась у чисел над ним.
-    // Список стал живым, а «Отклонений», «Доход за месяц» и остальные четыре
-    // так и приходили пропсами один раз вместе с HTML. Преподаватель отклонял
-    // заявку — карточка исчезала, а рядом продолжало висеть прежнее число
-    // отклонений и прежний доход, не учитывающий уже сделанный возврат.
-    const [stats, setStats] = React.useState({
-        usersThisMonth: usersThisMonth ?? 0,
-        earningsThisMonth: earningsThisMonth ?? 0,
-        declines: declines ?? 0,
-        cancellations: cancellations ?? 0,
-        missed: missed ?? 0,
+export class DashboardIsland extends AntiHookComponent<DashboardProps> {
+    private readonly ui = new Carburetor<DashboardState>({
+        pending: this.props.expertPendingBookingsList ?? [],
+        confirmed: this.props.expertConfirmedBookingsList ?? [],
+        usersThisMonth: this.props.usersThisMonth ?? 0,
+        earningsThisMonth: this.props.earningsThisMonth ?? 0,
+        declines: this.props.declines ?? 0,
+        cancellations: this.props.cancellations ?? 0,
+        missed: this.props.missed ?? 0,
     });
+    private readonly pending = this.connectSelection(this.ui, state => state.pending);
+    private readonly confirmed = this.connectSelection(this.ui, state => state.confirmed);
 
-    const reloadStats = React.useCallback((): void => {
+    /** Применяет частичные обновления к данным дашборда. */
+    private patch(changes: Partial<DashboardState>): void {
+        this.ui.setData({...this.ui.getData(), ...changes});
+    }
+
+    /** Повторно загружает статистику преподавателя с сервера. */
+    private readonly reloadStats = async (): Promise<void> => {
+        const {expertStatsUrl} = this.props;
         if (!expertStatsUrl) return;
-        fetch(expertStatsUrl, {headers: {Accept: 'application/json'}, credentials: 'same-origin'})
-            .then(res => (res.ok ? res.json() : null))
-            .then((r: any) => {
-                if (!r || typeof r !== 'object' || r.error) return;
-                setStats({
-                    usersThisMonth: Number(r.usersThisMonth) || 0,
-                    earningsThisMonth: Number(r.earningsThisMonth) || 0,
-                    declines: Number(r.declines) || 0,
-                    cancellations: Number(r.cancellations) || 0,
-                    missed: Number(r.missed) || 0,
-                });
-            })
-            .catch(() => {
-                // Сеть моргнула — числа остались прежними. Показать вместо них
-                // нули было бы хуже самой находки.
+        try {
+            const response = await fetch(expertStatsUrl, {
+                headers: {Accept: 'application/json'},
+                credentials: 'same-origin',
             });
-    }, [expertStatsUrl]);
+            const r: any = response.ok ? await response.json() : null;
+            if (!r || typeof r !== 'object' || r.error) return;
+            this.patch({
+                usersThisMonth: Number(r.usersThisMonth) || 0,
+                earningsThisMonth: Number(r.earningsThisMonth) || 0,
+                declines: Number(r.declines) || 0,
+                cancellations: Number(r.cancellations) || 0,
+                missed: Number(r.missed) || 0,
+            });
+        } catch {
+            // При сетевой ошибке сохраняем прежние показатели.
+        }
+    };
 
-    const handleConfirmed = React.useCallback((booking: PendingBookingItem): void => {
-        setPending(prev => prev.filter(b => b.booking_id !== booking.booking_id));
-        // Inserted in start order, the same order the server sends them in, so
-        // a confirmed booking does not jump to the end of the list.
-        setConfirmed(prev => [...prev, booking].sort((a, b) => a.start_at - b.start_at));
-        reloadStats();
-    }, [reloadStats]);
+    /** Переносит подтверждённую заявку из ожидания в список записей. */
+    private readonly handleConfirmed = (booking: PendingBookingItem): void => {
+        const {pending, confirmed} = this.ui.getData();
+        // Сортируем только новую копию списка.
+        const nextConfirmed = [...confirmed, booking].toSorted(compareBookingStart);
+        this.patch({
+            pending: pending.filter(b => b.booking_id !== booking.booking_id),
+            confirmed: nextConfirmed,
+        });
+        void this.reloadStats();
+    };
 
-    const handleRejected = React.useCallback((bookingId: number): void => {
-        setPending(prev => prev.filter(b => b.booking_id !== bookingId));
-        // Отклонение двигает сразу два числа: счётчик отклонений и доход —
-        // потому что вместе с отказом уходит возврат.
-        reloadStats();
-    }, [reloadStats]);
+    /** Удаляет отклонённую заявку и обновляет статистику. */
+    private readonly handleRejected = (bookingId: number): void => {
+        this.patch({pending: this.ui.getData().pending.filter(b => b.booking_id !== bookingId)});
+        void this.reloadStats();
+    };
 
-    return (
-        <IrabiPreviewProvider>
-        <div className="page-narrow space-y-6" data-test-id="dashboard">
-            <WelcomeCard name={name} role={role} balance={balance} avatar={avatar} avatar_full={avatar_full} />
-
-            <NotificationsWidget unreadSupport={unreadSupport} unreadIm={unreadIm} />
-
-            {newsApiUrl && <NewsFeed feedUrl={newsApiUrl} initialUnreadCount={unreadNews ?? 0} />}
-
-            {isModerator && (
-                <ModeratorStats
-                    openTickets={openTickets ?? 0}
-                    pendingApprovals={pendingApprovals ?? 0}
-                    totalUsers={totalUsers ?? 0}
-                    bookingsThisMonth={bookingsThisMonth ?? 0}
-                />
-            )}
-
-            {isExpert && (
+    /** Показывает статистику и списки преподавателя для экспертной роли. */
+    private renderExpert({
+        usersThisMonth,
+        earningsThisMonth,
+        declines,
+        cancellations,
+        missed,
+    }: TReadonly<DashboardState>) {
+        const {isExpert, expertPendingBookingsList, expertConfirmedBookingsList} = this.props;
+        const pending = this.pending() as PendingBookingItem[];
+        const confirmed = this.confirmed() as ConfirmedBookingItem[];
+        if (!isExpert) return null;
+        return (
+            <>
                 <ExpertStats
                     pendingBookings={pending.length}
-                    usersThisMonth={stats.usersThisMonth}
-                    earningsThisMonth={stats.earningsThisMonth}
-                    declines={stats.declines}
-                    cancellations={stats.cancellations}
-                    missed={stats.missed}
+                    usersThisMonth={usersThisMonth}
+                    earningsThisMonth={earningsThisMonth}
+                    declines={declines}
+                    cancellations={cancellations}
+                    missed={missed}
                 />
-            )}
+                {expertPendingBookingsList && (
+                    <ExpertPendingBookings
+                        bookings={pending}
+                        onConfirmed={this.handleConfirmed}
+                        onRejected={this.handleRejected}
+                    />
+                )}
+                {expertConfirmedBookingsList && <ExpertConfirmedBookings bookings={confirmed} />}
+            </>
+        );
+    }
 
-            {isExpert && expertPendingBookingsList && (
-                <ExpertPendingBookings
-                    bookings={pending}
-                    onConfirmed={handleConfirmed}
-                    onRejected={handleRejected}
-                />
-            )}
-
-            {isExpert && expertConfirmedBookingsList && (
-                <ExpertConfirmedBookings bookings={confirmed} />
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Show UpcomingBookings: always for users, only if has bookings for experts/moderators */}
+    /** Собирает блоки предстоящих и рекомендуемых занятий. */
+    private renderBookings() {
+        const {isExpert, isModerator, upcomingBookings, expertSlots, recommendedSlots} = this.props;
+        return (
+            <div className="dashboard-bookings-grid">
                 {((!isExpert && !isModerator) || upcomingBookings.length > 0) && (
                     <UpcomingBookings bookings={upcomingBookings} />
                 )}
-
-                <div className="space-y-6">
-                    {isExpert && expertSlots && expertSlots.length > 0 && (
-                        <ExpertUpcomingSlots slots={expertSlots} />
-                    )}
+                <div className="dashboard-bookings-column">
+                    {isExpert && expertSlots && expertSlots.length > 0 && <ExpertUpcomingSlots slots={expertSlots} />}
                     {!isExpert && <RecommendedSlots slots={recommendedSlots} />}
                 </div>
             </div>
-        </div>
-        </IrabiPreviewProvider>
-    );
-};
+        );
+    }
+
+    /** Отображает карточки, уведомления, ленту и данные дашборда. */
+    render() {
+        const state = this.useCarburetor(this.ui);
+        const {name, avatar, avatar_full, role, isModerator, balance, unreadSupport, unreadIm,
+            openTickets, pendingApprovals, totalUsers, bookingsThisMonth, newsApiUrl, unreadNews} = this.props;
+        return (
+            <IrabiPreviewProvider>
+                <div className="dashboard-page" data-test-id="dashboard">
+                    <WelcomeCard name={name} role={role} balance={balance} avatar={avatar} avatar_full={avatar_full} />
+                    <NotificationsWidget unreadSupport={unreadSupport} unreadIm={unreadIm} />
+                    {newsApiUrl && <NewsFeed feedUrl={newsApiUrl} initialUnreadCount={unreadNews ?? 0} />}
+                    {isModerator && (
+                        <ModeratorStats openTickets={openTickets ?? 0} pendingApprovals={pendingApprovals ?? 0}
+                            totalUsers={totalUsers ?? 0} bookingsThisMonth={bookingsThisMonth ?? 0} />
+                    )}
+                    {this.renderExpert(state)}
+                    {this.renderBookings()}
+                </div>
+            </IrabiPreviewProvider>
+        );
+    }
+}

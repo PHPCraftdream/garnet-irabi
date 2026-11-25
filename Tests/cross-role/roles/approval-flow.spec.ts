@@ -15,6 +15,7 @@ import { resolveStorageStatePath } from '../../helpers/auth/state';
 
 import { newScopedContext } from '../../helpers/scoped-test';
 import { DB } from '../../helpers/db/db';
+import { searchAdminGrid } from '../../helpers/ui/admin-grid';
 test.describe.configure({ mode: 'serial' });
 
 async function getExpertId(): Promise<number> {
@@ -174,6 +175,7 @@ test('AccountSM: disabled expert loses admin panel + slot creation', async ({ ad
 		// Admin disables expert
 		await adminPage.goto('/admin/');
 		await expect(adminPage.locator('[data-test-id="filter-tab-all"]')).toBeVisible({ timeout: 20000 });
+		await searchAdminGrid(adminPage, 'testuser_setup_expert@irabi.test');
 
 		const disableBtn = adminPage.locator(`[data-test-id="flag-IS_DISABLED-${expertId}"]`);
 		await expect(disableBtn).toBeVisible({ timeout: 8000 });

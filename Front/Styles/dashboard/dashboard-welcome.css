@@ -1,0 +1,44 @@
+@utility tone-welcomeneutral-plain { @apply text-inherit; }
+@utility tone-welcomeneutral-clear { @apply text-inherit bg-transparent; }
+@utility tone-welcomeavatar-soft { @apply bg-welcomeavatar-wash text-welcomeavatar-ink; }
+@utility tone-welcomeimage-outline { @apply border-welcomeimage-edge; }
+@utility tone-welcomeaccent-plain { @apply text-welcomeaccent-ink; }
+@utility tone-welcomeuser-soft { @apply bg-welcomeuser-wash text-welcomeuser-ink; }
+@utility tone-welcomeexpert-soft { @apply bg-welcomeexpert-wash text-welcomeexpert-ink; }
+@utility tone-welcomemoderator-soft { @apply bg-welcomemoderator-wash text-welcomemoderator-ink; }
+@utility tone-welcomeowner-soft { @apply bg-welcomeowner-wash text-welcomeowner-ink; }
+@utility tone-welcomeadmin-soft { @apply bg-welcomeadmin-wash text-welcomeadmin-ink; }
+@utility layout-welcome-row { @apply flex items-center justify-between flex-wrap gap-3; }
+@utility layout-welcome-inline { @apply flex items-center gap-3; }
+@utility shape-welcome-avatar-button { @apply p-0 border-0; }
+@utility behavior-welcome-avatar-button { @apply cursor-pointer; }
+@utility shape-welcome-avatar-image { @apply w-9 h-9 rounded-full object-cover border; }
+@utility shape-welcome-avatar-fallback { @apply w-9 h-9 rounded-full; }
+@utility layout-welcome-avatar { @apply flex items-center justify-center flex-shrink-0; }
+@utility layout-welcome-avatar-image { @apply flex-shrink-0; }
+@utility type-welcome-avatar { @apply text-sm font-semibold; }
+@utility shape-welcome-title { @apply mb-1; }
+@utility type-welcome-title { @apply text-xl font-semibold; }
+@utility shape-welcome-role { @apply px-2.5 py-0.5 rounded-full; }
+@utility layout-welcome-role { @apply inline-block; }
+@utility type-welcome-role { @apply text-xs font-medium; }
+@utility type-welcome-balance-label { @apply text-sm; }
+
+@layer components {
+  .dashboard-welcome-row { @apply layout-welcome-row tone-welcomeneutral-plain; }
+  .welcome-identity { @apply layout-welcome-inline tone-welcomeneutral-plain; }
+  .welcome-balance { @apply layout-welcome-inline tone-welcomeneutral-plain; }
+  .welcome-avatar-button { @apply shape-welcome-avatar-button behavior-welcome-avatar-button tone-welcomeneutral-clear; }
+  .welcome-avatar-image { @apply shape-welcome-avatar-image layout-welcome-avatar-image tone-welcomeimage-outline; }
+  .welcome-avatar-fallback { @apply shape-welcome-avatar-fallback layout-welcome-avatar type-welcome-avatar tone-welcomeavatar-soft; }
+  .welcome-heading { @apply shape-welcome-title type-welcome-title tone-supportprimary-plain; }
+  .welcome-role {
+    @apply shape-welcome-role layout-welcome-role type-welcome-role tone-welcomeuser-soft;
+    &[data-role="expert"] { @apply tone-welcomeexpert-soft; }
+    &[data-role="moderator"] { @apply tone-welcomemoderator-soft; }
+    &[data-role="owner"] { @apply tone-welcomeowner-soft; }
+    &[data-role="admin"] { @apply tone-welcomeadmin-soft; }
+  }
+  .welcome-balance-label { @apply type-welcome-balance-label tone-supportmuted-plain; }
+  .welcome-balance-value { @apply tone-welcomeaccent-plain; }
+}
