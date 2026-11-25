@@ -199,9 +199,11 @@ export class RegistrationFormIsland extends AntiHookComponent<RegistrationFormPr
                         data-test-id="reg-consent-marketing" className="registration-consent-check" />
                     <span>{I18n.Consent_Marketing()}</span>
                 </label>
-                <div className="registration-consent-error" data-test-id="reg-consent-error">
-                    {consentError}
-                </div>
+                {consentError && (
+                    <div className="registration-consent-error" data-test-id="reg-consent-error">
+                        {consentError}
+                    </div>
+                )}
             </div>
         );
     }

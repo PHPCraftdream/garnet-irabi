@@ -28,6 +28,7 @@ import type { BrowserContext } from '@playwright/test';
 import { DB } from '../../helpers/db/db';
 import { isProd, remoteRuntimeDir } from '../../helpers/db/ssh-bridge';
 import { runServerCommand, APP_ROOT } from '../../helpers/db/server-command';
+import { acquireTestMode, releaseTestMode } from '../../helpers/db/test-mode-lease';
 import { roleLogin } from '../../helpers/auth/role-login';
 
 const SLOT_COST = 640;
@@ -39,7 +40,6 @@ let ctx: BrowserContext;
 let expertId = 0;
 let userId = 0;
 let slotId = 0;
-let testModeWasOurs = false;
 
 const q = (s: string): string => `'${s.replace(/'/g, "'\\''")}'`;
 
@@ -98,12 +98,7 @@ test.describe('money: отказ пересчёта эксперту запис�
     test.describe.configure({ mode: 'serial' });
 
     test.beforeAll(async ({ browser }) => {
-        const wasOn = runServerCommand(['test-mode', 'status']).stdout.includes('ON');
-
-        if (!wasOn) {
-            runServerCommand(['test-mode', 'on']);
-            testModeWasOurs = true;
-        }
+        acquireTestMode();
 
         ctx = await newScopedContext(browser);
         const page = await ctx.newPage();
@@ -231,8 +226,6 @@ test.describe('money: отказ пересчёта эксперту запис�
         // Не оставлять за собой файл в WorkDir хоста.
         ssh('rm -f WorkDir/hold-lock-spec.log');
 
-        if (testModeWasOurs) {
-            runServerCommand(['test-mode', 'off']);
-        }
+        releaseTestMode();
     });
 });
