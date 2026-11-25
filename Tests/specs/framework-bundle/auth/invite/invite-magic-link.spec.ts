@@ -39,8 +39,13 @@ import { test, expect, tn } from '../../../../helpers/scoped-test';
 import { newScopedContext } from '../../../../helpers/scoped-test';
 import { withConnection } from '../../../../helpers/db/db';
 import { tickPdConsent } from '../../../../helpers/auth/auth';
+import { createDiagnostics } from '../../../../helpers/guards/failure-diagnostics';
 
 test.describe.configure({ mode: 'serial' });
+
+const diag = createDiagnostics();
+test.beforeEach(() => diag.reset());
+test.afterEach(async ({}, testInfo) => { await diag.report(testInfo); });
 
 const PIDX = process.env.TEST_PARALLEL_INDEX ?? '0';
 const BASE = process.env.BASE_URL || 'http://localhost:8001';
@@ -117,6 +122,12 @@ async function requestCodeViaInvite(page: import('@playwright/test').Page, invit
         page.waitForResponse(isAuthSubmitPost, { timeout: 15000 }),
         page.locator('[data-test-id="auth-submit-btn"]').click(),
     ]);
+    diag.note('request-code response', {
+        status: requestResp.status(),
+        url: requestResp.url(),
+        request: requestResp.request().postData(),
+        body: (await requestResp.text().catch(() => '')).slice(0, 300),
+    });
     expect(requestResp.ok()).toBe(true);
     const reqBody = await requestResp.json();
     expect(reqBody.codeLifeTime).toBeGreaterThan(0);

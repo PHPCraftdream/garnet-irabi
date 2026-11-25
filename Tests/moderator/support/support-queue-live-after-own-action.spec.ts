@@ -29,6 +29,7 @@
  */
 import { test, expect, tn } from '../../helpers/scoped-test';
 import { withConnection } from '../../helpers/db/db';
+import { createDiagnostics } from '../../helpers/guards/failure-diagnostics';
 
 async function getAccountId(login: string): Promise<number> {
 	return withConnection(async (c) => {
@@ -74,6 +75,19 @@ async function cleanup(ticketId: number): Promise<void> {
 
 test.describe.configure({ mode: 'serial' });
 
+let diagTicketId = 0;
+const diag = createDiagnostics(async () => {
+	const ticket = await withConnection(async (c) => {
+		const [rows] = await c.execute<any[]>(
+			`SELECT status, unread_staff, unread_user, updated_at FROM ${tn('support_tickets')} WHERE id = ?`, [diagTicketId],
+		);
+		return rows[0] ?? null;
+	});
+	return { ticket, nowUnix: Math.floor(Date.now() / 1000) };
+});
+test.beforeEach(() => diag.reset());
+test.afterEach(async ({}, testInfo) => { await diag.report(testInfo); });
+
 test.describe('D-198: the support queue stops lying right after the moderator acts', () => {
 	let clientId = 0;
 	let ticketId = 0;
@@ -82,6 +96,7 @@ test.describe('D-198: the support queue stops lying right after the moderator ac
 		clientId = await getAccountId('testuser_setup_user@irabi.test');
 		expect(clientId).toBeGreaterThan(0);
 		ticketId = await createUnreadTicket(clientId);
+		diagTicketId = ticketId;
 		expect(ticketId).toBeGreaterThan(0);
 		expect(await unreadStaff(ticketId)).toBe(1);
 	});
@@ -103,6 +118,19 @@ test.describe('D-198: the support queue stops lying right after the moderator ac
 	});
 
 	test('replying updates the queue row and the status counters without a reload', async ({ page }) => {
+		// Every answer of the support endpoints: what the queue re-read got and when.
+		page.on('response', async (response) => {
+			const url = response.url();
+			if (!url.includes('/admin/support')) return;
+			const body = await response.text().catch(() => '');
+			const at = body.indexOf(`"id":${ticketId},`) >= 0 ? body.indexOf(`"id":${ticketId},`) : body.indexOf(`"id":"${ticketId}"`);
+			diag.note('support response', {
+				method: response.request().method(),
+				url: new URL(url).pathname,
+				status: response.status(),
+				ticketInBody: at >= 0 ? body.slice(at, at + 160) : null,
+			});
+		});
 		await page.goto('/admin/support/', { waitUntil: 'domcontentloaded' });
 
 		const row = page.locator(`[data-test-id="grid-row-${ticketId}"]`);

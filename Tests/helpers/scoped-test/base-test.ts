@@ -5,6 +5,8 @@
 
 import { test as base, expect, Browser, BrowserContext, BrowserContextOptions, Page } from '@playwright/test';
 import { isProd } from '../db/ssh-bridge';
+import { resetCodeRequestIpLimit } from '../auth/code-request-limit';
+import { EXCLUSIVE_RUN_LOCK, acquireShared, releaseShared } from '../db/process-lock';
 import { attachConsoleGuards, collectAndResetIssues, formatIssues } from '../guards/console-guards';
 import { getDbPrefix } from './db-prefix';
 import { scopeHeaders } from './scope-headers';
@@ -58,7 +60,7 @@ const baseTest = base.extend<{}, WorkerScope>({
  * context (logout flows that intentionally clearCookies, etc.) keep
  * working — the reset before the NEXT test puts cookies back.
  */
-export const test = baseTest.extend<{ page: Page; __consoleGuard: void } & RolePageFixtures, SharedFixtures>({
+export const test = baseTest.extend<{ page: Page; __consoleGuard: void; __codeRequestLimit: void; __sharedRun: void } & RolePageFixtures, SharedFixtures>({
     /**
      * Auto-fixture: every browser-side warning or uncaught exception
      * accumulated during a test fails that test, with the full
@@ -75,6 +77,19 @@ export const test = baseTest.extend<{ page: Page; __consoleGuard: void } & RoleP
                 formatIssues(issues)
             );
         }
+    }, { auto: true }],
+
+    /** Every test runs under shared access: a spec that changes server-wide state holds it exclusively. */
+    __sharedRun: [async ({}, use) => {
+        const token = isProd() ? null : acquireShared(EXCLUSIVE_RUN_LOCK);
+        await use();
+        releaseShared(EXCLUSIVE_RUN_LOCK, token);
+    }, { auto: true, timeout: 180_000 }],
+
+    /** Local runs share one IP counter of code requests across workers: start each test with it cleared. */
+    __codeRequestLimit: [async ({}, use) => {
+        if (!isProd()) resetCodeRequestIpLimit();
+        await use();
     }, { auto: true }],
 
     _sharedContext: [

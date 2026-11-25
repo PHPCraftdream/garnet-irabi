@@ -25,8 +25,13 @@
 import { test, expect, tn } from '../../helpers/scoped-test';
 import mysql from 'mysql2/promise';
 import { DB } from '../../helpers/db/db';
+import {
+	getAccountId, resyncBalanceFromLedger, bookingLedgerNet, balanceDriftFromLedger, createPaidSlot,
+	insertBooking, getBookingStatus, getSlotStatus, emailQueueMaxId, setBookingsPref, restoreExpertFlags,
+} from '../../helpers/db/cascade-fixtures';
 
 import { searchAdminGrid } from '../../helpers/ui/admin-grid';
+import { createDiagnostics } from '../../helpers/guards/failure-diagnostics';
 test.describe.configure({ mode: 'serial' });
 
 const EXPERT_LOGIN = 'testuser_setup_expert@irabi.test';
@@ -41,130 +46,6 @@ test.beforeEach(async ({ page }) => {
 	});
 });
 
-// ── DB helpers ─────────────────────────────────────────────────────────────────
-
-async function getAccountId(login: string): Promise<number> {
-	const conn = await mysql.createConnection(DB);
-	try {
-		const [rows] = await conn.execute<any[]>(
-			`SELECT id FROM ${tn('accounts')} WHERE login = ?`, [login]
-		);
-		return Number(rows[0]?.id ?? 0);
-	} finally { await conn.end(); }
-}
-
-async function getBalance(login: string): Promise<number> {
-	const conn = await mysql.createConnection(DB);
-	try {
-		const [rows] = await conn.execute<any[]>(
-			`SELECT ab.balance
-			 FROM ${tn('account_balance')} ab
-			 JOIN ${tn('accounts')} a ON a.id = ab.account_id
-			 WHERE a.login = ?`,
-			[login]
-		);
-		return rows.length ? Number(rows[0].balance) : 0;
-	} finally { await conn.end(); }
-}
-
-async function createPaidSlot(expertId: number, cost: number, maxUsers: number): Promise<number> {
-	const conn = await mysql.createConnection(DB);
-	try {
-		const startAt = Math.floor(Date.now() / 1000) + 86400 * 7;
-		const uid = [...Array(16)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
-		const [result]: any = await conn.execute(
-			`INSERT INTO ${tn('time_slots')}
-			 (expert_id, start_at, end_at, duration_min, cost, is_online, location, max_users, booked_count, status, uid, created_at)
-			 VALUES (?, ?, ?, 60, ?, 1, 'https://meet.example.com/cascade-test', ?, 0, 'free', ?, ?)`,
-			[expertId, startAt, startAt + 3600, cost, maxUsers, uid, Math.floor(Date.now() / 1000)]
-		);
-		return Number(result.insertId);
-	} finally { await conn.end(); }
-}
-
-/**
- * Insert a booking row directly and bump the slot's booked_count. The caller
- * decides whether the slot should flip to 'booked' (single-seat) or stay 'free'
- * (partially-booked multi-seat, audit C-2) via `slotBecomesBooked`.
- */
-async function insertBooking(slotId: number, userId: number, status: string, slotBecomesBooked: boolean): Promise<number> {
-	const conn = await mysql.createConnection(DB);
-	try {
-		const now = Math.floor(Date.now() / 1000);
-		const [result]: any = await conn.execute(
-			`INSERT INTO ${tn('bookings')} (user_id, bookable_type, bookable_id, status, created_at)
-			 VALUES (?, 'time_slot', ?, ?, ?)`,
-			[userId, slotId, status, now]
-		);
-		await conn.execute(
-			`UPDATE ${tn('time_slots')} SET booked_count = booked_count + 1, status = ? WHERE id = ?`,
-			[slotBecomesBooked ? 'booked' : 'free', slotId]
-		);
-		return Number(result.insertId);
-	} finally { await conn.end(); }
-}
-
-async function getBookingStatus(bookingId: number): Promise<string> {
-	const conn = await mysql.createConnection(DB);
-	try {
-		const [rows] = await conn.execute<any[]>(
-			`SELECT status FROM ${tn('bookings')} WHERE id = ?`, [bookingId]
-		);
-		return rows[0]?.status ?? 'unknown';
-	} finally { await conn.end(); }
-}
-
-async function getSlotStatus(slotId: number): Promise<string> {
-	const conn = await mysql.createConnection(DB);
-	try {
-		const [rows] = await conn.execute<any[]>(
-			`SELECT status FROM ${tn('time_slots')} WHERE id = ?`, [slotId]
-		);
-		return rows[0]?.status ?? 'unknown';
-	} finally { await conn.end(); }
-}
-
-async function emailQueueMaxId(login: string): Promise<number> {
-	const conn = await mysql.createConnection(DB);
-	try {
-		const [rows] = await conn.execute<any[]>(
-			`SELECT COALESCE(MAX(id), 0) AS maxId FROM ${tn('email_queue')} WHERE recipient_email = ?`,
-			[login]
-		);
-		return Number(rows[0]?.maxId ?? 0);
-	} finally { await conn.end(); }
-}
-
-async function setBookingsPref(accountId: number, freq: string): Promise<void> {
-	const conn = await mysql.createConnection(DB);
-	try {
-		const value = JSON.stringify({ bookings: freq, messages: 'each', support: 'each' });
-		await conn.execute(
-			`INSERT INTO ${tn('accounts_data')} (account_id, param, value)
-			 VALUES (?, 'email_notif_prefs', ?)
-			 ON DUPLICATE KEY UPDATE value = VALUES(value)`,
-			[accountId, value]
-		);
-	} finally { await conn.end(); }
-}
-
-async function restoreExpertFlags(expertId: number): Promise<void> {
-	const conn = await mysql.createConnection(DB);
-	try {
-		// IS_APPROVED = 1, IS_DISABLED unset (0).
-		await conn.execute(
-			`INSERT INTO ${tn('accounts_data')} (account_id, param, value)
-			 VALUES (?, 'IS_APPROVED', '1')
-			 ON DUPLICATE KEY UPDATE value = '1'`,
-			[expertId]
-		);
-		await conn.execute(
-			`DELETE FROM ${tn('accounts_data')} WHERE account_id = ? AND param = 'IS_DISABLED'`,
-			[expertId]
-		);
-	} finally { await conn.end(); }
-}
-
 async function clickFlagAndWait(page: import('@playwright/test').Page, flagName: string, userId: number, login: string = EXPERT_LOGIN): Promise<void> {
 	await page.goto('/admin/');
 	await page.waitForSelector('table', { timeout: 12000 });
@@ -178,35 +59,64 @@ async function clickFlagAndWait(page: import('@playwright/test').Page, flagName:
 }
 
 /** Poll an async getter until predicate holds (cascade writes settle post-response). */
-async function pollUntil<T>(fn: () => Promise<T>, predicate: (v: T) => boolean, attempts = 20, delayMs = 50): Promise<T> {
-	let v: T;
+async function pollUntil<T>(fn: () => Promise<T>, predicate: (v: T) => boolean, attempts = 150, delayMs = 100): Promise<T> {
+	const startedAt = performance.now();
 	for (let i = 0; i < attempts; i++) {
-		v = await fn();
-		if (predicate(v)) return v;
+		const v = await fn();
+		if (predicate(v)) {
+			diag.note('poll settled', { attempt: i + 1, waitedMs: Math.round(performance.now() - startedAt), value: v });
+			return v;
+		}
 		await new Promise(r => setTimeout(r, delayMs));
 	}
-	return await fn();
+	const last = await fn();
+	diag.note('poll gave up', { attempts, waitedMs: Math.round(performance.now() - startedAt), value: last });
+	return last;
 }
 
+// The cascade writes settle after the HTTP response, so the wait is bounded by time (15 s),
+// not by a handful of tries; on a failure the report says how long the poll really waited
+// and what the balances and ledger held.
+const diag = createDiagnostics(async () => {
+	const conn = await mysql.createConnection(DB);
+	try {
+		const since = Math.floor(Date.now() / 1000) - 900;
+		const [balances] = await conn.execute<any[]>(
+			`SELECT a.login, ab.balance FROM ${tn('account_balance')} ab
+			 JOIN ${tn('accounts')} a ON a.id = ab.account_id WHERE a.login IN (?, ?)`,
+			[USER_LOGIN, EXPERT_LOGIN],
+		);
+		const [ledger] = await conn.execute<any[]>(
+			`SELECT a.login, l.is_credit, l.amount, l.entry_type, l.ref_id, l.created_at
+			 FROM ${tn('balance_ledger')} l JOIN ${tn('accounts')} a ON a.id = l.account_id
+			 WHERE a.login IN (?, ?) AND l.created_at >= ? ORDER BY l.id DESC LIMIT 20`,
+			[USER_LOGIN, EXPERT_LOGIN, since],
+		);
+		const [bookings] = await conn.execute<any[]>(
+			`SELECT id, status, bookable_id FROM ${tn('bookings')} ORDER BY id DESC LIMIT 3`,
+		);
+		return { balances, ledger, bookings };
+	} finally { await conn.end(); }
+});
+
+test.beforeEach(() => diag.reset());
+test.afterEach(async ({}, testInfo) => { await diag.report(testInfo); });
+
 /**
- * Surgical cleanup of everything the cascade (and our setup) created, restoring
- * the seed accounts to their pre-test balance so sibling specs in this worker
- * aren't poisoned. The refund was the only ledger delta (DB-only booking setup
- * moves no money), so deleting those rows + restoring the recorded balances is
- * an exact undo.
+ * Surgical cleanup of everything the cascade (and our setup) created, so sibling specs in this
+ * worker aren't poisoned. The refund of our booking is the only ledger delta that is ours
+ * (DB-only booking setup moves no money): delete those rows and rebuild both cached balances
+ * from the ledger, which also keeps the refunds of any foreign booking the cascade cancelled.
  */
 async function cleanupTest(opts: {
 	slotId: number;
 	bookingIds: number[];
 	userLogin: string;
-	userBalanceBefore: number;
 	expertId: number;
-	expertBalanceBefore: number;
 	emailIdBefore: number;
 }): Promise<void> {
 	const conn = await mysql.createConnection(DB);
 	try {
-		const now = Math.floor(Date.now() / 1000);
 		if (opts.bookingIds.length) {
 			const ph = opts.bookingIds.map(() => '?').join(',');
 			// Remove the refund ledger entries the cascade wrote.
@@ -227,16 +137,8 @@ async function cleanupTest(opts: {
 		if (opts.slotId) {
 			await conn.execute(`DELETE FROM ${tn('time_slots')} WHERE id = ?`, [opts.slotId]);
 		}
-		// Restore the recorded balances (undo the refund credit/debit).
-		const userId = await getAccountId(opts.userLogin);
-		for (const [accId, bal] of [[userId, opts.userBalanceBefore], [opts.expertId, opts.expertBalanceBefore]] as const) {
-			await conn.execute(
-				`INSERT INTO ${tn('account_balance')} (account_id, balance, updated_at)
-				 VALUES (?, ?, ?)
-				 ON DUPLICATE KEY UPDATE balance = VALUES(balance), updated_at = VALUES(updated_at)`,
-				[accId, bal, now]
-			);
-		}
+		await resyncBalanceFromLedger(await getAccountId(opts.userLogin));
+		await resyncBalanceFromLedger(opts.expertId);
 		// Remove only the emails this test produced (id > watermark).
 		await conn.execute(
 			`DELETE FROM ${tn('email_queue')} WHERE recipient_email = ? AND id > ?`,
@@ -254,8 +156,6 @@ test.describe('C-1: IS_DISABLED=1 cancels a pending paid booking + refund + emai
 	let userId = 0;
 	let slotId = 0;
 	let bookingId = 0;
-	let userBalanceBefore = 0;
-	let expertBalanceBefore = 0;
 	let emailIdBefore = 0;
 
 	// beforeAll/afterAll (not plain tests) — serial mode skips every
@@ -275,8 +175,8 @@ test.describe('C-1: IS_DISABLED=1 cancels a pending paid booking + refund + emai
 		await restoreExpertFlags(expertId);
 		await setBookingsPref(userId, 'each');
 
-		userBalanceBefore = await getBalance(USER_LOGIN);
-		expertBalanceBefore = await getBalance(EXPERT_LOGIN);
+		await resyncBalanceFromLedger(userId);
+		await resyncBalanceFromLedger(expertId);
 		emailIdBefore = await emailQueueMaxId(USER_LOGIN);
 
 		slotId = await createPaidSlot(expertId, SLOT_COST, 1);
@@ -305,14 +205,16 @@ test.describe('C-1: IS_DISABLED=1 cancels a pending paid booking + refund + emai
 
 	test('BalanceSM: user credited full refund', async () => {
 		test.skip(!bookingId, 'setup failed');
-		const after = await pollUntil(() => getBalance(USER_LOGIN), b => b === userBalanceBefore + SLOT_COST);
-		expect(after).toBe(userBalanceBefore + SLOT_COST);
+		const net = await pollUntil(() => bookingLedgerNet(USER_LOGIN, bookingId), n => n === SLOT_COST);
+		expect(net).toBe(SLOT_COST);
+		expect(await balanceDriftFromLedger(USER_LOGIN)).toBe(0);
 	});
 
 	test('BalanceSM: expert debited refund', async () => {
 		test.skip(!bookingId, 'setup failed');
-		const after = await pollUntil(() => getBalance(EXPERT_LOGIN), b => b === expertBalanceBefore - SLOT_COST);
-		expect(after).toBe(expertBalanceBefore - SLOT_COST);
+		const net = await pollUntil(() => bookingLedgerNet(EXPERT_LOGIN, bookingId), n => n === -SLOT_COST);
+		expect(net).toBe(-SLOT_COST);
+		expect(await balanceDriftFromLedger(EXPERT_LOGIN)).toBe(0);
 	});
 
 	test('EmailQueueSM: user notified', async () => {
@@ -324,8 +226,7 @@ test.describe('C-1: IS_DISABLED=1 cancels a pending paid booking + refund + emai
 	test.afterAll(async () => {
 		await cleanupTest({
 			slotId, bookingIds: bookingId ? [bookingId] : [],
-			userLogin: USER_LOGIN, userBalanceBefore,
-			expertId, expertBalanceBefore, emailIdBefore,
+			userLogin: USER_LOGIN, expertId, emailIdBefore,
 		});
 	});
 });
@@ -335,8 +236,6 @@ test.describe('C-1: IS_APPROVED 1→0 cancels a confirmed paid booking + refund 
 	let userId = 0;
 	let slotId = 0;
 	let bookingId = 0;
-	let userBalanceBefore = 0;
-	let expertBalanceBefore = 0;
 	let emailIdBefore = 0;
 
 	test.beforeAll(async () => {
@@ -348,8 +247,8 @@ test.describe('C-1: IS_APPROVED 1→0 cancels a confirmed paid booking + refund 
 		await restoreExpertFlags(expertId);
 		await setBookingsPref(userId, 'each');
 
-		userBalanceBefore = await getBalance(USER_LOGIN);
-		expertBalanceBefore = await getBalance(EXPERT_LOGIN);
+		await resyncBalanceFromLedger(userId);
+		await resyncBalanceFromLedger(expertId);
 		emailIdBefore = await emailQueueMaxId(USER_LOGIN);
 
 		slotId = await createPaidSlot(expertId, SLOT_COST, 1);
@@ -377,14 +276,16 @@ test.describe('C-1: IS_APPROVED 1→0 cancels a confirmed paid booking + refund 
 
 	test('BalanceSM: user credited full refund', async () => {
 		test.skip(!bookingId, 'setup failed');
-		const after = await pollUntil(() => getBalance(USER_LOGIN), b => b === userBalanceBefore + SLOT_COST);
-		expect(after).toBe(userBalanceBefore + SLOT_COST);
+		const net = await pollUntil(() => bookingLedgerNet(USER_LOGIN, bookingId), n => n === SLOT_COST);
+		expect(net).toBe(SLOT_COST);
+		expect(await balanceDriftFromLedger(USER_LOGIN)).toBe(0);
 	});
 
 	test('BalanceSM: expert debited refund', async () => {
 		test.skip(!bookingId, 'setup failed');
-		const after = await pollUntil(() => getBalance(EXPERT_LOGIN), b => b === expertBalanceBefore - SLOT_COST);
-		expect(after).toBe(expertBalanceBefore - SLOT_COST);
+		const net = await pollUntil(() => bookingLedgerNet(EXPERT_LOGIN, bookingId), n => n === -SLOT_COST);
+		expect(net).toBe(-SLOT_COST);
+		expect(await balanceDriftFromLedger(EXPERT_LOGIN)).toBe(0);
 	});
 
 	test('EmailQueueSM: user notified', async () => {
@@ -396,8 +297,7 @@ test.describe('C-1: IS_APPROVED 1→0 cancels a confirmed paid booking + refund 
 	test.afterAll(async () => {
 		await cleanupTest({
 			slotId, bookingIds: bookingId ? [bookingId] : [],
-			userLogin: USER_LOGIN, userBalanceBefore,
-			expertId, expertBalanceBefore, emailIdBefore,
+			userLogin: USER_LOGIN, expertId, emailIdBefore,
 		});
 	});
 });
@@ -407,8 +307,6 @@ test.describe('C-2: IS_DISABLED=1 cancels a partially-booked multi-slot (status=
 	let userId = 0;
 	let slotId = 0;
 	let bookingId = 0;
-	let userBalanceBefore = 0;
-	let expertBalanceBefore = 0;
 	let emailIdBefore = 0;
 
 	test.beforeAll(async () => {
@@ -420,8 +318,8 @@ test.describe('C-2: IS_DISABLED=1 cancels a partially-booked multi-slot (status=
 		await restoreExpertFlags(expertId);
 		await setBookingsPref(userId, 'each');
 
-		userBalanceBefore = await getBalance(USER_LOGIN);
-		expertBalanceBefore = await getBalance(EXPERT_LOGIN);
+		await resyncBalanceFromLedger(userId);
+		await resyncBalanceFromLedger(expertId);
 		emailIdBefore = await emailQueueMaxId(USER_LOGIN);
 
 		slotId = await createPaidSlot(expertId, SLOT_COST, 3);
@@ -452,8 +350,9 @@ test.describe('C-2: IS_DISABLED=1 cancels a partially-booked multi-slot (status=
 
 	test('BalanceSM: user credited full refund', async () => {
 		test.skip(!bookingId, 'setup failed');
-		const after = await pollUntil(() => getBalance(USER_LOGIN), b => b === userBalanceBefore + SLOT_COST);
-		expect(after).toBe(userBalanceBefore + SLOT_COST);
+		const net = await pollUntil(() => bookingLedgerNet(USER_LOGIN, bookingId), n => n === SLOT_COST);
+		expect(net).toBe(SLOT_COST);
+		expect(await balanceDriftFromLedger(USER_LOGIN)).toBe(0);
 	});
 
 	test('EmailQueueSM: user notified', async () => {
@@ -465,8 +364,7 @@ test.describe('C-2: IS_DISABLED=1 cancels a partially-booked multi-slot (status=
 	test.afterAll(async () => {
 		await cleanupTest({
 			slotId, bookingIds: bookingId ? [bookingId] : [],
-			userLogin: USER_LOGIN, userBalanceBefore,
-			expertId, expertBalanceBefore, emailIdBefore,
+			userLogin: USER_LOGIN, expertId, emailIdBefore,
 		});
 	});
 });
