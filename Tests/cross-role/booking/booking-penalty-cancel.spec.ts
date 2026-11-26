@@ -41,12 +41,10 @@ async function devLogin(browser: any, role: string): Promise<{ context: BrowserC
 	const context = await newScopedContext(browser);
 	const page = await context.newPage();
 	await page.goto('/');
-	await page.waitForLoadState('networkidle');
 
 	await roleLogin(page, role);
 
 	await page.goto('/');
-	await page.waitForLoadState('networkidle');
 	return { context, page };
 }
 

@@ -82,7 +82,9 @@ test.describe('D-167: stale-draft warning when a colleague replies first', () =>
         await adminPage.locator('[data-test-id="support-reply-input"]').fill('A: печатаю ответ, ещё не отправил...');
         await expect(adminPage.locator('[data-test-id="support-stale-warning"]')).toHaveCount(0);
 
-        // B replies first.
+        // B replies first. The fixed dev login bar must not take the click: one run was retried with
+        // "<button dev-login-owner> intercepts pointer events" until the 10 s budget ran out.
+        await moderatorPage.addStyleTag({ content: '.dev-login-floating, .dev-login-floating * { pointer-events: none !important; }' });
         await moderatorPage.locator('[data-test-id="support-reply-input"]').fill('B: ответ коллеги, отправлен первым');
         await Promise.all([
             moderatorPage.waitForResponse(r => r.request().method() === 'POST' && r.status() < 500, { timeout: 10000 }),
