@@ -29,7 +29,6 @@
     "**/build/**",
     "**/*.gen.js",
     "**/*.gen.css",
-    "**/I18nGen/**",
     "vendor/**"
   ],
   "rules": {

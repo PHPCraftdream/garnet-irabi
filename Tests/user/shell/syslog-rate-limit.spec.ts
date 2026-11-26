@@ -37,6 +37,16 @@ async function postLog(p: Page, cat: string, msg: string): Promise<number> {
     }, { cat, msg });
 }
 
+/**
+ * The server counts writes per epoch-aligned 60 s bucket (`now - now % 60`), so a burst that straddles a
+ * boundary splits into two buckets that each stay under the cap and no 429 appears. Start only when the
+ * burst fits into what is left of the current bucket.
+ */
+async function waitForFreshWindow(minSecondsLeft = 30): Promise<void> {
+    const left = 60 - ((Date.now() / 1000) % 60);
+    if (left < minSecondsLeft) await new Promise((resolve) => setTimeout(resolve, (left + 0.5) * 1000));
+}
+
 /** Fire N sequential posts, return the ordered status list. */
 async function burst(p: Page, n: number): Promise<number[]> {
     return p.evaluate(async ({ n }) => {
@@ -73,13 +83,16 @@ test.describe('F-LOG-01: /sys/log per-IP rate limit', () => {
 
     test('exceeding the per-IP window is rejected with 429', async () => {
         await clearThrottle();
+        await waitForFreshWindow();
         // 65 > cap(60): the first 60 land, the tail is throttled.
+        const startedAt = Date.now();
         const statuses = await burst(page, 65);
+        const burstMs = Date.now() - startedAt;
 
         // First request always succeeds.
         expect(statuses[0]).toBe(200);
         // The limit must actually engage somewhere in the burst.
-        expect(statuses.includes(429)).toBe(true);
+        expect(statuses.includes(429), `burst of 65 took ${burstMs} ms`).toBe(true);
         // Accepted writes are capped near the limit (tolerate a possible
         // window-boundary reset mid-burst by allowing one extra window).
         const accepted = statuses.filter((s) => s === 200).length;

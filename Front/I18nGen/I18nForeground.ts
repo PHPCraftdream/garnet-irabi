@@ -427,7 +427,8 @@ class I18n extends I18nBase {
     /** Translation lookup for `Admin_SystemSettings_TestEmail_Success`. */
     Admin_SystemSettings_TestEmail_Success: t = (a = []) => this.t('Admin_SystemSettings_TestEmail_Success', a);
     /** Translation lookup for `Admin_SystemSettings_TestEmail_InvalidAddress`. */
-    Admin_SystemSettings_TestEmail_InvalidAddress: t = (a = []) => this.t('Admin_SystemSettings_TestEmail_InvalidAddress', a);
+    Admin_SystemSettings_TestEmail_InvalidAddress: t = (a = []) =>
+        this.t('Admin_SystemSettings_TestEmail_InvalidAddress', a);
     /** Translation lookup for `Admin_SystemSettings_TestEmail_SendFailed`. */
     Admin_SystemSettings_TestEmail_SendFailed: t = (a = []) => this.t('Admin_SystemSettings_TestEmail_SendFailed', a);
     /** Translation lookup for `Admin_SystemSettings_TestEmail_Subject`. */
@@ -437,7 +438,8 @@ class I18n extends I18nBase {
     /** Translation lookup for `Admin_SystemSettings_TestEmail_Type`. */
     Admin_SystemSettings_TestEmail_Type: t = (a = []) => this.t('Admin_SystemSettings_TestEmail_Type', a);
     /** Translation lookup for `Admin_SystemSettings_TestEmail_Type_Generic`. */
-    Admin_SystemSettings_TestEmail_Type_Generic: t = (a = []) => this.t('Admin_SystemSettings_TestEmail_Type_Generic', a);
+    Admin_SystemSettings_TestEmail_Type_Generic: t = (a = []) =>
+        this.t('Admin_SystemSettings_TestEmail_Type_Generic', a);
     /** Translation lookup for `Admin_SystemSettings_TestEmail_TestPrefix`. */
     Admin_SystemSettings_TestEmail_TestPrefix: t = (a = []) => this.t('Admin_SystemSettings_TestEmail_TestPrefix', a);
     /** Translation lookup for `Admin_CancellationPenalty_Tab`. */

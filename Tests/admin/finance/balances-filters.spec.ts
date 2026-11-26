@@ -18,7 +18,6 @@ const ROW_SEL = '[data-test-id^="grid-row-"]';
 
 async function openBalances(page: Page) {
 	await page.goto('/admin/finance/?tab=balances');
-	await page.waitForLoadState('networkidle');
 	// AdminGrid renders a <table>; wait until at least the search input or table is on the page.
 	await page.locator('table').first().waitFor({ state: 'visible', timeout: 12000 });
 }

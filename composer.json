@@ -11,7 +11,7 @@
         }
     },
     "require": {
-        "phpcraftdream/garnet-framework": "^0.1.5",
+        "phpcraftdream/garnet-framework": "^0.1.6",
         "zachweix/php-zmanim": "^2.0"
     },
     "scripts": {

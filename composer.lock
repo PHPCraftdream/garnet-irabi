@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "30076cadfeb2ab1a977aeac2f0158c13",
+    "content-hash": "5d20e54786e319ba4efa06a410756adc",
     "packages": [
         {
             "name": "aura/cli",
@@ -1115,16 +1115,16 @@
         },
         {
             "name": "phpcraftdream/garnet-framework",
-            "version": "v0.1.5",
+            "version": "v0.1.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHPCraftdream/garnet-framework.git",
-                "reference": "cb677fbee332c1556dd8f79e30fd5292846fd04f"
+                "reference": "5d1f4c0cf8c83440026209f1b8b8bcd700af68ac"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHPCraftdream/garnet-framework/zipball/cb677fbee332c1556dd8f79e30fd5292846fd04f",
-                "reference": "cb677fbee332c1556dd8f79e30fd5292846fd04f",
+                "url": "https://api.github.com/repos/PHPCraftdream/garnet-framework/zipball/5d1f4c0cf8c83440026209f1b8b8bcd700af68ac",
+                "reference": "5d1f4c0cf8c83440026209f1b8b8bcd700af68ac",
                 "shasum": ""
             },
             "require": {
@@ -1192,7 +1192,7 @@
                 "issues": "https://github.com/PHPCraftdream/garnet-framework/issues",
                 "source": "https://github.com/PHPCraftdream/garnet-framework"
             },
-            "time": "2026-11-25T18:40:38+00:00"
+            "time": "2026-11-26T16:22:27+00:00"
         },
         {
             "name": "psr/clock",
@@ -2858,16 +2858,16 @@
         },
         {
             "name": "twig/twig",
-            "version": "v3.28.0",
+            "version": "v3.31.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/twigphp/Twig.git",
-                "reference": "597c12ed286fb9d1701a36684ce6e0cbe28ebc8b"
+                "reference": "6f6ec372231b53d1d564567a78beb8844cafa132"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/twigphp/Twig/zipball/597c12ed286fb9d1701a36684ce6e0cbe28ebc8b",
-                "reference": "597c12ed286fb9d1701a36684ce6e0cbe28ebc8b",
+                "url": "https://api.github.com/repos/twigphp/Twig/zipball/6f6ec372231b53d1d564567a78beb8844cafa132",
+                "reference": "6f6ec372231b53d1d564567a78beb8844cafa132",
                 "shasum": ""
             },
             "require": {
@@ -2922,7 +2922,7 @@
             ],
             "support": {
                 "issues": "https://github.com/twigphp/Twig/issues",
-                "source": "https://github.com/twigphp/Twig/tree/v3.28.0"
+                "source": "https://github.com/twigphp/Twig/tree/v3.31.1"
             },
             "funding": [
                 {
@@ -2934,7 +2934,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-07-03T20:44:34+00:00"
+            "time": "2026-11-24T12:48:40+00:00"
         },
         {
             "name": "zachweix/php-zmanim",
