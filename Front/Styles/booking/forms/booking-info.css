@@ -128,19 +128,3 @@
   .booking-card-title { @apply shape-book-card-title type-book-card-title tone-supportprimary-plain; }
   .booking-created-line { @apply shape-book-place type-book-place tone-supportsecondary-plain; }
 }
-
-/* Unlayered glass border and transition override the component Tone and motion. */
-/* carburetor-disable-next-line valid-function-class */
-.glass-skin :is(.booking-cancel-dismiss, .booking-cancel-dismiss-regular) {
-  transition: box-shadow 0.18s ease, filter 0.18s ease, transform 0.12s ease;
-  border: 1px solid color-mix(in srgb, white 16%, var(--color-border));
-}
-
-/* Unlayered hover shadow retains priority over component effects. */
-/* carburetor-disable-next-line valid-function-class */
-.glass-skin :is(.booking-cancel-dismiss, .booking-cancel-dismiss-regular):hover {
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--color-accent) 32%, transparent),
-    0 6px 7px -8px color-mix(in srgb, var(--color-accent) 45%, transparent),
-    0 0 6px -6px color-mix(in srgb, var(--color-accent) 40%, transparent);
-}
