@@ -14,6 +14,7 @@
 @utility type-slot-filter-label { @apply text-[11px] font-semibold uppercase tracking-wider; }
 @utility layout-slot-filter-chips { @apply flex flex-wrap gap-1; }
 @utility shape-slot-filter-chip { @apply px-3 py-1.5 rounded-full border; }
+@utility shape-slot-filter-chip-past { @apply ml-auto; }
 @utility layout-slot-filter-chip { @apply inline-flex items-center gap-1.5; }
 @utility type-slot-filter-chip { @apply text-xs font-medium; }
 @utility motion-slot-filter-chip { @apply transition-all; }
@@ -39,6 +40,8 @@
   .slot-filter-chips { @apply layout-slot-filter-chips tone-filterneutral-plain; }
   .slot-filter-chip { @apply shape-slot-filter-chip layout-slot-filter-chip type-slot-filter-chip motion-slot-filter-chip tone-filteridle-soft; }
   .slot-filter-chip-active { @apply shape-slot-filter-chip layout-slot-filter-chip type-slot-filter-chip motion-slot-filter-chip effect-slot-filter-chip-active tone-filteractive-filter; }
+  .slot-filter-chip-past { @apply shape-slot-filter-chip shape-slot-filter-chip-past layout-slot-filter-chip type-slot-filter-chip motion-slot-filter-chip tone-filteridle-soft; }
+  .slot-filter-chip-active-past { @apply shape-slot-filter-chip shape-slot-filter-chip-past layout-slot-filter-chip type-slot-filter-chip motion-slot-filter-chip effect-slot-filter-chip-active tone-filteractive-filter; }
   .slot-filter-price-row { @apply layout-slot-filter-price-row tone-filterneutral-plain; }
   .slot-filter-price-input { @apply shape-slot-filter-price-input layout-slot-filter-price-input type-slot-filter-price-input focus-slot-filter-price-input motion-slot-filter-price-input tone-filterfield-field; }
   .slot-filter-price-separator { @apply type-slot-filter-price-separator tone-supportmuted-plain; }

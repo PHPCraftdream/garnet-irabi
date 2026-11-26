@@ -77,7 +77,7 @@ export const BookingsFilterTabs: React.FC<Props> = ({
             {(showPast || counts.past > 0) && (
                 <button
                     type="button"
-                    className={showPast ? 'slot-filter-chip-active' : 'slot-filter-chip'} data-bookings-past
+                    className={showPast ? 'slot-filter-chip-active-past' : 'slot-filter-chip-past'}
                     onClick={onTogglePast}
                     data-test-id="bookings-toggle-past"
                     aria-pressed={showPast}
