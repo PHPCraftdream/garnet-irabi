@@ -1,0 +1,200 @@
+/* Стеклянная тема приложения: эффекты (размытие, свечение кромки), которых нет среди этажей функциональных классов.
+   Файл не входит в classes.css конфигурации carburetor-lint, как glass.css фреймворка. Правила намеренно вне
+   @layer components: они должны перебивать компонентный слой. */
+
+/* ── из Front/Styles/admin/admin-tokens.css ── */
+/* Стеклянная тема: admin-user-message-cancel заменяет btn btn-secondary — светлая размытая заливка и текст on-surface (glass.css:189-200). */
+.glass-skin .admin-user-message-cancel {
+  transition: box-shadow 0.18s ease, filter 0.18s ease, transform 0.12s ease;
+  border: 1px solid color-mix(in srgb, white 16%, var(--color-border));
+  background-color: color-mix(in srgb, var(--color-bg-surface) 35%, transparent) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(110%);
+  backdrop-filter: blur(8px) saturate(110%);
+  color: var(--color-on-surface) !important;
+}
+
+.glass-skin .admin-user-message-cancel:hover {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 32%, transparent),
+    0 6px 7px -8px color-mix(in srgb, var(--color-accent) 45%, transparent),
+    0 0 6px -6px color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
+/* Стеклянная тема: admin-user-secondary-action и admin-user-clear-action заменяют btn btn-outline-secondary/btn-danger — общая рамка-хайрлайн и свечение на hover (glass.css:178-187). */
+.glass-skin :is(.admin-user-secondary-action, .admin-user-clear-action) {
+  transition: box-shadow 0.18s ease, filter 0.18s ease, transform 0.12s ease;
+  border: 1px solid color-mix(in srgb, white 16%, var(--color-border));
+}
+
+.glass-skin :is(.admin-user-secondary-action, .admin-user-clear-action):hover {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 32%, transparent),
+    0 6px 7px -8px color-mix(in srgb, var(--color-accent) 45%, transparent),
+    0 0 6px -6px color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
+/* prefers-reduced-transparency: как в glass.css:348-361 для btn-secondary — без размытия и со сплошным фоном. */
+@media (prefers-reduced-transparency: reduce) {
+  .glass-skin .admin-user-message-cancel {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: var(--color-bg-surface) !important;
+  }
+}
+
+/* ── из Front/Styles/booking/forms/booking-forms.css ── */
+/* Стеклянная тема: reschedule-dismiss заменяет btn btn-secondary, у которого в glass.css свои правила. */
+/* Правило намеренно вне @layer components, чтобы перебивать компонентный слой, как делает glass.css фреймворка. */
+.glass-skin .reschedule-dismiss {
+  transition: box-shadow 0.18s ease, filter 0.18s ease, transform 0.12s ease;
+  border: 1px solid color-mix(in srgb, white 16%, var(--color-border));
+  background-color: color-mix(in srgb, var(--color-bg-surface) 35%, transparent) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(110%);
+  backdrop-filter: blur(8px) saturate(110%);
+  color: var(--color-on-surface) !important;
+}
+
+/* Правило намеренно вне @layer components: hover-тень должна перебивать компонентные эффекты, как в glass.css. */
+.glass-skin .reschedule-dismiss:hover {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 32%, transparent),
+    0 6px 7px -8px color-mix(in srgb, var(--color-accent) 45%, transparent),
+    0 0 6px -6px color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
+/* prefers-reduced-transparency: как в glass.css для btn-secondary. */
+@media (prefers-reduced-transparency: reduce) {
+  .glass-skin .reschedule-dismiss {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: var(--color-bg-surface) !important;
+  }
+}
+
+/* Стеклянная тема: booking-form-card заменил .card, у которого в glass.css стеклянный фон, размытие и свечение кромки. */
+/* Правило намеренно вне @layer components, чтобы перебивать компонентный слой, как делает glass.css фреймворка. */
+.glass-skin .booking-form-card {
+  background-color: color-mix(in srgb, var(--color-bg-surface) 48%, transparent) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(112%);
+  backdrop-filter: blur(12px) saturate(112%);
+  border: 1px solid color-mix(in srgb, white 26%, var(--color-border)) !important;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 20%, transparent),
+    0 10px 11px -14px color-mix(in srgb, var(--color-accent) 34%, transparent),
+    0 0 10px -10px color-mix(in srgb, var(--color-status-purple) 30%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 40%, transparent);
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.glass-skin .booking-form-card:hover {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 38%, transparent),
+    0 14px 14px -14px color-mix(in srgb, var(--color-accent) 42%, transparent),
+    0 0 12px -8px color-mix(in srgb, var(--color-status-purple) 40%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 45%, transparent);
+}
+
+/* Тёмная тема: как glass.css для .card — приглушённая верхняя подсветка. */
+[data-theme="dark"] .glass-skin .booking-form-card {
+  border-color: color-mix(in srgb, white 10%, var(--color-border)) !important;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 28%, transparent),
+    0 12px 12px -14px rgba(0, 0, 0, 0.6),
+    0 0 11px -10px color-mix(in srgb, var(--color-status-purple) 36%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 10%, transparent);
+}
+
+/* prefers-reduced-transparency: как в glass.css — без размытия и со сплошным фоном. */
+@media (prefers-reduced-transparency: reduce) {
+  .glass-skin .booking-form-card {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: var(--color-bg-surface) !important;
+  }
+}
+
+/* ── из Front/Styles/booking/forms/booking-info.css ── */
+/* Unlayered glass border and transition override the component Tone and motion. */
+.glass-skin :is(.booking-cancel-dismiss, .booking-cancel-dismiss-regular) {
+  transition: box-shadow 0.18s ease, filter 0.18s ease, transform 0.12s ease;
+  border: 1px solid color-mix(in srgb, white 16%, var(--color-border));
+}
+
+/* Unlayered hover shadow retains priority over component effects. */
+.glass-skin :is(.booking-cancel-dismiss, .booking-cancel-dismiss-regular):hover {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 32%, transparent),
+    0 6px 7px -8px color-mix(in srgb, var(--color-accent) 45%, transparent),
+    0 0 6px -6px color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
+/* ── из Front/Styles/booking/forms/booking-lists.css ── */
+/* Стеклянная тема: bookings-view-button заменяет btn btn-sm, у которого в glass.css свои правила. */
+/* Правило намеренно вне @layer components, чтобы перебивать компонентный слой, как делает glass.css фреймворка. */
+.glass-skin .bookings-view-button {
+  transition: box-shadow 0.18s ease, filter 0.18s ease, transform 0.12s ease;
+  border: 1px solid color-mix(in srgb, white 16%, var(--color-border));
+}
+
+/* Правило намеренно вне @layer components: hover-тень должна перебивать компонентные эффекты. */
+.glass-skin .bookings-view-button:hover {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 32%, transparent),
+    0 6px 7px -8px color-mix(in srgb, var(--color-accent) 45%, transparent),
+    0 0 6px -6px color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
+/* Активная кнопка заменяет .btn-primary, у которого в glass.css градиентная заливка и постоянное свечение. */
+/* Правило намеренно вне @layer components, чтобы перебивать компонентный слой, как делает glass.css фреймворка. */
+.glass-skin .bookings-view-button[data-tone="active"] {
+  background-image: linear-gradient(135deg, var(--color-accent), color-mix(in srgb, var(--color-status-purple) 70%, var(--color-accent)));
+  border: 1px solid color-mix(in srgb, white 22%, transparent);
+  box-shadow:
+    0 6px 7px -6px color-mix(in srgb, var(--color-accent) 55%, transparent),
+    0 0 7px -8px color-mix(in srgb, var(--color-status-purple) 50%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 28%, transparent);
+}
+
+/* Правило намеренно вне @layer components: hover-градиент .btn-primary должен перебивать компонентный слой. */
+.glass-skin .bookings-view-button[data-tone="active"]:hover {
+  background-image: linear-gradient(135deg, var(--color-accent-hover), color-mix(in srgb, var(--color-status-purple) 78%, var(--color-accent-hover)));
+  filter: brightness(1.04);
+  box-shadow:
+    0 8px 8px -6px color-mix(in srgb, var(--color-accent) 65%, transparent),
+    0 0 10px -6px color-mix(in srgb, var(--color-status-purple) 60%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 32%, transparent);
+}
+
+/* ── из Front/Styles/support/widget/support-widget-overrides.css ── */
+/* Стеклянная тема: admin-support-stale-dismiss заменяет btn btn-sm btn-link, у которого в glass.css общая рамка-хайрлайн и свечение на hover. */
+/* Правило намеренно вне @layer components, чтобы перебивать компонентный слой, как делает glass.css фреймворка. */
+.glass-skin .admin-support-stale-dismiss {
+  transition: box-shadow 0.18s ease, filter 0.18s ease, transform 0.12s ease;
+  border: 1px solid color-mix(in srgb, white 16%, var(--color-border));
+}
+
+.glass-skin .admin-support-stale-dismiss:hover {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 32%, transparent),
+    0 6px 7px -8px color-mix(in srgb, var(--color-accent) 45%, transparent),
+    0 0 6px -6px color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
+/* Стеклянная тема: profile-slot-book заменяет btn btn-primary — градиентная заливка и постоянное свечение (glass.css:214-228). */
+.glass-skin .profile-slot-book {
+  background-image: linear-gradient(135deg, var(--color-accent), color-mix(in srgb, var(--color-status-purple) 70%, var(--color-accent)));
+  border: 1px solid color-mix(in srgb, white 22%, transparent);
+  box-shadow:
+    0 6px 7px -6px color-mix(in srgb, var(--color-accent) 55%, transparent),
+    0 0 7px -8px color-mix(in srgb, var(--color-status-purple) 50%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 28%, transparent);
+}
+
+.glass-skin .profile-slot-book:hover {
+  background-image: linear-gradient(135deg, var(--color-accent-hover), color-mix(in srgb, var(--color-status-purple) 78%, var(--color-accent-hover)));
+  filter: brightness(1.04);
+  box-shadow:
+    0 8px 8px -6px color-mix(in srgb, var(--color-accent) 65%, transparent),
+    0 0 10px -6px color-mix(in srgb, var(--color-status-purple) 60%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 32%, transparent);
+}

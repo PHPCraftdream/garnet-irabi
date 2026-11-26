@@ -64,7 +64,7 @@
 @utility shape-im-recipient-trigger { @apply h-10 w-full rounded-md border px-3 py-2; }
 @utility focus-im-recipient-trigger { @apply focus:outline-none focus:ring-2; }
 @utility type-im-recipient-text { @apply text-sm; }
-@utility shape-im-recipient-content { @apply rounded-md border; }
+@utility shape-im-recipient-content { @apply rounded-md border; width: var(--radix-popover-trigger-width); }
 @utility effect-im-recipient-content { @apply shadow-lg; }
 @utility layout-im-recipient-content { @apply z-50; }
 @utility shape-im-recipient-search-wrap { @apply p-2 border-b; }

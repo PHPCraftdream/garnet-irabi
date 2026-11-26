@@ -61,7 +61,8 @@
 @utility effect-admin-user-notice { @apply shadow-lg; }
 
 @utility shape-admin-user-history-title { @apply mb-2 mt-5; }
-@utility type-admin-user-history-title { @apply text-sm font-semibold uppercase tracking-wide; }
+/* `!`: the base h3 rule of the framework sits outside the layers and would win. */
+@utility type-admin-user-history-title { @apply text-sm! font-semibold uppercase tracking-wide; }
 @utility shape-admin-user-history-table { @apply w-full data-[spacing=after]:mb-4; }
 @utility layout-admin-user-history-table { @apply border-collapse; }
 @utility shape-admin-user-history-row { @apply border-b; }
@@ -178,18 +179,6 @@
 /* carburetor-disable-next-line valid-function-class */
 :is(.compact-outline-action, .slot-remove-btn)[data-user-action="offset"] { @apply ml-2; }
 
-/* The unlayered h3 rule sets text-lg, so retain the title size override. */
-/* carburetor-disable-next-line valid-function-class */
-.admin-user-history-title { @apply text-sm; }
-
-/* The spinner side must override its border-current Tone. */
-/* carburetor-disable-next-line valid-function-class */
-.admin-money-spinner { border-top-color: transparent; }
-
-/* Верхняя граница панели — currentColor, как у master (border-t без цвета); тон задаёт --color-border-subtle. */
-/* carburetor-disable-next-line valid-function-class */
-.admin-ledger-reference { border-top-color: currentColor; }
-
 @utility type-admin-grid-external-location { @apply text-sm break-all hover:underline; }
 
 @layer components {
@@ -197,47 +186,9 @@
   .admin-grid-external-location { @apply tone-bookaccent-plain type-admin-grid-external-location; }
 }
 
-/* Стеклянная тема: admin-user-message-cancel заменяет btn btn-secondary — светлая размытая заливка и текст on-surface (glass.css:189-200). */
-/* Карбюратор разрешает в селекторе только функциональный класс или класс с одним атрибутом, а стекло адресуется по body.glass-skin, поэтому правило вне слоя с узким подавлением. */
+/* Цвет одной стороны рамки: Tone красит border-color целиком (no-conflicting-classes считает все border-*-color одним свойством), поэтому одна сторона — отдельным правилом. */
 /* carburetor-disable-next-line valid-function-class */
-.glass-skin .admin-user-message-cancel {
-  transition: box-shadow 0.18s ease, filter 0.18s ease, transform 0.12s ease;
-  border: 1px solid color-mix(in srgb, white 16%, var(--color-border));
-  background-color: color-mix(in srgb, var(--color-bg-surface) 35%, transparent) !important;
-  -webkit-backdrop-filter: blur(8px) saturate(110%);
-  backdrop-filter: blur(8px) saturate(110%);
-  color: var(--color-on-surface) !important;
-}
-
+.admin-money-spinner { border-top-color: transparent; }
+/* Верхняя граница панели — currentColor, как у master (border-t без цвета); тон задаёт --color-border-subtle. */
 /* carburetor-disable-next-line valid-function-class */
-.glass-skin .admin-user-message-cancel:hover {
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--color-accent) 32%, transparent),
-    0 6px 7px -8px color-mix(in srgb, var(--color-accent) 45%, transparent),
-    0 0 6px -6px color-mix(in srgb, var(--color-accent) 40%, transparent);
-}
-
-/* Стеклянная тема: admin-user-secondary-action и admin-user-clear-action заменяют btn btn-outline-secondary/btn-danger — общая рамка-хайрлайн и свечение на hover (glass.css:178-187). */
-/* carburetor-disable-next-line valid-function-class */
-.glass-skin :is(.admin-user-secondary-action, .admin-user-clear-action) {
-  transition: box-shadow 0.18s ease, filter 0.18s ease, transform 0.12s ease;
-  border: 1px solid color-mix(in srgb, white 16%, var(--color-border));
-}
-
-/* carburetor-disable-next-line valid-function-class */
-.glass-skin :is(.admin-user-secondary-action, .admin-user-clear-action):hover {
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--color-accent) 32%, transparent),
-    0 6px 7px -8px color-mix(in srgb, var(--color-accent) 45%, transparent),
-    0 0 6px -6px color-mix(in srgb, var(--color-accent) 40%, transparent);
-}
-
-/* prefers-reduced-transparency: как в glass.css:348-361 для btn-secondary — без размытия и со сплошным фоном. */
-@media (prefers-reduced-transparency: reduce) {
-  /* carburetor-disable-next-line valid-function-class */
-  .glass-skin .admin-user-message-cancel {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    background-color: var(--color-bg-surface) !important;
-  }
-}
+.admin-ledger-reference { border-top-color: currentColor; }
