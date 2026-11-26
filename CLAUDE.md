@@ -6,7 +6,7 @@
 
 - Импорты внутри `Front/` — от корня через алиас `@/` (правило `no-parent-import`), а не `../`; соседей по каталогу по-прежнему импортируем как `./x`. Алиас задан в `tsconfig.tsgo.json`, `Front/tsconfig.json` и в сборке фреймворка.
 
-- `Front/I18nGen/` — сгенерированные переводы, поэтому этот каталог исключён из standalone lint.
+- `Front/I18nGen/` — переводы, их пишет `php garnet prepare`: руками не править. Каталог проходит те же линтеры, что и остальной `Front/`, без исключений.
 
 - После `composer update phpcraftdream/garnet-framework` сразу выполняй
   `npm install` в ТРЁХ каталогах внутри `vendor/phpcraftdream/garnet-framework`:

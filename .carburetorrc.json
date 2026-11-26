@@ -378,8 +378,5 @@
     "tsdoc-blank-line-before-tags": "error",
     "one-export-per-file": "error",
     "no-module-level-store": "error"
-  },
-  "ignore": [
-    "**/I18nGen/**"
-  ]
+  }
 }
