@@ -16,6 +16,7 @@
  */
 import { test, expect, tn } from '../../../../helpers/scoped-test';
 import { withConnection } from '../../../../helpers/db/db';
+import { createDiagnostics } from '../../../../helpers/guards/failure-diagnostics';
 
 async function getAccountId(login: string): Promise<number> {
     return withConnection(async (c) => {
@@ -53,6 +54,30 @@ async function cleanup(ticketId: number): Promise<void> {
 
 test.describe.configure({ mode: 'serial' });
 
+let probedTicketId = 0;
+let probedAdminPage: import('@playwright/test').Page | null = null;
+const diag = createDiagnostics(async () => {
+	const ticket = await withConnection(async (c) => {
+		const [rows] = await c.execute<any[]>(
+			`SELECT status, assignee_id, updated_at FROM ${tn('support_tickets')} WHERE id = ?`, [probedTicketId],
+		);
+		const [msgs] = await c.execute<any[]>(
+			`SELECT COUNT(*) AS n FROM ${tn('support_messages')} WHERE ticket_id = ? AND body LIKE 'Назначено:%'`, [probedTicketId],
+		);
+		return { ...(rows[0] ?? {}), assignMessages: msgs[0]?.n };
+	});
+	const page = probedAdminPage
+		? await probedAdminPage.evaluate(() => ({
+			readyState: document.readyState,
+			assignedTextOnPage: (document.body.innerText.match(/Назначено:/g) ?? []).length,
+			selectValue: (document.querySelector('[data-test-id="support-assignee-select"]') as HTMLSelectElement | null)?.value ?? null,
+		}))
+		: null;
+	return { ticket, page, nowUnix: Math.floor(Date.now() / 1000) };
+});
+test.beforeEach(() => { diag.reset(); });
+test.afterEach(async ({}, testInfo) => { await diag.report(testInfo); });
+
 test.describe('D-172: ticket assignment system message stays internal', () => {
     let userId = 0;
     let ticketId = 0;
@@ -62,6 +87,7 @@ test.describe('D-172: ticket assignment system message stays internal', () => {
         userId = await getAccountId('testuser_setup_user@irabi.test');
         expect(userId).toBeGreaterThan(0);
         ticketId = await createTicket(userId);
+        probedTicketId = ticketId;
         expect(ticketId).toBeGreaterThan(0);
     });
 
@@ -70,6 +96,12 @@ test.describe('D-172: ticket assignment system message stays internal', () => {
     });
 
     test('admin assigns the ticket to another moderator via the UI', async ({ adminPage }) => {
+        probedAdminPage = adminPage;
+        adminPage.on('response', (r) => {
+            if (r.url().includes('/admin/support')) {
+                diag.note('response', { method: r.request().method(), path: new URL(r.url()).pathname, status: r.status() });
+            }
+        });
         await adminPage.goto('/admin/support/');
         await adminPage.locator(`[data-test-id="support-ticket-${ticketId}"]`).click();
 
@@ -85,7 +117,8 @@ test.describe('D-172: ticket assignment system message stays internal', () => {
         expect(targetValue).toBeTruthy();
 
         await Promise.all([
-            adminPage.waitForResponse(r => r.request().method() === 'POST' && r.status() < 500, { timeout: 10000 }),
+            // The assign POST itself: any other POST (queue re-read, live counts) must not end the wait early.
+            adminPage.waitForResponse(r => r.request().method() === 'POST' && r.url().includes('~assign') && r.status() < 500, { timeout: 10000 }),
             assigneeSelect.selectOption(targetValue!),
         ]);
 

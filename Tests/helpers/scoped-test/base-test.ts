@@ -8,6 +8,7 @@ import { isProd } from '../db/ssh-bridge';
 import { resetCodeRequestIpLimit } from '../auth/code-request-limit';
 import { EXCLUSIVE_RUN_LOCK, acquireShared, releaseShared } from '../db/process-lock';
 import { attachConsoleGuards, collectAndResetIssues, formatIssues } from '../guards/console-guards';
+import { reportRequestTiming } from '../guards/request-timing';
 import { getDbPrefix } from './db-prefix';
 import { scopeHeaders } from './scope-headers';
 import { recordCtxEvent } from './telemetry';
@@ -68,8 +69,10 @@ export const test = baseTest.extend<{ page: Page; __consoleGuard: void; __codeRe
      * its own listeners. `auto: true` means it runs for every test
      * even when not explicitly requested.
      */
-    __consoleGuard: [async ({}, use) => {
+    __consoleGuard: [async ({}, use, testInfo) => {
+        const startedAt = Date.now();
         await use();
+        await reportRequestTiming(testInfo, startedAt);
         const issues = collectAndResetIssues();
         if (issues.length > 0) {
             throw new Error(
