@@ -17,8 +17,6 @@
 }
 
 /* carburetor-disable-next-line valid-function-class */
-.im-recipient-content { width: var(--radix-popover-trigger-width); }
-/* carburetor-disable-next-line valid-function-class */
 .admin-bookings-filters[data-support-filters] { @apply mt-3; }
 
 /* carburetor-disable-next-line valid-function-class */
@@ -47,6 +45,7 @@
 @utility shape-review-section { @apply mt-6; }
 /* тот же unlayered `h3 { @apply text-lg mb-3; }` (01-base.css:76), применён к h3 через .review-heading — нужен mb-4!. */
 @utility shape-review-heading { @apply mb-4!; }
+@utility tone-reviewaccent-outlined { @apply border-reviewaccent-edge bg-reviewaccent-wash; }
 @utility shape-review-notice { @apply p-3 mb-3 border rounded-lg; }
 @utility shape-review-empty { @apply py-4; }
 @utility layout-review-list { @apply flex flex-col gap-3; }
@@ -67,6 +66,7 @@
 @utility shape-user-profile-stat { @apply px-6 py-5; }
 @utility type-user-profile-stat { @apply text-center; }
 @utility type-user-profile-number { @apply text-2xl font-bold; }
+@utility tone-profileavatar-soft { @apply bg-profileavatar-wash text-profileavatar-ink; }
 @utility shape-user-profile-header { @apply px-6 py-8 border-b; }
 @utility type-user-profile-name { @apply text-xl font-semibold; }
 @utility type-user-profile-bio { @apply whitespace-pre-line; }
@@ -74,7 +74,7 @@
 @utility tone-userprofileadmin-outline { @apply border-userprofileadmin-edge text-userprofileadmin-ink hover:text-userprofileadmin-ink-hover hover:border-userprofileadmin-edge-hover; }
 
 @layer components {
-  .user-profile-avatar-disabled { @apply tone-widgetmessage-soft shape-user-profile-photo shape-user-profile-avatar-offset layout-im-recipient-avatar; }
+  .user-profile-avatar-disabled { @apply tone-profileavatar-soft shape-user-profile-photo shape-user-profile-avatar-offset layout-im-recipient-avatar; }
   .user-profile-initials { @apply tone-recipientaccent-soft shape-user-profile-photo shape-user-profile-avatar-offset layout-im-recipient-avatar type-user-profile-number; }
   .user-profile-photo { @apply tone-supportconv-outline shape-user-profile-photo shape-user-profile-photo-border shape-admin-attachment-image; }
   .user-profile-photo-button { @apply tone-adminuserphoto-plain layout-user-profile-photo-button shape-user-profile-avatar-offset shape-admin-user-photo-button behavior-support-row; }
@@ -102,7 +102,10 @@
   .profile-slot-book { @apply tone-settingssave-outlined layout-compact-action shape-confirm-button type-confirm-button behavior-compact-action effect-compact-action effect-primary-action-shadow motion-compact-action; }
   .review-section { @apply tone-widgetneutral-plain shape-review-section; }
   .review-heading { @apply tone-widgetneutral-plain shape-review-heading; }
-  .review-notice { @apply tone-supportconv-outlined shape-review-notice type-book-place; }
+  .review-notice {
+    @apply tone-supportconv-outlined shape-review-notice type-book-place;
+    &[data-accent="true"] { @apply tone-reviewaccent-outlined; }
+  }
   .review-empty { @apply tone-supportmuted-plain shape-review-empty type-book-place; }
   .review-list { @apply tone-widgetneutral-plain layout-review-list shape-review-list; }
   .review-form { @apply tone-widgetneutral-plain layout-review-form; }
@@ -126,8 +129,6 @@
 /* Shared component overrides retain their unlayered precedence. */
 /* carburetor-disable-next-line valid-function-class */
 .slot-remove-btn[data-comment-action="offset"] { @apply ml-2; }
-/* carburetor-disable-next-line valid-function-class */
-.review-notice[data-accent="true"] { border-color: var(--color-accent); }
 
 /* The unlayered border override must outrank the field Tone. */
 /* carburetor-disable-next-line valid-function-class */
@@ -137,5 +138,3 @@
 .section-soft[data-profile-about] { @apply mb-8; }
 /* carburetor-disable-next-line valid-function-class */
 .primary-action-button[data-profile-size="compact"] { @apply shape-compact-action type-compact-action; }
-/* carburetor-disable-next-line valid-function-class */
-.user-profile-avatar-disabled { background-color: var(--color-accent-subtle); color: var(--color-text-muted); }

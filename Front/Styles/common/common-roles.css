@@ -107,6 +107,10 @@
   --color-widgetim-ink: var(--color-on-surface);
   --color-widgetmessage-wash: var(--color-bg-surface-hover);
   --color-widgetmessage-ink: var(--color-on-surface);
+  --color-reviewaccent-edge: var(--color-accent);
+  --color-reviewaccent-wash: var(--color-bg-surface-alt);
+  --color-profileavatar-wash: var(--color-accent-subtle);
+  --color-profileavatar-ink: var(--color-text-muted);
   --color-widgetown-wash: var(--color-accent-subtle);
   --color-widgetown-ink: var(--color-on-surface);
 

@@ -61,7 +61,8 @@
 @utility effect-admin-user-notice { @apply shadow-lg; }
 
 @utility shape-admin-user-history-title { @apply mb-2 mt-5; }
-@utility type-admin-user-history-title { @apply text-sm font-semibold uppercase tracking-wide; }
+/* `!`: the base h3 rule of the framework sits outside the layers and would win. */
+@utility type-admin-user-history-title { @apply text-sm! font-semibold uppercase tracking-wide; }
 @utility shape-admin-user-history-table { @apply w-full data-[spacing=after]:mb-4; }
 @utility layout-admin-user-history-table { @apply border-collapse; }
 @utility shape-admin-user-history-row { @apply border-b; }
@@ -178,21 +179,16 @@
 /* carburetor-disable-next-line valid-function-class */
 :is(.compact-outline-action, .slot-remove-btn)[data-user-action="offset"] { @apply ml-2; }
 
-/* The unlayered h3 rule sets text-lg, so retain the title size override. */
-/* carburetor-disable-next-line valid-function-class */
-.admin-user-history-title { @apply text-sm; }
-
-/* The spinner side must override its border-current Tone. */
-/* carburetor-disable-next-line valid-function-class */
-.admin-money-spinner { border-top-color: transparent; }
-
-/* Верхняя граница панели — currentColor, как у master (border-t без цвета); тон задаёт --color-border-subtle. */
-/* carburetor-disable-next-line valid-function-class */
-.admin-ledger-reference { border-top-color: currentColor; }
-
 @utility type-admin-grid-external-location { @apply text-sm break-all hover:underline; }
 
 @layer components {
   .admin-grid-value-time { @apply tone-widgetneutral-plain type-admin-support-history-time; }
   .admin-grid-external-location { @apply tone-bookaccent-plain type-admin-grid-external-location; }
 }
+
+/* Цвет одной стороны рамки: Tone красит border-color целиком (no-conflicting-classes считает все border-*-color одним свойством), поэтому одна сторона — отдельным правилом. */
+/* carburetor-disable-next-line valid-function-class */
+.admin-money-spinner { border-top-color: transparent; }
+/* Верхняя граница панели — currentColor, как у master (border-t без цвета); тон задаёт --color-border-subtle. */
+/* carburetor-disable-next-line valid-function-class */
+.admin-ledger-reference { border-top-color: currentColor; }

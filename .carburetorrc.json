@@ -68,6 +68,8 @@
       "vendor/phpcraftdream/garnet-framework/Bundle/Front/Styles/modules/carburetor-date-input.css"
     ],
     "families": [
+      "reviewaccent",
+      "profileavatar",
       "adminstatusemptyhover",
       "recipientoption",
       "widgetfab",

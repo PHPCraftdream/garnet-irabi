@@ -11,6 +11,8 @@
 /* border-transparent здесь не отдельный Tone, а часть размера btn-sm: рамка .btn прозрачна, перекрашивает её Tone/стеклянная тема. */
 /* carburetor-disable-next-line valid-trait-class */
 @utility shape-book-view-button { @apply px-2 py-1 rounded border border-transparent; }
+/* Тень btn-primary у активной кнопки: state-блок меняет только Tone, поэтому тень — в Trait с data-вариантом. */
+@utility effect-bookings-view-button { @apply data-[tone=active]:[box-shadow:var(--primary-action-shadow)]; }
 @utility shape-bookings-pager-top { @apply mb-4; }
 @utility shape-bookings-pager-bottom { @apply mt-4; }
 @utility layout-bookings-groups { @apply flex flex-col gap-3; }
@@ -23,15 +25,10 @@
   .booking-list-actions { @apply tone-bookneutral-plain layout-booking-list-actions shape-booking-list-actions; }
   .booking-list-empty { @apply tone-supportmuted-plain; }
   .bookings-view-switch { @apply tone-bookneutral-plain layout-bookings-view-switch shape-bookings-view-switch; }
-  .bookings-view-button { @apply tone-bookneutral-plain layout-compact-action shape-book-view-button type-compact-action behavior-compact-action effect-compact-action motion-compact-action; }
+  .bookings-view-button { @apply tone-bookneutral-plain layout-compact-action shape-book-view-button type-compact-action behavior-compact-action effect-compact-action effect-bookings-view-button motion-compact-action; }
   .bookings-view-button[data-tone="active"] { @apply tone-settingssave-outlined; }
   .bookings-pager-top { @apply tone-bookneutral-plain shape-bookings-pager-top; }
   .bookings-pager-bottom { @apply tone-bookneutral-plain shape-bookings-pager-bottom; }
   .bookings-groups { @apply tone-bookneutral-plain layout-bookings-groups; }
   .bookings-page-narrow { @apply tone-bookneutral-plain shape-book-page-narrow; }
 }
-
-/* Тень btn-primary: state-блок меняет только Tone, поэтому box-shadow вынесен в отдельное правило. */
-/* Правило намеренно вне @layer components, чтобы перебивать компонентный слой. */
-/* carburetor-disable-next-line valid-function-class */
-.bookings-view-button[data-tone="active"] { @apply effect-primary-action-shadow; }
