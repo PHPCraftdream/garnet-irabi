@@ -12,6 +12,7 @@
         "types": ["web"],
         "noImplicitAny": false,
         "paths": {
+            "@/*": ["./*"],
             "@common/*": ["../vendor/phpcraftdream/garnet-framework/Bundle/Front/Common/*"],
             "@framework/*": ["../vendor/phpcraftdream/garnet-framework/Bundle/Front/*"]
         },

@@ -1,11 +1,11 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
-import {formatTs} from '@common/Utils/Time/DateUtils';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {Mailbox} from 'lucide-react';
-import {AdminGrid, AdminGridHandle} from '../../Grid/AdminGrid';
-import {GridConfig, PageResponse} from '../../Shell/shared/types';
+import {AdminGrid, AdminGridHandle} from '@/Islands/AdminPanel/Grid/AdminGrid';
+import {GridConfig, PageResponse} from '@/Islands/AdminPanel/Shell/shared/types';
 
 interface EmailQueueRow {
     id: number;

@@ -1,8 +1,8 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import ImageLightbox from '../../../../Common/media/ImageLightbox';
+import ImageLightbox from '@/Common/media/ImageLightbox';
 
 interface WelcomeCardProps {
     name: string;

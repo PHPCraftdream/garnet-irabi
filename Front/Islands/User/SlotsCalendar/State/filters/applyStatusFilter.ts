@@ -1,4 +1,4 @@
-import type {SlotItem, SlotStatusFilter} from '../view/types';
+import type {SlotItem, SlotStatusFilter} from '@/Islands/User/SlotsCalendar/State/view/types';
 
 /** Filters slots by booking state and, where relevant, their start time. */
 export function applyStatusFilter(

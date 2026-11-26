@@ -1,5 +1,5 @@
-import type {PenaltyPreview, PenaltyTerms} from '../rules/bookingAction';
-import {isConfirmed} from '../../status/isConfirmed';
+import type {PenaltyPreview, PenaltyTerms} from '@/Common/booking/actions/rules/bookingAction';
+import {isConfirmed} from '@/Common/booking/status/isConfirmed';
 
 /** Рассчитывает удержание и возврат при отмене брони. */
 export const penaltyPreview = (status: string | undefined, terms: PenaltyTerms): PenaltyPreview => {

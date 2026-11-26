@@ -1,6 +1,6 @@
 import * as React from 'react';
-import AttachmentPicker, {PendingFile} from '../../../../../Common/attachments/AttachmentPicker';
-import ScreenshotButton from '../../../../../Common/media/ScreenshotButton';
+import AttachmentPicker, {PendingFile} from '@/Common/attachments/AttachmentPicker';
+import ScreenshotButton from '@/Common/media/ScreenshotButton';
 
 interface Props {
     files: PendingFile[];

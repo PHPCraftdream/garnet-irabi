@@ -3,8 +3,8 @@ import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import SendButton from '@common/Components/Controls/SendButton';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {ModalShell} from '../../../../../Common/Components/ModalShell';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {ModalShell} from '@/Common/Components/ModalShell';
 
 interface Props {
     accountId: number;

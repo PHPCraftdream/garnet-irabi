@@ -2,11 +2,11 @@ import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {useSending} from '@common/hooks/data/useSending';
-import {useBodyScrollLock} from '@common/hooks/ui/useBodyScrollLock';
+import {useBodyScrollLock} from '@common/hooks/ui/internal/useBodyScrollLock';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {Portal} from '@common/Components/Layout/Portal';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {AccountBalanceRow} from '../Shell/shared/types';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {AccountBalanceRow} from '@/Islands/AdminPanel/Shell/shared/types';
 
 const admin_Balance_AdjustAmount = t.Admin_Balance_AdjustAmount;
 const admin_Balance_AdjustCancel = t.Admin_Balance_AdjustCancel;

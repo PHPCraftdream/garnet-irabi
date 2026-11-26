@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 
 interface Props {
     slotId: number;

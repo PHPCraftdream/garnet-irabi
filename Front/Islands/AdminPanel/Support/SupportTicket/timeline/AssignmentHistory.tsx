@@ -1,9 +1,9 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {AssignmentLogEntry} from '../../../../Comms/Support/parts/supportTypes';
-import {AdminUserLink} from '../../../../../Common/people/links/EntityLinks';
-import {formatTs} from '@common/Utils/Time/DateUtils';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {AssignmentLogEntry} from '@/Islands/Comms/Support/parts/supportTypes';
+import {AdminUserLink} from '@/Common/people/links/EntityLinks';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
 
 const admin_Ledger_Date = t.Admin_Ledger_Date;
 const admin_Ledger_From = t.Admin_Ledger_From;

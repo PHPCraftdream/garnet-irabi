@@ -1,6 +1,6 @@
 import {Carburetor} from '@react-carburetor/core';
 import {DEFAULT_FILTERS} from './defaultFilters';
-import type {SlotStatusFilter} from '../view/types';
+import type {SlotStatusFilter} from '@/Islands/User/SlotsCalendar/State/view/types';
 import type {ReadonlyFiltersState} from './slotsCalendarSelectors';
 
 interface FilterState {

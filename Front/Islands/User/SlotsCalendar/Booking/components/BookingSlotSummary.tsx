@@ -1,12 +1,10 @@
 import * as React from 'react';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
-import {
-    formatTime as fmtTime,
-    formatDateShort as fmtDate,
-} from '@common/Utils/Time/DateUtils';
-import {slotFormatLine} from '../../../../../Common/booking/formatting/slotFormatLine';
-import type {SlotItem, ExpertInfo} from '../../State/view/types';
+import {formatTime as fmtTime} from '@common/Utils/Time/DateUtils/format/formatTime';
+import {formatDateShort as fmtDate} from '@common/Utils/Time/DateUtils/format/formatDateShort';
+import {slotFormatLine} from '@/Common/booking/formatting/slotFormatLine';
+import type {SlotItem, ExpertInfo} from '@/Islands/User/SlotsCalendar/State/view/types';
 
 const bookingCancelTermsUnanswered = t.Booking_CancelTerms_Unanswered;
 const bookingPenaltyWarning = t.Booking_PenaltyWarning;

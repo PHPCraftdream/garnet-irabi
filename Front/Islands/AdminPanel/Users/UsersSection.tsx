@@ -1,10 +1,10 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
-import {AdminUser, GridConfig, PageResponse, UserTab} from '../Shell/shared/types';
-import {AdminGrid, AdminGridHandle} from '../Grid/AdminGrid';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
+import {AdminUser, GridConfig, PageResponse, UserTab} from '@/Islands/AdminPanel/Shell/shared/types';
+import {AdminGrid, AdminGridHandle} from '@/Islands/AdminPanel/Grid/AdminGrid';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {sendPost} from '@common/Api/Send/sendPost';
-import {formatTs} from '@common/Utils/Time/DateUtils';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
 import {UserDetailContext, type UserDetailContextValue} from './UserDetailContext';
 import {roleFlagLabel} from './flags/roleFlagLabel';
 import {flag} from './flags/flag';

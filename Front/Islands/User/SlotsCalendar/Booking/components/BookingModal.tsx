@@ -3,14 +3,14 @@ import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import SendButton from '@common/Components/Controls/SendButton';
 import {Portal} from '@common/Components/Layout/Portal';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {BookingSlotSummary} from './BookingSlotSummary';
-import {ExtraSlotPicker} from '../../Slot/ExtraSlotPicker';
-import type {SlotItem, ExpertMap} from '../../State/view/types';
-import {sortByStart} from '../../State/calendar/sortByStart';
-import {priceFor} from '../logic/priceFor';
-import {canPay} from '../logic/canPay';
-import type {SlotBookingController} from '../logic/SlotBookingController';
+import {ExtraSlotPicker} from '@/Islands/User/SlotsCalendar/Slot/ExtraSlotPicker';
+import type {SlotItem, ExpertMap} from '@/Islands/User/SlotsCalendar/State/view/types';
+import {sortByStart} from '@/Islands/User/SlotsCalendar/State/calendar/sortByStart';
+import {priceFor} from '@/Islands/User/SlotsCalendar/Booking/logic/priceFor';
+import {canPay} from '@/Islands/User/SlotsCalendar/Booking/logic/canPay';
+import type {SlotBookingController} from '@/Islands/User/SlotsCalendar/Booking/logic/SlotBookingController';
 
 interface Props {
     slot: SlotItem;

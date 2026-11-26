@@ -2,8 +2,8 @@ import * as React from 'react';
 
 import SendButton from '@common/Components/Controls/SendButton';
 import {CTRL_ENTER_HINT} from '@common/hooks/ui/useCtrlEnter';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {PendingFile} from '../../../../Common/attachments/AttachmentPicker';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {PendingFile} from '@/Common/attachments/AttachmentPicker';
 import {WidgetAttachmentTools} from './controls/WidgetAttachmentTools';
 
 interface NewTicketFormProps {

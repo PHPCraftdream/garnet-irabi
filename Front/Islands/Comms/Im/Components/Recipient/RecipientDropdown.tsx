@@ -1,8 +1,8 @@
 import * as React from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {Recipient} from '../RecipientCombobox';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {Recipient} from '@/Islands/Comms/Im/Components/RecipientCombobox';
 import {getInitials} from './getInitials';
 import {roleLabel} from './recipientHelpers';
 

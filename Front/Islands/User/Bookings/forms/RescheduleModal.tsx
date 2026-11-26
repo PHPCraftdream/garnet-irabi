@@ -1,12 +1,12 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import SendButton from '@common/Components/Controls/SendButton';
-import {useBodyScrollLock} from '@common/hooks/ui/useBodyScrollLock';
+import {useBodyScrollLock} from '@common/hooks/ui/internal/useBodyScrollLock';
 import {sendPost} from '@common/Api/Send/sendPost';
-import {formatTs} from '@common/Utils/Time/DateUtils';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {ModalShell} from '../../../../Common/Components/ModalShell';
+import {ModalShell} from '@/Common/Components/ModalShell';
 
 const batchCancel = t.Batch_Cancel;
 const rescheduleNoSlots = t.Reschedule_NoSlots;

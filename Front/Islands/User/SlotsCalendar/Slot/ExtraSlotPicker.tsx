@@ -1,8 +1,9 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {formatDateShort, formatTime} from '@common/Utils/Time/DateUtils';
-import type {SlotItem} from '../State/view/types';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {formatDateShort} from '@common/Utils/Time/DateUtils/format/formatDateShort';
+import {formatTime} from '@common/Utils/Time/DateUtils/format/formatTime';
+import type {SlotItem} from '@/Islands/User/SlotsCalendar/State/view/types';
 
 const bookingOtherSlots = t.Booking_OtherSlots;
 

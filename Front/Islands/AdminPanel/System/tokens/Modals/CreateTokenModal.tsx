@@ -3,10 +3,10 @@ import {sendPost} from '@common/Api/Send/sendPost';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {LogDetailModal} from '@common/Components/Admin/AdminLog/LogDetailModal';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {TokenRow} from '../config/tokenTypes';
-import {TTL_OPTIONS} from '../config/ttlOptions';
-import {TokenField} from '../TokenField';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {TokenRow} from '@/Islands/AdminPanel/System/tokens/config/tokenTypes';
+import {TTL_OPTIONS} from '@/Islands/AdminPanel/System/tokens/config/ttlOptions';
+import {TokenField} from '@/Islands/AdminPanel/System/tokens/TokenField';
 
 const action_Close = t.Action_Close;
 const admin_Tokens_CopyLink = t.Admin_Tokens_CopyLink;

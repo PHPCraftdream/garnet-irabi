@@ -1,5 +1,5 @@
-import type {Slot} from '../../../types';
-import type {CalendarDay} from '../Days/index';
+import type {Slot} from '@/Islands/Expert/ExpertSlots/types';
+import type {CalendarDay} from '@/Islands/Expert/ExpertSlots/components/calendar/Days/index';
 
 /** Представляет неделю календаря, её дни и занятия, сгруппированные по дате. */
 export interface CalendarWeek {

@@ -1,10 +1,10 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {EntityHistoryButton} from '@common/Components/Admin/EntityHistory/EntityHistoryButton';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {flag} from '../../flags/flag';
-import {FlagBtn} from '../../flags/FlagBtn';
-import {AccountData} from '../status/userDetailTypes';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {flag} from '@/Islands/AdminPanel/Users/flags/flag';
+import {FlagBtn} from '@/Islands/AdminPanel/Users/flags/FlagBtn';
+import {AccountData} from '@/Islands/AdminPanel/Users/userDetail/status/userDetailTypes';
 
 const admin_ClearUser = t.Admin_ClearUser;
 const admin_ClearUserTitle = t.Admin_ClearUserTitle;

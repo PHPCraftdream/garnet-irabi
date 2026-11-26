@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {formatTs} from '@common/Utils/Time/DateUtils';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import type {PenaltyTerms} from '../../../../Common/booking/actions/rules/bookingAction';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import type {PenaltyTerms} from '@/Common/booking/actions/rules/bookingAction';
 import {Booking, BookingsViewAs, ExpertInfo, SlotInfo, UserInfo} from './bookingCardTypes';
 import {BookingPlaceLine} from './details/BookingPlaceLine';
 import {BookingParty} from './details/BookingParty';

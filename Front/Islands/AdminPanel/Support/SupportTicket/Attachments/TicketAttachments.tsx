@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {SupportMessage} from '../../../../Comms/Support/parts/supportTypes';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {SupportMessage} from '@/Islands/Comms/Support/parts/supportTypes';
 import {AttachmentRow, AttachmentWithAuthor} from './AttachmentRow';
 
 interface Props {

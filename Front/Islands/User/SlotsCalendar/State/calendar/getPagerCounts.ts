@@ -1,5 +1,5 @@
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import type {SlotItem} from '../view/types';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import type {SlotItem} from '@/Islands/User/SlotsCalendar/State/view/types';
 
 interface PagerCountItem {
     key: 'free' | 'mine';

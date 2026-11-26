@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {TOKEN_FILTER_OPTIONS} from './config/tokenFilterOptions';
 
     /** Формирует представление данных для соответствующего раздела панели. */

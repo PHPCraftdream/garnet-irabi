@@ -1,8 +1,8 @@
 import {sendPost} from '@common/Api/Send/sendPost';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {refreshLiveCounts} from '@common/Utils/Data/liveCounts';
+import {refreshLiveCounts} from '@common/Utils/Data/liveCounts/refreshLiveCounts';
 import type {SlotsCalendarBookingStore} from './SlotsCalendarBookingStore';
-import type {SlotItem} from '../view/types';
+import type {SlotItem} from '@/Islands/User/SlotsCalendar/State/view/types';
 
 export class SlotsCalendarBookingActions {
     /** Создаёт состояние компонента. */

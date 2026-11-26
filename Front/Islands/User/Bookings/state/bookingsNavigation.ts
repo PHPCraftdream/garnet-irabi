@@ -1,9 +1,9 @@
 import {sendPost} from '@common/Api/Send/sendPost';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
-import {DEFAULT_PAGE_SIZE} from '@common/Utils/Data/pagination';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import {DEFAULT_PAGE_SIZE} from '@common/Utils/Data/pagination/DEFAULT_PAGE_SIZE';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import type {BookingsPageResponse} from './bookingsTabStateTypes';
-import type {BookingsViewAs, StatusFilter} from '../card/bookingCardTypes';
+import type {BookingsViewAs, StatusFilter} from '@/Islands/User/Bookings/card/bookingCardTypes';
 import {BookingsStateStore} from './bookingsTabState';
 
 export class BookingsNavigation {

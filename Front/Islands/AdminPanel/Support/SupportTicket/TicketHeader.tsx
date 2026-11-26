@@ -1,13 +1,13 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {SupportTicket, SupportStatus, UserRole} from '../../../Comms/Support/parts/supportTypes';
-import {StatusBadge} from '../../../Comms/Support/parts/supportRenders';
-import {ALL_STATUSES} from '../../../Comms/Support/parts/render/ALL_STATUSES';
-import {statusLabel} from '../../Grid/statusLabel';
-import {AdminUserLink} from '../../../../Common/people/links/EntityLinks';
-import {UserAvatar} from '../../../../Common/media/UserAvatar';
-import {formatTs} from '@common/Utils/Time/DateUtils';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {SupportTicket, SupportStatus, UserRole} from '@/Islands/Comms/Support/parts/supportTypes';
+import {StatusBadge} from '@/Islands/Comms/Support/parts/supportRenders';
+import {ALL_STATUSES} from '@/Islands/Comms/Support/parts/render/ALL_STATUSES';
+import {statusLabel} from '@/Islands/AdminPanel/Grid/statusLabel';
+import {AdminUserLink} from '@/Common/people/links/EntityLinks';
+import {UserAvatar} from '@/Common/media/UserAvatar';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
 
 interface Moderator {
     id: number;

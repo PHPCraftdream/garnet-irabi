@@ -1,4 +1,4 @@
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 
 /** Возвращает итоговую подпись отменённой брони. */
 export const outcomeLabel = (booking: {

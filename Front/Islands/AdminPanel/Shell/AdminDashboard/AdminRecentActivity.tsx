@@ -1,9 +1,9 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {formatTs} from '@common/Utils/Time/DateUtils';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
 import {actionLabel} from '@common/Components/Admin/AdminLog/Sections/actionLabel';
-import {AdminUserDualLink} from '../../../../Common/people/links/AdminUserDualLink';
+import {AdminUserDualLink} from '@/Common/people/links/AdminUserDualLink';
 import {appUrl} from '@common/Utils/Url/appUrl';
 
 interface LogEntry {

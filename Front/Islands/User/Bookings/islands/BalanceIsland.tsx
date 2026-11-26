@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {formatTs} from '@common/Utils/Time/DateUtils';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {useSending} from '@common/hooks/data/useSending';
 import {appUrl} from '@common/Utils/Url/appUrl';
@@ -10,8 +10,8 @@ import {usePagination, PageResponse} from '@common/hooks/data/usePagination';
 import Pagination from '@common/Components/Layout/Paging/Pagination';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {Wallet} from 'lucide-react';
-import {refreshLiveCounts} from '@common/Utils/Data/liveCounts';
-import {cancelActorLabel} from '../../../../Common/booking/actions/outcomes/cancelActorLabel';
+import {refreshLiveCounts} from '@common/Utils/Data/liveCounts/refreshLiveCounts';
+import {cancelActorLabel} from '@/Common/booking/actions/outcomes/cancelActorLabel';
 
 const adminLedgerAmount = t.Admin_Ledger_Amount;
 const adminLedgerDate = t.Admin_Ledger_Date;

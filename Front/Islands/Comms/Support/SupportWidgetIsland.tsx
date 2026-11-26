@@ -1,12 +1,14 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor, type TReadonly} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
-import {refreshLiveCounts, startLiveCounts, subscribeLiveCounts} from '@common/Utils/Data/liveCounts';
-import type {LiveCounts} from '@common/Utils/Data/liveCounts';
+import {refreshLiveCounts} from '@common/Utils/Data/liveCounts/refreshLiveCounts';
+import {startLiveCounts} from '@common/Utils/Data/liveCounts/startLiveCounts';
+import {subscribeLiveCounts} from '@common/Utils/Data/liveCounts/subscribeLiveCounts';
+import type {LiveCounts} from '@common/Utils/Data/liveCounts/LiveCounts';
 import {D} from '@common/Support/Debug/D';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import type {PendingFile} from '../../../Common/attachments/AttachmentPicker';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import type {PendingFile} from '@/Common/attachments/AttachmentPicker';
 import {initAutoContext} from './parts/thread/context/autoContext';
 import type {SupportMessage, SupportTicket} from './parts/supportTypes';
 import {SupportThreadController} from './parts/thread/SupportThreadController';

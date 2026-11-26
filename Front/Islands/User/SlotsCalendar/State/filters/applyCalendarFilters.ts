@@ -1,6 +1,6 @@
-import type {SlotItem} from '../view/types';
+import type {SlotItem} from '@/Islands/User/SlotsCalendar/State/view/types';
 import type {ReadonlyFiltersState} from './slotsCalendarSelectors';
-import {tsToHour} from '@common/Utils/Time/DateUtils';
+import {tsToHour} from '@common/Utils/Time/DateUtils/input/tsToHour';
 
 /** Applies the property filters selected for the slots calendar. */
 export function applyCalendarFilters(

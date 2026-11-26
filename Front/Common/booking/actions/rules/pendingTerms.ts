@@ -1,4 +1,4 @@
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import type {BookingViewer, PenaltyTerms} from './bookingAction';
 
 /** Возвращает условия отмены ожидающей заявки. */

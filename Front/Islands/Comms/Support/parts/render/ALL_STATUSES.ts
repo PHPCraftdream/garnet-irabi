@@ -1,4 +1,4 @@
-import type {SupportStatus} from '../supportTypes';
+import type {SupportStatus} from '@/Islands/Comms/Support/parts/supportTypes';
 
 /** Список статусов, доступных для фильтрации обращений. */
 export const ALL_STATUSES: SupportStatus[] = [

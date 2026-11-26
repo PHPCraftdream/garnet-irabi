@@ -1,6 +1,6 @@
-import {emptyCounts} from '../logic/emptyCounts';
-import {slotKind} from '../logic/slotKind';
-import type {Slot} from '../../../types';
+import {emptyCounts} from '@/Islands/Expert/ExpertSlots/components/calendar/logic/emptyCounts';
+import {slotKind} from '@/Islands/Expert/ExpertSlots/components/calendar/logic/slotKind';
+import type {Slot} from '@/Islands/Expert/ExpertSlots/types';
 
 /** Подсчитать занятия по статусам до, внутри и после календарного окна. */
 export function countCalendarSlots(

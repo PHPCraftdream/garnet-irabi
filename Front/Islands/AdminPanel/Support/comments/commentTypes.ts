@@ -1,4 +1,4 @@
-import {AccountOption} from '../../Shell/shared/adminShared';
+import {AccountOption} from '@/Islands/AdminPanel/Shell/shared/adminShared';
 
 /** Историческое имя: раздел отзывов знает людей под ним. */
 export type CommentsAccountOption = AccountOption;

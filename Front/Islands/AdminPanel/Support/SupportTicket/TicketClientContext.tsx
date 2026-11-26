@@ -2,9 +2,9 @@ import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {D} from '@common/Support/Debug/D';
-import {formatTs} from '@common/Utils/Time/DateUtils';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {translateStatus} from '../../../../Common/booking/status/statusHelpers';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {translateStatus} from '@/Common/booking/status/statusHelpers';
 
 export interface ClientBooking {
     id: number;

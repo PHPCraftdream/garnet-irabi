@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {SlotItem, ExpertMap, DayInfo} from '../State/view/types';
-import {SlotCard} from '../Slot/SlotCard';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {SlotItem, ExpertMap, DayInfo} from '@/Islands/User/SlotsCalendar/State/view/types';
+import {SlotCard} from '@/Islands/User/SlotsCalendar/Slot/SlotCard';
 
 interface DayColumnProps {
     day: DayInfo;

@@ -1,7 +1,7 @@
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import type {BookingViewer, PenaltyTerms} from '../rules/bookingAction';
-import {canActNow} from '../rules/canActNow';
-import {isConfirmed} from '../../status/isConfirmed';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import type {BookingViewer, PenaltyTerms} from '@/Common/booking/actions/rules/bookingAction';
+import {canActNow} from '@/Common/booking/actions/rules/canActNow';
+import {isConfirmed} from '@/Common/booking/status/isConfirmed';
 import {penaltyPreview} from './penaltyPreview';
 
 /** Короткая подпись цены действия рядом с кнопкой. */

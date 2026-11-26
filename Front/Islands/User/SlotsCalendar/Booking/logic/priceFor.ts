@@ -1,4 +1,4 @@
-import type {SlotItem} from '../../State/view/types';
+import type {SlotItem} from '@/Islands/User/SlotsCalendar/State/view/types';
 
 /** Стоимость выбранных слотов — та же сумма, что показывает модалка. */
 export function priceFor(

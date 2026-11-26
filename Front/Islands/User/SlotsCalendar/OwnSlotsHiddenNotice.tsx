@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 
 export class OwnSlotsHiddenNotice extends React.Component {
     /** Отрисовывает содержимое компонента. */

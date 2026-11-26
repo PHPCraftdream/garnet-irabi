@@ -1,5 +1,5 @@
 import {Carburetor} from '@react-carburetor/core';
-import type {SupportStatus} from '../../Comms/Support/parts/supportTypes';
+import type {SupportStatus} from '@/Islands/Comms/Support/parts/supportTypes';
 
 type DateField = 'created_at' | 'updated_at';
 

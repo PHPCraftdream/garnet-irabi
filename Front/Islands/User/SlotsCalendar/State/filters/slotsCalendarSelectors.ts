@@ -1,4 +1,4 @@
-import type {TimeOfDay, SlotType, OnlineFilter} from '../view/types';
+import type {TimeOfDay, SlotType, OnlineFilter} from '@/Islands/User/SlotsCalendar/State/view/types';
 
 export type ReadonlyFiltersState = {
     readonly expertIds: ReadonlySet<string>;

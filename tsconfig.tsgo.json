@@ -13,6 +13,7 @@
     "strictNullChecks": false,
     "noImplicitAny": false,
     "paths": {
+      "@/*": ["./Front/*"],
       "@common/*": ["./vendor/phpcraftdream/garnet-framework/Bundle/Front/Common/*"],
       "@framework/*": ["./vendor/phpcraftdream/garnet-framework/Bundle/Front/*"],
       "react": ["./node_modules/@types/react"],

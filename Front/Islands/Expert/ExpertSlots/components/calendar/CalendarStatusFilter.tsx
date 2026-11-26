@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {translateStatus} from '../../../../../Common/booking/status/statusHelpers';
-import {Slot} from '../../types';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {translateStatus} from '@/Common/booking/status/statusHelpers';
+import {Slot} from '@/Islands/Expert/ExpertSlots/types';
 import {STATUS_FILTERS} from './logic/STATUS_FILTERS';
 
 export type StatusFilter = typeof STATUS_FILTERS[number];

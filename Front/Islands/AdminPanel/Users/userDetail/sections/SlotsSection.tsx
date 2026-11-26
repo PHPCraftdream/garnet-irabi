@@ -1,10 +1,10 @@
 import * as React from 'react';
-import {formatTs} from '@common/Utils/Time/DateUtils';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {statusLabel} from '../../../Grid/statusLabel';
-import {SlotRow} from '../status/userDetailTypes';
-import {SLOT_STATUS_TONE} from '../status/slotStatusTone';
-import {DetailTable} from '../DetailTable';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {statusLabel} from '@/Islands/AdminPanel/Grid/statusLabel';
+import {SlotRow} from '@/Islands/AdminPanel/Users/userDetail/status/userDetailTypes';
+import {SLOT_STATUS_TONE} from '@/Islands/AdminPanel/Users/userDetail/status/slotStatusTone';
+import {DetailTable} from '@/Islands/AdminPanel/Users/userDetail/DetailTable';
 
 const admin_Slots = t.Admin_Slots;
 const slot_Cost = t.Slot_Cost;

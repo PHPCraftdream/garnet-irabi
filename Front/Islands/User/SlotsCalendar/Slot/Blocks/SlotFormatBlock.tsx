@@ -1,8 +1,8 @@
 import * as React from 'react';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {slotPlaceLabel} from '../../../../../Common/booking/formatting/slotPlaceLabel';
-import {slotPlaceValue} from '../../../../../Common/booking/formatting/slotPlaceValue';
-import {SlotItem} from '../../State/view/types';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {slotPlaceLabel} from '@/Common/booking/formatting/slotPlaceLabel';
+import {slotPlaceValue} from '@/Common/booking/formatting/slotPlaceValue';
+import {SlotItem} from '@/Islands/User/SlotsCalendar/State/view/types';
 
 const slotOffline = t.Slot_Offline;
 const slotOnline = t.Slot_Online;

@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import QuickChat from '../../../../../Common/people/chat/QuickChat';
-import {SlotItem} from '../../State/view/types';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import QuickChat from '@/Common/people/chat/QuickChat';
+import {SlotItem} from '@/Islands/User/SlotsCalendar/State/view/types';
 
 const quickChatTitle = t.QuickChat_Title;
 

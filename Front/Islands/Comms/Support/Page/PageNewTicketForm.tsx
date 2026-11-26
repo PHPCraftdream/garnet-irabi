@@ -2,8 +2,8 @@ import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import SendButton from '@common/Components/Controls/SendButton';
 import {CTRL_ENTER_HINT} from '@common/hooks/ui/useCtrlEnter';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import AttachmentPicker, {type PendingFile} from '../../../../Common/attachments/AttachmentPicker';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import AttachmentPicker, {type PendingFile} from '@/Common/attachments/AttachmentPicker';
 
 interface Props {
     subject: string;

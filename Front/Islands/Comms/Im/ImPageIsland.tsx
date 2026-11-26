@@ -7,12 +7,12 @@ import {D} from '@common/Support/Debug/D';
 import {useSending} from '@common/hooks/data/useSending';
 
 import {showToast} from '@common/Components/Feedback/GlobalToast';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import type {ImMessage, ImConversation, ImAttachment} from './imTypes';
 import {ImPageState} from './ImPageState';
 import type {ImPageSnapshot} from './ImPageState';
-import {PendingFile} from '../../../Common/attachments/AttachmentPicker';
-import {reportAttachmentErrors} from '../../../Common/attachments/helpers/reportAttachmentErrors';
+import {PendingFile} from '@/Common/attachments/AttachmentPicker';
+import {reportAttachmentErrors} from '@/Common/attachments/helpers/reportAttachmentErrors';
 
 const getSendErrorMessage = (err: unknown): string => {
     if (err instanceof ApiError) {
@@ -28,7 +28,7 @@ const getSendErrorMessage = (err: unknown): string => {
 import ConversationList from './Components/ConversationList';
 import MessageThread from './Components/MessageThread';
 import NewMessageForm from './Components/NewMessageForm';
-import {IrabiPreviewProvider} from '../../../Common/people/preview/IrabiPreviewProvider';
+import {IrabiPreviewProvider} from '@/Common/people/preview/IrabiPreviewProvider';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {MessagesSquare, ChevronLeft} from 'lucide-react';
 

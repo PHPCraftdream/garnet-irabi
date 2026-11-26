@@ -1,5 +1,8 @@
-import {formatDateShort, weekStartTs, addDaysTs, tsToInputDate} from '@common/Utils/Time/DateUtils';
-import type {Slot} from '../../../types';
+import {formatDateShort} from '@common/Utils/Time/DateUtils/format/formatDateShort';
+import {weekStartTs} from '@common/Utils/Time/DateUtils/week/weekStartTs';
+import {addDaysTs} from '@common/Utils/Time/DateUtils/week/addDaysTs';
+import {tsToInputDate} from '@common/Utils/Time/DateUtils/input/tsToInputDate';
+import type {Slot} from '@/Islands/Expert/ExpertSlots/types';
 import type {CalendarWeek} from './CalendarWeek';
 import {PAGE_WEEKS} from './PAGE_WEEKS';
 

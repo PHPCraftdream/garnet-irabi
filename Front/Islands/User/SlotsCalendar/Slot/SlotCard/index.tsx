@@ -1,14 +1,14 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {createPortal} from 'react-dom';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {SlotItem, ExpertMap, ExpertInfo} from '../../State/view/types';
-import {EntityLink} from '../../../../../Common/people/links/EntityLink';
-import {userLinks} from '../../../../../Common/people/links/userLinks';
-import {formatTime} from '@common/Utils/Time/DateUtils';
-import {slotSeatsLeftLine} from '../../../../../Common/booking/formatting/slotSeatsLeftLine';
-import {translateStatus} from '../../../../../Common/booking/status/statusHelpers';
-import {statusClass} from '../../../../../Common/booking/status/statusClass';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {SlotItem, ExpertMap, ExpertInfo} from '@/Islands/User/SlotsCalendar/State/view/types';
+import {EntityLink} from '@/Common/people/links/EntityLink';
+import {userLinks} from '@/Common/people/links/userLinks';
+import {formatTime} from '@common/Utils/Time/DateUtils/format/formatTime';
+import {slotSeatsLeftLine} from '@/Common/booking/formatting/slotSeatsLeftLine';
+import {translateStatus} from '@/Common/booking/status/statusHelpers';
+import {statusClass} from '@/Common/booking/status/statusClass';
 import {SlotTooltip} from './SlotTooltip';
 import {SlotCardMeta} from './SlotCardMeta';
 

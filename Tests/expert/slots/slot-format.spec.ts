@@ -26,6 +26,7 @@
  *   POST /expert/~editSlot    — edit existing slot
  */
 import {test, expect, tn} from '../../helpers/scoped-test';
+import type {Page} from '@playwright/test';
 import mysql from 'mysql2/promise';
 import {DB} from '../../helpers/db/db';
 
@@ -35,6 +36,14 @@ const EXPERT_LOGIN = 'testuser_setup_expert@irabi.test';
 const USER_LOGIN = 'testuser_setup_user@irabi.test';
 
 // ── DB helpers ─────────────────────────────────────────────────────────────────
+
+/** Waits for the POST to `path` and returns its status and body. */
+function waitForPost(page: Page, path: string, timeout = 15000): Promise<{status: number; body: any}> {
+	return page.waitForResponse(
+		r => r.url().includes(path) && r.request().method() === 'POST',
+		{timeout},
+	).then(async r => ({status: r.status(), body: await r.json().catch(() => null)}));
+}
 
 async function getAccountId(login: string): Promise<number> {
 	const conn = await mysql.createConnection(DB);
@@ -141,12 +150,6 @@ test.describe('Slot format: create single offline slot with location', () => {
 	test('create slot as Offline + address → DB has is_online=0, location saved', async ({page}) => {
 		const modal = page.locator('[data-test-id="create-slot-modal"]');
 
-		// Register the listener BEFORE navigating so the POST is not missed.
-		const respPromise = page.waitForResponse(
-			r => r.url().includes('/expert/~slots') && r.request().method() === 'POST',
-			{timeout: 15000},
-		).then(async r => ({status: r.status(), body: await r.json().catch(() => null)}));
-
 		await page.goto('/expert/~slots');
 		await page.locator('[data-test-id="open-create-slot-modal"]').click();
 		await expect(modal).toBeVisible({timeout: 8000});
@@ -159,6 +162,8 @@ test.describe('Slot format: create single offline slot with location', () => {
 		await modal.locator('[data-test-id="slot-format-offline"]').check();
 		await modal.locator('[data-test-id="slot-location"]').fill('ул. Тестовая, 1, офис 5');
 
+		// The wait starts at the click: its budget must not include the page load before it.
+		const respPromise = waitForPost(page, '/expert/~slots');
 		await modal.locator('[data-test-id="create-slot-btn"]').click();
 		const resp = await respPromise;
 
@@ -191,11 +196,6 @@ test.describe('Slot format: batch create offline with shared location', () => {
 		const batchModal = page.locator('[data-test-id="batch-slot-modal"]');
 
 		// Drive the UI up to the batchSlots POST and capture its response.
-		const respPromise = page.waitForResponse(
-			r => r.url().includes('/expert/~batchSlots') && r.request().method() === 'POST',
-			{timeout: 20000},
-		).then(async r => ({status: r.status(), body: await r.json().catch(() => null)}));
-
 		await page.goto('/expert/~slots');
 		await page.locator('[data-test-id="open-batch-slot-modal"]').click();
 		await expect(batchModal).toBeVisible({timeout: 8000});
@@ -217,6 +217,8 @@ test.describe('Slot format: batch create offline with shared location', () => {
 		const confirmModal = page.locator('#confirmModal');
 		await expect(confirmModal).toBeVisible({timeout: 5000});
 
+		// The wait starts at the click: its budget must not include the page load before it.
+		const respPromise = waitForPost(page, '/expert/~batchSlots', 20000);
 		await page.locator('#confirmModalOk').click();
 		const resp = await respPromise;
 
@@ -267,11 +269,6 @@ test.describe('Slot format: edit existing slot format + location', () => {
 		test.skip(!slotId, 'setup failed');
 		const modal = page.locator('[data-test-id="edit-slot-modal"]');
 
-		const respPromise = page.waitForResponse(
-			r => r.url().includes('/expert/~editSlot') && r.request().method() === 'POST',
-			{timeout: 15000},
-		).then(async r => ({status: r.status(), body: await r.json().catch(() => null)}));
-
 		await page.goto('/expert/~slots');
 		const editBtn = page.locator(`[data-test-id="edit-slot-${slotId}"]`);
 		await expect(editBtn).toBeVisible({timeout: 15000});
@@ -282,6 +279,8 @@ test.describe('Slot format: edit existing slot format + location', () => {
 		await modal.locator('[data-test-id="edit-slot-format-offline"]').check();
 		await modal.locator('[data-test-id="edit-slot-location"]').fill('Zoom was wrong, meet at Office 12');
 
+		// The wait starts at the click: its budget must not include the page load before it.
+		const respPromise = waitForPost(page, '/expert/~editSlot');
 		await modal.locator('[data-test-id="edit-slot-save"]').click();
 		const resp = await respPromise;
 
@@ -341,11 +340,6 @@ test.describe('Slot format: EditSlotModal on a slot with an active booking still
 		test.skip(!slotId, 'setup failed');
 		const modal = page.locator('[data-test-id="edit-slot-modal"]');
 
-		const respPromise = page.waitForResponse(
-			r => r.url().includes('/expert/~editSlot') && r.request().method() === 'POST',
-			{timeout: 15000},
-		).then(async r => ({status: r.status(), body: await r.json().catch(() => null)}));
-
 		await page.goto('/expert/~slots');
 		const editBtn = page.locator(`[data-test-id="edit-slot-${slotId}"]`);
 		await expect(editBtn).toBeVisible({timeout: 15000});
@@ -355,6 +349,8 @@ test.describe('Slot format: EditSlotModal on a slot with an active booking still
 		await modal.locator('[data-test-id="edit-slot-format-offline"]').check();
 		await modal.locator('[data-test-id="edit-slot-location"]').fill('Booked slot — moved to Room 3');
 
+		// The wait starts at the click: its budget must not include the page load before it.
+		const respPromise = waitForPost(page, '/expert/~editSlot');
 		await modal.locator('[data-test-id="edit-slot-save"]').click();
 		const resp = await respPromise;
 

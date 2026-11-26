@@ -5,10 +5,11 @@ import {D} from '@common/Support/Debug/D';
 import SendButton from '@common/Components/Controls/SendButton';
 import {DateInput} from '@common/Components/ui/DateInput';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {tsToInputDate, tsToInputTime} from '@common/Utils/Time/DateUtils';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {ModalShell} from '../../../../../Common/Components/ModalShell';
-import type {Slot} from '../../types';
+import {tsToInputDate} from '@common/Utils/Time/DateUtils/input/tsToInputDate';
+import {tsToInputTime} from '@common/Utils/Time/DateUtils/input/tsToInputTime';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {ModalShell} from '@/Common/Components/ModalShell';
+import type {Slot} from '@/Islands/Expert/ExpertSlots/types';
 import {SlotFormatFields} from './SlotFormatFields';
 
 interface FieldProps {

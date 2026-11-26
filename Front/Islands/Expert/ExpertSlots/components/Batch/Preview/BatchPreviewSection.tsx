@@ -3,10 +3,10 @@ import {AntiHookComponent} from '@react-carburetor/core';
 import {DateInput} from '@common/Components/ui/DateInput';
 import {DurationSelect} from '@common/Components/Controls/DurationSelect';
 import {Calendar} from '@common/Components/Controls/Calendar';
-import {I18nForeground as t} from '../../../../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {anyPastDate} from './anyPastDate';
-import type {BatchSlotsState} from '../logic/BatchSlotsState';
-import type {ExistingItem, ProposedSlot} from '../../../types';
+import type {BatchSlotsState} from '@/Islands/Expert/ExpertSlots/components/Batch/logic/BatchSlotsState';
+import type {ExistingItem, ProposedSlot} from '@/Islands/Expert/ExpertSlots/types';
 import {BatchPreviewTable} from './BatchPreviewTable';
 
 const dayNames = () => [t.Cal_Sun(), t.Cal_Mon(), t.Cal_Tue(), t.Cal_Wed(), t.Cal_Thu(), t.Cal_Fri(), t.Cal_Sat()];

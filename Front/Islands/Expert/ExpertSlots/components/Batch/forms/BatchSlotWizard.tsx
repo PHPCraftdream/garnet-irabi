@@ -1,14 +1,14 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {D} from '@common/Support/Debug/D';
-import {I18nForeground as t} from '../../../../../../I18nGen/I18nForeground';
-import {batchPreview} from '../logic/batchPreview';
-import {batchCreate} from '../logic/batchCreate';
-import {BatchSlotsState} from '../logic/BatchSlotsState';
-import {anyPastDate} from '../Preview/anyPastDate';
-import {findExistingOverlap} from '../Preview/findExistingOverlap';
-import {BatchPreviewSection} from '../Preview/BatchPreviewSection';
-import {ProposedSlot, Slot} from '../../../types';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {batchPreview} from '@/Islands/Expert/ExpertSlots/components/Batch/logic/batchPreview';
+import {batchCreate} from '@/Islands/Expert/ExpertSlots/components/Batch/logic/batchCreate';
+import {BatchSlotsState} from '@/Islands/Expert/ExpertSlots/components/Batch/logic/BatchSlotsState';
+import {anyPastDate} from '@/Islands/Expert/ExpertSlots/components/Batch/Preview/anyPastDate';
+import {findExistingOverlap} from '@/Islands/Expert/ExpertSlots/components/Batch/Preview/findExistingOverlap';
+import {BatchPreviewSection} from '@/Islands/Expert/ExpertSlots/components/Batch/Preview/BatchPreviewSection';
+import {ProposedSlot, Slot} from '@/Islands/Expert/ExpertSlots/types';
 
 export interface BatchSlotWizardProps {
     onSuccess: (msg: string, newSlots?: Slot[]) => void;

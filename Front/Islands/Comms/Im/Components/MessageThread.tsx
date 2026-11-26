@@ -1,15 +1,15 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {CTRL_ENTER_HINT} from '@common/hooks/ui/useCtrlEnter';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 
-import {ImConversation, ImMessage} from '../imTypes';
+import {ImConversation, ImMessage} from '@/Islands/Comms/Im/imTypes';
 import MessageBubble from './MessageBubble';
-import AttachmentPicker, {PendingFile} from '../../../../Common/attachments/AttachmentPicker';
+import AttachmentPicker, {PendingFile} from '@/Common/attachments/AttachmentPicker';
 import SendButton from '@common/Components/Controls/SendButton';
-import {EntityLink} from '../../../../Common/people/links/EntityLink';
-import {userLinks} from '../../../../Common/people/links/userLinks';
-import {UserAvatar} from '../../../../Common/media/UserAvatar';
+import {EntityLink} from '@/Common/people/links/EntityLink';
+import {userLinks} from '@/Common/people/links/userLinks';
+import {UserAvatar} from '@/Common/media/UserAvatar';
 
 interface Props {
     conversation: ImConversation;

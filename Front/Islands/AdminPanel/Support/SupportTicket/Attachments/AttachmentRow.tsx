@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {SupportAttachment} from '../../../../Comms/Support/parts/supportTypes';
+import {SupportAttachment} from '@/Islands/Comms/Support/parts/supportTypes';
 
 export type AttachmentWithAuthor = SupportAttachment & {author_name?: string};
 

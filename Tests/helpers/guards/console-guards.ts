@@ -16,6 +16,7 @@
  * the whole point is that real warnings fail the build.
  */
 import type { BrowserContext, ConsoleMessage, Page } from '@playwright/test';
+import { trackRequestTiming } from './request-timing';
 
 export interface ConsoleIssue {
     type: 'pageerror' | 'console.error' | 'console.warning';
@@ -93,6 +94,8 @@ function attachToPage(page: Page): void {
 export function attachConsoleGuards(ctx: BrowserContext): void {
     if (TRACKED_CONTEXTS.has(ctx)) return;
     TRACKED_CONTEXTS.add(ctx);
+    // Same single wiring point: the request report of a failed test (request-timing.ts) needs every context too.
+    trackRequestTiming(ctx);
 
     ctx.on('page', (page) => attachToPage(page));
     for (const page of ctx.pages()) attachToPage(page);

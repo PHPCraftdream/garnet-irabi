@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {I18nForeground as t} from '../../../../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 
 interface BatchPenaltyRowProps { penaltyPercent: number; setPenaltyPercent: (v: number) => void; }
 

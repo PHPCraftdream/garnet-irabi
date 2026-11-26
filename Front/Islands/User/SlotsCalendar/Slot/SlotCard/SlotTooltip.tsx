@@ -1,10 +1,10 @@
 import * as React from 'react';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {slotPlaceLabel} from '../../../../../Common/booking/formatting/slotPlaceLabel';
-import {slotPlaceValue} from '../../../../../Common/booking/formatting/slotPlaceValue';
-import {slotSeatsLeftLine} from '../../../../../Common/booking/formatting/slotSeatsLeftLine';
-import {SlotItem, ExpertInfo} from '../../State/view/types';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {slotPlaceLabel} from '@/Common/booking/formatting/slotPlaceLabel';
+import {slotPlaceValue} from '@/Common/booking/formatting/slotPlaceValue';
+import {slotSeatsLeftLine} from '@/Common/booking/formatting/slotSeatsLeftLine';
+import {SlotItem, ExpertInfo} from '@/Islands/User/SlotsCalendar/State/view/types';
 
 const slotExpert = t.Slot_Expert;
 const slotDuration = t.Slot_Duration;

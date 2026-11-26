@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {ExpertMap, TimeOfDay, SlotType, OnlineFilter} from '../../State/view/types';
-import type {ReadonlyFiltersState} from '../../State/filters/slotsCalendarSelectors';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {ExpertMap, TimeOfDay, SlotType, OnlineFilter} from '@/Islands/User/SlotsCalendar/State/view/types';
+import type {ReadonlyFiltersState} from '@/Islands/User/SlotsCalendar/State/filters/slotsCalendarSelectors';
 import {ExpertFilterField} from './ExpertFilterField';
 import {FilterChipGroup} from './FilterChipGroup';
 import {PriceRangeFilterField} from './PriceRangeFilterField';

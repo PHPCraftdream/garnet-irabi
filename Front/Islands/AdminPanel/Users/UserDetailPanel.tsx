@@ -3,7 +3,7 @@ import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {UserDetailContext, UserDetailContextValue} from './UserDetailContext';
 import {UserDetailData} from './userDetail/status/userDetailTypes';
 import {UserHeader} from './userDetail/Header/UserHeader';

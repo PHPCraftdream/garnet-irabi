@@ -1,4 +1,4 @@
-import type {FiltersState} from '../view/types';
+import type {FiltersState} from '@/Islands/User/SlotsCalendar/State/view/types';
 
 /** Фильтры календаря по умолчанию. */
 export const DEFAULT_FILTERS: FiltersState = {

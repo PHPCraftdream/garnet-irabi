@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {ExternalLink} from '@common/Components/Layout/ExternalLink';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {SlotInfo} from '../bookingCardTypes';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {SlotInfo} from '@/Islands/User/Bookings/card/bookingCardTypes';
 
 const slotLocation = t.Slot_Location;
 const slotOnline = t.Slot_Online;

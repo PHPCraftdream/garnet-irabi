@@ -1,6 +1,6 @@
 import * as React from 'react';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {formatTs} from '@common/Utils/Time/DateUtils';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
 import {appUrl} from '@common/Utils/Url/appUrl';
 
 const dashBooked = t.Dash_Booked;

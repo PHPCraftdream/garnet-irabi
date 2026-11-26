@@ -2,8 +2,9 @@ import {Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {PageResponse} from '@common/hooks/data/usePagination';
-import {readPageSize, writePageSize} from '@common/Utils/Data/pagination';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
+import {readPageSize} from '@common/Utils/Data/pagination/readPageSize';
+import {writePageSize} from '@common/Utils/Data/pagination/writePageSize';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 
 interface AdminPageState<TRow> {
     items: TRow[];

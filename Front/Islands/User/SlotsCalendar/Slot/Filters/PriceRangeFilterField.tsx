@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 
 const slotsPriceRange = t.Slots_PriceRange;
 const a11yPriceMin = t.A11y_PriceMin;

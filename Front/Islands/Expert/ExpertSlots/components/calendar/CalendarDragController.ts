@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {Carburetor} from '@react-carburetor/core';
-import {tsToInputDate} from '@common/Utils/Time/DateUtils';
-import {Slot} from '../../types';
+import {tsToInputDate} from '@common/Utils/Time/DateUtils/input/tsToInputDate';
+import {Slot} from '@/Islands/Expert/ExpertSlots/types';
 
 interface DragState {
     dragOverDay: string | null;

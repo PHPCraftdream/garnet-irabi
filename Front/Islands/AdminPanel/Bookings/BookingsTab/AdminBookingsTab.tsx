@@ -2,14 +2,14 @@ import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import Pagination from '@common/Components/Layout/Paging/Pagination';
 import {PageResponse} from '@common/hooks/data/usePagination';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {translateStatus} from '../../../../Common/booking/status/statusHelpers';
-import {AccountOption, buildAccountOptions} from '../../Shell/shared/adminShared';
-import {adminPaginationLabels} from '../../Shell/navigation/adminPaginationLabels';
-import {AdminPageController} from '../../Shell/AdminPageController';
-import {AdminFilterBar, FilterCell} from '../AdminFilterBar';
-import {AdminBookingRow, BookingsFilters, copyRow} from '../shared/bookingsTypes';
-import {EMPTY_FILTERS} from '../shared/emptyFilters';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {translateStatus} from '@/Common/booking/status/statusHelpers';
+import {AccountOption, buildAccountOptions} from '@/Islands/AdminPanel/Shell/shared/adminShared';
+import {adminPaginationLabels} from '@/Islands/AdminPanel/Shell/navigation/adminPaginationLabels';
+import {AdminPageController} from '@/Islands/AdminPanel/Shell/AdminPageController';
+import {AdminFilterBar, FilterCell} from '@/Islands/AdminPanel/Bookings/AdminFilterBar';
+import {AdminBookingRow, BookingsFilters, copyRow} from '@/Islands/AdminPanel/Bookings/shared/bookingsTypes';
+import {EMPTY_FILTERS} from '@/Islands/AdminPanel/Bookings/shared/emptyFilters';
 import {AdminBookingsTable} from './AdminBookingsTable';
 
 interface Props {

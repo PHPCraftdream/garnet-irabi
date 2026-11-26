@@ -3,10 +3,10 @@ import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {CTRL_ENTER_HINT} from '@common/hooks/ui/useCtrlEnter';
 import SendButton from '@common/Components/Controls/SendButton';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {formatTs} from '@common/Utils/Time/DateUtils';
-import AttachmentDisplay from '../../attachments/AttachmentDisplay';
-import type {SupportAttachment} from '../../../Islands/Comms/Support/parts/supportTypes';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
+import AttachmentDisplay from '@/Common/attachments/AttachmentDisplay';
+import type {SupportAttachment} from '@/Islands/Comms/Support/parts/supportTypes';
 
 interface QuickMessage {
     id: number;

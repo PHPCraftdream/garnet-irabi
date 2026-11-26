@@ -1,14 +1,14 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {SupportTicket, SupportMessage} from '../parts/supportTypes';
-import {StatusBadge} from '../parts/supportRenders';
-import {SupportMessageList} from '../parts/render/SupportMessageList';
-import AttachmentPicker, {PendingFile} from '../../../../Common/attachments/AttachmentPicker';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {SupportTicket, SupportMessage} from '@/Islands/Comms/Support/parts/supportTypes';
+import {StatusBadge} from '@/Islands/Comms/Support/parts/supportRenders';
+import {SupportMessageList} from '@/Islands/Comms/Support/parts/render/SupportMessageList';
+import AttachmentPicker, {PendingFile} from '@/Common/attachments/AttachmentPicker';
 import SendButton from '@common/Components/Controls/SendButton';
 import {CTRL_ENTER_HINT} from '@common/hooks/ui/useCtrlEnter';
-import {formatTs} from '@common/Utils/Time/DateUtils';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
 
 interface ConversationProps {
     selectedTicket: SupportTicket | null;

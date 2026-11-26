@@ -1,9 +1,9 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {DateInput} from '@common/Components/ui/DateInput';
-import {I18nForeground as t} from '../../../../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {DurationSelect} from '@common/Components/Controls/DurationSelect';
-import {ExistingItem, ProposedSlot} from '../../../types';
+import {ExistingItem, ProposedSlot} from '@/Islands/Expert/ExpertSlots/types';
 import {BatchPreviewWarnings} from './BatchPreviewWarnings';
 
 const BATCH_DATE_FIELD = <input className="batch-preview-date-input" />;

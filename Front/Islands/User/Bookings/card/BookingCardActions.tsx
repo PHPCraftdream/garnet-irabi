@@ -1,12 +1,12 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import type {PenaltyTerms} from '../../../../Common/booking/actions/rules/bookingAction';
-import {actionCostHint} from '../../../../Common/booking/actions/outcomes/actionCostHint';
-import {actionLabel} from '../../../../Common/booking/actions/labels/actionLabel';
-import {canActNow} from '../../../../Common/booking/actions/rules/canActNow';
-import {isActionable} from '../../../../Common/booking/actions/rules/isActionable';
-import {pendingTerms} from '../../../../Common/booking/actions/rules/pendingTerms';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import type {PenaltyTerms} from '@/Common/booking/actions/rules/bookingAction';
+import {actionCostHint} from '@/Common/booking/actions/outcomes/actionCostHint';
+import {actionLabel} from '@/Common/booking/actions/labels/actionLabel';
+import {canActNow} from '@/Common/booking/actions/rules/canActNow';
+import {isActionable} from '@/Common/booking/actions/rules/isActionable';
+import {pendingTerms} from '@/Common/booking/actions/rules/pendingTerms';
 import {Booking, BookingsViewAs} from './bookingCardTypes';
 
 interface Props {

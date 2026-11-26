@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import type {SupportStatus} from '../../../../Comms/Support/parts/supportTypes';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import type {SupportStatus} from '@/Islands/Comms/Support/parts/supportTypes';
 
 const admin_Tab_All = t.Admin_Tab_All;
 
