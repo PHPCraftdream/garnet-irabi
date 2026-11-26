@@ -1,11 +1,11 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {Paperclip} from 'lucide-react';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {ImConversation} from '../imTypes';
-import {formatTs} from '@common/Utils/Time/DateUtils';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {ImConversation} from '@/Islands/Comms/Im/imTypes';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
-import {UserAvatar} from '../../../../Common/media/UserAvatar';
+import {UserAvatar} from '@/Common/media/UserAvatar';
 
 const supportHasAttachments = t.Support_HasAttachments;
 const imYouPrefix = t.IM_YouPrefix;

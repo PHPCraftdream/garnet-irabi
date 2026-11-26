@@ -1,5 +1,5 @@
-import type {Slot} from '../../../types';
-import type {PagerKind} from '../CalendarPager';
+import type {Slot} from '@/Islands/Expert/ExpertSlots/types';
+import type {PagerKind} from '@/Islands/Expert/ExpertSlots/components/calendar/CalendarPager';
 
 /** Определить учитываемый пагинатором статус занятия. */
 export const slotKind = (s: Slot): PagerKind | null => {

@@ -1,15 +1,15 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {D} from '@common/Support/Debug/D';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {zodFromFieldsInfo, getFieldRegisterOptions} from '@common/Utils/Data/zodFromFieldsInfo';
 import {IFromFieldsInfo} from '@common/Dom/GridTable/Models';
-import {createSlot} from '../../api/createSlot';
+import {createSlot} from '@/Islands/Expert/ExpertSlots/api/createSlot';
 import {DateInput} from '@common/Components/ui/DateInput';
 
 const INVALID_FIELD = <input className="slot-field-invalid" />;
 
-import {Slot} from '../../types';
+import {Slot} from '@/Islands/Expert/ExpertSlots/types';
 import {SlotFormatFields} from './SlotFormatFields';
 
 type Name = 'date' | 'time' | 'duration' | 'cost' | 'max_users' | 'cancellation_penalty_percent';

@@ -1,6 +1,6 @@
 import * as React from 'react';
-import {actionCostHint} from '../../../../../../Common/booking/actions/outcomes/actionCostHint';
-import {Slot} from '../../../types';
+import {actionCostHint} from '@/Common/booking/actions/outcomes/actionCostHint';
+import {Slot} from '@/Islands/Expert/ExpertSlots/types';
 
 /** Подготовить данные для соответствующего интерфейса. */
 export const CalendarSlotCostHint: React.FC<{slot: Slot}> = ({slot}) => (

@@ -3,10 +3,10 @@ import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {LogDetailModal} from '@common/Components/Admin/AdminLog/LogDetailModal';
-import {formatTs} from '@common/Utils/Time/DateUtils';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {AdminUserLink} from '../../../../../Common/people/links/EntityLinks';
-import {Registration, TokenRow} from '../config/tokenTypes';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {AdminUserLink} from '@/Common/people/links/EntityLinks';
+import {Registration, TokenRow} from '@/Islands/AdminPanel/System/tokens/config/tokenTypes';
 
 const admin_Tokens_RegAccount = t.Admin_Tokens_RegAccount;
 const admin_Tokens_RegDate = t.Admin_Tokens_RegDate;

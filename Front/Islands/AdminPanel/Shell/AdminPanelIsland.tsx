@@ -1,17 +1,17 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import type {AdminUser, GridConfig, UserTab} from './shared/types';
-import {UsersSection} from '../Users/UsersSection';
-import {AdminCommentsSection, AdminCommentRow, CommentsAccountOption} from '../Support/AdminCommentsSection';
-import {AdminTokensSection} from '../System/AdminTokensSection';
-import {UserDetailContext} from '../Users/UserDetailContext';
-import type {UserDetailContextValue} from '../Users/UserDetailContext';
-import {UserDetailTab} from '../Users/UserDetailTab';
+import {UsersSection} from '@/Islands/AdminPanel/Users/UsersSection';
+import {AdminCommentsSection, AdminCommentRow, CommentsAccountOption} from '@/Islands/AdminPanel/Support/AdminCommentsSection';
+import {AdminTokensSection} from '@/Islands/AdminPanel/System/AdminTokensSection';
+import {UserDetailContext} from '@/Islands/AdminPanel/Users/UserDetailContext';
+import type {UserDetailContextValue} from '@/Islands/AdminPanel/Users/UserDetailContext';
+import {UserDetailTab} from '@/Islands/AdminPanel/Users/UserDetailTab';
 import {UserTabsStore} from './UserTabsStore';
 import {ADMIN_URLS} from './navigation/adminUrls';
 import {TabNav, TabDef} from '@common/Components/Layout/Navigation/TabNav';
 import {PageResponse} from '@common/hooks/data/usePagination';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {Users} from 'lucide-react';
 

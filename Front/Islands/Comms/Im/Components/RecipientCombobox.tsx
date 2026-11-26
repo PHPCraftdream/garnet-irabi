@@ -2,7 +2,7 @@ import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import * as Popover from '@radix-ui/react-popover';
 import {D} from '@common/Support/Debug/D';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {getInitials} from './Recipient/getInitials';
 import {roleLabel} from './Recipient/recipientHelpers';
 import {RecipientDropdown} from './Recipient/RecipientDropdown';

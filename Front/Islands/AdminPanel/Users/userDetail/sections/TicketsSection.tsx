@@ -1,11 +1,11 @@
 import * as React from 'react';
-import {formatTs} from '@common/Utils/Time/DateUtils';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {TicketRow} from '../status/userDetailTypes';
-import {ticketStatusLabel} from '../status/ticketStatusLabel';
-import {TICKET_STATUS_TONE} from '../status/ticketStatusTone';
-import {DetailTable} from '../DetailTable';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {TicketRow} from '@/Islands/AdminPanel/Users/userDetail/status/userDetailTypes';
+import {ticketStatusLabel} from '@/Islands/AdminPanel/Users/userDetail/status/ticketStatusLabel';
+import {TICKET_STATUS_TONE} from '@/Islands/AdminPanel/Users/userDetail/status/ticketStatusTone';
+import {DetailTable} from '@/Islands/AdminPanel/Users/userDetail/DetailTable';
 
 const user_SupportTickets = t.User_SupportTickets;
 const user_TicketStatus = t.User_TicketStatus;

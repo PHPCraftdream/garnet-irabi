@@ -1,9 +1,9 @@
 import * as React from 'react';
 import {PageResponse} from '@common/hooks/data/usePagination';
-import {IrabiPreviewProvider} from '../../../../Common/people/preview/IrabiPreviewProvider';
+import {IrabiPreviewProvider} from '@/Common/people/preview/IrabiPreviewProvider';
 import BookingsTab, {
     BookingCounts, BookingsViewAs, ExpertInfo, SlotInfo, UserInfo,
-} from '../BookingsTab';
+} from '@/Islands/User/Bookings/BookingsTab';
 
 type StatusFilter = 'all' | 'pending' | 'confirmed' | 'cancelled' | 'completed';
 

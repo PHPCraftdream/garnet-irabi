@@ -1,5 +1,5 @@
 import {Carburetor} from '@react-carburetor/core';
-import type {ExistingItem, ProposedSlot} from '../../../types';
+import type {ExistingItem, ProposedSlot} from '@/Islands/Expert/ExpertSlots/types';
 
 interface State {
     batchSlots: ProposedSlot[];

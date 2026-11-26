@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7763bd4f0319fa6c5daaf5e93b1b627b",
+    "content-hash": "30076cadfeb2ab1a977aeac2f0158c13",
     "packages": [
         {
             "name": "aura/cli",
@@ -1115,16 +1115,16 @@
         },
         {
             "name": "phpcraftdream/garnet-framework",
-            "version": "v0.1.3",
+            "version": "v0.1.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHPCraftdream/garnet-framework.git",
-                "reference": "28917c379f92dda16328fc4c47ada3299394c8a0"
+                "reference": "cb677fbee332c1556dd8f79e30fd5292846fd04f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHPCraftdream/garnet-framework/zipball/28917c379f92dda16328fc4c47ada3299394c8a0",
-                "reference": "28917c379f92dda16328fc4c47ada3299394c8a0",
+                "url": "https://api.github.com/repos/PHPCraftdream/garnet-framework/zipball/cb677fbee332c1556dd8f79e30fd5292846fd04f",
+                "reference": "cb677fbee332c1556dd8f79e30fd5292846fd04f",
                 "shasum": ""
             },
             "require": {
@@ -1192,7 +1192,7 @@
                 "issues": "https://github.com/PHPCraftdream/garnet-framework/issues",
                 "source": "https://github.com/PHPCraftdream/garnet-framework"
             },
-            "time": "2026-11-24T19:08:29+00:00"
+            "time": "2026-11-25T18:40:38+00:00"
         },
         {
             "name": "psr/clock",

@@ -1,8 +1,9 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {Slot} from '../../types';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {formatTs, formatTime} from '@common/Utils/Time/DateUtils';
+import {Slot} from '@/Islands/Expert/ExpertSlots/types';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
+import {formatTime} from '@common/Utils/Time/DateUtils/format/formatTime';
 
 interface Props {
     slot: Slot;

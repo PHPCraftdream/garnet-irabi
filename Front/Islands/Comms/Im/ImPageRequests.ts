@@ -1,7 +1,7 @@
 import {sendPost} from '@common/Api/Send/sendPost';
 import {D} from '@common/Support/Debug/D';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import type {ImConversation} from './imTypes';
 import type {ImPageState} from './ImPageState';
 

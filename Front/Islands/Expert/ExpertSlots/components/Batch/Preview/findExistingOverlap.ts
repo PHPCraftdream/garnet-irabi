@@ -1,4 +1,4 @@
-import type {ExistingItem} from '../../../types';
+import type {ExistingItem} from '@/Islands/Expert/ExpertSlots/types';
 
 /** Перевести время `HH:mm` в число минут от начала суток. */
 function timeToMinutes(time: string): number {

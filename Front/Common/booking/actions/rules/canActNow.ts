@@ -1,5 +1,5 @@
 import {isActionable} from './isActionable';
-import {isConfirmed} from '../../status/isConfirmed';
+import {isConfirmed} from '@/Common/booking/status/isConfirmed';
 
 /** Проверяет, можно ли действовать с бронью прямо сейчас. */
 export const canActNow = (status?: string, startAt?: number): boolean => {

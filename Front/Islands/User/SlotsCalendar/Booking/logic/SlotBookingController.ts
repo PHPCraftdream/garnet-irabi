@@ -3,15 +3,17 @@ import {sendPost} from '@common/Api/Send/sendPost';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {D} from '@common/Support/Debug/D';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {refreshLiveCounts} from '@common/Utils/Data/liveCounts';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
+import {refreshLiveCounts} from '@common/Utils/Data/liveCounts/refreshLiveCounts';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {bookErrorCode} from './bookErrorCode';
 import {bookErrorMessage} from './bookingErrors';
 import {canPay} from './canPay';
 import {priceFor} from './priceFor';
-import type {SlotItem} from '../../State/view/types';
-import type {SlotsCalendarBookingStore} from '../../State/calendar/SlotsCalendarBookingStore';
-import type {SlotsCalendarBookingActions} from '../../State/calendar/SlotsCalendarBookingActions';
+import type {SlotItem} from '@/Islands/User/SlotsCalendar/State/view/types';
+import type {SlotsCalendarBookingStore} from '@/Islands/User/SlotsCalendar/State/calendar/SlotsCalendarBookingStore';
+import type {
+    SlotsCalendarBookingActions,
+} from '@/Islands/User/SlotsCalendar/State/calendar/SlotsCalendarBookingActions';
 
 /** Контекст брони, который сервер отдаёт для слота (/slots/~bookData). */
 export interface SlotBookingData {

@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {formatTs} from '@common/Utils/Time/DateUtils';
-import {EntityLink} from '../../../../Common/people/links/EntityLink';
-import {userLinks} from '../../../../Common/people/links/userLinks';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
+import {EntityLink} from '@/Common/people/links/EntityLink';
+import {userLinks} from '@/Common/people/links/userLinks';
 import type {CancellationRow} from './AdminCancellationsTab';
 
 interface RowProps {

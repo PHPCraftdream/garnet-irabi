@@ -1,8 +1,8 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {formatTs} from '@common/Utils/Time/DateUtils';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {AdminUserLink} from '../../../../Common/people/links/EntityLinks';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {AdminUserLink} from '@/Common/people/links/EntityLinks';
 import {TokenRow, accountTypeLabel} from './config/tokenTypes';
 import {tokenStatusLabel} from './config/tokenStatusLabel';
 

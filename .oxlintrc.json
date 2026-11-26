@@ -49,7 +49,7 @@
     "garnet-tsx/max-component-lines": "warn",
     "garnet-tsx/max-component-nesting": "warn",
     "carburetor/no-react-hooks-in-components": "error",
-    "carburetor/no-parent-import": "off",
+    "carburetor/no-parent-import": ["error", {"roots": [{"path": "Front", "prefix": "@/"}]}],
     "carburetor/require-function-class": "error",
     "carburetor/max-line-length": "error",
     "carburetor/no-blank-line-after-tsdoc": "error",

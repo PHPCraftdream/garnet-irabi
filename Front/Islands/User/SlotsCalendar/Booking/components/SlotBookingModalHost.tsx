@@ -1,8 +1,8 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import BookingModal from './BookingModal';
-import type {ExpertMap, SlotItem} from '../../State/view/types';
-import type {SlotBookingController} from '../logic/SlotBookingController';
+import type {ExpertMap, SlotItem} from '@/Islands/User/SlotsCalendar/State/view/types';
+import type {SlotBookingController} from '@/Islands/User/SlotsCalendar/Booking/logic/SlotBookingController';
 
 interface Props {
     controller: SlotBookingController;

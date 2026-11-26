@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {penaltyPreview} from '../../../../../Common/booking/actions/outcomes/penaltyPreview';
-import {SlotInfo} from '../bookingCardTypes';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {penaltyPreview} from '@/Common/booking/actions/outcomes/penaltyPreview';
+import {SlotInfo} from '@/Islands/User/Bookings/card/bookingCardTypes';
 
 const bookingPenaltyKeptByExpert = t.Booking_PenaltyKeptByExpert;
 const bookingRefundAmount = t.Booking_RefundAmount;

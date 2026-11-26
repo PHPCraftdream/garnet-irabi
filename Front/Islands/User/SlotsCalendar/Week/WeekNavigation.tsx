@@ -1,10 +1,10 @@
 import * as React from 'react';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {resolvedUserTz} from '@common/Utils/Time/DateUtils';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {resolvedUserTz} from '@common/Utils/Time/DateUtils/tz/resolvedUserTz';
 import {
     CalendarPagerCounts,
     PagerCountItem,
-} from '../../../../Common/booking/formatting/CalendarPagerCounts';
+} from '@/Common/booking/formatting/CalendarPagerCounts';
 import {WeekTodayChip} from './WeekTodayChip';
 
 const slotsPrevWeek = t.Slots_PrevWeek;

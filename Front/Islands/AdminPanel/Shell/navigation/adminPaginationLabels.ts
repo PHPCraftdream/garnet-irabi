@@ -1,4 +1,4 @@
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 export const adminPaginationLabels = {
     prev: t.Pagination_Prev(),
     next: t.Pagination_Next(),

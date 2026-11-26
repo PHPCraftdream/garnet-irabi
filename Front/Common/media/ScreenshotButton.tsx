@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {D} from '@common/Support/Debug/D';
-import {I18nForeground as t} from '../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 

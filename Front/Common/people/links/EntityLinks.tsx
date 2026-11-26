@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {UserDetailContext} from '../../../Islands/AdminPanel/Users/UserDetailContext';
+import {UserDetailContext} from '@/Islands/AdminPanel/Users/UserDetailContext';
 import {appUrl} from '@common/Utils/Url/appUrl';
 
 /** Admin user link — opens user detail tab via context, falls back to href navigation */

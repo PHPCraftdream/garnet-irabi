@@ -1,17 +1,17 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {sendPost} from '@common/Api/Send/sendPost';
 import {useSending} from '@common/hooks/data/useSending';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {D} from '@common/Support/Debug/D';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {actionImpact} from '../../../Common/booking/actions/labels/actionImpact';
-import {actionReasonLabel} from '../../../Common/booking/actions/labels/actionReasonLabel';
-import {actionReasonPlaceholder} from '../../../Common/booking/actions/labels/actionReasonPlaceholder';
-import {actionSubmitLabel} from '../../../Common/booking/actions/labels/actionSubmitLabel';
-import {actionTitle} from '../../../Common/booking/actions/labels/actionTitle';
-import {ReasonModal} from '../../../Common/Components/ReasonModal';
+import {actionImpact} from '@/Common/booking/actions/labels/actionImpact';
+import {actionReasonLabel} from '@/Common/booking/actions/labels/actionReasonLabel';
+import {actionReasonPlaceholder} from '@/Common/booking/actions/labels/actionReasonPlaceholder';
+import {actionSubmitLabel} from '@/Common/booking/actions/labels/actionSubmitLabel';
+import {actionTitle} from '@/Common/booking/actions/labels/actionTitle';
+import {ReasonModal} from '@/Common/Components/ReasonModal';
 import {PendingBookingItem, PendingBookingRow} from './PendingBookingRow';
 
 export type {PendingBookingItem} from './PendingBookingRow';

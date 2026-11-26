@@ -1,4 +1,4 @@
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 /** Отображает данные раздела и передаёт действия пользователя обработчикам. */
 export const tokenStatusLabel = (s: string): string => {
     switch (s) {

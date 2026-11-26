@@ -1,9 +1,9 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {formatTs} from '@common/Utils/Time/DateUtils';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {EntityLink} from '../../../../Common/people/links/EntityLink';
-import {userLinks} from '../../../../Common/people/links/userLinks';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {EntityLink} from '@/Common/people/links/EntityLink';
+import {userLinks} from '@/Common/people/links/userLinks';
 import {AdminCommentRow, truncate} from './commentTypes';
 import {COMMENT_BODY_TRUNC} from './commentBodyTrunc';
 import {CommentAuthorCell} from './CommentAuthorCell';

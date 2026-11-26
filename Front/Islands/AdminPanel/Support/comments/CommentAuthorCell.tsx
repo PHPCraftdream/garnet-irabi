@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {EntityLink} from '../../../../Common/people/links/EntityLink';
-import {userLinks} from '../../../../Common/people/links/userLinks';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {EntityLink} from '@/Common/people/links/EntityLink';
+import {userLinks} from '@/Common/people/links/userLinks';
 import {AdminCommentRow} from './commentTypes';
 
 const comment_AuthorHidden = t.Comment_AuthorHidden;

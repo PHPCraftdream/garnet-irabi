@@ -1,6 +1,6 @@
 import {Carburetor} from '@react-carburetor/core';
 import type {BookingsState, BookingsPageResponse} from './bookingsTabStateTypes';
-import type {BookingsViewAs, StatusFilter} from '../card/bookingCardTypes';
+import type {BookingsViewAs, StatusFilter} from '@/Islands/User/Bookings/card/bookingCardTypes';
 export class BookingsStateStore extends Carburetor<BookingsState> {
     /** Применяет данные загруженной страницы и прекращает индикатор загрузки. */
     applyPage(data: BookingsPageResponse): void {

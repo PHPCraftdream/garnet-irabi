@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import type {IFromFieldsInfo} from '@common/Dom/GridTable/Models';
-import type {Slot} from '../../types';
+import type {Slot} from '@/Islands/Expert/ExpertSlots/types';
 import {CreateSlotForm} from './CreateSlotForm';
 import {ExpertSlotModalShell} from './ExpertSlotModalShell';
 

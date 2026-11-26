@@ -1,8 +1,8 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
-import {tsToInputDate} from '@common/Utils/Time/DateUtils';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {Slot} from '../types';
+import {tsToInputDate} from '@common/Utils/Time/DateUtils/input/tsToInputDate';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {Slot} from '@/Islands/Expert/ExpertSlots/types';
 import {CalendarStatusFilter, StatusFilter} from './calendar/CalendarStatusFilter';
 import {CalendarPager, PagerKind} from './calendar/CalendarPager';
 import {ExpertCalendarWeeks} from './calendar/CalendarWeeks/ExpertCalendarWeeks';

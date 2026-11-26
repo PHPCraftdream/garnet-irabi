@@ -1,6 +1,7 @@
 import {sendPostFormData} from '@common/Api/Send/sendPostFormData';
 import {D} from '@common/Support/Debug/D';
 import {appUrl} from '@common/Utils/Url/appUrl';
+import type {Slot} from '@/Islands/Expert/ExpertSlots/types';
 
 /** Создать занятие и отправить его данные на сервер. */
 export function createSlot(data: {
@@ -12,7 +13,7 @@ export function createSlot(data: {
     cancellation_penalty_percent: number;
     is_online: boolean;
     location: string;
-}): Promise<{success: boolean; slot_id?: number; slot?: import('../types').Slot; error?: string}> {
+}): Promise<{success: boolean; slot_id?: number; slot?: Slot; error?: string}> {
     D('teaching.slot.create', {date: data.date, time: data.time, duration: data.duration, cost: data.cost});
     const fd = new FormData();
     fd.append('date', data.date);

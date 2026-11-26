@@ -1,4 +1,4 @@
-import type {Booking, BookingCounts, BookingsViewAs, ExpertInfo, SlotInfo, StatusFilter, UserInfo} from '../card/bookingCardTypes';
+import type {Booking, BookingCounts, BookingsViewAs, ExpertInfo, SlotInfo, StatusFilter, UserInfo} from '@/Islands/User/Bookings/card/bookingCardTypes';
 import type {PageResponse} from '@common/hooks/data/usePagination';
 
 /** Состояние списка броней, включая фильтры и выбранные окна действий. */

@@ -1,11 +1,11 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {formatTs} from '@common/Utils/Time/DateUtils';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {SlotBookingController} from '../../SlotsCalendar/Booking/logic/SlotBookingController';
-import {SlotBookingModalHost} from '../../SlotsCalendar/Booking/components/SlotBookingModalHost';
+import {SlotBookingController} from '@/Islands/User/SlotsCalendar/Booking/logic/SlotBookingController';
+import {SlotBookingModalHost} from '@/Islands/User/SlotsCalendar/Booking/components/SlotBookingModalHost';
 
 const USER_DASH_LINK_TEMPLATE = <a className="user-dash-link" />;
 

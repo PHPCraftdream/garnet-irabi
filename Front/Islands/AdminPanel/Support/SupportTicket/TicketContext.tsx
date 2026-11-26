@@ -1,8 +1,8 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import type {AutoContext} from '../../../Comms/Support/parts/supportTypes';
-import {formatTs} from '@common/Utils/Time/DateUtils';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import type {AutoContext} from '@/Islands/Comms/Support/parts/supportTypes';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
 
 const support_Context_Breadcrumb = t.Support_Context_Breadcrumb;
 const support_Context_Browser = t.Support_Context_Browser;

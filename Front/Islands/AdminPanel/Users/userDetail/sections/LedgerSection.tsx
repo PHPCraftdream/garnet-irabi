@@ -1,10 +1,10 @@
 import * as React from 'react';
-import {formatTs} from '@common/Utils/Time/DateUtils';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {entryTypeLabel} from '../../../Grid/gridLabels';
-import {LedgerRow} from '../status/userDetailTypes';
-import {DetailTable} from '../DetailTable';
-import {PersonCell} from '../PersonCell';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {entryTypeLabel} from '@/Islands/AdminPanel/Grid/gridLabels';
+import {LedgerRow} from '@/Islands/AdminPanel/Users/userDetail/status/userDetailTypes';
+import {DetailTable} from '@/Islands/AdminPanel/Users/userDetail/DetailTable';
+import {PersonCell} from '@/Islands/AdminPanel/Users/userDetail/PersonCell';
 
 const admin_Finance = t.Admin_Finance;
 const admin_Ledger_Amount = t.Admin_Ledger_Amount;

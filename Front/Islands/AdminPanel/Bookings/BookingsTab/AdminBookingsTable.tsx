@@ -1,11 +1,11 @@
 import * as React from 'react';
-import {formatTs} from '@common/Utils/Time/DateUtils';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {EntityLink} from '../../../../Common/people/links/EntityLink';
-import {userLinks} from '../../../../Common/people/links/userLinks';
-import {UniversalBadge} from '../../../../Common/booking/status/StatusBadge';
-import {translateStatus} from '../../../../Common/booking/status/statusHelpers';
-import {AdminBookingRow} from '../shared/bookingsTypes';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {EntityLink} from '@/Common/people/links/EntityLink';
+import {userLinks} from '@/Common/people/links/userLinks';
+import {UniversalBadge} from '@/Common/booking/status/StatusBadge';
+import {translateStatus} from '@/Common/booking/status/statusHelpers';
+import {AdminBookingRow} from '@/Islands/AdminPanel/Bookings/shared/bookingsTypes';
 
 const BookingTr: React.FC<{row: AdminBookingRow}> = ({row}) => (
     <tr className="admin-booking-table-row" data-test-id={`admin-booking-row-${row.id}`}>

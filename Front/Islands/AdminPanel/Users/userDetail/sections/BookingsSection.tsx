@@ -1,10 +1,10 @@
 import * as React from 'react';
-import {formatTs} from '@common/Utils/Time/DateUtils';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {statusLabel} from '../../../Grid/statusLabel';
-import {BookingRow, BOOKING_STATUS_TONE} from '../status/userDetailTypes';
-import {DetailTable} from '../DetailTable';
-import {PersonCell} from '../PersonCell';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {statusLabel} from '@/Islands/AdminPanel/Grid/statusLabel';
+import {BookingRow, BOOKING_STATUS_TONE} from '@/Islands/AdminPanel/Users/userDetail/status/userDetailTypes';
+import {DetailTable} from '@/Islands/AdminPanel/Users/userDetail/DetailTable';
+import {PersonCell} from '@/Islands/AdminPanel/Users/userDetail/PersonCell';
 
 const admin_Booking_Status = t.Admin_Booking_Status;
 const admin_Bookings = t.Admin_Bookings;

@@ -1,5 +1,5 @@
 import {TReadonly} from '@react-carburetor/core';
-import {BookingCounts, ExpertInfo, SlotInfo, UserInfo} from '../card/bookingCardTypes';
+import {BookingCounts, ExpertInfo, SlotInfo, UserInfo} from '@/Islands/User/Bookings/card/bookingCardTypes';
 import type {BookingsState, BookingsPageData} from './bookingsTabStateTypes';
 
 /** Копирует список преподавателей из прокси состояния. */

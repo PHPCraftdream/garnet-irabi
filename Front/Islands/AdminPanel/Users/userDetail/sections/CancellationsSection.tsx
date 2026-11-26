@@ -1,8 +1,8 @@
 import * as React from 'react';
-import {formatTs} from '@common/Utils/Time/DateUtils';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {DetailTable} from '../DetailTable';
-import {PersonCell} from '../PersonCell';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {DetailTable} from '@/Islands/AdminPanel/Users/userDetail/DetailTable';
+import {PersonCell} from '@/Islands/AdminPanel/Users/userDetail/PersonCell';
 
 const admin_Cancel_Date = t.Admin_Cancel_Date;
 const admin_Cancel_Reason = t.Admin_Cancel_Reason;

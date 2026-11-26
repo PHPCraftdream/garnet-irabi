@@ -370,6 +370,7 @@
   "rules": {
     "no-react-hooks-in-components": "error",
     "require-function-class": "error",
+    "no-parent-import": ["error", {"roots": [{"path": "Front", "prefix": "@/"}]}],
     "max-line-length": "error",
     "no-blank-line-after-tsdoc": "error",
     "prefer-readonly-array-param": "error",

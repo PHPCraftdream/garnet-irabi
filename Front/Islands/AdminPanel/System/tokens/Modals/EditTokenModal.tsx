@@ -4,10 +4,10 @@ import {showToast} from '@common/Components/Feedback/GlobalToast';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import SendButton from '@common/Components/Controls/SendButton';
 import {LogDetailModal} from '@common/Components/Admin/AdminLog/LogDetailModal';
-import {tsToInputDateTime} from '@common/Utils/Time/DateUtils';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {TokenRow} from '../config/tokenTypes';
-import {TokenField} from '../TokenField';
+import {tsToInputDateTime} from '@common/Utils/Time/DateUtils/input/tsToInputDateTime';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {TokenRow} from '@/Islands/AdminPanel/System/tokens/config/tokenTypes';
+import {TokenField} from '@/Islands/AdminPanel/System/tokens/TokenField';
 
 export interface TokenUpdate {
     id: number;

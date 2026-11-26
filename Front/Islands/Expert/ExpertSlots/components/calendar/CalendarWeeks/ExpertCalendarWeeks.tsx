@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {Slot} from '../../../types';
-import {CalendarDay, CalendarDayColumn} from '../Days/index';
-import {CalendarDragController} from '../CalendarDragController';
+import {Slot} from '@/Islands/Expert/ExpertSlots/types';
+import {CalendarDay, CalendarDayColumn} from '@/Islands/Expert/ExpertSlots/components/calendar/Days/index';
+import {CalendarDragController} from '@/Islands/Expert/ExpertSlots/components/calendar/CalendarDragController';
 import type {CalendarWeek} from './CalendarWeek';
 
 interface Props {

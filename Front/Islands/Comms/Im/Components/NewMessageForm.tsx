@@ -3,8 +3,8 @@ import {AntiHookComponent, Carburetor, type TReadonly} from '@react-carburetor/c
 import {sendPost} from '@common/Api/Send/sendPost';
 import {D} from '@common/Support/Debug/D';
 import {CTRL_ENTER_HINT} from '@common/hooks/ui/useCtrlEnter';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import AttachmentPicker, {PendingFile} from '../../../../Common/attachments/AttachmentPicker';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import AttachmentPicker, {PendingFile} from '@/Common/attachments/AttachmentPicker';
 import SendButton from '@common/Components/Controls/SendButton';
 import {Recipient, RecipientCombobox} from './RecipientCombobox';
 

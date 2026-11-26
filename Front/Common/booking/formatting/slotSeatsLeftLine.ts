@@ -1,5 +1,5 @@
 import type {SeatsSource} from './slotFormat';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 
 /** Returns the appropriate slot-format label. */
 export function slotSeatsLeftLine(slot: SeatsSource): string {

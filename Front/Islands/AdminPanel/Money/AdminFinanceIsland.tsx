@@ -1,14 +1,14 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
-import {LedgerEntry, AccountBalanceRow, GridConfig, PageResponse} from '../Shell/shared/types';
+import {LedgerEntry, AccountBalanceRow, GridConfig, PageResponse} from '@/Islands/AdminPanel/Shell/shared/types';
 import {LedgerSection} from './LedgerSection';
 import {BalancesSection} from './BalancesSection';
-import {UserDetailContext, UserDetailContextValue} from '../Users/UserDetailContext';
-import {UserDetailTab} from '../Users/UserDetailTab';
-import {useUserTabs} from '../Shell/useUserTabs';
-import {ADMIN_URLS} from '../Shell/navigation/adminUrls';
+import {UserDetailContext, UserDetailContextValue} from '@/Islands/AdminPanel/Users/UserDetailContext';
+import {UserDetailTab} from '@/Islands/AdminPanel/Users/UserDetailTab';
+import {useUserTabs} from '@/Islands/AdminPanel/Shell/useUserTabs';
+import {ADMIN_URLS} from '@/Islands/AdminPanel/Shell/navigation/adminUrls';
 import {TabNav, TabDef} from '@common/Components/Layout/Navigation/TabNav';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {Banknote} from 'lucide-react';
 

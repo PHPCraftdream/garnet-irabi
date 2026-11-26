@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {AdminUserDualLink} from '../../../../Common/people/links/AdminUserDualLink';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {AdminUserDualLink} from '@/Common/people/links/AdminUserDualLink';
 
 interface PendingUser {
     id: number;

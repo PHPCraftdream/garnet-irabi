@@ -1,6 +1,6 @@
 import * as React from 'react';
-import {Slot} from '../../../types';
-import {CalendarSlotCell} from '../Slots/index';
+import {Slot} from '@/Islands/Expert/ExpertSlots/types';
+import {CalendarSlotCell} from '@/Islands/Expert/ExpertSlots/components/calendar/Slots/index';
 import {CalendarDayHeading} from './CalendarDayHeading';
 import {CalendarEmptyDay} from './CalendarEmptyDay';
 

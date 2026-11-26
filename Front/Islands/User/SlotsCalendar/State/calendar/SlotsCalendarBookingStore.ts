@@ -1,5 +1,5 @@
 import {Carburetor} from '@react-carburetor/core';
-import type {SlotItem, SlotsCalendarProps} from '../view/types';
+import type {SlotItem, SlotsCalendarProps} from '@/Islands/User/SlotsCalendar/State/view/types';
 
 interface BookingState {
     slots: SlotItem[];

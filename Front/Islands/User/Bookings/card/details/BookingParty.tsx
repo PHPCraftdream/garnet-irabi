@@ -1,8 +1,8 @@
 import * as React from 'react';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {EntityLink} from '../../../../../Common/people/links/EntityLink';
-import {userLinks} from '../../../../../Common/people/links/userLinks';
-import {Booking, ExpertInfo, SlotInfo, UserInfo} from '../bookingCardTypes';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {EntityLink} from '@/Common/people/links/EntityLink';
+import {userLinks} from '@/Common/people/links/userLinks';
+import {Booking, ExpertInfo, SlotInfo, UserInfo} from '@/Islands/User/Bookings/card/bookingCardTypes';
 
 const bookingUserLabel = t.Booking_User;
 const slotExpert = t.Slot_Expert;

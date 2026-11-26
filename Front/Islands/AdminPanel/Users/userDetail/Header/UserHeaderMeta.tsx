@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {formatTs} from '@common/Utils/Time/DateUtils';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {AccountData} from '../status/userDetailTypes';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {AccountData} from '@/Islands/AdminPanel/Users/userDetail/status/userDetailTypes';
 
 const user_LastOnline = t.User_LastOnline;
 const user_RegTime = t.User_RegTime;

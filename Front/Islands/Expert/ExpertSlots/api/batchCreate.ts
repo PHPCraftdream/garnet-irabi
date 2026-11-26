@@ -14,7 +14,7 @@ export function batchCreate(data: {
     success: boolean;
     created: number;
     overlaps: {date: string; time: string; reason: string}[];
-    slots?: import('../types').Slot[];
+    slots?: import('@/Islands/Expert/ExpertSlots/types').Slot[];
     error?: string;
 }> {
     D('teaching.batch.create', {slotsCount: data.slots.length, cost: data.cost});

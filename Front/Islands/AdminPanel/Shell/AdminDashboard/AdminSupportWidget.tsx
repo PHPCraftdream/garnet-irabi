@@ -1,11 +1,11 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {formatTs} from '@common/Utils/Time/DateUtils';
-import {statusLabel} from '../../Grid/statusLabel';
-import type {SupportStatus} from '../../../Comms/Support/parts/supportTypes';
-import {UniversalBadge} from '../../../../Common/booking/status/StatusBadge';
-import {AdminUserDualLink} from '../../../../Common/people/links/AdminUserDualLink';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
+import {statusLabel} from '@/Islands/AdminPanel/Grid/statusLabel';
+import type {SupportStatus} from '@/Islands/Comms/Support/parts/supportTypes';
+import {UniversalBadge} from '@/Common/booking/status/StatusBadge';
+import {AdminUserDualLink} from '@/Common/people/links/AdminUserDualLink';
 
 interface TicketItem {
     id: number;

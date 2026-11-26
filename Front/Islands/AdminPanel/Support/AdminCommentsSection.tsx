@@ -6,7 +6,7 @@ import Pagination from '@common/Components/Layout/Paging/Pagination';
 import {PageResponse} from '@common/hooks/data/usePagination';
 import {ConfirmModal} from '@common/Components/Feedback/ConfirmModal';
 import {LogDetailModal} from '@common/Components/Admin/AdminLog/LogDetailModal';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {
     AdminCommentRow,
     CommentsAccountOption,
@@ -14,12 +14,12 @@ import {
     ModerationResponse,
     ToggleResponse,
 } from './comments/commentTypes';
-import {buildAccountOptions} from '../Shell/shared/adminShared';
-import {adminPaginationLabels} from '../Shell/navigation/adminPaginationLabels';
+import {buildAccountOptions} from '@/Islands/AdminPanel/Shell/shared/adminShared';
+import {adminPaginationLabels} from '@/Islands/AdminPanel/Shell/navigation/adminPaginationLabels';
 import {CommentsFilterState, CommentsFilters} from './comments/CommentsFilters';
 import {CommentsTable} from './comments/CommentsTable';
-import {AdminPageController} from '../Shell/AdminPageController';
-import {ConfirmController} from '../../Comms/Comments/confirmController';
+import {AdminPageController} from '@/Islands/AdminPanel/Shell/AdminPageController';
+import {ConfirmController} from '@/Islands/Comms/Comments/confirmController';
 
 export type {AdminCommentRow, CommentsAccountOption} from './comments/commentTypes';
 

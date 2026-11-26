@@ -1,12 +1,12 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {formatTs} from '@common/Utils/Time/DateUtils';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {translateStatus} from '../../../Common/booking/status/statusHelpers';
-import type {SeatsSource} from '../../../Common/booking/formatting/slotFormat';
-import type {SlotFormatSource} from '../../../Common/booking/formatting/slotFormat';
-import {slotFormatLine} from '../../../Common/booking/formatting/slotFormatLine';
-import {slotSeatsLeftLine} from '../../../Common/booking/formatting/slotSeatsLeftLine';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {translateStatus} from '@/Common/booking/status/statusHelpers';
+import type {SeatsSource} from '@/Common/booking/formatting/slotFormat';
+import type {SlotFormatSource} from '@/Common/booking/formatting/slotFormat';
+import {slotFormatLine} from '@/Common/booking/formatting/slotFormatLine';
+import {slotSeatsLeftLine} from '@/Common/booking/formatting/slotSeatsLeftLine';
 
 const slotCost = t.Slot_Cost;
 const slotGroupBadge = t.Slot_GroupBadge;

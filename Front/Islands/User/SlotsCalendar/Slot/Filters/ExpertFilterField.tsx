@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {Combobox} from '@common/Components/ui/Combobox';
-import {ExpertInfo, ExpertMap} from '../../State/view/types';
+import {ExpertInfo, ExpertMap} from '@/Islands/User/SlotsCalendar/State/view/types';
 
 interface Props {
     experts: ExpertMap;

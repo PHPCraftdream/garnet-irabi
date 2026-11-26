@@ -1,14 +1,14 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
-import {LedgerEntry, LedgerParty, LedgerRefData, GridConfig, PageResponse} from '../Shell/shared/types';
-import {AdminGrid} from '../Grid/AdminGrid';
+import {LedgerEntry, LedgerParty, LedgerRefData, GridConfig, PageResponse} from '@/Islands/AdminPanel/Shell/shared/types';
+import {AdminGrid} from '@/Islands/AdminPanel/Grid/AdminGrid';
 import {Combobox} from '@common/Components/ui/Combobox';
 import {DateInput} from '@common/Components/ui/DateInput';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {formatTs} from '@common/Utils/Time/DateUtils';
-import {AdminUserLink} from '../../../Common/people/links/EntityLinks';
-import {entryTypeLabel} from '../Grid/gridLabels';
-import {statusLabel} from '../Grid/statusLabel';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
+import {AdminUserLink} from '@/Common/people/links/EntityLinks';
+import {entryTypeLabel} from '@/Islands/AdminPanel/Grid/gridLabels';
+import {statusLabel} from '@/Islands/AdminPanel/Grid/statusLabel';
 
 const ledger_External = t.Ledger_External;
 const ledger_RefBooking = t.Ledger_RefBooking;

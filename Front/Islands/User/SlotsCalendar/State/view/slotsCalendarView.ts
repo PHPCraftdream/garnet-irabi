@@ -1,11 +1,11 @@
 import type {SlotItem, SlotStatusFilter} from './types';
-import {applyCalendarFilters} from '../filters/applyCalendarFilters';
-import {applyStatusFilter} from '../filters/applyStatusFilter';
-import {getCalendarWeek} from '../calendar/getCalendarWeek';
-import {getEffectiveBookedIds} from '../calendar/getEffectiveBookedIds';
-import {getPagerCounts} from '../calendar/getPagerCounts';
-import {indexSlotStatuses} from '../calendar/indexSlotStatuses';
-import type {ReadonlyFiltersState} from '../filters/slotsCalendarSelectors';
+import {applyCalendarFilters} from '@/Islands/User/SlotsCalendar/State/filters/applyCalendarFilters';
+import {applyStatusFilter} from '@/Islands/User/SlotsCalendar/State/filters/applyStatusFilter';
+import {getCalendarWeek} from '@/Islands/User/SlotsCalendar/State/calendar/getCalendarWeek';
+import {getEffectiveBookedIds} from '@/Islands/User/SlotsCalendar/State/calendar/getEffectiveBookedIds';
+import {getPagerCounts} from '@/Islands/User/SlotsCalendar/State/calendar/getPagerCounts';
+import {indexSlotStatuses} from '@/Islands/User/SlotsCalendar/State/calendar/indexSlotStatuses';
+import type {ReadonlyFiltersState} from '@/Islands/User/SlotsCalendar/State/filters/slotsCalendarSelectors';
 
 type SlotStatusesView = Readonly<Record<string, string>>;
 type WeekData = ReturnType<typeof getCalendarWeek>;

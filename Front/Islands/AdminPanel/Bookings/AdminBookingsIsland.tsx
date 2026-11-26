@@ -4,13 +4,13 @@ import {PageResponse} from '@common/hooks/data/usePagination';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
 import {CalendarRange} from 'lucide-react';
 import AdminCancellationsTab, {CancellationRow} from './CancellationsTab/AdminCancellationsTab';
-import {AccountOption} from '../Shell/shared/adminShared';
+import {AccountOption} from '@/Islands/AdminPanel/Shell/shared/adminShared';
 import {AdminSlotsTab} from './SlotsTab/AdminSlotsTab';
 import {AdminBookingsTab} from './BookingsTab/AdminBookingsTab';
 import {AdminBookingRow, AdminSlotRow} from './shared/bookingsTypes';
 import {AdminBookingsTabNav, TabKey} from './AdminBookingsTabNav';
 
-export type {AccountOption} from '../Shell/shared/adminShared';
+export type {AccountOption} from '@/Islands/AdminPanel/Shell/shared/adminShared';
 
 interface Props {
     pageTitle: string;

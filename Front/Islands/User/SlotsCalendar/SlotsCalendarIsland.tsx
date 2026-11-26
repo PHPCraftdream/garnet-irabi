@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {D} from '@common/Support/Debug/D';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {SlotsCalendarProps, SlotItem, SlotStatusFilter} from './State/view/types';
 import type {ReadonlyFiltersState} from './State/filters/slotsCalendarSelectors';
 import {SlotsCalendarFilterStore} from './State/filters/SlotsCalendarFilterStore';
@@ -19,7 +19,7 @@ import {WeekNavigation} from './Week/WeekNavigation';
 import {WeekSlotCount} from './Week/WeekSlotCount';
 import BookingModal from './Booking/components/BookingModal';
 import SlotDetailModal from './Slot/SlotDetailModal';
-import {IrabiPreviewProvider} from '../../../Common/people/preview/IrabiPreviewProvider';
+import {IrabiPreviewProvider} from '@/Common/people/preview/IrabiPreviewProvider';
 import {TimezoneNotice} from '@common/Components/Feedback/TimezoneNotice';
 import {PageHeader} from '@common/Components/Layout/PageHeader';
 

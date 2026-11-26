@@ -1,9 +1,9 @@
 import * as React from 'react';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {SupportMessage} from '../../../../Comms/Support/parts/supportTypes';
-import AttachmentDisplay from '../../../../../Common/attachments/AttachmentDisplay';
-import {AdminUserLink} from '../../../../../Common/people/links/EntityLinks';
-import {formatTs} from '@common/Utils/Time/DateUtils';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {SupportMessage} from '@/Islands/Comms/Support/parts/supportTypes';
+import AttachmentDisplay from '@/Common/attachments/AttachmentDisplay';
+import {AdminUserLink} from '@/Common/people/links/EntityLinks';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
 
 const support_InternalComment = t.Support_InternalComment;
 

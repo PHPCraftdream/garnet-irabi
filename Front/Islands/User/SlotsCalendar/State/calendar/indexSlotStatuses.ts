@@ -1,4 +1,4 @@
-import type {SlotItem} from '../view/types';
+import type {SlotItem} from '@/Islands/User/SlotsCalendar/State/view/types';
 
 /** Builds a lookup from slot IDs to their current statuses. */
 export function indexSlotStatuses(

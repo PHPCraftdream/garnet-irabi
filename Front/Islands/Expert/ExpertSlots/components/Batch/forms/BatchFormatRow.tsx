@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {SlotFormatFields} from '../../Slot/SlotFormatFields';
+import {SlotFormatFields} from '@/Islands/Expert/ExpertSlots/components/Slot/SlotFormatFields';
 
 interface BatchFormatRowProps {
     batchIsOnline: boolean;

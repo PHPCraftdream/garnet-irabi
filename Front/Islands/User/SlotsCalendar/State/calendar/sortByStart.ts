@@ -1,4 +1,4 @@
-import type {SlotItem} from '../view/types';
+import type {SlotItem} from '@/Islands/User/SlotsCalendar/State/view/types';
 
 /** Возвращает копию списка, отсортированную по времени начала. */
 export function sortByStart(slots: readonly SlotItem[]): SlotItem[] {

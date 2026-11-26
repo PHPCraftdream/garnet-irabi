@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {formatTs} from '@common/Utils/Time/DateUtils';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
 import {SupportTicket} from './supportTypes';
 import {StatusBadge} from './supportRenders';
 

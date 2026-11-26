@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import type {TReadonly} from '@react-carburetor/core';
-import {IrabiPreviewProvider} from '../../../Common/people/preview/IrabiPreviewProvider';
+import {IrabiPreviewProvider} from '@/Common/people/preview/IrabiPreviewProvider';
 import {WelcomeCard} from './Widgets/WelcomeCard';
 import {NotificationsWidget} from './Widgets/NotificationsWidget';
 import {UpcomingBookings} from './Widgets/UpcomingBookings';
@@ -10,8 +10,8 @@ import {ExpertStats} from './Widgets/ExpertStats';
 import {ExpertUpcomingSlots} from './Widgets/ExpertUpcomingSlots';
 import {ModeratorStats} from './Widgets/ModeratorStats';
 import {NewsFeed} from './News/NewsFeed';
-import {ExpertPendingBookings, PendingBookingItem} from '../../Expert/ExpertDashboard/ExpertPendingBookings';
-import {ExpertConfirmedBookings, ConfirmedBookingItem} from '../../Expert/ExpertDashboard/ExpertConfirmedBookings';
+import {ExpertPendingBookings, PendingBookingItem} from '@/Islands/Expert/ExpertDashboard/ExpertPendingBookings';
+import {ExpertConfirmedBookings, ConfirmedBookingItem} from '@/Islands/Expert/ExpertDashboard/ExpertConfirmedBookings';
 
 interface BookingItem {
     id: number;

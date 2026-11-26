@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {actionLabel} from '../../../Common/booking/actions/labels/actionLabel';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {actionLabel} from '@/Common/booking/actions/labels/actionLabel';
 import {BookingPerson} from './BookingPerson';
 
 export interface PendingBookingItem {

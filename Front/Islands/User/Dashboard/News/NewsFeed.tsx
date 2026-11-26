@@ -1,12 +1,12 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {sendPostFormData} from '@common/Api/Send/sendPostFormData';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
-import {formatTs} from '@common/Utils/Time/DateUtils';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
 import {NewsPagination} from './NewsPagination';
-import {SlotBookingController} from '../../SlotsCalendar/Booking/logic/SlotBookingController';
-import {SlotBookingModalHost} from '../../SlotsCalendar/Booking/components/SlotBookingModalHost';
+import {SlotBookingController} from '@/Islands/User/SlotsCalendar/Booking/logic/SlotBookingController';
+import {SlotBookingModalHost} from '@/Islands/User/SlotsCalendar/Booking/components/SlotBookingModalHost';
 import {NewsEvent} from './newsTypes';
 import {NewsGroup, NewsGroupRow} from './NewsGroupRow';
 import {EventMessage} from './EventMessage';

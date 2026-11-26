@@ -1,12 +1,12 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
-import {AccountBalanceRow, GridConfig, PageResponse} from '../Shell/shared/types';
-import {AdminGrid, AdminGridHandle} from '../Grid/AdminGrid';
+import {AccountBalanceRow, GridConfig, PageResponse} from '@/Islands/AdminPanel/Shell/shared/types';
+import {AdminGrid, AdminGridHandle} from '@/Islands/AdminPanel/Grid/AdminGrid';
 import {Combobox} from '@common/Components/ui/Combobox';
 import {DateInput} from '@common/Components/ui/DateInput';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {formatTs} from '@common/Utils/Time/DateUtils';
-import {AdminUserLink} from '../../../Common/people/links/EntityLinks';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
+import {AdminUserLink} from '@/Common/people/links/EntityLinks';
 import {BalanceAdjustModal} from './BalanceAdjustModal';
 
 interface Props {

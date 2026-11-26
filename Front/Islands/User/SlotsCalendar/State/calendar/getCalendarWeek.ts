@@ -1,5 +1,7 @@
-import {weekStartTs, addDaysTs, tsToInputDate} from '@common/Utils/Time/DateUtils';
-import type {DayInfo, SlotItem} from '../view/types';
+import {weekStartTs} from '@common/Utils/Time/DateUtils/week/weekStartTs';
+import {addDaysTs} from '@common/Utils/Time/DateUtils/week/addDaysTs';
+import {tsToInputDate} from '@common/Utils/Time/DateUtils/input/tsToInputDate';
+import type {DayInfo, SlotItem} from '@/Islands/User/SlotsCalendar/State/view/types';
 import {sortByStart} from './sortByStart';
 
 /** Builds the visible calendar week and groups its slots by date. */

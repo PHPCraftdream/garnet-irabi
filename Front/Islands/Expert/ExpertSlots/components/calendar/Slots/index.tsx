@@ -1,11 +1,11 @@
 import * as React from 'react';
 import {Pencil, Trash2} from 'lucide-react';
-import {I18nForeground as t} from '../../../../../../I18nGen/I18nForeground';
-import {UniversalBadge} from '../../../../../../Common/booking/status/StatusBadge';
-import {statusClass} from '../../../../../../Common/booking/status/statusClass';
-import {translateStatus} from '../../../../../../Common/booking/status/statusHelpers';
-import {actionLabel} from '../../../../../../Common/booking/actions/labels/actionLabel';
-import {Slot} from '../../../types';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {UniversalBadge} from '@/Common/booking/status/StatusBadge';
+import {statusClass} from '@/Common/booking/status/statusClass';
+import {translateStatus} from '@/Common/booking/status/statusHelpers';
+import {actionLabel} from '@/Common/booking/actions/labels/actionLabel';
+import {Slot} from '@/Islands/Expert/ExpertSlots/types';
 import {CalendarSlotSummary} from './CalendarSlotSummary';
 import {CalendarSlotUser} from './CalendarSlotUser';
 import {CalendarSlotCostHint} from './CalendarSlotCostHint';

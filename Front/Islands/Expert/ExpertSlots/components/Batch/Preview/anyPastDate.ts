@@ -1,4 +1,4 @@
-import type {ProposedSlot} from '../../../types';
+import type {ProposedSlot} from '@/Islands/Expert/ExpertSlots/types';
 
 /** Проверить, наступила ли дата пакетного занятия. */
 function isPastSlot(slot: ProposedSlot): boolean {

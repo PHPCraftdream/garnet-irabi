@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {Combobox} from '@common/Components/ui/Combobox';
 import {DateInput} from '@common/Components/ui/DateInput';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 
 const admin_Filter_ResetAll = t.Admin_Filter_ResetAll;
 

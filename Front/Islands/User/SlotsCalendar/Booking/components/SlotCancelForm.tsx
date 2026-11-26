@@ -1,12 +1,12 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import SendButton from '@common/Components/Controls/SendButton';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {actionReasonLabel} from '../../../../../Common/booking/actions/labels/actionReasonLabel';
-import {actionReasonPlaceholder} from '../../../../../Common/booking/actions/labels/actionReasonPlaceholder';
-import {actionSubmitLabel} from '../../../../../Common/booking/actions/labels/actionSubmitLabel';
-import {actionTitle} from '../../../../../Common/booking/actions/labels/actionTitle';
-import {penaltyPreview} from '../../../../../Common/booking/actions/outcomes/penaltyPreview';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {actionReasonLabel} from '@/Common/booking/actions/labels/actionReasonLabel';
+import {actionReasonPlaceholder} from '@/Common/booking/actions/labels/actionReasonPlaceholder';
+import {actionSubmitLabel} from '@/Common/booking/actions/labels/actionSubmitLabel';
+import {actionTitle} from '@/Common/booking/actions/labels/actionTitle';
+import {penaltyPreview} from '@/Common/booking/actions/outcomes/penaltyPreview';
 
 const bookingPenaltyKeptByExpert = t.Booking_PenaltyKeptByExpert;
 const bookingRefundAmount = t.Booking_RefundAmount;

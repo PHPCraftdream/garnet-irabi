@@ -1,8 +1,8 @@
-import type {AutoContext} from '../../supportTypes';
+import type {AutoContext} from '@/Islands/Comms/Support/parts/supportTypes';
 import {D} from '@common/Support/Debug/D';
-import {breadcrumb} from '../errors/breadcrumb';
-import {jsErrors} from '../errors/jsErrors';
-import {netErrors} from '../errors/netErrors';
+import {breadcrumb} from '@/Islands/Comms/Support/parts/thread/errors/breadcrumb';
+import {jsErrors} from '@/Islands/Comms/Support/parts/thread/errors/jsErrors';
+import {netErrors} from '@/Islands/Comms/Support/parts/thread/errors/netErrors';
 
 /** Собирает снимок контекста страницы при создании обращения. */
 export function collectContext(): AutoContext {

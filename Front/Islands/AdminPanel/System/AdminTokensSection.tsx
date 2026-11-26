@@ -4,7 +4,7 @@ import {sendPost} from '@common/Api/Send/sendPost';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
 import type {ConfirmOptions, ConfirmState} from '@common/hooks/ui/useConfirm';
 import {ConfirmModal} from '@common/Components/Feedback/ConfirmModal';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {TokenRow} from './tokens/config/tokenTypes';
 import {TokenFilters} from './tokens/TokenFilters';
 import {TokenTable} from './tokens/TokenTable';

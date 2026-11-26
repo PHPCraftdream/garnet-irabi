@@ -1,8 +1,8 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {PreviewProvider} from '@common/Components/UserPreviewModal/PreviewProvider';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import QuickChat from '../chat/QuickChat';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import QuickChat from '@/Common/people/chat/QuickChat';
 
 interface Props {
     children: React.ReactNode;

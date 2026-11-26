@@ -1,13 +1,13 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {UserX} from 'lucide-react';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
-import {CommentsSection} from '../../Comms/Comments/CommentsSection';
-import {IrabiPreviewProvider} from '../../../Common/people/preview/IrabiPreviewProvider';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {CommentsSection} from '@/Islands/Comms/Comments/CommentsSection';
+import {IrabiPreviewProvider} from '@/Common/people/preview/IrabiPreviewProvider';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {SlotBookingController} from '../SlotsCalendar/Booking/logic/SlotBookingController';
-import {SlotBookingModalHost} from '../SlotsCalendar/Booking/components/SlotBookingModalHost';
-import ImageLightbox from '../../../Common/media/ImageLightbox';
+import {SlotBookingController} from '@/Islands/User/SlotsCalendar/Booking/logic/SlotBookingController';
+import {SlotBookingModalHost} from '@/Islands/User/SlotsCalendar/Booking/components/SlotBookingModalHost';
+import ImageLightbox from '@/Common/media/ImageLightbox';
 import {ExpertSlotCard} from './ExpertSlotCard';
 
 const actionEdit = t.Action_Edit;

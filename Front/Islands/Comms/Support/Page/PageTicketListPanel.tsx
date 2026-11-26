@@ -1,8 +1,8 @@
 import * as React from 'react';
 
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import {SupportTicket} from '../parts/supportTypes';
-import {SupportTicketRow} from '../parts/SupportTicketRow';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {SupportTicket} from '@/Islands/Comms/Support/parts/supportTypes';
+import {SupportTicketRow} from '@/Islands/Comms/Support/parts/SupportTicketRow';
 import Pagination, {PaginationLabels} from '@common/Components/Layout/Paging/Pagination';
 
 const supportNewTicket = t.Support_NewTicket;

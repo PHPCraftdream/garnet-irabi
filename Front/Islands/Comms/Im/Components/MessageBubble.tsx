@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {ImMessage} from '../imTypes';
-import AttachmentDisplay from '../../../../Common/attachments/AttachmentDisplay';
-import {formatTs} from '@common/Utils/Time/DateUtils';
+import {ImMessage} from '@/Islands/Comms/Im/imTypes';
+import AttachmentDisplay from '@/Common/attachments/AttachmentDisplay';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 
 interface Props {

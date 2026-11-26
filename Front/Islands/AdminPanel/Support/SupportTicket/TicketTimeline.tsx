@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
-import type {SupportMessage, AssignmentLogEntry} from '../../../Comms/Support/parts/supportTypes';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import type {SupportMessage, AssignmentLogEntry} from '@/Islands/Comms/Support/parts/supportTypes';
 import {SupportMessageBubble} from './timeline/SupportMessageBubble';
 import {AssignmentHistory} from './timeline/AssignmentHistory';
 

@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
-import {isConfirmed} from '../../../../../Common/booking/status/isConfirmed';
-import {SlotItem, SlotStatusFilter} from '../../State/view/types';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
+import {isConfirmed} from '@/Common/booking/status/isConfirmed';
+import {SlotItem, SlotStatusFilter} from '@/Islands/User/SlotsCalendar/State/view/types';
 
 const slotsFilterAll = t.Slots_FilterAll;
 const slotsFilterFree = t.Slots_FilterFree;

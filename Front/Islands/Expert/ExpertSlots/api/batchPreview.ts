@@ -1,7 +1,7 @@
 import {sendPostFormData} from '@common/Api/Send/sendPostFormData';
 import {D} from '@common/Support/Debug/D';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import type {BatchPreviewResponse} from '../types';
+import type {BatchPreviewResponse} from '@/Islands/Expert/ExpertSlots/types';
 
 /** Рассчитать доступные занятия для пакетного создания. */
 export function batchPreview(data: {

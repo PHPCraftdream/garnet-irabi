@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
 import {showToast} from '@common/Components/Feedback/GlobalToast';
-import {I18nForeground as t} from '../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {AttachmentAddRow} from './AttachmentAddRow';
 import {AttachmentTile} from './AttachmentTile';
 import {AttachmentLightbox} from './AttachmentLightbox';

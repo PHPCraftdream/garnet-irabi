@@ -1,5 +1,5 @@
-import {SupportStatus} from '../supportTypes';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
+import {SupportStatus} from '@/Islands/Comms/Support/parts/supportTypes';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 
 const statusLabels: Record<SupportStatus, () => string> = {
     open: () => t.Support_Status_Open(),

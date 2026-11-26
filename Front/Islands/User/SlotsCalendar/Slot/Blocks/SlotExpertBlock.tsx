@@ -1,8 +1,8 @@
 import * as React from 'react';
-import {I18nForeground as t} from '../../../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {UserLink} from '@common/Components/UserPreviewModal/UserLink';
 import {appUrl} from '@common/Utils/Url/appUrl';
-import {ExpertInfo} from '../../State/view/types';
+import {ExpertInfo} from '@/Islands/User/SlotsCalendar/State/view/types';
 
 const imGoToDialogs = t.Im_GoToDialogs;
 const slotExpert = t.Slot_Expert;

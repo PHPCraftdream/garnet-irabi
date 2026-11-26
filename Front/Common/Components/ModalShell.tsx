@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {Portal} from '@common/Components/Layout/Portal';
-import {I18nForeground as t} from '../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 
 const actionClose = t.Action_Close;
 

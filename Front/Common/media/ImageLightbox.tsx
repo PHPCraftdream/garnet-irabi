@@ -2,7 +2,7 @@ import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
 import {createPortal} from 'react-dom';
 import {Download, X} from 'lucide-react';
-import {I18nForeground as t} from '../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 
 const stopPropagation = (event: React.MouseEvent) => event.stopPropagation();
 

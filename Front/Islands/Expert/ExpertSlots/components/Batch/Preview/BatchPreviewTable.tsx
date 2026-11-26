@@ -1,11 +1,11 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {ProposedSlot, ExistingItem} from '../../../types';
+import {ProposedSlot, ExistingItem} from '@/Islands/Expert/ExpertSlots/types';
 import {BatchPreviewRow} from './BatchPreviewRow';
 import {findExistingOverlap} from './findExistingOverlap';
-import {findProposedOverlap} from '../logic/findProposedOverlap';
-import {isDateInPast} from '../logic/isDateInPast';
-import {I18nForeground as t} from '../../../../../../I18nGen/I18nForeground';
+import {findProposedOverlap} from '@/Islands/Expert/ExpertSlots/components/Batch/logic/findProposedOverlap';
+import {isDateInPast} from '@/Islands/Expert/ExpertSlots/components/Batch/logic/isDateInPast';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {IGarnetWindow} from '@common/Support/Models';
 
 const w: IGarnetWindow = window as IGarnetWindow;

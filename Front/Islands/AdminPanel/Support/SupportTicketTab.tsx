@@ -5,12 +5,12 @@ import {sendPostFormData} from '@common/Api/Send/sendPostFormData';
 import {D} from '@common/Support/Debug/D';
 
 import {showToast} from '@common/Components/Feedback/GlobalToast';
-import {I18nForeground as t} from '../../../I18nGen/I18nForeground';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {SupportTicket, SupportMessage, SupportStatus, AssignmentLogEntry, AutoContext} from
-    '../../Comms/Support/parts/supportTypes';
-import {SupportSending} from '../../Comms/Support/parts/thread/supportSending';
-import {PendingFile} from '../../../Common/attachments/AttachmentPicker';
-import {reportAttachmentErrors} from '../../../Common/attachments/helpers/reportAttachmentErrors';
+    '@/Islands/Comms/Support/parts/supportTypes';
+import {SupportSending} from '@/Islands/Comms/Support/parts/thread/supportSending';
+import {PendingFile} from '@/Common/attachments/AttachmentPicker';
+import {reportAttachmentErrors} from '@/Common/attachments/helpers/reportAttachmentErrors';
 import TicketHeader from './SupportTicket/TicketHeader';
 import TicketContext from './SupportTicket/TicketContext';
 import TicketClientContext from './SupportTicket/TicketClientContext';

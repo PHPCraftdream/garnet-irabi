@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {AntiHookComponent} from '@react-carburetor/core';
-import {formatTs} from '@common/Utils/Time/DateUtils';
-import {I18nForeground as t} from '../../../../I18nGen/I18nForeground';
+import {formatTs} from '@common/Utils/Time/DateUtils/format/formatTs';
+import {I18nForeground as t} from '@/I18nGen/I18nForeground';
 import {Booking, BookingGroupData, ExpertInfo, SlotInfo, UserInfo, BookingsViewAs} from './bookingCardTypes';
 import {BookingCard} from './BookingCard';
 

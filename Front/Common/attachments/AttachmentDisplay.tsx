@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {AntiHookComponent, Carburetor} from '@react-carburetor/core';
-import type {SupportAttachment} from '../../Islands/Comms/Support/parts/supportTypes';
-import ImageLightbox from '../media/ImageLightbox';
+import type {SupportAttachment} from '@/Islands/Comms/Support/parts/supportTypes';
+import ImageLightbox from '@/Common/media/ImageLightbox';
 import {formatSize} from './helpers/formatSize';
 
 interface Props {
