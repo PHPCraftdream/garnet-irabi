@@ -1,8 +1,9 @@
 @utility tone-externalneutral-plain { @apply text-inherit; }
 @utility tone-externaldanger-plain { @apply text-externaldanger-ink; }
 @utility shape-external-page { @apply mx-auto w-full max-w-4xl mt-6 space-y-4; }
-@utility shape-external-heading { @apply mb-3; }
-@utility type-external-heading { @apply text-base font-semibold; }
+/* `!`: the base h1 rule of the framework sits outside the layers and would win. */
+@utility shape-external-heading { @apply mb-3!; }
+@utility type-external-heading { @apply text-base! font-semibold; }
 @utility tone-externalprimary-solid { @apply border-transparent bg-externalprimary-fill text-externalprimary-on-fill [&:hover]:bg-externalprimary-fill-hover; }
 @utility layout-external-button { @apply inline-flex items-center justify-center gap-1.5; }
 @utility shape-external-button { @apply rounded border px-2 py-1; }
@@ -16,10 +17,6 @@
 @utility type-external-host { @apply font-medium; }
 @utility type-external-url { @apply break-all; }
 @utility layout-external-actions { @apply flex gap-2; }
-
-/* Нелейерный h1 фреймворка перебивает слой components: отступ и кегль дублируются вне слоя. */
-/* carburetor-disable-next-line valid-function-class */
-.external-heading { @apply shape-external-heading type-external-heading; }
 
 @layer components {
   .external-page { @apply shape-external-page tone-externalneutral-plain; }
